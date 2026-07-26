@@ -1,0 +1,892 @@
+@import "tailwindcss";
+
+:root { --ink: #101b23; --panel: #162631; --navy: #0d171e; --sky: #b7d6df; --paper: #f5f1e8; --muted: #9fb0b4; --orange: #f5a348; --line: rgba(190, 219, 224, .22); --max: 1440px; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { min-width: 320px; margin: 0; background: var(--navy); color: var(--paper); font-family: Arial, Helvetica, sans-serif; }
+a { color: inherit; }
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.skip-link { position: fixed; z-index: 100; top: -5rem; left: 1rem; padding: .8rem 1rem; background: var(--orange); color: var(--ink); font-weight: 800; }
+.skip-link:focus { top: 1rem; }
+.site-header { position: sticky; z-index: 50; top: 0; display: flex; align-items: center; gap: clamp(1rem, 2vw, 2.5rem); min-height: 5.25rem; padding: 0 clamp(1rem, 4vw, 4.5rem); border-bottom: 1px solid rgba(255,255,255,.09); background: rgba(13, 23, 30, .9); backdrop-filter: blur(16px); }
+.wordmark { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .45rem; color: var(--paper); font-size: .82rem; font-weight: 900; letter-spacing: .16em; text-decoration: none; }.brand-logo { width: 2.35rem; height: 2.35rem; object-fit: contain; }.wordmark b { color: var(--orange); font-weight: 700; }
+.desktop-nav { display: flex; align-items: center; gap: clamp(.8rem, 1.5vw, 1.55rem); margin-left: auto; }.desktop-nav a { color: #d7e0e1; font-size: .82rem; font-weight: 700; text-decoration: none; }.desktop-nav a:hover { color: var(--orange); }
+.header-actions { display: flex; align-items: center; gap: 1rem; }.text-action { display: inline-flex; align-items: center; gap: .35rem; color: var(--sky); font-size: .78rem; font-weight: 800; text-decoration: none; }.text-action svg, .button svg, .card-actions svg { width: 1rem; height: 1rem; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-height: 3rem; padding: .78rem 1.05rem; border: 1px solid var(--orange); border-radius: 999px; background: var(--orange); color: var(--ink); font-size: .82rem; font-weight: 900; letter-spacing: .02em; text-decoration: none; cursor: pointer; }.button:hover { background: #ffb567; border-color: #ffb567; }.button svg { width: 1.05rem; }.button-small { min-height: 2.45rem; padding: .55rem .8rem; font-size: .72rem; }.button-outline { background: transparent; color: var(--paper); }.button-outline:hover { color: var(--ink); }.button-light { background: var(--paper); border-color: var(--paper); }
+.mobile-toggle, .mobile-panel, .mobile-action-bar { display: none; }
+.page-shell { overflow: hidden; }.page-main { min-height: 70vh; }.content-wrap { width: min(var(--max), calc(100% - clamp(2rem, 8vw, 9rem))); margin: auto; }
+.hero { position: relative; display: grid; min-height: min(740px, calc(100svh - 5.25rem)); align-items: end; isolation: isolate; }.hero-media { position: absolute; z-index: -2; inset: 0; }.hero-media img { object-fit: cover; object-position: center; filter: saturate(.85) brightness(.62); }.hero::after { position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, rgba(8,17,23,.9) 0%, rgba(8,17,23,.62) 42%, rgba(8,17,23,.15) 100%), linear-gradient(0deg, #0d171e 0%, transparent 35%); content: ""; }.hero-content { width: min(var(--max), calc(100% - clamp(2rem, 8vw, 9rem))); margin: 0 auto; padding: clamp(5rem, 12vw, 10rem) 0 5rem; }.hero-content h1, .display-title { max-width: 11ch; margin: .8rem 0 1.25rem; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3.35rem, 7.2vw, 7.5rem); font-weight: 400; letter-spacing: -.075em; line-height: .88; }.hero-content h1 em, h2 em { color: var(--orange); font-style: normal; }.hero-copy { max-width: 41rem; color: #dfebe9; font-size: clamp(1.02rem, 1.6vw, 1.25rem); line-height: 1.6; }.hero-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2rem; }.eyebrow, .card-kicker { margin: 0; color: var(--orange); font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }.flight-path { position: absolute; right: 9%; top: 18%; width: min(40vw, 540px); height: 20rem; border-top: 1px dashed rgba(231,249,251,.7); border-radius: 50%; transform: rotate(-23deg); opacity: .85; animation: drift 12s ease-in-out infinite alternate; }.flight-path::before { position: absolute; right: 8%; top: -4px; width: .5rem; height: .5rem; border-radius: 50%; background: var(--orange); box-shadow: 0 0 1.1rem var(--orange); content: ""; }
+.section { padding: clamp(4.5rem, 9vw, 9rem) 0; }.section-dark { background: var(--panel); }.section-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin-bottom: clamp(2rem, 4vw, 4rem); }.section-heading h2, .split-content h2, .page-hero h1 { max-width: 13ch; margin: .55rem 0 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.5rem, 5vw, 5rem); font-weight: 400; letter-spacing: -.065em; line-height: .95; }.section-heading > p:last-child { max-width: 28rem; margin: 0; color: var(--muted); line-height: 1.6; }.section-link { display: inline-flex; align-items: center; gap: .45rem; color: var(--sky); font-size: .88rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.campus-grid { display: grid; grid-template-columns: 1.6fr repeat(2, 1fr); gap: 1px; border: 1px solid var(--line); background: var(--line); }.campus-stop { min-height: 15rem; padding: 1.4rem; background: #11212c; }.campus-stop:first-child { grid-row: span 2; min-height: 31rem; background: linear-gradient(145deg, #214657, #132832); }.campus-stop span { display: block; color: var(--orange); font-size: .7rem; font-weight: 900; letter-spacing: .12em; }.campus-stop h3 { max-width: 10ch; margin: auto 0 0; padding-top: 5.5rem; font-family: Georgia, serif; font-size: clamp(1.35rem, 2.4vw, 2.2rem); font-weight: 400; letter-spacing: -.05em; }
+.location-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }.location-card { overflow: hidden; border: 1px solid var(--line); background: #0f1d26; }.image-wrap { position: relative; aspect-ratio: 1.25; overflow: hidden; }.image-wrap img, .beer-image img { object-fit: cover; transition: transform .5s ease; }.location-card:hover img, .beer-card:hover img { transform: scale(1.045); }.card-body { padding: 1.35rem; }.card-body h3, .event-card h3 { margin: .5rem 0 .7rem; font-family: Georgia, serif; font-size: 1.55rem; font-weight: 400; letter-spacing: -.04em; }.card-body > p:not(.card-kicker), .event-content > p:not(.card-kicker) { color: #c5d1d1; line-height: 1.55; }.card-meta { margin: 1rem 0; padding: .8rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); font-size: .76rem; line-height: 1.45; }.card-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }.card-actions a { display: inline-flex; align-items: center; gap: .35rem; color: var(--paper); font-size: .78rem; font-weight: 800; text-decoration: none; }.card-actions a:last-child { color: var(--sky); }
+.beer-stage { position: relative; overflow: hidden; padding: clamp(3rem, 8vw, 7rem) 0; background: #e4e0d5; color: var(--ink); }.beer-stage::before { position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(16,27,35,.12) 1px, transparent 1px), linear-gradient(rgba(16,27,35,.12) 1px, transparent 1px); background-size: 32px 32px; content: ""; }.beer-stage > * { position: relative; }.beer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(16,27,35,.22); }.beer-card { position: relative; display: grid; min-height: 22rem; align-content: end; overflow: hidden; padding: 1.15rem; background: #d9e3e2; color: var(--ink); text-decoration: none; }.beer-card:nth-child(2n) { background: #c3dce1; }.beer-image { position: absolute; inset: 0; opacity: .38; }.beer-card > div:last-of-type, .beer-card > svg { position: relative; }.beer-card span { font-size: .65rem; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }.beer-card h3 { margin: .35rem 0; font-family: Georgia, serif; font-size: 1.55rem; font-weight: 400; letter-spacing: -.04em; }.beer-card p { margin: 0; font-size: .78rem; }.beer-card > svg { position: absolute; top: 1rem; right: 1rem; width: 1.2rem; }
+.food-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(1rem, 3vw, 2.6rem); }.food-image { position: relative; min-height: 34rem; overflow: hidden; }.food-image img { object-fit: cover; }.food-content { display: grid; align-content: center; }.food-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin: 2rem 0; border-top: 1px solid var(--line); }.food-list span { padding: .8rem 0; border-bottom: 1px solid var(--line); font-size: .88rem; font-weight: 800; }
+.event-layout { display: grid; grid-template-columns: 1fr 1.45fr; border-top: 1px solid var(--line); }.event-date { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; padding: 1.4rem; color: var(--sky); }.event-date svg { width: 1.3rem; }.event-date span { font-size: .75rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }.event-date strong { color: var(--paper); font-family: Georgia, serif; font-size: 1.15rem; font-weight: 400; }.event-card { display: grid; grid-template-columns: .75fr 1.25fr; border-bottom: 1px solid var(--line); }.event-content { padding: 1.4rem; border-left: 1px solid var(--line); }.event-content a { display: inline-flex; align-items: center; gap: .35rem; color: var(--orange); font-size: .8rem; font-weight: 900; text-decoration: none; }
+.split-content { display: grid; grid-template-columns: .95fr 1.05fr; gap: 4rem; }.split-content p { max-width: 40rem; color: #c6d1d2; font-size: 1.05rem; line-height: 1.7; }.story-timeline { display: grid; gap: 0; }.story-timeline div { display: grid; grid-template-columns: 6rem 1fr; gap: 1rem; padding: 1.2rem 0; border-top: 1px solid var(--line); }.story-timeline strong { color: var(--orange); }.story-timeline span { color: #c6d1d2; line-height: 1.55; }
+.newsletter { display: grid; grid-template-columns: 1fr .9fr; gap: 3rem; padding: clamp(2rem, 6vw, 5rem); background: var(--orange); color: var(--ink); }.newsletter h2 { margin: .5rem 0; font-family: Georgia, serif; font-size: clamp(2.5rem, 4vw, 4.5rem); font-weight: 400; letter-spacing: -.06em; line-height: .95; }.newsletter p { max-width: 35rem; line-height: 1.6; }
+.inquiry-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }.inquiry-form label { display: grid; gap: .45rem; font-size: .77rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }.inquiry-form label:has(textarea), .inquiry-form label:has(select), .inquiry-form .button { grid-column: 1 / -1; }.inquiry-form input, .inquiry-form select, .inquiry-form textarea { width: 100%; border: 1px solid rgba(16,27,35,.3); border-radius: .3rem; padding: .8rem; background: rgba(255,255,255,.75); color: var(--ink); font-size: .96rem; font-weight: 400; letter-spacing: normal; text-transform: none; }.inquiry-form textarea { resize: vertical; }.honeypot { position: absolute; left: -9999px; }.form-message { margin: 0; padding: 1rem; border-radius: .35rem; font-weight: 700; }.form-message.success { background: #dff4dd; color: #18461c; }.form-message.error { background: #f5d8d2; color: #6a1b10; }
+.page-hero { padding: clamp(4rem, 9vw, 8rem) 0 4rem; background: radial-gradient(circle at 80% 0, #234654, transparent 36rem), var(--panel); }.page-hero p { max-width: 42rem; color: #c6d1d2; font-size: 1.07rem; line-height: 1.7; }.breadcrumb { color: var(--muted); font-size: .75rem; }.detail-hero { display: grid; grid-template-columns: 1fr 1fr; min-height: 35rem; }.detail-hero-image { position: relative; min-height: 20rem; }.detail-hero-image img { object-fit: cover; }.detail-hero-copy { display: grid; align-content: center; padding: clamp(2rem, 7vw, 7rem); background: var(--panel); }.detail-hero-copy h1 { margin: .5rem 0 1rem; font-family: Georgia, serif; font-size: clamp(3rem, 6vw, 6.5rem); font-weight: 400; letter-spacing: -.075em; line-height: .88; }.detail-hero-copy p { color: #c6d1d2; line-height: 1.65; }.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }.info-card { padding: 1.4rem; border: 1px solid var(--line); background: #11212c; }.info-card h2 { margin: .3rem 0 1rem; font-family: Georgia, serif; font-size: 1.65rem; font-weight: 400; }.info-card p, .info-card li { color: #c6d1d2; line-height: 1.6; }.info-card ul { padding-left: 1.1rem; }
+.filter-row { display: flex; flex-wrap: wrap; gap: .55rem; margin-bottom: 2rem; }.filter-row button { min-height: 2.4rem; padding: .5rem .8rem; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--paper); font-size: .76rem; font-weight: 900; cursor: pointer; }.filter-row button[aria-pressed="true"] { background: var(--orange); border-color: var(--orange); color: var(--ink); }
+.site-footer { padding: clamp(3rem, 6vw, 6rem) clamp(1rem, 4vw, 4.5rem) 2rem; background: #091218; }.footer-top { display: flex; align-items: end; justify-content: space-between; gap: 2rem; width: min(var(--max), 100%); margin: auto; padding-bottom: 3rem; border-bottom: 1px solid var(--line); }.footer-top h2 { max-width: 15ch; margin: .6rem 0 0; font-family: Georgia, serif; font-size: clamp(2.3rem, 4vw, 4rem); font-weight: 400; letter-spacing: -.06em; line-height: .95; }.footer-top h2 em { color: var(--orange); font-style: normal; }.footer-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1.2fr; gap: 2rem; width: min(var(--max), 100%); margin: auto; padding: 3rem 0; }.footer-grid > div { display: grid; align-content: start; gap: .6rem; }.footer-grid a { color: #c1ccce; font-size: .83rem; line-height: 1.5; text-decoration: none; }.footer-grid a:hover { color: var(--orange); }.footer-title { margin: 0 0 .35rem; color: var(--orange); font-size: .68rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }.footer-copy { margin: 0; color: var(--muted); font-size: .85rem; line-height: 1.5; }.footer-newsletter { color: var(--paper) !important; font-weight: 900; }.footer-bottom { display: flex; justify-content: space-between; gap: 1rem; width: min(var(--max), 100%); margin: auto; padding-top: 1.4rem; border-top: 1px solid var(--line); color: #7f9498; font-size: .7rem; }.footer-bottom span:last-child { display: flex; gap: 1rem; }.footer-bottom a { color: inherit; text-decoration: none; }
+@keyframes drift { to { transform: rotate(-20deg) translateX(2rem); } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+@media (max-width: 980px) { .desktop-nav, .header-actions { display: none; }.site-header { justify-content: space-between; }.mobile-toggle { display: grid; width: 2.8rem; height: 2.8rem; place-content: center; gap: .32rem; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--paper); }.mobile-toggle i { display: block; width: 1rem; height: 1px; background: currentColor; }.mobile-panel { position: absolute; top: 100%; right: 0; left: 0; padding: 1rem clamp(1rem, 4vw, 4.5rem) 1.5rem; background: var(--navy); border-bottom: 1px solid var(--line); }.mobile-panel.is-open { display: block; }.mobile-panel nav { display: grid; }.mobile-panel nav a, .mobile-panel > a { padding: .9rem 0; border-bottom: 1px solid var(--line); font-size: 1.1rem; font-weight: 800; text-decoration: none; }.mobile-panel > a { display: flex; justify-content: space-between; color: var(--orange); }.location-grid { grid-template-columns: repeat(2, 1fr); }.beer-grid { grid-template-columns: repeat(2, 1fr); }.footer-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { body { padding-bottom: 4.7rem; }.mobile-action-bar { position: fixed; z-index: 60; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: #0a141b; box-shadow: 0 -1rem 3rem rgba(0,0,0,.3); }.mobile-action-bar a { display: grid; min-height: 4.3rem; place-items: center; align-content: center; gap: .25rem; color: var(--paper); font-size: .64rem; font-weight: 900; text-decoration: none; }.mobile-action-bar svg { width: 1.15rem; }.menu-glyph { font-size: 1.3rem; line-height: 1; }.hero { min-height: 680px; }.hero-content { padding-bottom: 6rem; }.flight-path { right: -16%; top: 15%; width: 25rem; }.section-heading, .footer-top { align-items: start; flex-direction: column; }.campus-grid { grid-template-columns: 1fr 1fr; }.campus-stop:first-child { grid-column: span 2; grid-row: auto; min-height: 18rem; }.campus-stop h3 { padding-top: 3.6rem; }.location-grid, .food-grid, .split-content, .newsletter, .detail-hero, .detail-grid { grid-template-columns: 1fr; }.beer-grid { grid-template-columns: 1fr 1fr; }.beer-card { min-height: 15rem; }.event-card { grid-template-columns: 1fr; }.event-content { border-top: 1px solid var(--line); border-left: 0; }.event-date { flex-direction: row; align-items: center; }.footer-grid { grid-template-columns: 1fr 1fr; }.footer-bottom { align-items: start; flex-direction: column; }.footer-bottom span:last-child { flex-wrap: wrap; }.timeline { grid-template-columns: 1fr; } }
+@media (max-width: 430px) { .hero-content h1 { font-size: 3.2rem; }.beer-grid, .footer-grid { grid-template-columns: 1fr; }.campus-grid { grid-template-columns: 1fr; }.campus-stop:first-child { grid-column: auto; }.location-grid { grid-template-columns: 1fr; }.inquiry-form { grid-template-columns: 1fr; }.inquiry-form label, .inquiry-form .button { grid-column: auto; } }
+
+/* Aviator Field: restrained WWII-era airfield treatment */
+:root { --ink: #182017; --panel: #334035; --navy: #20291f; --sky: #d7d3bb; --paper: #f3ead6; --muted: #b7bba5; --orange: #e5a849; --line: rgba(239, 230, 202, .26); }
+body { background-color: #29352b; background-image: radial-gradient(rgba(238, 224, 188, .055) .7px, transparent .7px), linear-gradient(110deg, rgba(0,0,0,.07) 25%, transparent 25%, transparent 50%, rgba(0,0,0,.05) 50%, rgba(0,0,0,.05) 75%, transparent 75%); background-size: 5px 5px, 22px 22px; }
+.site-header { min-height: 5.6rem; border-bottom: 2px solid rgba(229,168,73,.7); background: rgba(30, 39, 29, .94); box-shadow: inset 0 -1px rgba(244,235,212,.17); }.wordmark { gap: .6rem; letter-spacing: .11em; }.brand-logo { width: 2.65rem; height: 2.65rem; filter: sepia(.24) saturate(.86) contrast(1.06); }.wordmark-copy { display: grid; line-height: 1.05; }.wordmark-copy b { font-size: .61rem; letter-spacing: .18em; }.desktop-nav a, .text-action { font-family: "Courier New", monospace; letter-spacing: .08em; text-transform: uppercase; }.button { border-radius: 0; box-shadow: 4px 4px 0 rgba(0,0,0,.25); font-family: "Courier New", monospace; letter-spacing: .08em; text-transform: uppercase; }.button:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 rgba(0,0,0,.25); }.button-outline { border-color: rgba(243,234,214,.72); background: rgba(24,32,23,.45); }.hero-runway { min-height: min(780px, calc(100svh - 5.6rem)); }.hero-runway .hero-media img { filter: saturate(.64) contrast(1.08) brightness(.74); }.hero-runway::after { background: linear-gradient(90deg, rgba(20,27,19,.94) 0%, rgba(20,27,19,.73) 38%, rgba(20,27,19,.12) 78%), linear-gradient(0deg, #29352b 0%, transparent 32%); }.hero-runway::before { position: absolute; z-index: -1; inset: 0; background-image: linear-gradient(90deg, transparent 0 16%, rgba(240,229,194,.14) 16.15% 16.25%, transparent 16.3% 83.7%, rgba(240,229,194,.14) 83.75% 83.85%, transparent 83.9%), repeating-linear-gradient(90deg, transparent 0 7.4%, rgba(240,229,194,.1) 7.45% 7.65%, transparent 7.7% 100%); mix-blend-mode: screen; content: ""; pointer-events: none; }.hero-content { padding-bottom: 4.5rem; }.hero-content h1 { max-width: 10ch; font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: clamp(4rem, 9vw, 9.4rem); letter-spacing: -.055em; line-height: .8; text-transform: uppercase; text-shadow: 4px 4px 0 rgba(0,0,0,.32); }.hero-content h1 em { color: var(--orange); font-family: Georgia, serif; font-size: .87em; font-style: italic; font-weight: 400; letter-spacing: -.08em; text-transform: none; }.hero-copy { max-width: 36rem; color: #f0ead9; }.eyebrow, .card-kicker { color: #f1bd65; font-family: "Courier New", monospace; letter-spacing: .18em; }.flight-path { right: 2%; top: 14%; width: min(46vw, 680px); height: 23rem; border-color: rgba(240,229,194,.64); border-radius: 42% 58% 70% 30% / 30% 38% 62% 70%; transform: rotate(-14deg); }.flight-path::after { position: absolute; top: 42%; right: 22%; width: 1.75rem; height: .55rem; border-top: 2px solid #f2bd62; border-right: 2px solid #f2bd62; transform: rotate(45deg); content: ""; }.runway-number { position: absolute; right: clamp(1.2rem, 5vw, 6rem); bottom: 1.6rem; z-index: 1; display: grid; color: rgba(244,235,212,.7); font-family: Impact, sans-serif; font-size: clamp(5rem, 12vw, 13rem); letter-spacing: -.08em; line-height: .65; text-align: center; transform: rotate(-8deg); }.runway-number span { color: rgba(229,168,73,.84); }.flight-data { display: flex; flex-wrap: wrap; gap: 0; width: fit-content; margin-top: 2.2rem; border: 1px solid rgba(243,234,214,.34); background: rgba(20,27,19,.58); backdrop-filter: blur(8px); }.flight-data span { padding: .65rem .9rem; border-right: 1px solid rgba(243,234,214,.25); color: var(--muted); font-family: "Courier New", monospace; font-size: .65rem; letter-spacing: .1em; }.flight-data span:last-child { border: 0; }.flight-data b { color: #fff4d8; font-weight: 900; }
+.section { position: relative; }.section::before { position: absolute; top: 0; right: 0; left: 0; height: 1px; background: repeating-linear-gradient(90deg, var(--orange) 0 34px, transparent 34px 44px); content: ""; opacity: .75; }.section-dark { background: #313c31; background-image: linear-gradient(90deg, rgba(233,218,181,.06) 1px, transparent 1px), linear-gradient(rgba(233,218,181,.06) 1px, transparent 1px); background-size: 36px 36px; }.section-heading h2, .split-content h2, .page-hero h1 { font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; letter-spacing: -.035em; line-height: .88; text-transform: uppercase; }.section-heading h2 em, .split-content h2 em { color: var(--orange); font-family: Georgia, serif; font-style: italic; font-weight: 400; text-transform: none; }.section-link { font-family: "Courier New", monospace; letter-spacing: .08em; text-transform: uppercase; }.campus-grid { border: 2px solid rgba(243,234,214,.32); background: rgba(243,234,214,.32); }.campus-stop { position: relative; overflow: hidden; border: 0; background: #3b4838; }.campus-stop::before { position: absolute; top: .8rem; right: .8rem; width: 2rem; height: 2rem; border-top: 1px solid var(--orange); border-right: 1px solid var(--orange); content: ""; }.campus-stop:first-child { background: linear-gradient(145deg, #56634a, #303c30); }.campus-stop span { font-family: "Courier New", monospace; }.campus-stop h3 { font-family: Impact, sans-serif; letter-spacing: .02em; text-transform: uppercase; }.location-card { border: 2px solid rgba(243,234,214,.23); background: #263128; }.location-card .image-wrap { filter: sepia(.18) saturate(.8) contrast(1.04); }.card-body h3, .event-card h3 { font-family: Impact, sans-serif; font-weight: 400; letter-spacing: .02em; text-transform: uppercase; }.card-actions { border-top: 1px dashed var(--line); padding-top: .9rem; }.beer-stage { background: #d9ccb0; color: #1d271d; background-image: linear-gradient(90deg, rgba(46,60,43,.18) 1px, transparent 1px), linear-gradient(rgba(46,60,43,.18) 1px, transparent 1px), radial-gradient(rgba(46,60,43,.16) .8px, transparent .8px); background-size: 28px 28px, 28px 28px, 4px 4px; }.beer-grid { border: 2px solid #384434; background: #384434; }.beer-card { min-height: 25rem; background: #c6d0bd; }.beer-card:nth-child(2n) { background: #e1d3ad; }.beer-image { opacity: .72; }.beer-image img { object-fit: cover; mix-blend-mode: multiply; }.beer-card h3 { font-family: Impact, sans-serif; font-size: 1.9rem; letter-spacing: .01em; text-transform: uppercase; }.food-image { border: 8px solid #505b43; box-shadow: 14px 14px 0 #d6c89e; }.event-layout { border-color: rgba(243,234,214,.35); }.event-card { background: rgba(20,28,20,.28); }.event-date { background: #212c21; }.event-content { background: #354335; }.story-timeline div { grid-template-columns: 6.5rem 1fr; }.story-timeline strong { font-family: "Courier New", monospace; letter-spacing: .08em; }.newsletter { border: 3px solid #1d271d; background: #d8b35b; background-image: repeating-linear-gradient(0deg, rgba(27,38,27,.09) 0 1px, transparent 1px 5px); }.newsletter h2 { font-family: Impact, sans-serif; letter-spacing: .01em; text-transform: uppercase; }.page-hero { background: #3b4939; background-image: linear-gradient(90deg, rgba(239,226,190,.13) 1px, transparent 1px), linear-gradient(rgba(239,226,190,.13) 1px, transparent 1px), radial-gradient(circle at 80% 15%, rgba(229,168,73,.3), transparent 24rem); background-size: 30px 30px, 30px 30px, auto; }.detail-hero-copy { background: #354235; }.detail-hero-copy h1 { font-family: Impact, sans-serif; letter-spacing: .01em; text-transform: uppercase; }.info-card { border: 2px solid rgba(243,234,214,.25); background: #303c30; }.site-footer { background: #1b231a; background-image: repeating-linear-gradient(90deg, rgba(240,225,187,.04) 0 1px, transparent 1px 5px); }.footer-top h2 { font-family: Impact, sans-serif; letter-spacing: .01em; text-transform: uppercase; }.footer-top h2 em { font-family: Georgia, serif; font-style: italic; font-weight: 400; text-transform: none; }
+@media (max-width: 700px) { .hero-runway { min-height: 720px; }.hero-runway::after { background: linear-gradient(90deg, rgba(20,27,19,.9) 0%, rgba(20,27,19,.63) 100%), linear-gradient(0deg, #29352b 0%, transparent 30%); }.runway-number { right: .6rem; bottom: 4.6rem; opacity: .55; }.flight-path { right: -36%; top: 11%; }.flight-data { margin-top: 1.6rem; }.flight-data span { padding: .5rem .55rem; font-size: .56rem; }.food-image { border-width: 5px; box-shadow: 8px 8px 0 #d6c89e; } }
+
+.arrival-strip { overflow: hidden; border-top: 1px solid rgba(243,234,214,.6); border-bottom: 1px solid rgba(243,234,214,.6); background: #d8b35b; color: #1c261b; font-family: "Courier New", monospace; font-size: .72rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; white-space: nowrap; }.arrival-track { display: flex; width: max-content; align-items: center; gap: 1.2rem; padding: .72rem 0; animation: runway-scroll 25s linear infinite; }.arrival-track i { color: #734f20; font-size: .9rem; font-style: normal; }.night-ops { display: grid; grid-template-columns: 1.1fr .9fr; min-height: 42rem; background: #151c16; }.night-ops-image { position: relative; min-height: 28rem; overflow: hidden; }.night-ops-image::after { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 55%, #151c16 100%); content: ""; }.night-ops-image img { object-fit: cover; filter: saturate(.78) contrast(1.08); }.night-ops-copy { display: grid; align-content: center; padding: clamp(2rem, 6vw, 7rem) clamp(1.5rem, 6vw, 6rem) clamp(2rem, 6vw, 7rem) 0; }.night-ops-copy h2 { max-width: 10ch; margin: .65rem 0 1.3rem; color: var(--paper); font-family: Impact, sans-serif; font-size: clamp(3rem, 5vw, 5.7rem); font-weight: 400; letter-spacing: .01em; line-height: .87; text-transform: uppercase; }.night-ops-copy h2 em { color: var(--orange); font-family: Georgia, serif; font-style: italic; font-weight: 400; text-transform: none; }.night-ops-copy > p:not(.eyebrow) { max-width: 34rem; color: #c9cdbb; line-height: 1.7; }.night-ops-spec { display: grid; gap: 0; margin: 2rem 0; border-top: 1px solid rgba(243,234,214,.22); }.night-ops-spec div { display: grid; grid-template-columns: 9rem 1fr; gap: .8rem; padding: .85rem 0; border-bottom: 1px solid rgba(243,234,214,.22); }.night-ops-spec dt { color: #edbb61; font-family: "Courier New", monospace; font-size: .68rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }.night-ops-spec dd { margin: 0; color: #d9d8c9; font-size: .85rem; line-height: 1.4; }@keyframes runway-scroll { to { transform: translateX(-50%); } } @media (prefers-reduced-motion: reduce) { .arrival-track { animation: none; } } @media (max-width: 760px) { .night-ops { grid-template-columns: 1fr; }.night-ops-image { min-height: 25rem; }.night-ops-image::after { background: linear-gradient(0deg, #151c16 0%, transparent 55%); }.night-ops-copy { padding: 3rem 1.5rem; }.night-ops-spec div { grid-template-columns: 1fr; gap: .25rem; } }
+
+.location-guide-hero{padding-bottom:2.5rem}.location-hero-stamps{display:flex;flex-wrap:wrap;width:fit-content;margin-top:2.5rem;border:1px solid rgba(243,234,214,.3)}.location-hero-stamps span{padding:.7rem .9rem;border-right:1px solid rgba(243,234,214,.3);color:#d0d1bf;font-family:"Courier New",monospace;font-size:.65rem;letter-spacing:.08em}.location-hero-stamps span:last-child{border:0}.location-hero-stamps b{color:var(--orange)}.flight-plan-section{padding:clamp(3rem,6vw,6rem) 0;background:#d6c89e;color:#1b241a;background-image:linear-gradient(90deg,rgba(33,47,31,.14) 1px,transparent 1px),linear-gradient(rgba(33,47,31,.14) 1px,transparent 1px);background-size:28px 28px}.flight-plan-head{display:flex;align-items:end;justify-content:space-between;gap:2rem}.flight-plan-head h2{max-width:13ch;margin:.4rem 0 0;font-family:Impact,sans-serif;font-size:clamp(2.6rem,5vw,5rem);font-weight:400;line-height:.87;text-transform:uppercase}.flight-plan-head h2 em{color:#795125;font-family:Georgia,serif;font-style:italic;font-weight:400;text-transform:none}.flight-plan-head>p{max-width:30rem;margin:0;color:#455041;line-height:1.6}.flight-plan{display:grid;grid-template-columns:repeat(7,1fr);margin:3rem 0 0;padding:0;border:2px solid #41513e;list-style:none}.flight-plan li{min-height:8.5rem;border-right:1px solid #41513e}.flight-plan li:last-child{border:0}.flight-plan a{display:grid;height:100%;align-content:space-between;padding:1rem;color:#1b241a;text-decoration:none}.flight-plan a:hover{background:#f0e7cc}.flight-plan b{color:#95672d;font-family:"Courier New",monospace;font-size:.75rem}.flight-plan span{max-width:7ch;font-family:Impact,sans-serif;font-size:1.35rem;line-height:.92;text-transform:uppercase}.flight-plan i{color:#796449;font-style:normal}.location-manifest{background:#222c22}.location-manifest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem}.field-location-card{display:grid;grid-template-columns:.9fr 1.1fr;min-height:25rem;overflow:hidden;border:2px solid rgba(243,234,214,.25);background:#334033;scroll-margin-top:6.5rem}.field-location-card:nth-child(3n+1){grid-column:span 2;grid-template-columns:1.1fr .9fr}.field-location-image{position:relative;min-height:18rem;overflow:hidden}.field-location-image img{object-fit:cover;filter:sepia(.2) saturate(.75) contrast(1.05);transition:transform .6s ease}.field-location-card:hover .field-location-image img{transform:scale(1.05)}.field-location-body{display:flex;flex-direction:column;padding:clamp(1.4rem,3vw,2.6rem)}.field-location-top{display:flex;justify-content:space-between;gap:1rem;color:#d1d3c2;font-family:"Courier New",monospace;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase}.field-number{color:var(--orange);font-size:1rem;font-weight:900}.field-location-body h2{max-width:12ch;margin:1.3rem 0 .7rem;color:var(--paper);font-family:Impact,sans-serif;font-size:clamp(2rem,3vw,3.7rem);font-weight:400;line-height:.87;text-transform:uppercase}.field-location-body>p{color:#cdd1c2;line-height:1.6}.field-location-status{margin-top:auto;padding:.9rem 0;border-top:1px dashed rgba(243,234,214,.35);border-bottom:1px dashed rgba(243,234,214,.35)}.field-location-status span{display:block;color:#e6b660;font-family:"Courier New",monospace;font-size:.6rem;font-weight:900;letter-spacing:.13em}.field-location-status strong{display:block;margin-top:.35rem;color:#f0eadb;font-size:.76rem;line-height:1.45}.field-location-actions{display:flex;justify-content:space-between;gap:1rem;padding-top:1.1rem}.field-location-actions a{display:inline-flex;align-items:center;gap:.4rem;color:#fff2d9;font-family:"Courier New",monospace;font-size:.72rem;font-weight:900;letter-spacing:.05em;text-decoration:none;text-transform:uppercase}.field-location-actions a:last-child{color:#e7b65f}.field-location-actions svg{width:1rem;height:1rem}@media(max-width:900px){.flight-plan{grid-template-columns:repeat(4,1fr)}.flight-plan li:nth-child(4){border-right:0}.flight-plan li:nth-child(-n+4){border-bottom:1px solid #41513e}.location-manifest-grid{grid-template-columns:1fr}.field-location-card,.field-location-card:nth-child(3n+1){grid-column:auto;grid-template-columns:.9fr 1.1fr}}@media(max-width:700px){.flight-plan-head{align-items:start;flex-direction:column}.flight-plan{grid-template-columns:repeat(2,1fr)}.flight-plan li,.flight-plan li:nth-child(4){border-right:1px solid #41513e;border-bottom:1px solid #41513e}.flight-plan li:nth-child(2n){border-right:0}.flight-plan li:last-child{border-bottom:0}.field-location-card,.field-location-card:nth-child(3n+1){grid-template-columns:1fr}.field-location-image{min-height:17rem}.field-location-body h2{font-size:2.55rem}}
+/* Aviator Flight Line: beer pages */
+.beer-page-hero{background:#cfc39f;color:#1d291e;background-image:linear-gradient(90deg,rgba(44,59,41,.17) 1px,transparent 1px),linear-gradient(rgba(44,59,41,.17) 1px,transparent 1px),radial-gradient(circle at 72% 28%,rgba(231,169,72,.45),transparent 17rem);background-size:27px 27px,27px 27px,auto}.beer-page-hero h1{color:#1f2b20}.beer-page-hero h1 em{color:#7a4d23}.beer-page-hero p{color:#3c4c3d}.beer-hero-layout{display:grid;grid-template-columns:1fr .5fr;gap:3rem;align-items:center}.beer-hero-stats{display:flex;flex-wrap:wrap;margin-top:2rem;border:2px solid #42523e;width:fit-content}.beer-hero-stats span{padding:.75rem .9rem;border-right:1px solid #42523e;font-family:"Courier New",monospace;font-size:.65rem;font-weight:900;letter-spacing:.07em}.beer-hero-stats span:last-child{border:0}.beer-hero-stats b{color:#9d6529}.beer-hero-ticket{position:relative;display:grid;gap:1rem;justify-self:end;min-width:15rem;padding:1.4rem;border:2px solid #263324;background:#2f3d30;color:#f3ead6;box-shadow:10px 10px 0 rgba(49,62,43,.23);font-family:"Courier New",monospace}.beer-hero-ticket::before{position:absolute;top:0;bottom:0;left:3.4rem;border-left:1px dashed rgba(243,234,214,.45);content:""}.beer-hero-ticket>*{position:relative}.beer-hero-ticket>span,.beer-hero-ticket i{color:#e7b45b;font-size:.65rem;font-style:normal;font-weight:900;letter-spacing:.14em}.beer-hero-ticket strong{font-family:Impact,sans-serif;font-size:3.6rem;font-weight:400;letter-spacing:.03em;line-height:.8}.beer-hero-ticket p{color:#d5d7c5;font-family:Arial,sans-serif;font-size:.84rem;line-height:1.5}.beer-hero-ticket a{color:#f0bf64;font-size:.7rem;font-weight:900;letter-spacing:.1em;text-decoration:none}.beer-lineup-section{background:#243023}.beer-deck-controls{display:flex;align-items:end;justify-content:space-between;gap:2rem;margin-bottom:2rem}.beer-readout{margin:.35rem 0 0;color:#d6d8c6;font-family:"Courier New",monospace;font-size:.8rem;letter-spacing:.06em}.beer-readout b{color:#e9b75e;font-size:1.25rem}.beer-deck .filter-row{justify-content:flex-end;margin:0}.beer-deck .filter-row button{border-radius:0;color:#e8e2cf}.beer-deck .filter-row button[aria-pressed="true"]{background:#e2aa4a;border-color:#e2aa4a;color:#213020}.hangar-beer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;border:2px solid #b5ac8e;background:#b5ac8e}.hangar-beer-grid .beer-card{min-height:29rem;background:#394839;color:#f4ecd8}.hangar-beer-grid .beer-card:nth-child(2n){background:#526249}.hangar-beer-grid .beer-image{inset:1.1rem 1.1rem 5.2rem;opacity:1}.hangar-beer-grid .beer-image img{object-fit:contain;mix-blend-mode:normal;filter:drop-shadow(7px 9px 0 rgba(0,0,0,.22))}.hangar-beer-grid .beer-card>div:last-of-type{min-height:5.5rem;padding-top:0;background:linear-gradient(0deg,#2c382d 70%,transparent)}.hangar-beer-grid .beer-card span{color:#e6b85f;font-family:"Courier New",monospace}.hangar-beer-grid .beer-card h3{font-size:2.1rem}.hangar-beer-grid .beer-card p{color:#dee0d1}.beer-dispatch{padding:clamp(3rem,6vw,6rem) 0;background:#d8b35b;color:#1e2a1e;background-image:repeating-linear-gradient(0deg,rgba(26,39,27,.08) 0 1px,transparent 1px 5px)}.beer-dispatch>*{max-width:48rem}.beer-dispatch h2{margin:.45rem 0;font-family:Impact,sans-serif;font-size:clamp(2.8rem,5vw,5rem);font-weight:400;line-height:.87;text-transform:uppercase}.beer-dispatch p{max-width:38rem;line-height:1.6}.beer-detail-flight{display:grid;grid-template-columns:1fr 1fr;min-height:42rem;background:#273326}.beer-detail-art{position:relative;min-height:28rem;overflow:hidden;background:#d5c79e;background-image:linear-gradient(90deg,rgba(42,55,39,.16) 1px,transparent 1px),linear-gradient(rgba(42,55,39,.16) 1px,transparent 1px);background-size:28px 28px}.beer-detail-art img{object-fit:contain;padding:clamp(2rem,6vw,5rem);filter:drop-shadow(14px 18px 0 rgba(0,0,0,.24))}.beer-detail-brief{display:grid;align-content:center;padding:clamp(2rem,7vw,7rem);background:#2e3b2e}.beer-classification{display:flex;gap:.8rem;align-items:center;margin:1.1rem 0;color:#e7bb63;font-family:"Courier New",monospace;font-size:.65rem;letter-spacing:.1em}.beer-classification b{padding:.35rem .55rem;border:1px solid #e7bb63;color:#f4ead5;font-size:.8rem}.beer-detail-brief h1{margin:.25rem 0;color:#f5ecdb;font-family:Impact,sans-serif;font-size:clamp(3.5rem,7vw,7rem);font-weight:400;letter-spacing:.01em;line-height:.82;text-transform:uppercase}.beer-detail-style{color:#e5b258!important;font-family:"Courier New",monospace;font-size:.85rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.beer-detail-brief>p:not(.eyebrow):not(.beer-detail-style){color:#d2d6c6;line-height:1.65}.beer-spec-sheet{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:1.8rem 0;border:1px solid rgba(243,234,214,.25)}.beer-spec-sheet div{padding:.7rem;border-right:1px solid rgba(243,234,214,.25)}.beer-spec-sheet div:last-child{border:0}.beer-spec-sheet dt{color:#e7b45b;font-family:"Courier New",monospace;font-size:.58rem;font-weight:900;letter-spacing:.1em}.beer-spec-sheet dd{margin:.4rem 0 0;color:#f4ead5;font-size:.78rem;line-height:1.4}.beer-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}.flight-notes{padding:clamp(1.5rem,4vw,3.5rem);border:2px solid rgba(243,234,214,.25);background:#334033}.flight-notes h2{margin:.55rem 0 1rem;color:#f3ead6;font-family:Impact,sans-serif;font-size:clamp(2rem,3vw,3.2rem);font-weight:400;line-height:.9;text-transform:uppercase}.flight-notes>p:not(.eyebrow){color:#d3d6c7;line-height:1.65}.beer-location-list{display:grid;border-top:1px solid rgba(243,234,214,.22)}.beer-location-list a{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0;border-bottom:1px solid rgba(243,234,214,.22);color:#f0e7d5;font-family:"Courier New",monospace;font-size:.8rem;font-weight:900;text-decoration:none}.beer-location-list a:hover{color:#e4b45e}.beer-location-list svg{width:1rem}@media(max-width:800px){.beer-hero-layout,.beer-detail-flight,.beer-detail-grid{grid-template-columns:1fr}.beer-hero-ticket{justify-self:start}.hangar-beer-grid{grid-template-columns:repeat(2,1fr)}.beer-deck-controls{align-items:start;flex-direction:column}.beer-deck .filter-row{justify-content:start}.beer-detail-art{min-height:24rem}}@media(max-width:500px){.hangar-beer-grid{grid-template-columns:1fr}.beer-hero-stats{width:100%}.beer-hero-stats span{flex:1;border-bottom:1px solid #42523e}.beer-spec-sheet{grid-template-columns:1fr}.beer-spec-sheet div{border-right:0;border-bottom:1px solid rgba(243,234,214,.25)}.beer-spec-sheet div:last-child{border-bottom:0}}
+
+
+/* Beyond Beer: soda + THC beverage flight */
+.beyond-beer-section{background:#cbd5d2;color:#1c2d29;background-image:linear-gradient(90deg,rgba(26,62,57,.12) 1px,transparent 1px),linear-gradient(rgba(26,62,57,.12) 1px,transparent 1px),radial-gradient(circle at 78% 18%,rgba(255,151,107,.45),transparent 20rem);background-size:28px 28px,28px 28px,auto}.beyond-beer-section .section-heading h2{color:#1c2d29}.beyond-beer-section .section-heading h2 em{color:#b64d34}.beyond-beer-section .section-heading>p{color:#415b54}.beyond-beer-filters{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:1.3rem}.beyond-beer-filters button{min-height:2.5rem;padding:.5rem .78rem;border:1px solid #42645b;border-radius:0;background:transparent;color:#234239;font-family:"Courier New",monospace;font-size:.7rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}.beyond-beer-filters button[aria-pressed="true"],.beyond-beer-filters button:hover{background:#1d4d43;border-color:#1d4d43;color:#fff2da}.beyond-beer-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;border:2px solid #315b50;background:#315b50}.beyond-beer-card{display:flex;min-height:27rem;flex-direction:column;background:#e8dcc3}.beyond-beer-card:nth-child(2n){background:#d5e4da}.beyond-beer-image{position:relative;min-height:19rem;flex:1;overflow:hidden;background:rgba(239,237,221,.5)}.beyond-beer-image img{object-fit:contain;padding:.75rem;filter:drop-shadow(7px 10px 0 rgba(24,50,43,.19));transition:transform .5s ease}.beyond-beer-card:hover .beyond-beer-image img{transform:translateY(-.35rem) scale(1.025)}.beyond-beer-card-copy{padding:1.05rem 1rem 1.2rem;border-top:1px dashed rgba(27,69,59,.38)}.beyond-beer-card-copy p{margin:0;color:#8d4430;font-family:"Courier New",monospace;font-size:.62rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.beyond-beer-card-copy h3{margin:.45rem 0;color:#183b33;font-family:Impact,sans-serif;font-size:1.65rem;font-weight:400;letter-spacing:.015em;line-height:.9;text-transform:uppercase}.beyond-beer-card-copy span{display:block;color:#3d5c53;font-size:.76rem;line-height:1.45}.beyond-beer-card-copy strong{display:block;margin-top:.7rem;color:#8d4430;font-family:"Courier New",monospace;font-size:.58rem;letter-spacing:.055em;text-transform:uppercase}.beyond-beer-notice{display:flex;align-items:center;justify-content:space-between;gap:2rem;margin-top:1.5rem;padding:1rem 1.1rem;border:2px solid #315b50;background:#234c42;color:#f6edda}.beyond-beer-notice b{color:#f0b766;font-family:"Courier New",monospace;font-size:.7rem;letter-spacing:.13em}.beyond-beer-notice p{margin:.35rem 0 0;color:#d5ddd0;font-size:.78rem;line-height:1.45}.beyond-beer-notice a{display:inline-flex;flex:0 0 auto;align-items:center;gap:.45rem;color:#f7c46e;font-family:"Courier New",monospace;font-size:.72rem;font-weight:900;letter-spacing:.06em;text-decoration:none;text-transform:uppercase}.beyond-beer-notice svg{width:1rem;height:1rem}@media(max-width:1100px){.beyond-beer-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.beyond-beer-grid{grid-template-columns:repeat(2,1fr)}.beyond-beer-card{min-height:24rem}.beyond-beer-image{min-height:16rem}.beyond-beer-notice{align-items:start;flex-direction:column;gap:1rem}}@media(max-width:430px){.beyond-beer-grid{grid-template-columns:1fr}}
+
+/* Menu Library + music venue roster */
+.media-login{display:grid;min-height:70vh;place-items:center;padding:3rem 1.2rem;background:#243023;background-image:linear-gradient(90deg,rgba(239,226,190,.08) 1px,transparent 1px),linear-gradient(rgba(239,226,190,.08) 1px,transparent 1px);background-size:30px 30px}.media-login>div{width:min(100%,34rem);padding:clamp(1.6rem,5vw,3rem);border:2px solid rgba(243,234,214,.28);background:#354235;box-shadow:12px 12px 0 rgba(0,0,0,.18)}.media-login h1,.media-library h1{margin:.55rem 0;color:#f4eddb;font-family:Impact,sans-serif;font-size:clamp(3rem,6vw,5.5rem);font-weight:400;line-height:.85;text-transform:uppercase}.media-login>div>p:not(.eyebrow){color:#d2d6c6;line-height:1.6}.media-login form{display:grid;gap:.6rem;margin-top:1.8rem}.media-login label{color:#ecb45d;font-family:"Courier New",monospace;font-size:.7rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.media-login input{min-height:3rem;border:1px solid rgba(243,234,214,.35);background:#1d291f;color:#f6edda;padding:.65rem}.media-login .button{justify-self:start;margin-top:.5rem;border-radius:0}.media-message{min-height:1.2rem;margin:1rem 0;color:#eab75e;font-size:.85rem}.media-library{padding:clamp(3rem,7vw,6rem) 0;background:#d5c79e;color:#1e2b20;background-image:linear-gradient(90deg,rgba(42,55,39,.14) 1px,transparent 1px),linear-gradient(rgba(42,55,39,.14) 1px,transparent 1px);background-size:28px 28px}.media-library h1{color:#1e2b20}.media-library-heading{display:flex;justify-content:space-between;align-items:start;gap:2rem}.media-library-heading>div>p:not(.eyebrow){max-width:42rem;margin:1rem 0 0;color:#435141;line-height:1.6}.media-signout{border:1px solid #42523e;background:transparent;color:#263c2d;padding:.55rem .75rem;font-family:"Courier New",monospace;font-size:.7rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;cursor:pointer}.menu-library-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}.menu-folder{border:2px solid #3c4e3c;background:#eef0df;box-shadow:5px 5px 0 rgba(51,66,47,.25)}.menu-folder-head{padding:1rem 1.1rem;border-bottom:1px solid #82907c;background:#d6b35d}.menu-folder-head span{color:#4a4229;font-family:"Courier New",monospace;font-size:.62rem;font-weight:900;letter-spacing:.1em}.menu-folder-head h2{margin:.4rem 0 0;color:#1d2b20;font-family:Impact,sans-serif;font-size:2rem;font-weight:400;line-height:.9;text-transform:uppercase}.menu-dropzone{margin:1rem;border:2px dashed #687c66;background:#dce6d4;padding:1.5rem;text-align:center}.menu-dropzone input{position:absolute;width:1px;height:1px;opacity:0}.menu-dropzone label{display:block;color:#274a3c;font-family:"Courier New",monospace;font-size:.78rem;font-weight:900;letter-spacing:.04em;cursor:pointer;text-transform:uppercase}.menu-dropzone small{display:block;margin-top:.55rem;color:#5a6c5b;font-size:.7rem}.menu-folder ul{display:grid;gap:.6rem;min-height:4.5rem;margin:0;padding:0 1rem 1rem;list-style:none}.menu-folder li{display:grid;grid-template-columns:1fr auto;gap:.35rem .8rem;align-items:center;padding:.7rem;border:1px solid #b4c0aa;background:#f4f2e7}.menu-folder li a{min-width:0;overflow:hidden;color:#25473a;font-family:"Courier New",monospace;font-size:.74rem;font-weight:900;text-decoration:none;text-overflow:ellipsis;white-space:nowrap}.menu-folder li span{color:#647061;font-size:.68rem}.menu-folder li button{grid-row:span 2;grid-column:2;border:0;background:transparent;color:#9d4c38;font-family:"Courier New",monospace;font-size:.65rem;font-weight:900;cursor:pointer;text-transform:uppercase}.menu-folder li.menu-empty{display:block;color:#647061;font-style:italic}.music-venues-section{background:#202c21}.music-venue-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;border:2px solid rgba(243,234,214,.28);background:rgba(243,234,214,.28)}.music-venue-card{min-height:20rem;padding:1.2rem;background:#374636}.music-venue-card:nth-child(2n){background:#4a5945}.music-venue-card>span{color:#eab45b;font-family:"Courier New",monospace;font-size:1rem;font-weight:900}.music-venue-card>p{margin:2.5rem 0 .5rem;color:#d2d6c2;font-family:"Courier New",monospace;font-size:.62rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.music-venue-card h3{margin:0;color:#f5edda;font-family:Impact,sans-serif;font-size:2rem;font-weight:400;line-height:.87;text-transform:uppercase}.music-venue-card strong{display:block;margin-top:1rem;color:#e6b55c;font-family:"Courier New",monospace;font-size:.66rem;letter-spacing:.05em}.music-venue-card div{margin-top:1rem;color:#d0d5c6;font-size:.78rem;line-height:1.55}@media(max-width:1000px){.music-venue-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.media-library-heading{flex-direction:column}.menu-library-grid{grid-template-columns:1fr}.music-venue-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:430px){.music-venue-grid{grid-template-columns:1fr}.menu-folder li{grid-template-columns:1fr}.menu-folder li button{grid-row:auto;grid-column:auto;justify-self:start}}
+
+/* Food + Drinks folder split */
+.menu-folder-sections{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#9eaa97}.menu-folder-section{min-width:0;padding:.7rem 0 .2rem;background:#eef0df}.menu-folder-section h3{margin:0 .95rem .2rem;color:#314d3d;font-family:"Courier New",monospace;font-size:.7rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.menu-folder-section .menu-dropzone{margin:.5rem .8rem 1rem;padding:1rem}.menu-folder-section .menu-dropzone label{font-size:.68rem}.menu-folder-section .menu-dropzone small{font-size:.62rem}.menu-folder-section ul{padding:0 .8rem .8rem}.menu-folder-section li{grid-template-columns:1fr;padding:.55rem}.menu-folder-section li span{font-size:.62rem}.menu-folder-section li button{grid-row:auto;grid-column:auto;justify-self:start;margin-top:.15rem}@media(max-width:620px){.menu-folder-sections{grid-template-columns:1fr}}
+
+/* Public food and drinks menu availability */
+.public-menu-section{background:#273327}.public-menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;border:2px solid rgba(243,234,214,.27);background:rgba(243,234,214,.27)}.public-menu-card{padding:1.3rem;background:#3b4939}.public-menu-card:nth-child(2n){background:#314030}.public-menu-card>p{margin:0;color:#e7b45b;font-family:"Courier New",monospace;font-size:.62rem;font-weight:900;letter-spacing:.08em}.public-menu-card h3{min-height:3.1rem;margin:.55rem 0 1.15rem;color:#f5ecdb;font-family:Impact,sans-serif;font-size:1.9rem;font-weight:400;line-height:.9;text-transform:uppercase}.public-menu-actions{display:grid;gap:.6rem}.public-menu-actions>div{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding-top:.65rem;border-top:1px dashed rgba(243,234,214,.28)}.public-menu-actions span{color:#cbd0c0;font-family:"Courier New",monospace;font-size:.62rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase}.public-menu-actions a{display:inline-flex;align-items:center;gap:.35rem;color:#f0ba5e;font-family:"Courier New",monospace;font-size:.7rem;font-weight:900;text-decoration:none;text-transform:uppercase}.public-menu-actions a svg{width:.9rem;height:.9rem}.public-menu-actions strong{color:#aebaaa;font-family:"Courier New",monospace;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase}@media(max-width:900px){.public-menu-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.public-menu-grid{grid-template-columns:1fr}.public-menu-card h3{min-height:0}}
+
+/* Menu finder: direct location-first menu access */
+.menu-page-hero{background:#344436;background-image:linear-gradient(90deg,rgba(239,226,190,.1) 1px,transparent 1px),linear-gradient(rgba(239,226,190,.1) 1px,transparent 1px),radial-gradient(circle at 78% 25%,rgba(229,168,73,.28),transparent 19rem);background-size:30px 30px,30px 30px,auto}.menu-finder-section{background:#d9c99f;color:#1e2b20}.menu-finder-section .section-heading h2{color:#1e2b20}.menu-finder-section .section-heading h2 em{color:#8b5527}.menu-finder-section .section-heading>p{color:#41533f}.menu-finder-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border:2px solid #40503c;background:#40503c}.menu-finder-card{min-height:18rem;padding:1.2rem;background:#ebdfc2}.menu-finder-card:nth-child(2n){background:#d3ddcb}.menu-finder-card:nth-child(3n){background:#d9c689}.menu-finder-top{display:flex;align-items:start;justify-content:space-between;gap:.8rem}.menu-finder-top>span{color:#8f5d28;font-family:"Courier New",monospace;font-size:1rem;font-weight:900}.menu-finder-top p{max-width:11rem;margin:0;color:#4f634d;font-family:"Courier New",monospace;font-size:.57rem;font-weight:900;letter-spacing:.07em;text-align:right;text-transform:uppercase}.menu-finder-card h3{min-height:3.5rem;margin:1.6rem 0 1rem;color:#1b3327;font-family:Impact,sans-serif;font-size:2rem;font-weight:400;line-height:.88;text-transform:uppercase}.menu-finder-actions{display:grid;gap:.55rem}.menu-finder-link,.menu-finder-pending{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.65rem .7rem;border:1px solid #4b6550;background:rgba(255,250,233,.48);text-decoration:none}.menu-finder-link:hover{background:#234b40;color:#fff0d6}.menu-finder-link span,.menu-finder-pending span{font-family:"Courier New",monospace;font-size:.6rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase}.menu-finder-link strong,.menu-finder-pending strong{display:inline-flex;align-items:center;gap:.25rem;font-family:"Courier New",monospace;font-size:.64rem;font-weight:900;white-space:nowrap;text-transform:uppercase}.menu-finder-link strong{color:#835029}.menu-finder-link:hover strong{color:#f3c06a}.menu-finder-link svg{width:.8rem;height:.8rem}.menu-finder-pending{border-style:dashed;color:#59685b;background:rgba(255,255,255,.25)}.menu-finder-pending strong{color:#8d5b32}.menu-story-section{background:#263326}@media(max-width:1050px){.menu-finder-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:760px){.menu-finder-grid{grid-template-columns:repeat(2,1fr)}.menu-finder-card h3{font-size:1.75rem}}@media(max-width:480px){.menu-finder-grid{grid-template-columns:1fr}.menu-finder-card{min-height:0}.menu-finder-card h3{min-height:0;margin:1rem 0}}
+
+/* Website photo uploader */
+.website-photo-library{margin-top:2rem;padding-top:2rem;border-top:2px solid #52634f}.website-photo-heading{display:flex;justify-content:space-between;gap:1rem}.website-photo-heading h2{margin:.4rem 0;color:#1e2b20;font-family:Impact,sans-serif;font-size:clamp(2.4rem,5vw,4rem);font-weight:400;line-height:.88;text-transform:uppercase}.website-photo-heading p:not(.eyebrow){max-width:38rem;margin:.7rem 0 0;color:#435541;line-height:1.55}.website-photo-drop{margin:1rem 0;padding:1.5rem;border:2px dashed #59705a;background:#dbe5d4;text-align:center}.website-photo-drop input{position:absolute;width:1px;height:1px;opacity:0}.website-photo-drop label{display:block;color:#294b3d;font-family:"Courier New",monospace;font-size:.76rem;font-weight:900;letter-spacing:.05em;cursor:pointer;text-transform:uppercase}.website-photo-drop small{display:block;margin-top:.5rem;color:#5a6b59;font-size:.7rem}.website-photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border:2px solid #667563;background:#667563}.website-photo-card{min-width:0;background:#eff0e3}.website-photo-card>img{display:block;width:100%;aspect-ratio:1.25;object-fit:cover;background:#c4cdbd}.website-photo-card>div{padding:.7rem}.website-photo-card strong{display:block;overflow:hidden;color:#284538;font-family:"Courier New",monospace;font-size:.66rem;text-overflow:ellipsis;white-space:nowrap}.website-photo-card span{display:block;margin-top:.35rem;color:#687565;font-size:.66rem}.website-photo-actions{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.7rem}.website-photo-actions button,.website-photo-actions a{border:1px solid #66806a;background:transparent;color:#294a3c;padding:.35rem .45rem;font-family:"Courier New",monospace;font-size:.6rem;font-weight:900;text-decoration:none;text-transform:uppercase;cursor:pointer}.website-photo-actions button:last-child{border-color:#a45a45;color:#934b3a}.website-photo-empty{grid-column:1/-1;margin:0;padding:1rem;background:#eff0e3;color:#657361;font-style:italic}@media(max-width:900px){.website-photo-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.website-photo-grid{grid-template-columns:repeat(2,1fr)}}
+
+.hangar-waitlist{padding:clamp(2rem,4vw,3.5rem) 0;background:#d8b35b;color:#1c281d;background-image:repeating-linear-gradient(0deg,rgba(28,40,29,.08) 0 1px,transparent 1px 5px)}.hangar-waitlist-inner{display:flex;align-items:center;justify-content:space-between;gap:2rem}.hangar-waitlist h2{margin:.45rem 0;color:#1d2a1d;font-family:Impact,sans-serif;font-size:clamp(2.3rem,4vw,4rem);font-weight:400;line-height:.88;text-transform:uppercase}.hangar-waitlist h2 em{color:#7d4e23;font-family:Georgia,serif;font-style:italic;font-weight:400;text-transform:none}.hangar-waitlist p:not(.eyebrow){max-width:39rem;margin:0;color:#40503c;line-height:1.55}.hangar-waitlist .button{flex:0 0 auto;border-radius:0}@media(max-width:700px){.hangar-waitlist-inner{align-items:start;flex-direction:column}}
+
+/* Dedicated Aviator story + brewery tours */
+.about-story-hero{background:#354335;background-image:linear-gradient(90deg,rgba(239,226,190,.1) 1px,transparent 1px),linear-gradient(rgba(239,226,190,.1) 1px,transparent 1px),radial-gradient(circle at 80% 22%,rgba(229,168,73,.28),transparent 20rem);background-size:30px 30px,30px 30px,auto}.about-story-section{background:#d6c79e;color:#1e2a20}.about-story-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,6vw,7rem);align-items:center}.about-story-image{position:relative;min-height:34rem;overflow:hidden;border:8px solid #4c5944;box-shadow:14px 14px 0 #ac8750}.about-story-image img{object-fit:cover}.about-story-copy h2,.brewery-tour-layout h2{margin:.5rem 0 1.2rem;font-family:Impact,sans-serif;font-size:clamp(3rem,5.5vw,5.8rem);font-weight:400;letter-spacing:.01em;line-height:.86;text-transform:uppercase}.about-story-copy h2 em,.brewery-tour-layout h2 em{color:#835127;font-family:Georgia,serif;font-style:italic;font-weight:400;text-transform:none}.about-story-copy>p:not(.eyebrow){color:#405040;line-height:1.7}.about-flight-log{background:#233023}.about-timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border:2px solid rgba(243,234,214,.28);background:rgba(243,234,214,.28)}.about-timeline article{min-height:15rem;padding:1.25rem;background:#364434}.about-timeline article:nth-child(2n){background:#4b5944}.about-timeline span{color:#e7b45b;font-family:"Courier New",monospace;font-size:1rem;font-weight:900}.about-timeline p{margin:2rem 0 0;color:#d8dccd;line-height:1.6}.brewery-tour-section{background:#d8b35b;color:#1d291e;background-image:repeating-linear-gradient(0deg,rgba(29,41,30,.08) 0 1px,transparent 1px 5px)}.brewery-tour-layout{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(2rem,6vw,7rem);align-items:start}.brewery-tour-layout>div>p:not(.eyebrow){color:#3d4b39;line-height:1.65}.tour-specs{display:grid;margin:1.8rem 0;border-top:1px solid rgba(30,43,31,.34)}.tour-specs div{display:grid;grid-template-columns:10rem 1fr;gap:1rem;padding:.8rem 0;border-bottom:1px solid rgba(30,43,31,.34)}.tour-specs dt{color:#70471f;font-family:"Courier New",monospace;font-size:.66rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.tour-specs dd{margin:0;color:#1e2b20;font-size:.9rem;font-weight:900}.tour-note{max-width:32rem;font-size:.88rem}.tour-form-wrap{padding:clamp(1.4rem,4vw,3rem);border:2px solid #1d2a1e;background:#334133;color:#f6edda;box-shadow:10px 10px 0 rgba(29,41,30,.16)}.tour-form-wrap h3{margin:.5rem 0 1.2rem;font-family:Impact,sans-serif;font-size:clamp(2.4rem,4vw,4.2rem);font-weight:400;line-height:.86;text-transform:uppercase}.tour-form-wrap h3 em{color:#e9b45b;font-family:Georgia,serif;font-style:italic;font-weight:400;text-transform:none}.tour-form-wrap .inquiry-form label{color:#f1bb62}.tour-form-wrap .inquiry-form input,.tour-form-wrap .inquiry-form select,.tour-form-wrap .inquiry-form textarea{border-color:rgba(243,234,214,.3);background:#202b21;color:#f4edda}@media(max-width:850px){.about-story-grid,.brewery-tour-layout{grid-template-columns:1fr}.about-story-image{min-height:26rem}.about-timeline{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.about-timeline{grid-template-columns:1fr}.tour-specs div{grid-template-columns:1fr;gap:.25rem}}
+
+/* Vertical menu manifest */
+.menu-manifest-list{display:grid;gap:1rem}.menu-manifest-row{display:grid;grid-template-columns:minmax(17rem,.72fr) 1.28fr;min-height:20rem;overflow:hidden;border:2px solid #42533e;background:#edf0df;box-shadow:7px 7px 0 rgba(49,65,45,.19);scroll-margin-top:6.5rem}.menu-manifest-row:nth-child(2n){grid-template-columns:1.28fr minmax(17rem,.72fr)}.menu-manifest-row:nth-child(2n) .menu-manifest-image{order:2}.menu-manifest-image{position:relative;min-height:20rem;overflow:hidden;background:#59674e}.menu-manifest-image img{object-fit:cover;filter:saturate(.84) contrast(1.04);transition:transform .6s ease}.menu-manifest-row:hover .menu-manifest-image img{transform:scale(1.04)}.menu-manifest-copy{display:flex;min-width:0;flex-direction:column;padding:clamp(1.2rem,3vw,2.3rem);background:#e7dfc7}.menu-manifest-row:nth-child(2n) .menu-manifest-copy{background:#d4dfcd}.menu-manifest-top{display:flex;justify-content:space-between;gap:1rem}.menu-manifest-top>span{color:#8d5928;font-family:"Courier New",monospace;font-size:1rem;font-weight:900}.menu-manifest-top p{margin:0;color:#586855;font-family:"Courier New",monospace;font-size:.6rem;font-weight:900;letter-spacing:.08em;text-align:right;text-transform:uppercase}.menu-manifest-copy h3{margin:1.25rem 0 .5rem;color:#1b3327;font-family:Impact,sans-serif;font-size:clamp(2rem,3.8vw,4rem);font-weight:400;line-height:.86;text-transform:uppercase}.menu-manifest-summary{max-width:37rem;margin:0;color:#465a48;line-height:1.55}.menu-manifest-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;margin-top:auto;padding-top:1.5rem}.menu-manifest-link,.menu-manifest-pending{display:flex;align-items:center;justify-content:space-between;gap:.7rem;min-height:3.1rem;padding:.72rem .8rem;border:1px solid #4c6551;background:rgba(255,251,236,.55);color:#213c31;text-decoration:none}.menu-manifest-link:hover{background:#254b40;color:#fff0d7}.menu-manifest-link strong,.menu-manifest-pending strong{font-family:Impact,sans-serif;font-size:1.35rem;font-weight:400;letter-spacing:.02em;text-transform:uppercase}.menu-manifest-link span,.menu-manifest-pending span{display:inline-flex;align-items:center;gap:.28rem;font-family:"Courier New",monospace;font-size:.62rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}.menu-manifest-link svg{width:.85rem;height:.85rem}.menu-manifest-link:hover span{color:#f1bf68}.menu-manifest-pending{border-style:dashed;color:#6b7668;background:rgba(255,255,255,.28)}.menu-manifest-pending strong{color:#405844}.menu-manifest-pending span{color:#965f30}@media(max-width:780px){.menu-manifest-row,.menu-manifest-row:nth-child(2n){grid-template-columns:1fr}.menu-manifest-row:nth-child(2n) .menu-manifest-image{order:0}.menu-manifest-image{min-height:17rem}.menu-manifest-copy h3{font-size:2.6rem}}@media(max-width:480px){.menu-manifest-actions{grid-template-columns:1fr}.menu-manifest-link,.menu-manifest-pending{min-height:2.8rem}}
+
+/* Midnight blue airfield palette refresh */
+:root{--ink:#06111f;--panel:#102842;--navy:#071827;--sky:#b8d9ec;--paper:#f4f7f8;--muted:#a9bfce;--orange:#efaa57;--line:rgba(184,217,236,.24)}body{background:#071827;color:var(--paper)}.site-header{background:rgba(5,19,33,.92);border-bottom-color:rgba(184,217,236,.16)}.wordmark{color:#f2f7fa}.desktop-nav a{color:#d5e7f0}.text-action{color:#b8d9ec}.page-hero,.menu-page-hero,.about-story-hero{background:#102c49!important;background-image:linear-gradient(90deg,rgba(184,217,236,.1) 1px,transparent 1px),linear-gradient(rgba(184,217,236,.1) 1px,transparent 1px),radial-gradient(circle at 78% 18%,rgba(62,143,204,.32),transparent 23rem)!important;background-size:30px 30px,30px 30px,auto!important}.page-hero h1,.page-hero p{color:#eff8fb}.page-hero h1 em{color:#efad59}.section-dark,.beer-lineup-section,.about-flight-log,.music-venues-section,.menu-story-section{background:#0d263e!important;background-image:linear-gradient(90deg,rgba(184,217,236,.055) 1px,transparent 1px),linear-gradient(rgba(184,217,236,.055) 1px,transparent 1px)!important;background-size:36px 36px!important}.section-dark .section-heading h2,.beer-lineup-section .section-heading h2,.about-flight-log .section-heading h2{color:#f1f7fa}.section-dark .section-heading>p,.beer-lineup-section .section-heading>p,.about-flight-log .section-heading>p{color:#b7c9d3}.campus-grid{border-color:rgba(184,217,236,.26);background:rgba(184,217,236,.26)}.campus-stop,.campus-stop:first-child{background:linear-gradient(145deg,#183d5a,#102a43)!important}.campus-stop h3{color:#f3f7f8}.location-card,.field-location-card{background:#102940!important;border-color:rgba(184,217,236,.25)!important}.location-card .card-body>p,.field-location-body>p{color:#c0d1dc}.location-card .card-kicker,.field-location-top{color:#efb45f}.beer-stage{background:#d8e5eb!important;color:#10233a!important;background-image:linear-gradient(90deg,rgba(16,49,76,.15) 1px,transparent 1px),linear-gradient(rgba(16,49,76,.15) 1px,transparent 1px)!important;background-size:28px 28px!important}.beer-grid{border-color:#224563!important;background:#224563!important}.beer-card{background:#c9dce6!important;color:#10233a!important}.beer-card:nth-child(2n){background:#dce9ed!important}.beer-card h3{color:#10233a}.beer-card p{color:#2e5369}.beer-page-hero{background:#d3e3ea!important;color:#10243a!important;background-image:linear-gradient(90deg,rgba(20,59,87,.16) 1px,transparent 1px),linear-gradient(rgba(20,59,87,.16) 1px,transparent 1px),radial-gradient(circle at 72% 28%,rgba(66,146,205,.4),transparent 17rem)!important;background-size:27px 27px,27px 27px,auto!important}.beer-page-hero h1{color:#10243a}.beer-page-hero h1 em{color:#9d5d29}.beer-page-hero p{color:#355b71}.beer-hero-ticket{background:#0e2b45!important;border-color:#193e60!important;color:#f2f8fb!important;box-shadow:10px 10px 0 rgba(15,57,87,.2)!important}.beer-lineup-section{background:#0f2942!important}.hangar-beer-grid{border-color:#4e7692!important;background:#4e7692!important}.hangar-beer-grid .beer-card{background:#153957!important;color:#f2f7fa!important}.hangar-beer-grid .beer-card:nth-child(2n){background:#1b4969!important}.hangar-beer-grid .beer-card>div:last-of-type{background:linear-gradient(0deg,#102b45 70%,transparent)!important}.beer-dispatch,.hangar-waitlist{background:#123655!important;color:#eff8fb!important;background-image:repeating-linear-gradient(0deg,rgba(184,217,236,.07) 0 1px,transparent 1px 5px)!important}.beer-dispatch h2,.hangar-waitlist h2{color:#eff8fb}.beer-dispatch p,.hangar-waitlist p:not(.eyebrow){color:#c3d6e2}.hangar-waitlist h2 em{color:#efb35d}.hangar-waitlist .button-light{background:#efb35d;border-color:#efb35d;color:#0c2338}.beer-detail-flight,.beer-detail-brief{background:#102c46!important}.beer-detail-art{background:#c8dae5!important;background-image:linear-gradient(90deg,rgba(15,51,78,.16) 1px,transparent 1px),linear-gradient(rgba(15,51,78,.16) 1px,transparent 1px)!important}.flight-notes{background:#173a59!important;border-color:rgba(184,217,236,.24)!important}.flight-notes>p:not(.eyebrow),.beer-detail-brief>p:not(.eyebrow):not(.beer-detail-style){color:#c6d7e1}.menu-finder-section,.about-story-section,.media-library{background:#0e2a43!important;color:#f2f7fa!important;background-image:linear-gradient(90deg,rgba(184,217,236,.07) 1px,transparent 1px),linear-gradient(rgba(184,217,236,.07) 1px,transparent 1px),radial-gradient(circle at 78% 18%,rgba(55,142,203,.24),transparent 20rem)!important;background-size:28px 28px,28px 28px,auto!important}.menu-finder-section .section-heading h2,.about-story-copy h2,.media-library h1{color:#f2f7fa!important}.menu-finder-section .section-heading h2 em,.about-story-copy h2 em{color:#efb15c!important}.menu-finder-section .section-heading>p,.about-story-copy>p:not(.eyebrow),.media-library-heading>div>p:not(.eyebrow){color:#c3d5e0!important}.menu-manifest-row{border-color:#315a78!important;background:#133653!important;box-shadow:7px 7px 0 rgba(4,17,30,.24)!important}.menu-manifest-copy,.menu-manifest-row:nth-child(2n) .menu-manifest-copy{background:#133653!important}.menu-manifest-copy h3{color:#f3f8fa!important}.menu-manifest-summary{color:#bfd2de!important}.menu-manifest-top p{color:#a7c1d0!important}.menu-manifest-link,.menu-manifest-pending{border-color:#5985a3!important;background:rgba(255,255,255,.07)!important;color:#eff8fb!important}.menu-manifest-link:hover{background:#235d85!important}.menu-manifest-link strong,.menu-manifest-pending strong{color:#f2f7f9!important}.menu-manifest-link span{color:#efb45f!important}.menu-manifest-pending span{color:#b8cbd6!important}.menu-story-section{background:#0d263e!important}.about-story-image{border-color:#285273!important;box-shadow:14px 14px 0 #0a1f33!important}.about-flight-log{background:#0c263f!important}.about-timeline{border-color:rgba(184,217,236,.24)!important;background:rgba(184,217,236,.24)!important}.about-timeline article,.about-timeline article:nth-child(2n){background:#173a58!important}.about-timeline p{color:#c4d5df!important}.brewery-tour-section{background:#113654!important;color:#eff8fb!important;background-image:repeating-linear-gradient(0deg,rgba(184,217,236,.07) 0 1px,transparent 1px 5px)!important}.brewery-tour-layout>div>p:not(.eyebrow),.tour-note{color:#c4d6e1!important}.tour-specs{border-color:rgba(184,217,236,.3)!important}.tour-specs div{border-color:rgba(184,217,236,.3)!important}.tour-specs dt{color:#efb45d!important}.tour-specs dd{color:#eff8fb!important}.tour-form-wrap{background:#102b44!important;border-color:#326284!important;box-shadow:10px 10px 0 rgba(4,17,30,.22)!important}.night-ops{background:#0c2238!important}.night-ops-image::after{background:linear-gradient(90deg,transparent 55%,#0c2238 100%)!important}.site-footer{background:#061724!important;background-image:repeating-linear-gradient(90deg,rgba(184,217,236,.04) 0 1px,transparent 1px 5px)!important}.newsletter{border-color:#244a68!important;background:#174768!important;background-image:repeating-linear-gradient(0deg,rgba(184,217,236,.08) 0 1px,transparent 1px 5px)!important}.newsletter h2,.newsletter p{color:#f1f7fa}.media-login{background:#0d263e!important;background-image:linear-gradient(90deg,rgba(184,217,236,.07) 1px,transparent 1px),linear-gradient(rgba(184,217,236,.07) 1px,transparent 1px)!important}.media-login>div{background:#173a58!important;border-color:rgba(184,217,236,.3)!important}.menu-folder{border-color:#39709a!important;background:#e1edf2!important;box-shadow:5px 5px 0 rgba(4,17,30,.24)!important}.menu-folder-head{background:#245a80!important;border-color:#5d8ba8!important}.menu-folder-head h2{color:#f2f7fa!important}.menu-folder-sections{background:#5a8cab!important}.menu-folder-section{background:#e4eef2!important}.menu-folder-section h3{color:#163d58!important}.menu-dropzone,.website-photo-drop{border-color:#4b7d9e!important;background:#d4e6ee!important}.website-photo-library{border-color:#4f7a98!important}.website-photo-heading h2{color:#f2f7fa!important}.website-photo-heading p:not(.eyebrow){color:#c4d7e2!important}.website-photo-grid{border-color:#5b8cac!important;background:#5b8cac!important}.website-photo-card{background:#e3eef2!important}.music-venue-card,.music-venue-card:nth-child(2n){background:#153955!important}.event-content{background:#173b59!important}.event-date{background:#0f2b45!important}@media(max-width:760px){.night-ops-image::after{background:linear-gradient(0deg,#0c2238 0%,transparent 55%)!important}}
+
+/* Beer hero action links */
+.beer-hero-layout{display:block!important}.beer-hero-layout>div:first-child{max-width:58rem}.beer-hero-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;max-width:58rem;margin-top:2rem;border:2px solid #497792;background:#497792}.beer-hero-links a{display:grid;grid-template-columns:auto 1fr auto;gap:.55rem;align-items:center;min-height:4.7rem;padding:.8rem;background:#113653;color:#eff8fb;text-decoration:none}.beer-hero-links a:nth-child(2n){background:#173f5e}.beer-hero-links a:hover{background:#245f88}.beer-hero-links span{color:#efb35d;font-family:"Courier New",monospace;font-size:.7rem;font-weight:900}.beer-hero-links strong{font-family:Impact,sans-serif;font-size:1.25rem;font-weight:400;letter-spacing:.02em;line-height:.9;text-transform:uppercase}.beer-hero-links svg{width:1rem;height:1rem;color:#efb35d}@media(max-width:700px){.beer-hero-links{grid-template-columns:1fr}.beer-hero-links a{min-height:3.8rem}}
+/* Aviation weather atmosphere: midnight charts, cloud banks, and landing lights. */
+body {
+  background-color: #04111e;
+  background-image: linear-gradient(rgba(4, 17, 30, .9), rgba(4, 17, 30, .9)), url("/images/atmosphere/aeronautical-cloud-chart.png");
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+}
+.page-shell {
+  background: linear-gradient(180deg, rgba(4, 17, 30, .16), rgba(4, 17, 30, .08));
+}
+.hero-runway::after {
+  background-image: linear-gradient(90deg, rgba(3, 16, 29, .96) 0%, rgba(3, 16, 29, .76) 39%, rgba(3, 16, 29, .18) 78%), linear-gradient(0deg, #06192a 0%, rgba(6, 25, 42, 0) 45%), url("/images/atmosphere/aeronautical-cloud-chart.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.hero-runway::before {
+  z-index: 1 !important;
+  background-image: linear-gradient(90deg, transparent 0 16%, rgba(188, 222, 239, .13) 16.15% 16.25%, transparent 16.3% 83.7%, rgba(188, 222, 239, .13) 83.75% 83.85%, transparent 83.9%), repeating-linear-gradient(90deg, transparent 0 7.4%, rgba(188, 222, 239, .1) 7.45% 7.65%, transparent 7.7% 100%) !important;
+}
+.hero-content, .runway-number, .flight-path { z-index: 2; }
+.hero-p51 {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: .32;
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .22) 31%, #000 56%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .22) 31%, #000 56%);
+}
+.hero-p51 img {
+  object-fit: cover;
+  object-position: center right;
+  filter: saturate(.88) contrast(1.08) brightness(.82);
+}
+@media (max-width: 700px) {
+  .hero-p51 {
+    opacity: .24;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .12) 24%, #000 58%);
+    mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .12) 24%, #000 58%);
+  }
+  .hero-p51 img { object-position: 62% center; }
+}
+.page-hero, .menu-page-hero, .about-story-hero, .beer-page-hero {
+  background-color: #08243c !important;
+  background-image: linear-gradient(90deg, rgba(3, 17, 31, .87), rgba(3, 17, 31, .5)), url("/images/atmosphere/aeronautical-cloud-chart.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.page-hero h1, .page-hero p, .beer-page-hero h1, .beer-page-hero p { color: #f0f7fa !important; }
+.beer-page-hero h1 em, .page-hero h1 em { color: #f4b35d !important; }
+.section-dark, .beer-lineup-section, .about-flight-log, .music-venues-section, .menu-story-section, .night-ops {
+  background-color: #071f35 !important;
+  background-image: linear-gradient(rgba(4, 19, 34, .82), rgba(4, 19, 34, .9)), url("/images/atmosphere/aeronautical-cloud-chart.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.about-story-section, .menu-finder-section, .media-library {
+  background-color: #092941 !important;
+  background-image: linear-gradient(rgba(4, 20, 36, .82), rgba(4, 20, 36, .9)), url("/images/atmosphere/aeronautical-cloud-chart.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.hangar-waitlist, .beer-dispatch, .brewery-tour-section, .newsletter {
+  background-color: #082942 !important;
+  background-image: linear-gradient(90deg, rgba(3, 15, 27, .92), rgba(4, 21, 37, .68)), url("/images/atmosphere/storm-runway-atlas.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.hangar-waitlist, .beer-dispatch, .brewery-tour-section { box-shadow: inset 0 1px rgba(185, 216, 233, .2), inset 0 -1px rgba(185, 216, 233, .15); }
+.beer-stage {
+  background-color: #0a2943 !important;
+  background-image: linear-gradient(rgba(5, 26, 45, .9), rgba(5, 26, 45, .9)), url("/images/atmosphere/aeronautical-cloud-chart.png") !important;
+  background-size: cover !important;
+  color: #eff7fb !important;
+}
+.beer-stage .section-heading h2, .beer-stage .section-heading p { color: #eff7fb !important; }
+.beer-stage .section-heading h2 em { color: #f1b15b !important; }
+.beer-grid { border-color: #2c5f84 !important; background: #2c5f84 !important; }
+.beer-card, .beer-card:nth-child(2n) { background: #d4e4eb !important; }
+.about-timeline { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.about-timeline article, .about-timeline article:nth-child(2n) {
+  min-height: 16.5rem;
+  background: linear-gradient(150deg, rgba(18, 61, 92, .96), rgba(7, 32, 54, .98)) !important;
+}
+.about-timeline article:nth-child(3n) { background: linear-gradient(150deg, rgba(21, 73, 105, .96), rgba(6, 29, 50, .98)) !important; }
+.about-timeline span { color: #f1b45f !important; }
+.about-timeline p { color: #d3e2eb !important; }
+.about-story-image { box-shadow: 16px 16px 0 #06192b !important; }
+@media (max-width: 850px) {
+  .about-timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 500px) {
+  .about-timeline { grid-template-columns: 1fr; }
+}
+
+.hero-runway::before { z-index: -1 !important; }
+.hero-content { position: relative; z-index: 2; }
+
+/* Brewery tour signup operations */
+.tour-signup-note { margin: 0 0 1rem; color: #c4d7e3; font-size: .82rem; line-height: 1.55; }
+.tour-availability { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid rgba(184, 217, 236, .3); color: #d4e2ea; font-size: .86rem; }
+.tour-availability strong { color: #f3b65f; font-family: "Courier New", monospace; font-size: 1rem; }
+.tour-form-wrap .form-message.success { display: grid; gap: 1rem; color: #dcebf2; line-height: 1.55; }
+.tour-form-wrap .form-message.success p { margin: 0; }
+
+/* Location photography and coupon operations */
+.location-gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 2rem; }
+.location-gallery-image { position: relative; min-height: 18rem; overflow: hidden; border: 1px solid rgba(184, 217, 236, .28); background: #0a2740; }
+.location-gallery-image img { object-fit: cover; }
+.coupon-deck-section { background: #082941; }
+.coupon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 2px solid #366685; background: #366685; }
+.coupon-offer { display: grid; align-content: start; gap: 1rem; min-height: 24rem; padding: 1.5rem; background: linear-gradient(145deg, #103b5b, #08243b); }
+.coupon-offer h3, .coupon-empty h2, .coupon-manager h2, .coupon-manager h3, .coupon-validator h1 { margin: 0; color: #f2f7fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(2rem, 3vw, 3.2rem); font-weight: 400; line-height: .9; text-transform: uppercase; }
+.coupon-offer > p:not(.eyebrow), .coupon-empty p:not(.eyebrow), .coupon-manager > div > p:not(.eyebrow) { margin: 0; color: #c2d7e3; line-height: 1.6; }
+.coupon-offer dl { margin: auto 0 0; border-top: 1px solid rgba(184, 217, 236, .25); }
+.coupon-offer dl div { padding: .7rem 0; border-bottom: 1px solid rgba(184, 217, 236, .25); }
+.coupon-offer dt { color: #efb45e; font-family: "Courier New", monospace; font-size: .63rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.coupon-offer dd { margin: .35rem 0 0; color: #eaf4f8; font-size: .86rem; line-height: 1.45; }
+.coupon-message { margin: 0 0 1.5rem; color: #d7e9f2; }
+.coupon-issued { display: grid; justify-items: start; gap: 1rem; max-width: 48rem; margin: 0 0 2rem; padding: 1rem; border: 1px solid #4b7994; background: #0b2135; }
+.coupon-issued img { display: block; width: 100%; height: auto; border: 1px solid #315f7b; }
+.coupon-empty { padding: 2.5rem; border: 1px dashed #5a86a1; background: rgba(255,255,255,.04); }
+.coupon-manager { margin-top: 3rem; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid #397099; background: #0c2a43; color: #eaf4f8; }
+.coupon-manager-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+.coupon-manager form { display: grid; gap: .8rem; padding: 1.2rem; border: 1px solid rgba(184,217,236,.25); background: #102f49; }
+.coupon-manager label { display: grid; gap: .35rem; color: #d6e7ef; font-size: .78rem; font-weight: 800; }
+.coupon-manager input, .coupon-manager textarea { width: 100%; box-sizing: border-box; border: 1px solid #5883a0; background: #071d30; color: #f2f7fa; padding: .65rem; font: inherit; }
+.coupon-manager-list { display: grid; gap: .5rem; padding: 0; list-style: none; }
+.coupon-manager-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem; border: 1px solid rgba(184,217,236,.2); color: #c7d9e3; font-size: .84rem; }
+.coupon-manager-list button { border: 0; background: transparent; color: #efb45e; cursor: pointer; font: inherit; font-weight: 800; }
+.coupon-validator { min-height: 100vh; display: grid; place-items: center; padding: 2rem; background: linear-gradient(rgba(4,17,30,.86),rgba(4,17,30,.9)), url("/images/atmosphere/aeronautical-cloud-chart.png") center/cover; }
+.coupon-validator > section { display: grid; width: min(100%, 34rem); gap: 1rem; padding: 2rem; border: 1px solid #497997; background: #0a2841; box-shadow: 12px 12px 0 rgba(0,0,0,.22); }
+.coupon-validator p { color: #c7dbe5; line-height: 1.55; }
+.coupon-validator label { display: grid; gap: .4rem; color: #e3eff4; font-weight: 800; }
+.coupon-validator input { border: 1px solid #56839f; background: #061a2b; color: #f2f7fa; padding: .75rem; font: inherit; }
+.coupon-validation-message { margin: 0; padding: .8rem; border: 1px solid; }
+.coupon-validation-message.success { border-color: #74b38d; color: #dff5e6; }
+.coupon-validation-message.error { border-color: #db8b78; color: #ffd8cf; }
+@media (max-width: 800px) { .coupon-grid, .location-gallery-grid, .coupon-manager-grid { grid-template-columns: 1fr; } .location-gallery-image { min-height: 15rem; } }
+
+/* Locations field-guide visual system */
+.locations-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 30rem;
+  display: grid;
+  align-items: end;
+  background-color: #061b30 !important;
+  background-image: linear-gradient(90deg, rgba(2, 14, 27, .91) 0%, rgba(3, 20, 36, .65) 52%, rgba(3, 20, 36, .24) 100%), url("/images/locations-atmosphere/field-guide-chart.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.locations-hero .content-wrap { position: relative; z-index: 1; padding-bottom: clamp(3rem, 7vw, 6rem); }
+.locations-hero::after {
+  position: absolute;
+  right: -10vw;
+  bottom: -13rem;
+  width: min(55vw, 48rem);
+  height: min(55vw, 48rem);
+  border: 1px solid rgba(211, 235, 247, .23);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3rem rgba(211, 235, 247, .025), 0 0 0 6rem rgba(211, 235, 247, .02);
+  content: "";
+}
+.flight-plan-section {
+  position: relative;
+  overflow: hidden;
+  color: #eaf4f8 !important;
+  background-color: #092b46 !important;
+  background-image: linear-gradient(110deg, rgba(4, 21, 38, .9), rgba(5, 30, 51, .72)), url("/images/locations-atmosphere/field-guide-chart.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.flight-plan-section::before {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(90deg, transparent 0 8.8%, rgba(170, 214, 237, .1) 8.85% 8.95%, transparent 9% 100%), linear-gradient(90deg, transparent 0 15%, rgba(239, 179, 92, .22) 15.1% 15.2%, transparent 15.3% 84.7%, rgba(239, 179, 92, .22) 84.8% 84.9%, transparent 85%);
+  content: "";
+  pointer-events: none;
+}
+.flight-plan-section .content-wrap { position: relative; z-index: 1; }
+.flight-plan-head h2, .flight-plan-head>p { color: #eff8fb !important; }
+.flight-plan-head h2 em { color: #efb45f !important; }
+.flight-plan { border-color: rgba(184, 217, 236, .42) !important; background: rgba(4, 20, 35, .34); backdrop-filter: blur(5px); }
+.flight-plan li { border-color: rgba(184, 217, 236, .3) !important; }
+.flight-plan a { color: #eef8fa !important; }
+.flight-plan a:hover { background: rgba(85, 150, 192, .24) !important; }
+.flight-plan b { color: #f1b45d !important; }
+.flight-plan i { color: #98c6dd !important; }
+.location-manifest {
+  position: relative;
+  overflow: hidden;
+  background-color: #061a2d !important;
+  background-image: linear-gradient(rgba(3, 15, 28, .77), rgba(3, 15, 28, .92)), url("/images/locations-atmosphere/runway-weather.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-attachment: fixed !important;
+}
+.location-manifest::before {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(90deg, transparent 0 7%, rgba(221, 237, 245, .09) 7.05% 7.12%, transparent 7.2% 92.8%, rgba(221, 237, 245, .09) 92.88% 92.95%, transparent 93%);
+  content: "";
+  pointer-events: none;
+}
+.location-manifest .content-wrap { position: relative; z-index: 1; }
+.field-location-card {
+  border-color: rgba(171, 212, 234, .35) !important;
+  background-color: #0b2a44 !important;
+  background-image: linear-gradient(135deg, rgba(11, 48, 75, .98), rgba(4, 26, 45, .98)), url("/images/locations-atmosphere/field-guide-chart.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: 10px 12px 0 rgba(1, 10, 20, .28);
+}
+.field-location-card:nth-child(2n) { background-position: 68% center !important; }
+.field-location-card:nth-child(3n) { background-image: linear-gradient(135deg, rgba(7, 35, 58, .96), rgba(6, 24, 42, .94)), url("/images/locations-atmosphere/runway-weather.png") !important; }
+.field-location-image::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(2, 15, 28, .42), transparent 56%), linear-gradient(90deg, rgba(2, 15, 28, .22), transparent);
+  content: "";
+  pointer-events: none;
+}
+.field-location-body { background: linear-gradient(125deg, rgba(6, 28, 47, .86), rgba(9, 42, 66, .76)); }
+.field-location-status { border-color: rgba(186, 219, 236, .32) !important; }
+.field-location-actions { border-top: 1px solid rgba(186, 219, 236, .12); }
+@media (max-width: 700px) {
+  .locations-hero { min-height: 25rem; background-position: 62% center !important; }
+  .location-manifest { background-attachment: scroll !important; }
+}
+
+/* More services and live keg inventory */
+.more-hero, .kegs-hero, .gift-card-hero {
+  position: relative;
+  overflow: hidden;
+  background-color: #061d33 !important;
+  background-image: linear-gradient(100deg, rgba(2,14,28,.94), rgba(4,29,51,.67)), url("/images/atmosphere/aeronautical-cloud-chart.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.more-hero::after, .kegs-hero::after, .gift-card-hero::after {
+  position: absolute; right: 7vw; bottom: -9rem; width: 23rem; height: 23rem; border: 1px solid rgba(185,220,237,.34); border-radius: 50%; box-shadow: 0 0 0 1.7rem rgba(185,220,237,.035), 0 0 0 3.5rem rgba(185,220,237,.025); content: ""; pointer-events: none;
+}
+.more-hero .content-wrap, .kegs-hero .content-wrap, .gift-card-hero .content-wrap { position: relative; z-index: 1; }
+.more-actions-section { background: linear-gradient(130deg, #082b47, #061b31); }
+.more-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 1px solid rgba(140,194,220,.38); background: rgba(140,194,220,.38); }
+.more-action-card { display: grid; min-height: 17rem; align-content: start; gap: .8rem; padding: clamp(1.4rem, 3vw, 2.2rem); color: #e6f1f5; background: linear-gradient(145deg, rgba(12,52,78,.98), rgba(5,27,47,.98)); text-decoration: none; transition: transform .2s ease, background .2s ease; }
+.more-action-card:hover { transform: translate(-4px,-4px); background: linear-gradient(145deg, #15577d, #092b47); }
+.more-action-card > span { color: #eeb65e; font: 900 .72rem/1 "Courier New", monospace; letter-spacing: .12em; }
+.more-action-card h2 { margin: .4rem 0 0; color: #f4f8f9; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(2rem,3vw,3.2rem); font-weight: 400; line-height: .92; text-transform: uppercase; }
+.more-action-card p { margin: 0; color: #c4d9e4; line-height: 1.55; }
+.more-action-card strong { display: inline-flex; gap: .45rem; align-items: center; margin-top: auto; color: #f0b65d; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; }
+.keg-inventory-section { background: #071d32; }
+.keg-table-wrap { overflow-x: auto; border: 1px solid rgba(148,202,226,.35); background: #092a44; }
+.keg-table { width: 100%; min-width: 39rem; border-collapse: collapse; color: #e7f1f5; text-align: left; }
+.keg-table th, .keg-table td { padding: 1rem 1.2rem; border-bottom: 1px solid rgba(155,205,228,.2); }
+.keg-table thead th { color: #efb45c; background: #06192a; font: 900 .7rem/1 "Courier New", monospace; letter-spacing: .1em; text-transform: uppercase; }
+.keg-table tbody tr:hover { background: rgba(75,145,183,.14); }
+.keg-table tbody th { color: #f4f8fa; font-size: 1rem; }
+.keg-table tbody th small { display: block; margin-top: .25rem; color: #a8c8d8; font-size: .72rem; font-weight: 500; }
+.keg-table td { color: #d6e9f1; font-family: "Courier New", monospace; }
+.keg-note { margin: 0; padding: 1rem 1.2rem; color: #c4dae4; background: #0c3452; font-size: .84rem; line-height: 1.5; }
+.keg-unavailable, .gift-card-panel { padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid rgba(147,200,226,.42); background: linear-gradient(145deg, #0c3553, #071e34); box-shadow: 10px 12px 0 rgba(0,0,0,.17); }
+.keg-unavailable h2, .gift-card-panel h2 { margin: .3rem 0 1rem; color: #f0f7fa; font-size: clamp(2rem,4vw,4rem); line-height: .95; }
+.keg-unavailable p { color: #c6dbe5; line-height: 1.6; }
+.keg-inventory-section .section-link { margin-top: 2rem; }
+.narrow-content { max-width: 48rem; }
+.gift-card-section { background: linear-gradient(135deg, #092c47, #061a2e); }
+.gift-card-panel { max-width: 38rem; }
+.gift-card-panel .inquiry-form { margin-top: 1.4rem; }
+.gift-card-message { margin: 1.1rem 0 0; padding: .85rem 1rem; border: 1px solid; line-height: 1.45; }
+.gift-card-message.success { border-color: #70b888; color: #daf3e2; background: rgba(31,97,58,.23); }
+.gift-card-message.error { border-color: #da8d78; color: #ffd8d0; background: rgba(130,47,31,.2); }
+.gift-card-help { margin: 1.3rem 0 0; color: #c5dbe5; }
+.gift-card-help a { color: #efb45e; font-weight: 800; }
+@media (max-width: 850px) { .more-actions { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 550px) { .more-actions { grid-template-columns: 1fr; } .more-action-card { min-height: 14rem; } .keg-table th, .keg-table td { padding: .85rem; } }
+
+/* Beer card title contrast */
+.hangar-beer-grid .beer-card h3 { color: #ffffff !important; text-shadow: 0 2px 8px rgba(0,0,0,.55); }
+
+/* Manager photo library readability */
+.media-library .website-photo-library {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid #3d7192;
+  background: linear-gradient(135deg, #0e3653, #092941);
+  color: #eaf4f8;
+}
+.media-library .website-photo-heading { align-items: end; }
+.media-library .website-photo-heading h2 { color: #f3f8fa !important; font-size: clamp(1.8rem, 3vw, 2.8rem); }
+.media-library .website-photo-heading p:not(.eyebrow) { color: #c2d8e4 !important; }
+.media-library .website-photo-drop { border-color: #6a9ab5 !important; background: #d8e8ee !important; }
+.media-library .website-photo-drop label { color: #123d59 !important; }
+.media-library .website-photo-drop small { color: #315c73 !important; }
+.media-library .website-photo-grid { border-color: #5e8ca7 !important; background: #5e8ca7 !important; }
+.media-library .website-photo-card { background: #f1f7f8 !important; }
+.media-library .website-photo-card strong { color: #0b314b !important; font-size: .72rem; }
+.media-library .website-photo-card span { color: #315a70 !important; }
+.media-library .website-photo-actions a,
+.media-library .website-photo-actions button { border-color: #48758e; color: #123d59; background: #ffffff; }
+.media-library .website-photo-actions button:last-child { border-color: #af5d54; color: #8d342c; }
+.media-library .website-photo-empty { background: #e6f0f4; color: #1b4d66; }
+
+/* Published brewery tour confirmation */
+.tour-confirmed { display: grid; gap: .55rem; margin-top: 1rem; padding: 1rem; border: 1px solid #e5aa57; background: rgba(5, 29, 48, .54); }
+.tour-confirmed .eyebrow { margin: 0; }
+.tour-confirmed strong { color: #f5bd68; font-family: "Courier New", monospace; font-size: 1.02rem; }
+.tour-confirmed p:last-child { margin: 0; color: #d2e3eb; font-size: .84rem; line-height: 1.5; }
+
+/* Live keg ordering */
+.keg-order-button { border: 1px solid #77a5bc; background: #0f3d5d; color: #f2f8fa; padding: .52rem .65rem; font: 900 .62rem/1 "Courier New", monospace; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.keg-order-button:hover:not(:disabled) { background: #1c628b; }
+.keg-order-button:disabled { opacity: .45; cursor: not-allowed; }
+.keg-order-panel { display: grid; grid-template-columns: minmax(15rem, .8fr) minmax(20rem, 1fr); gap: clamp(1.5rem, 5vw, 4rem); margin-top: 1.5rem; padding: clamp(1.3rem, 4vw, 2.5rem); border: 1px solid #4c7c98; background: linear-gradient(135deg, #0d3654, #09253d); scroll-margin-top: 6.5rem; }
+.keg-order-panel h2 { margin: .35rem 0 1rem; color: #f1f7fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 400; line-height: .9; text-transform: uppercase; }
+.keg-order-panel > div > p:not(.eyebrow) { color: #c2d9e5; line-height: 1.55; }
+.keg-order-panel .inquiry-form { margin: 0; }
+.keg-order-panel .inquiry-form small { color: #a7c8d8; }
+.keg-newsletter-note { margin: 0; color: #b9d6e4; font-size: .78rem; line-height: 1.45; }
+.keg-order-message { margin: .2rem 0 0; padding: .75rem; border: 1px solid; line-height: 1.45; }
+.keg-order-message.success { border-color: #71b88d; color: #dcf5e4; background: rgba(35, 108, 67, .2); }
+.keg-order-message.error { border-color: #d88977; color: #ffd8d0; background: rgba(138, 45, 30, .2); }
+@media(max-width:760px) { .keg-order-panel { grid-template-columns: 1fr; } }
+
+/* Aviator status messages: dark blue rather than generic green */
+.form-message.success,
+.gift-card-message.success,
+.keg-order-message.success,
+.coupon-validation-message.success {
+  border: 1px solid #5b94b4 !important;
+  background: #0d3653 !important;
+  color: #f1f8fb !important;
+}
+.form-message.success p,
+.tour-form-wrap .form-message.success,
+.tour-form-wrap .form-message.success p { color: #f1f8fb !important; }
+.form-message.error,
+.gift-card-message.error,
+.keg-order-message.error,
+.coupon-validation-message.error {
+  border: 1px solid #bd7164 !important;
+  background: #482633 !important;
+  color: #ffe0d8 !important;
+}
+
+/* Manager tour schedule and rescheduling */
+.tour-manager { margin-top: 2rem; }
+.tour-schedule-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 1.4rem 0 1.8rem; border: 1px solid #4d7e9b; background: #4d7e9b; }
+.tour-schedule-card { display: grid; gap: .7rem; padding: 1.15rem; background: #103752; }
+.tour-schedule-card h3, .tour-cancel-form h3, .tour-signups-heading { margin: 0; color: #f2f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.7rem; font-weight: 400; line-height: .95; text-transform: uppercase; }
+.tour-schedule-card > strong { color: #efb45e; font-family: "Courier New", monospace; font-size: .9rem; }
+.tour-schedule-card dl { display: grid; grid-template-columns: repeat(3, 1fr); margin: .3rem 0; border-top: 1px solid rgba(184,217,236,.22); }
+.tour-schedule-card dl div { padding: .65rem .4rem .1rem 0; border-right: 1px solid rgba(184,217,236,.18); }
+.tour-schedule-card dl div:last-child { border: 0; padding-left: .45rem; }
+.tour-schedule-card dt { color: #a9c8d8; font: 800 .55rem/1.2 "Courier New", monospace; letter-spacing: .08em; text-transform: uppercase; }
+.tour-schedule-card dd { margin: .35rem 0 0; color: #f1f8fb; font-size: .75rem; line-height: 1.3; }
+.tour-cancel-button { justify-self: start; border: 1px solid #c88371; background: transparent; color: #ffd9d0; padding: .55rem .65rem; font: 900 .63rem/1 "Courier New", monospace; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
+.tour-cancel-button:hover { background: #62313a; }
+.tour-schedule-empty { grid-column: 1 / -1; margin: 0; padding: 1.2rem; background: #103752; color: #c5dbe6; }
+.tour-cancel-form { display: grid; gap: 1rem; margin: 1.2rem 0 2rem; padding: 1.3rem; border: 1px solid #d48a78; background: #3d2634; color: #f4e7e4; }
+.tour-cancel-form > p:not(.eyebrow) { margin: 0; color: #f0d8d2; line-height: 1.5; }
+.tour-cancel-form label { display: grid; gap: .4rem; color: #ffe0d8; font-size: .76rem; font-weight: 900; text-transform: uppercase; }
+.tour-cancel-form textarea { width: 100%; box-sizing: border-box; border: 1px solid #b97669; background: #241a27; color: #fff4f1; padding: .7rem; font: inherit; }
+.tour-cancel-form > div { display: flex; flex-wrap: wrap; gap: .7rem; }
+.tour-cancel-form .button-outline { color: #fff1eb; }
+.tour-signups-heading { margin: 2rem 0 1rem; }
+.manager-add-form { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; margin-bottom: 1rem; }
+.manager-add-form label { display: grid; gap: .35rem; color: #d6e7ef; font-size: .72rem; font-weight: 800; }
+.manager-add-form input { min-width: 0; border: 1px solid #5883a0; background: #071d30; color: #f2f7fa; padding: .6rem; font: inherit; }
+.manager-add-form .button { align-self: end; }
+@media(max-width:900px) { .tour-schedule-grid { grid-template-columns: repeat(2, 1fr); } .manager-add-form { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:560px) { .tour-schedule-grid, .manager-add-form { grid-template-columns: 1fr; } .tour-schedule-card dl { grid-template-columns: 1fr; } .tour-schedule-card dl div, .tour-schedule-card dl div:last-child { padding: .55rem 0; border-right: 0; border-bottom: 1px solid rgba(184,217,236,.18); } }
+
+/* Food ordering conversion */
+.button-order-food { border-color: #f4bd63 !important; background: #efae57 !important; color: #071827 !important; box-shadow: 4px 4px 0 rgba(0,0,0,.32), 0 0 0 2px rgba(239,174,87,.18) !important; }
+.button-order-food:hover { background: #ffd083 !important; color: #071827 !important; }
+.header-actions .button-order-food { white-space: nowrap; }
+@media(max-width:700px) { .mobile-action-bar a[data-analytics="order_food_mobile_bar"] { color: #f3bb63; } }
+
+/* Dedicated food ordering */
+.order-food-hero { background-image: linear-gradient(100deg, rgba(3,18,31,.93), rgba(6,43,66,.55)), url("/images/food.jpg") !important; background-size: cover !important; background-position: center !important; }
+.order-food-section { background: #0b2942; }
+.order-food-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 1px solid #477892; background: #477892; }
+.order-food-card { background: #0e3653; }
+.order-food-image { position: relative; min-height: 18rem; overflow: hidden; }
+.order-food-image img { object-fit: cover; transition: transform .45s ease; }
+.order-food-card:hover .order-food-image img { transform: scale(1.04); }
+.order-food-copy { display: grid; gap: .75rem; padding: 1.25rem; }
+.order-food-copy > span { color: #efb45e; font: 900 .72rem/1 "Courier New", monospace; letter-spacing: .12em; }
+.order-food-copy h2 { margin: 0; color: #f1f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 2rem; font-weight: 400; line-height: .92; text-transform: uppercase; }
+.order-food-copy p { margin: 0; color: #c5dbe5; line-height: 1.5; }
+.order-food-copy .order-food-address { color: #f1b55b; font: 800 .68rem/1.5 "Courier New", monospace; letter-spacing: .03em; text-transform: uppercase; }
+.order-food-copy .button { justify-self: start; margin-top: .5rem; }
+@media(max-width:850px) { .order-food-grid { grid-template-columns: 1fr; } .order-food-card { display: grid; grid-template-columns: .8fr 1fr; } .order-food-image { min-height: 100%; } }
+@media(max-width:560px) { .order-food-card { grid-template-columns: 1fr; } .order-food-image { min-height: 14rem; } }
+
+/* Aviator Live schedule */
+.live-music-dispatch { padding: clamp(2.2rem, 5vw, 4rem) 0; background: #0b2a45; background-image: linear-gradient(110deg, rgba(4, 20, 35, .82), rgba(10, 51, 78, .72)), url("/images/atmosphere/storm-runway-atlas.png"); background-position: center; background-size: cover; }
+.live-music-dispatch .content-wrap { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+.live-music-dispatch h2 { margin: .4rem 0 .65rem; color: #f0f7fa; font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 400; letter-spacing: -.02em; line-height: .9; text-transform: uppercase; }
+.live-music-dispatch h2 em { color: #efb45f; font-family: Georgia, serif; font-style: italic; font-weight: 400; text-transform: none; }
+.live-music-dispatch p:not(.eyebrow) { max-width: 38rem; margin: 0; color: #c7dce8; line-height: 1.6; }
+.live-music-hero { min-height: 29rem; display: grid; align-items: end; background-image: linear-gradient(90deg, rgba(3, 16, 30, .94), rgba(4, 27, 45, .64)), url("/images/atmosphere/storm-runway-atlas.png") !important; }
+.live-music-hero .content-wrap { padding-bottom: clamp(3rem, 7vw, 6rem); }
+.live-music-section { background: #081f34; }
+.aviator-live-list { border: 1px solid rgba(166, 206, 227, .32); background: rgba(116, 162, 186, .2); display: grid; gap: 1px; }
+.aviator-live-card { display: grid; grid-template-columns: 6.4rem 9.5rem minmax(0, 1fr) minmax(13rem, .65fr); min-height: 15rem; background: linear-gradient(100deg, #0c2a44, #123b5a); }
+.aviator-live-date { display: grid; align-content: center; justify-items: center; gap: .15rem; padding: 1rem; background: #071c30; color: #eaf5f8; font-family: "Courier New", monospace; }
+.aviator-live-date span, .aviator-live-date small { color: #efb45f; font-size: .68rem; font-weight: 900; letter-spacing: .13em; }
+.aviator-live-date strong { font-family: Impact, Haettenschweiler, sans-serif; font-size: 3rem; font-weight: 400; line-height: .85; }
+.aviator-live-signal { position: relative; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at center, color-mix(in srgb, var(--band-color) 54%, #10344f), #091f34 68%); }
+.aviator-live-signal::before, .aviator-live-signal::after { position: absolute; border: 1px solid color-mix(in srgb, var(--band-color) 55%, transparent); border-radius: 50%; content: ""; }
+.aviator-live-signal::before { width: 8rem; height: 8rem; }
+.aviator-live-signal::after { width: 12rem; height: 12rem; }
+.aviator-live-signal i { position: absolute; bottom: 2.2rem; width: .28rem; height: 2.4rem; background: var(--band-color); transform-origin: bottom; opacity: .92; }
+.aviator-live-signal i:nth-of-type(1) { transform: translateX(-.5rem) scaleY(.55); }.aviator-live-signal i:nth-of-type(2) { transform: scaleY(1.15); }.aviator-live-signal i:nth-of-type(3) { transform: translateX(.5rem) scaleY(.72); }
+.aviator-live-signal b { position: relative; z-index: 1; display: grid; width: 3.5rem; height: 3.5rem; place-items: center; border: 1px solid rgba(238, 248, 250, .7); border-radius: 50%; background: #0a2942; color: #f0f7fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.4rem; font-weight: 400; }
+.aviator-live-signal span { position: absolute; right: .65rem; bottom: .65rem; color: #d8eaf1; font-family: "Courier New", monospace; font-size: .58rem; font-weight: 900; letter-spacing: .15em; }
+.aviator-live-copy { padding: clamp(1.25rem, 3vw, 2.1rem); }
+.aviator-live-copy .eyebrow { margin: 0 0 .65rem; font-size: .61rem; }
+.aviator-live-copy h2 { margin: 0; color: #f2f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(2rem, 3vw, 3.25rem); font-weight: 400; letter-spacing: .01em; line-height: .88; text-transform: uppercase; }
+.aviator-live-copy h3 { margin: .45rem 0 .8rem; color: #efb45f; font-family: "Courier New", monospace; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+.aviator-live-copy > p:last-child { max-width: 38rem; margin: 0; color: #c5d8e3; line-height: 1.6; }
+.aviator-live-details { display: grid; align-content: center; gap: 1rem; padding: 1.4rem; border-left: 1px solid rgba(166, 206, 227, .25); background: rgba(4, 20, 35, .32); }
+.aviator-live-details > strong { color: #f1f7fa; font-family: "Courier New", monospace; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; }
+.aviator-live-details dl { margin: 0; border-top: 1px solid rgba(166, 206, 227, .25); }
+.aviator-live-details dl div { display: flex; justify-content: space-between; gap: .75rem; padding: .45rem 0; border-bottom: 1px solid rgba(166, 206, 227, .18); }
+.aviator-live-details dt { color: #8fb8ce; font-family: "Courier New", monospace; font-size: .63rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.aviator-live-details dd { margin: 0; color: #eff8fa; font-size: .76rem; font-weight: 800; text-align: right; }
+.aviator-live-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.text-link { display: inline-flex; align-items: center; gap: .35rem; color: #efb45f; font-family: "Courier New", monospace; font-size: .7rem; font-weight: 900; letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
+.text-link svg { width: 1rem; }
+.aviator-live-empty { display: grid; justify-items: start; gap: 1rem; max-width: 48rem; padding: clamp(2rem, 5vw, 4rem); border: 1px dashed #4d7894; background: linear-gradient(135deg, rgba(15, 56, 83, .8), rgba(5, 25, 42, .8)); }
+.aviator-live-empty h2 { max-width: 18ch; margin: 0; color: #f2f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(2.2rem, 4vw, 4rem); font-weight: 400; letter-spacing: .01em; line-height: .9; text-transform: uppercase; }
+.aviator-live-empty > p:not(.eyebrow) { margin: 0; color: #c4d9e5; line-height: 1.6; }
+.live-stage-section { background: #061d32 !important; }
+.live-stage-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; border: 1px solid rgba(161, 204, 228, .32); background: rgba(161, 204, 228, .32); }
+.live-stage-card { display: grid; align-content: start; gap: .9rem; min-height: 22rem; padding: 1.3rem; background: linear-gradient(145deg, #113c5a, #08243b); }
+.live-stage-card:nth-child(2n) { background: linear-gradient(145deg, #15486a, #092940); }
+.live-stage-card > span { color: var(--stage-color); font-family: "Courier New", monospace; font-size: .72rem; font-weight: 900; letter-spacing: .12em; }
+.live-stage-card > p { margin: 1rem 0 0; color: #a7c8da; font-family: "Courier New", monospace; font-size: .62rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.live-stage-card h3 { margin: 0; color: #f3f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.7rem; font-weight: 400; letter-spacing: .01em; line-height: .88; text-transform: uppercase; }
+.live-stage-card > div { color: #c6d9e4; font-size: .88rem; line-height: 1.55; }
+.live-stage-card footer { display: grid; gap: .35rem; margin-top: auto; padding-top: .9rem; border-top: 1px solid rgba(178, 214, 231, .23); color: #a8c9db; font-size: .73rem; line-height: 1.45; }
+.live-stage-card footer b { color: #efb45f; font-family: "Courier New", monospace; font-size: .62rem; letter-spacing: .06em; }
+@media (max-width: 980px) { .aviator-live-card { grid-template-columns: 5.5rem 7rem minmax(0, 1fr); } .aviator-live-details { grid-column: 2 / -1; grid-template-columns: 1fr 1.25fr auto; align-items: center; border-top: 1px solid rgba(166, 206, 227, .25); border-left: 0; } .live-stage-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .live-music-dispatch .content-wrap { align-items: start; flex-direction: column; } .aviator-live-card { grid-template-columns: 5rem 1fr; } .aviator-live-signal { min-height: 12rem; } .aviator-live-copy { grid-column: span 2; } .aviator-live-details { grid-column: span 2; grid-template-columns: 1fr; } .live-stage-grid { grid-template-columns: 1fr; } .live-stage-card { min-height: 17rem; } }
+
+/* Manager-managed, non-music events */
+.special-events-section { background: #0b2942; }
+.managed-event-layout { border-color: rgba(181, 216, 235, .33); }
+.managed-event-card .event-content { background: linear-gradient(100deg, #173d5b, #11314d); }
+.manager-events { background: #0c2b45; }
+.manager-event-form { display: grid; grid-template-columns: 2fr repeat(3, minmax(7rem, 1fr)); gap: .85rem; margin-top: 1.4rem; padding: 1.25rem; border: 1px solid rgba(184, 217, 236, .28); background: #113650; }
+.manager-event-form label { display: grid; gap: .35rem; color: #d9e8ef; font-size: .76rem; font-weight: 800; }
+.manager-event-form label small { color: #9dbaca; font-weight: 400; }
+.manager-event-form input, .manager-event-form textarea { width: 100%; box-sizing: border-box; border: 1px solid #50809d; background: #071e31; color: #f2f8fa; padding: .65rem; font: inherit; }
+.manager-event-form textarea { resize: vertical; }
+.manager-event-form .manager-event-wide { grid-column: 1 / -1; }
+.manager-event-form .manager-event-publish { display: flex; grid-column: span 2; align-items: center; gap: .55rem; cursor: pointer; }
+.manager-event-form .manager-event-publish input { width: 1rem; height: 1rem; accent-color: #efb45f; }
+.manager-event-form > .button { align-self: end; width: fit-content; }
+.manager-events-list { display: grid; gap: .7rem; }
+.manager-events-list article { display: flex; justify-content: space-between; gap: 1.5rem; padding: 1rem; border: 1px solid rgba(184, 217, 236, .23); background: #10334e; }
+.manager-events-list article > div { display: grid; gap: .3rem; }
+.manager-events-list .eyebrow { margin: 0; font-size: .6rem; }
+.manager-events-list h3 { margin: 0; color: #f0f7fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.35rem; font-weight: 400; letter-spacing: .02em; text-transform: uppercase; }
+.manager-events-list p:not(.eyebrow), .manager-events-list small { margin: 0; color: #bfd4df; line-height: 1.5; }
+.manager-events-list footer { display: flex; align-items: center; gap: .75rem; }
+.manager-events-list button { border: 1px solid #4b7894; background: #0b263d; color: #f0b45e; padding: .55rem .7rem; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 900; }
+.manager-events-list button:last-child { color: #f0c2b5; }
+@media (max-width: 850px) { .manager-event-form { grid-template-columns: 1fr 1fr; } .manager-event-form .manager-event-publish { grid-column: 1 / -1; } }
+@media (max-width: 600px) { .manager-event-form { grid-template-columns: 1fr; } .manager-event-form .manager-event-publish { grid-column: 1; } .manager-events-list article { align-items: start; flex-direction: column; } .manager-events-list footer { width: 100%; } }
+
+/* Manager portal navigation and beer catalog */
+.manager-section-nav { position: sticky; top: .75rem; z-index: 8; display: flex; flex-wrap: wrap; gap: 1px; margin: 1.5rem 0; border: 1px solid #46799a; background: #46799a; box-shadow: 6px 6px 0 rgba(3, 19, 33, .24); }
+.manager-section-nav a { flex: 1 1 8rem; padding: .82rem 1rem; background: #0e314d; color: #eef7fa; font-family: "Courier New", monospace; font-size: .72rem; font-weight: 900; letter-spacing: .07em; text-align: center; text-decoration: none; text-transform: uppercase; }
+.manager-section-nav a:hover { background: #1e577b; color: #f0b45f; }
+.manager-beers { background: #0b2b46; }
+.manager-beer-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem; margin-top: 1.4rem; padding: 1.25rem; border: 1px solid rgba(184, 217, 236, .28); background: #113650; }
+.manager-beer-form label { display: grid; gap: .35rem; color: #d9e8ef; font-size: .76rem; font-weight: 800; }
+.manager-beer-form input, .manager-beer-form select, .manager-beer-form textarea { width: 100%; box-sizing: border-box; border: 1px solid #50809d; background: #071e31; color: #f2f8fa; padding: .65rem; font: inherit; }
+.manager-beer-form textarea { resize: vertical; }
+.manager-beer-form .manager-beer-wide { grid-column: 1 / -1; }
+.manager-beer-form .manager-beer-graphic { grid-column: span 2; }
+.manager-beer-form .manager-beer-graphic small { color: #9dbaca; font-size: .68rem; font-weight: 400; }
+.manager-beer-form > .button { align-self: end; width: fit-content; }
+.manager-beer-list { display: grid; gap: 1px; border: 1px solid rgba(184, 217, 236, .25); background: rgba(184, 217, 236, .25); }
+.manager-beer-list article { display: grid; grid-template-columns: 6rem minmax(0, 1fr) auto; align-items: center; gap: 1rem; min-height: 7.7rem; padding: .85rem; background: #10344f; }
+.manager-beer-list article:nth-child(2n) { background: #123b58; }
+.manager-beer-list img { width: 5.25rem; height: 5.8rem; object-fit: contain; background: #d2e3ea; }
+.manager-beer-list article > div { display: grid; gap: .3rem; }
+.manager-beer-list .eyebrow { margin: 0; font-size: .57rem; }
+.manager-beer-list h3 { margin: 0; color: #f2f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.45rem; font-weight: 400; letter-spacing: .02em; line-height: .9; text-transform: uppercase; }
+.manager-beer-list p:not(.eyebrow), .manager-beer-list small { margin: 0; color: #bfd5e1; line-height: 1.45; }
+.manager-beer-list button { border: 1px solid #5a829b; background: #0a263d; color: #f0c1b3; padding: .55rem .7rem; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 900; }
+.manager-beer-locked { color: #a6c7d8; font-family: "Courier New", monospace; font-size: .65rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.location-live-schedule { background: #071f35 !important; }
+.location-live-empty { display: grid; justify-items: start; gap: 1.2rem; max-width: 46rem; padding: 1.4rem; border: 1px dashed #4e7893; background: rgba(16, 57, 84, .58); }
+.location-live-empty p { margin: 0; color: #c6dbe5; line-height: 1.6; }
+@media (max-width: 760px) { .manager-beer-form { grid-template-columns: 1fr; } .manager-beer-form .manager-beer-graphic { grid-column: 1; } .manager-beer-list article { grid-template-columns: 4.8rem minmax(0, 1fr); } .manager-beer-list img { width: 4rem; height: 5rem; } .manager-beer-list button, .manager-beer-locked { grid-column: 1 / -1; justify-self: start; } }
+
+/* Editable beer catalog */
+.manager-beer-edit { margin-top: 1.25rem; border-color: #6b9bb8; background: #0d304b; }
+.manager-beer-edit-heading { display: grid; gap: .3rem; grid-column: 1 / -1; padding-bottom: .8rem; border-bottom: 1px solid rgba(184, 217, 236, .26); }
+.manager-beer-edit-heading .eyebrow, .manager-beer-edit-heading h3, .manager-beer-edit-heading p { margin: 0; }
+.manager-beer-edit-heading h3 { color: #f1f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.8rem; font-weight: 400; line-height: .9; text-transform: uppercase; }
+.manager-beer-edit-heading p:not(.eyebrow) { color: #c5dae5; font-size: .86rem; }
+.manager-beer-edit-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-self: end; }
+.manager-beer-list footer { display: flex; flex-wrap: wrap; justify-content: end; gap: .5rem; }
+.manager-beer-list footer button:first-child { color: #e8f4f8; }
+@media (max-width: 760px) { .manager-beer-list footer { grid-column: 1 / -1; justify-self: start; } .manager-beer-edit-actions { grid-column: 1; } }
+
+/* Configurable brewery-tour launch threshold */
+.tour-threshold-form { display: flex; flex-wrap: wrap; align-items: end; gap: .8rem; margin: 1.25rem 0; padding: 1rem; border: 1px solid rgba(184, 217, 236, .28); background: #10334f; }
+.tour-threshold-form label { display: grid; gap: .35rem; min-width: min(100%, 17rem); color: #d9e8ef; font-size: .76rem; font-weight: 800; }
+.tour-threshold-form input { width: 7rem; border: 1px solid #50809d; background: #071e31; color: #f2f8fa; padding: .65rem; font: inherit; }
+
+
+/* Unified Locations + Dining directory */
+.location-directory-section { padding-top: clamp(3.5rem, 7vw, 6rem); }
+.location-directory-heading { margin-bottom: clamp(2rem, 5vw, 4rem); }
+.location-directory-heading h2 { color: #f2f8fb; }
+.location-directory-heading h2 em { color: #efb45f; }
+.location-directory-heading > p { color: #c2d6e1; }
+.location-directory-card { min-height: 31rem; }
+.field-location-status small { display: block; margin-top: .45rem; color: #bfd5e0; font-size: .75rem; line-height: 1.45; }
+.location-directory-menu-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: 1.1rem; }
+.location-menu-action, .location-menu-pending { display: flex; align-items: center; justify-content: space-between; gap: .7rem; min-height: 3.25rem; padding: .72rem .8rem; border: 1px solid rgba(184, 217, 236, .35); background: rgba(2, 19, 34, .52); color: #eef8fb; text-decoration: none; }
+.location-menu-action { transition: transform .18s ease, background .18s ease; }
+.location-menu-action:hover { background: #1b5b80; transform: translateY(-2px); }
+.location-menu-action strong, .location-menu-pending strong { color: #f4f8fa; font: 400 1.28rem/1 Impact, Haettenschweiler, sans-serif; letter-spacing: .02em; text-transform: uppercase; }
+.location-menu-action span, .location-menu-pending span { display: inline-flex; align-items: center; gap: .28rem; color: #efb45f; font: 800 .6rem/1 "Courier New", monospace; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.location-menu-action svg { width: .85rem; height: .85rem; }
+.location-menu-pending { border-style: dashed; background: rgba(5, 25, 42, .3); }
+.location-menu-pending span { color: #b8cbd6; }
+.location-directory-card .field-location-actions { margin-top: 1.1rem; }
+.catering-menu-card { display: grid; grid-template-columns: 1.2fr minmax(18rem, .9fr) auto; align-items: center; gap: 1.5rem; margin-top: 1.5rem; padding: clamp(1.4rem, 3vw, 2.4rem); border: 1px solid rgba(184, 217, 236, .3); background: linear-gradient(135deg, rgba(17, 56, 83, .96), rgba(5, 28, 47, .98)), url("/images/locations-atmosphere/field-guide-chart.png") center/cover; box-shadow: 9px 10px 0 rgba(1, 10, 20, .24); }
+.catering-menu-card h2 { margin: .3rem 0 .55rem; color: #f2f8fb; font: 400 clamp(2rem, 4vw, 3.4rem)/.88 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.catering-menu-card > div > p:not(.eyebrow) { max-width: 36rem; margin: 0; color: #c5d7e1; line-height: 1.55; }
+.catering-menu-card .location-directory-menu-actions { margin: 0; }
+@media (max-width: 900px) { .catering-menu-card { grid-template-columns: 1fr; } .catering-menu-card .button { justify-self: start; } }
+@media (max-width: 480px) { .location-directory-menu-actions { grid-template-columns: 1fr; } }
+
+
+/* Beverage menu navigation: soda, THC soda, and seltzer are distinct flight lines. */
+.beyond-beer-section { background: #0c2942; color: #eff7fa; background-image: linear-gradient(90deg, rgba(184,217,236,.07) 1px, transparent 1px), linear-gradient(rgba(184,217,236,.07) 1px, transparent 1px), radial-gradient(circle at 84% 10%, rgba(64,142,195,.25), transparent 24rem); }
+.beyond-beer-section .section-heading h2 { color: #f1f8fb; }
+.beyond-beer-section .section-heading h2 em { color: #efb45f; }
+.beyond-beer-section .section-heading > p { color: #c1d5e0; }
+.beverage-menu-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 2rem 0 1.4rem; border: 1px solid #4f7e9a; background: #4f7e9a; }
+.beverage-menu-nav a { display: grid; grid-template-columns: auto 1fr auto; gap: .65rem; align-items: center; min-height: 4.2rem; padding: .8rem 1rem; background: #123a58; color: #eff8fb; text-decoration: none; }
+.beverage-menu-nav a:nth-child(2n) { background: #173f5d; }
+.beverage-menu-nav a:hover { background: #24648e; }
+.beverage-menu-nav span { color: #efb45e; font: 900 .72rem/1 "Courier New", monospace; }
+.beverage-menu-nav strong { font: 400 clamp(1.2rem, 2vw, 1.65rem)/.9 Impact, Haettenschweiler, sans-serif; letter-spacing: .02em; text-transform: uppercase; }
+.beverage-menu-nav i { color: #efb45e; font-style: normal; }
+.beverage-menu-stack { display: grid; gap: 1.5rem; }
+.beverage-menu-section { padding: clamp(1.1rem, 3vw, 2rem); border: 1px solid rgba(184,217,236,.3); background: rgba(6,27,45,.48); scroll-margin-top: 6.5rem; }
+.beverage-menu-section header { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.15rem; }
+.beverage-menu-section header h3 { margin: .25rem 0 0; color: #f3f8fa; font: 400 clamp(2rem, 4vw, 3.6rem)/.84 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.beverage-menu-section header > p { max-width:34rem; margin: 0; color: #c0d3df; line-height: 1.55; }
+.beverage-menu-section .beyond-beer-grid { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); border-color: #497690; background: #497690; }
+.beverage-menu-section .beyond-beer-card, .beverage-menu-section .beyond-beer-card:nth-child(2n) { min-height: 24rem; background: #153b58; }
+.beverage-menu-section .beyond-beer-image { min-height: 15rem; background: #d5e5ec; }
+.beverage-menu-section .beyond-beer-card-copy { border-color: rgba(184,217,236,.22); background: #153b58; }
+.beverage-menu-section .beyond-beer-card-copy p, .beverage-menu-section .beyond-beer-card-copy strong { color: #efb45e; }
+.beverage-menu-section .beyond-beer-card-copy h4 { margin: .45rem 0; color: #f2f8fa; font: 400 1.65rem/.9 Impact, Haettenschweiler, sans-serif; letter-spacing: .015em; text-transform: uppercase; }
+.beverage-menu-section .beyond-beer-card-copy span { color: #c3d7e1; }
+.beyond-beer-notice { border-color: #497690; background: #113650; }
+@media (max-width: 700px) { .beverage-menu-nav { grid-template-columns: 1fr; } .beverage-menu-section header { align-items: start; flex-direction: column; gap: .7rem; } }
+
+.manager-beer-edit { scroll-margin-top: 7rem; border-color: #efb45f; box-shadow: 0 0 0 3px rgba(239,180,95,.13), 9px 10px 0 rgba(3,19,33,.22); }
+
+
+/* PDF beer artwork fallback */
+.beer-pdf-artwork, .beer-pdf-detail { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #d6e5eb; }
+.beer-pdf-artwork a, .beer-pdf-detail a { display: grid; height: 100%; place-items: center; padding: 1rem; color: #102b45; font: 800 .75rem/1.4 "Courier New", monospace; text-align: center; text-decoration: none; text-transform: uppercase; }
+.manager-beer-pdf { display: grid; width: 5.25rem; height: 5.8rem; place-items: center; box-sizing: border-box; border: 1px solid #4e7995; background: #d2e3ea; color: #123752; font: 900 .68rem/1.35 "Courier New", monospace; letter-spacing: .06em; text-align: center; text-decoration: none; text-transform: uppercase; }
+.manager-beer-pdf:hover { background: #f0b45e; color: #09243a; }
+@media (max-width: 760px) { .manager-beer-pdf { width: 4rem; height: 5rem; } }
+
+
+/* Inline beer editing */
+.manager-beer-row { display: grid; grid-template-columns: 6rem minmax(0, 1fr) auto; align-items: center; gap: 1rem; min-height: 7.7rem; padding: .85rem; background: #10344f; }
+.manager-beer-row:nth-child(2n) { background: #123b58; }
+.manager-beer-row.is-editing { grid-template-columns: 6rem minmax(0, 1fr); align-items: start; border: 2px solid #efb45f; background: #0d304b; box-shadow: 0 0 0 3px rgba(239,180,95,.12); }
+.manager-beer-inline-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; width: 100%; }
+.manager-beer-inline-form label { display: grid; gap: .32rem; color: #dceaf0; font-size: .72rem; font-weight: 800; }
+.manager-beer-inline-form input, .manager-beer-inline-form select, .manager-beer-inline-form textarea { width: 100%; box-sizing: border-box; border: 1px solid #5b87a2; background: #071e31; color: #f2f8fa; padding: .6rem; font: inherit; }
+.manager-beer-inline-form small { color: #a8c5d5; font-size: .65rem; font-weight: 400; }
+.manager-beer-inline-wide, .manager-beer-inline-actions { grid-column: 1 / -1; }
+.manager-beer-inline-actions { display: flex; flex-wrap: wrap; gap: .7rem; padding-top: .15rem; }
+@media (max-width: 760px) { .manager-beer-row, .manager-beer-row.is-editing { grid-template-columns: 4.8rem minmax(0, 1fr); } .manager-beer-row footer { grid-column: 1 / -1; justify-self: start; } .manager-beer-inline-form { grid-template-columns: 1fr; } .manager-beer-inline-wide, .manager-beer-inline-actions { grid-column: 1; } }
+
+
+/* Manager-published keg inventory */
+.manager-kegs { background: #0a2942; }
+.manager-keg-upload { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-top: 1.25rem; padding: 1.2rem; border: 1px solid rgba(184,217,236,.3); background: #103750; }
+.manager-keg-upload label { display: grid; flex: 1 1 24rem; gap: .45rem; color: #e0edf2; font-size: .78rem; font-weight: 800; }
+.manager-keg-upload input { max-width: 100%; color: #d7e9f1; font: inherit; }
+.manager-keg-upload small { color: #abc8d7; font-size: .7rem; font-weight: 400; line-height: 1.45; }
+.manager-keg-status { display: grid; grid-template-columns: minmax(14rem,1fr) minmax(16rem,.9fr); gap: 1.25rem; margin-top: 1rem; padding: 1.2rem; border: 1px solid rgba(184,217,236,.28); background: #0c304b; }
+.manager-keg-status p, .manager-keg-status h3 { margin: 0; }
+.manager-keg-status h3 { margin: .3rem 0 .65rem; color: #f3f8fa; font: 400 1.7rem/.9 Impact, Haettenschweiler,sans-serif; text-transform: uppercase; }
+.manager-keg-status div > p:not(.eyebrow), .manager-keg-status.is-empty > p:not(.eyebrow) { color: #c2d9e5; line-height: 1.5; }
+.manager-keg-status ul { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; border: 1px solid rgba(184,217,236,.2); background: rgba(184,217,236,.2); }
+.manager-keg-status li { display: flex; justify-content: space-between; gap: .75rem; padding: .65rem .75rem; background: #102f48; color: #dbeaf0; font-size: .8rem; }
+.manager-keg-status li span { color: #f0b45e; white-space: nowrap; }
+.manager-keg-status.is-empty { display: block; }
+@media (max-width: 680px) { .manager-keg-status { grid-template-columns: 1fr; } .manager-keg-status li { align-items: start; flex-direction: column; gap: .25rem; } }
+
+
+/* Homepage campus directory */
+.campus-directory-section { background: #0a2238; background-image: linear-gradient(90deg, rgba(184,217,236,.06) 1px, transparent 1px), linear-gradient(rgba(184,217,236,.06) 1px, transparent 1px), radial-gradient(circle at 82% 10%, rgba(55,140,200,.23), transparent 26rem); background-size: 38px 38px, 38px 38px, auto; }
+.campus-directory-section .section-heading h2 { color: #f2f8fa; }
+.campus-directory-section .section-heading > p { color: #bdd2de; }
+.campus-dispatch { display: grid; grid-template-columns: 1fr 1fr auto; align-items: center; gap: 1px; margin: 0 0 1.4rem; border: 1px solid rgba(184,217,236,.3); background: rgba(184,217,236,.3); }
+.campus-dispatch > div, .campus-dispatch > a { min-height: 5.4rem; padding: 1rem 1.15rem; background: rgba(13,48,75,.94); }
+.campus-dispatch > div { display: grid; grid-template-columns: auto 1fr; column-gap: .8rem; align-content: center; }
+.campus-dispatch span { grid-row: span 2; color: #efb45f; font: 900 1rem/1 "Courier New", monospace; letter-spacing: .04em; }
+.campus-dispatch strong { align-self: end; color: #f2f8fa; font: 400 1.2rem/.9 Impact, Haettenschweiler, sans-serif; letter-spacing: .03em; text-transform: uppercase; }
+.campus-dispatch p { margin: .25rem 0 0; color: #b8d0dc; font-size: .76rem; line-height: 1.35; }
+.campus-dispatch > a { display: inline-flex; align-items: center; gap: .45rem; color: #efb45f; font-size: .7rem; font-weight: 900; text-decoration: none; white-space: nowrap; }
+.campus-dispatch > a:hover { background: #1a5275; color: #f6c777; }
+.campus-location-grid { gap: 1px; border: 1px solid rgba(184,217,236,.3); background: rgba(184,217,236,.3); }
+.campus-location-grid .location-card { border: 0 !important; }
+.campus-location-grid .location-card:first-child { grid-column: span 2; }
+.campus-location-grid .location-card:first-child .image-wrap { aspect-ratio: 2.05; }
+.campus-location-grid .location-card:first-child .card-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, .7fr); column-gap: 1.5rem; }
+.campus-location-grid .location-card:first-child .card-kicker, .campus-location-grid .location-card:first-child h3 { grid-column: 1; }
+.campus-location-grid .location-card:first-child .card-body > p { grid-column: 1; grid-row: 3; }
+.campus-location-grid .location-card:first-child .card-meta, .campus-location-grid .location-card:first-child .card-actions { grid-column: 2; }
+.campus-location-grid .location-card:first-child .card-meta { grid-row: 1 / span 2; align-self: start; margin: 0; border-top: 0; }
+.campus-location-grid .location-card:first-child .card-actions { grid-row: 3; align-self: end; }
+@media (max-width: 980px) { .campus-dispatch { grid-template-columns: 1fr 1fr; } .campus-dispatch > a { grid-column: 1 / -1; min-height: 3.6rem; } .campus-location-grid .location-card:first-child { grid-column: span 2; } }
+@media (max-width: 700px) { .campus-dispatch { grid-template-columns: 1fr; } .campus-dispatch > a { grid-column: auto; } .campus-location-grid .location-card:first-child { grid-column: auto; } .campus-location-grid .location-card:first-child .image-wrap { aspect-ratio: 1.25; } .campus-location-grid .location-card:first-child .card-body { display: block; } .campus-location-grid .location-card:first-child .card-meta { margin: 1rem 0; border-top: 1px solid var(--line); } }
+
+/* Faded warbird atmosphere */
+.hero-p51 {
+  z-index: 1;
+  opacity: .68;
+  mix-blend-mode: normal;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .55) 20%, #000 44%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .55) 20%, #000 44%);
+}
+.hero-p51 img {
+  filter: saturate(1.12) contrast(1.18) brightness(1.14) drop-shadow(0 0 2.2rem rgba(208, 231, 242, .22));
+}
+.page-hero,
+.menu-page-hero,
+.about-story-hero,
+.beer-page-hero,
+.section-dark,
+.beer-lineup-section,
+.about-flight-log,
+.music-venues-section,
+.menu-story-section,
+.beer-stage,
+.beyond-beer-section,
+.campus-directory-section,
+.hangar-waitlist,
+.beer-dispatch,
+.brewery-tour-section,
+.newsletter,
+.night-ops,
+.flight-plan-section,
+.live-music-dispatch,
+.live-music-hero,
+.catering-menu-card,
+.coupon-manager {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.page-hero::before,
+.menu-page-hero::before,
+.about-story-hero::before,
+.beer-page-hero::before,
+.section-dark::after,
+.beer-lineup-section::after,
+.about-flight-log::after,
+.music-venues-section::after,
+.menu-story-section::after,
+.beer-stage::after,
+.beyond-beer-section::after,
+.campus-directory-section::after,
+.hangar-waitlist::after,
+.beer-dispatch::after,
+.brewery-tour-section::after,
+.newsletter::after,
+.night-ops::before,
+.flight-plan-section::after,
+.live-music-dispatch::after,
+.live-music-hero::after,
+.catering-menu-card::after,
+.coupon-manager::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  background-image: url("/images/atmosphere/warbird-formation-faded.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  opacity: .16;
+  mix-blend-mode: screen;
+}
+.page-hero::before,
+.menu-page-hero::before,
+.about-story-hero::before,
+.beer-page-hero::before {
+  opacity: .22;
+  background-position: center top;
+}
+.section-dark::after,
+.beer-lineup-section::after,
+.about-flight-log::after,
+.music-venues-section::after,
+.menu-story-section::after,
+.flight-plan-section::after,
+.live-music-dispatch::after,
+.live-music-hero::after,
+.catering-menu-card::after {
+  opacity: .14;
+  background-position: 58% center;
+}
+.beer-stage::after,
+.beyond-beer-section::after,
+.campus-directory-section::after {
+  opacity: .18;
+  background-position: center;
+}
+.hangar-waitlist::after,
+.beer-dispatch::after,
+.brewery-tour-section::after,
+.newsletter::after {
+  opacity: .2;
+  background-position: 68% center;
+}
+.night-ops::before {
+  opacity: .12;
+  background-position: 42% center;
+}
+.coupon-manager::after { opacity: .08; }
+.page-hero > *,
+.menu-page-hero > *,
+.about-story-hero > *,
+.beer-page-hero > *,
+.section-dark > *,
+.beer-lineup-section > *,
+.about-flight-log > *,
+.music-venues-section > *,
+.menu-story-section > *,
+.beer-stage > *,
+.beyond-beer-section > *,
+.campus-directory-section > *,
+.hangar-waitlist > *,
+.beer-dispatch > *,
+.brewery-tour-section > *,
+.newsletter > *,
+.night-ops > *,
+.flight-plan-section > *,
+.live-music-dispatch > *,
+.live-music-hero > *,
+.catering-menu-card > *,
+.coupon-manager > * {
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 700px) {
+  .hero-p51 {
+    opacity: .46;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .45) 16%, #000 43%);
+    mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .45) 16%, #000 43%);
+  }
+  .page-hero::before,
+  .menu-page-hero::before,
+  .about-story-hero::before,
+  .beer-page-hero::before,
+  .section-dark::after,
+  .beer-lineup-section::after,
+  .about-flight-log::after,
+  .music-venues-section::after,
+  .menu-story-section::after,
+  .beer-stage::after,
+  .beyond-beer-section::after,
+  .campus-directory-section::after,
+  .hangar-waitlist::after,
+  .beer-dispatch::after,
+  .brewery-tour-section::after,
+  .newsletter::after,
+  .night-ops::before,
+  .flight-plan-section::after,
+  .live-music-dispatch::after,
+  .live-music-hero::after,
+  .catering-menu-card::after,
+  .coupon-manager::after {
+    opacity: .1;
+    background-position: 62% center;
+  }
+}
+

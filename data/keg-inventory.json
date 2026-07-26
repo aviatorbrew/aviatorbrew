@@ -1,0 +1,238 @@
+{
+  "items": [
+    {
+      "beerName": "3Bones",
+      "sixthBblKegs": 26,
+      "fiftyLKegs": 20,
+      "totalBbl": 12.86,
+      "sixtelsAvailableViaBackfill": 51
+    },
+    {
+      "beerName": "Airlift Pils",
+      "sixthBblKegs": 2,
+      "fiftyLKegs": 6,
+      "totalBbl": 2.89,
+      "sixtelsAvailableViaBackfill": 15
+    },
+    {
+      "beerName": "Apple Hisbiscus",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 6,
+      "totalBbl": 2.56,
+      "sixtelsAvailableViaBackfill": 15
+    },
+    {
+      "beerName": "Apple Lite",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 5,
+      "totalBbl": 2.13,
+      "sixtelsAvailableViaBackfill": 12
+    },
+    {
+      "beerName": "Aviator Apple Seltzer",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 3,
+      "totalBbl": 1.28,
+      "sixtelsAvailableViaBackfill": 7
+    },
+    {
+      "beerName": "Aviator Lager",
+      "sixthBblKegs": 8,
+      "fiftyLKegs": 1,
+      "totalBbl": 1.76,
+      "sixtelsAvailableViaBackfill": 2
+    },
+    {
+      "beerName": "Bee-17 Honey Ale",
+      "sixthBblKegs": 56,
+      "fiftyLKegs": 42,
+      "totalBbl": 27.23,
+      "sixtelsAvailableViaBackfill": 107
+    },
+    {
+      "beerName": "Bee-17 Mango",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 3,
+      "totalBbl": 1.28,
+      "sixtelsAvailableViaBackfill": 7
+    },
+    {
+      "beerName": "Bee-17 Peach Bomba",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 16,
+      "totalBbl": 6.82,
+      "sixtelsAvailableViaBackfill": 40
+    },
+    {
+      "beerName": "BlackMamba",
+      "sixthBblKegs": 72,
+      "fiftyLKegs": 21,
+      "totalBbl": 20.95,
+      "sixtelsAvailableViaBackfill": 53
+    },
+    {
+      "beerName": "Blueberry Warhead Sour",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 9,
+      "totalBbl": 3.83,
+      "sixtelsAvailableViaBackfill": 23
+    },
+    {
+      "beerName": "Cherry Warhead Sour",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 2,
+      "totalBbl": 0.85,
+      "sixtelsAvailableViaBackfill": 5
+    },
+    {
+      "beerName": "Cosmic Crush IPA",
+      "sixthBblKegs": 8,
+      "fiftyLKegs": 44,
+      "totalBbl": 20.08,
+      "sixtelsAvailableViaBackfill": 112
+    },
+    {
+      "beerName": "Devil's Nightmare",
+      "sixthBblKegs": 74,
+      "fiftyLKegs": 0,
+      "totalBbl": 12.33,
+      "sixtelsAvailableViaBackfill": 0
+    },
+    {
+      "beerName": "DevilsTripel",
+      "sixthBblKegs": 67,
+      "fiftyLKegs": 40,
+      "totalBbl": 28.21,
+      "sixtelsAvailableViaBackfill": 102
+    },
+    {
+      "beerName": "Hangar Gold",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 19,
+      "totalBbl": 8.1,
+      "sixtelsAvailableViaBackfill": 48
+    },
+    {
+      "beerName": "Heavy Haze Advisory",
+      "sixthBblKegs": 3,
+      "fiftyLKegs": 12,
+      "totalBbl": 5.61,
+      "sixtelsAvailableViaBackfill": 30
+    },
+    {
+      "beerName": "HogWild IPA",
+      "sixthBblKegs": 23,
+      "fiftyLKegs": 14,
+      "totalBbl": 9.8,
+      "sixtelsAvailableViaBackfill": 35
+    },
+    {
+      "beerName": "Hopocalypse Now",
+      "sixthBblKegs": 3,
+      "fiftyLKegs": 23,
+      "totalBbl": 10.3,
+      "sixtelsAvailableViaBackfill": 58
+    },
+    {
+      "beerName": "HotRodRed",
+      "sixthBblKegs": 38,
+      "fiftyLKegs": 2,
+      "totalBbl": 7.19,
+      "sixtelsAvailableViaBackfill": 5
+    },
+    {
+      "beerName": "Jet Juice",
+      "sixthBblKegs": 4,
+      "fiftyLKegs": 29,
+      "totalBbl": 13.02,
+      "sixtelsAvailableViaBackfill": 74
+    },
+    {
+      "beerName": "Jet Stream",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 25,
+      "totalBbl": 10.65,
+      "sixtelsAvailableViaBackfill": 63
+    },
+    {
+      "beerName": "Lite",
+      "sixthBblKegs": 4,
+      "fiftyLKegs": 43,
+      "totalBbl": 18.99,
+      "sixtelsAvailableViaBackfill": 109
+    },
+    {
+      "beerName": "MadBeach",
+      "sixthBblKegs": 44,
+      "fiftyLKegs": 0,
+      "totalBbl": 7.33,
+      "sixtelsAvailableViaBackfill": 0
+    },
+    {
+      "beerName": "Maximum Overhop",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 17,
+      "totalBbl": 7.24,
+      "sixtelsAvailableViaBackfill": 43
+    },
+    {
+      "beerName": "OktoberBeast",
+      "sixthBblKegs": 100,
+      "fiftyLKegs": 70,
+      "totalBbl": 46.49,
+      "sixtelsAvailableViaBackfill": 178
+    },
+    {
+      "beerName": "Pale Ale",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 37,
+      "totalBbl": 15.77,
+      "sixtelsAvailableViaBackfill": 94
+    },
+    {
+      "beerName": "Pilsner",
+      "sixthBblKegs": 6,
+      "fiftyLKegs": 22,
+      "totalBbl": 10.37,
+      "sixtelsAvailableViaBackfill": 56
+    },
+    {
+      "beerName": "PumpkinBeast",
+      "sixthBblKegs": 12,
+      "fiftyLKegs": 30,
+      "totalBbl": 14.78,
+      "sixtelsAvailableViaBackfill": 76
+    },
+    {
+      "beerName": "Purple Haze",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 7,
+      "totalBbl": 2.98,
+      "sixtelsAvailableViaBackfill": 17
+    },
+    {
+      "beerName": "Root Beer (NA)",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 2,
+      "totalBbl": 0.85,
+      "sixtelsAvailableViaBackfill": 5
+    },
+    {
+      "beerName": "SharkFight",
+      "sixthBblKegs": 0,
+      "fiftyLKegs": 8,
+      "totalBbl": 3.41,
+      "sixtelsAvailableViaBackfill": 20
+    },
+    {
+      "beerName": "Shogun Rice Lager",
+      "sixthBblKegs": 43,
+      "fiftyLKegs": 0,
+      "totalBbl": 7.17,
+      "sixtelsAvailableViaBackfill": 0
+    }
+  ],
+  "backfillPickupNote": "Sixtels backfilled from 50 L kegs must be picked up Monday–Friday, 8:30 AM–5:00 PM.",
+  "updatedAt": "2026-07-25T19:05:48.674Z",
+  "uploadedAt": "2026-07-25T21:54:22.847Z"
+}
