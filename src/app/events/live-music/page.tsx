@@ -1,8 +1,9 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowUpRight, Calendar, MapPin } from "@/components/icons";
-import { getLiveMusicSchedule, type LiveMusicShow } from "@/lib/live-music";
+import { getLiveMusicSchedule, liveMusicPageUrl, type LiveMusicShow } from "@/lib/live-music";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -22,7 +23,7 @@ function dateParts(date: string) {
 
 function clock(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Time TBA" : new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(date);
+  return Number.isNaN(date.getTime()) ? "Time TBA" : new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).format(date);
 }
 
 function ShowCard({ show, stage }: { show: LiveMusicShow; stage?: string }) {
@@ -55,6 +56,7 @@ function ShowCard({ show, stage }: { show: LiveMusicShow; stage?: string }) {
 }
 
 export default async function LiveMusicPage() {
+  redirect(liveMusicPageUrl);
   const { schedule, error } = await getLiveMusicSchedule();
   const shows = schedule?.shows || [];
   const venues = schedule?.venues || [];
@@ -63,7 +65,7 @@ export default async function LiveMusicPage() {
       <p className="eyebrow">Aviator Live · Flight schedule</p>
       <h1>Catch the next <em>set.</em></h1>
       <p>Every confirmed Aviator Live show, from intimate rooms to full-campus sound. Choose your stage, find your night, and get here early.</p>
-      <div className="hero-actions"><Link className="button" href="#shows" data-analytics="live_music_view_shows"><Calendar />View schedule</Link><Link className="button button-outline" href="/events" data-analytics="live_music_all_events">All events <ArrowUpRight /></Link></div>
+      <div className="hero-actions"><Link className="button" href="#shows" data-analytics="live_music_view_shows"><Calendar />View schedule</Link><a className="button button-outline" href={liveMusicPageUrl} target="_blank" rel="noreferrer" data-analytics="live_music_source">Aviator Live <ArrowUpRight /></a><Link className="button button-outline" href="/events" data-analytics="live_music_all_events">All events <ArrowUpRight /></Link></div>
     </div></section>
 
     <section id="shows" className="section live-music-section"><div className="content-wrap">

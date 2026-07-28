@@ -4,6 +4,7 @@ import Link from "next/link";
 import { InquiryForm } from "@/components/inquiry-form";
 import { ArrowUpRight, MapPin } from "@/components/icons";
 import { formatTourDate, formatTourPrice, getTourSummary } from "@/lib/tours";
+import { getBreweryHero } from "@/lib/brewery-photos";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ const flightLog = [
 ];
 
 export default async function AboutPage({ searchParams }: { searchParams: Promise<{ tour_payment?: string }> }) {
-  const tours = await getTourSummary();
+  const [tours, storyImage] = await Promise.all([getTourSummary(), getBreweryHero()]);
   const paymentResult = (await searchParams).tour_payment;
   return (
     <>
@@ -42,7 +43,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
 
       <section className="section about-story-section" id="our-story">
         <div className="content-wrap about-story-grid">
-          <div className="about-story-image"><Image src="/images/locations/hangar-bar.png" alt="Guests inside the Aviator Hangar Bar and brewery" fill sizes="(max-width: 800px) 100vw, 50vw" /></div>
+          <div className="about-story-image"><Image src={storyImage} alt="Guests inside the Aviator Hangar Bar and brewery" fill unoptimized sizes="(max-width: 800px) 100vw, 50vw" /></div>
           <div className="about-story-copy">
             <p className="eyebrow">The Aviator story</p>
             <h2>Built by <em>keeping pace.</em></h2>

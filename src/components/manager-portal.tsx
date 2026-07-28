@@ -1,9 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
+import { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
+import { managerSections, type ManagerSection } from "@/lib/manager-sections";
 import { CouponManager } from "@/components/coupons";
 import { MenuLibraryClient } from "@/components/menu-library-client";
 import { LocationManager } from "@/components/location-manager";
+import { BrandingManager } from "@/components/branding-manager";
+import { NewsletterManager } from "@/components/newsletter-manager";
+import { PaymentTestManager } from "@/components/payment-test-manager";
+import { WebsitePhotosLibrary } from "@/components/website-photos-library";
 
 type Signup = { id: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
 type ScheduledTour = { date: string; displayDate: string; time: "4:00 PM" | "6:00 PM"; guests: number; tickets: number; confirmed: boolean };
@@ -14,9 +21,9 @@ function TourManager() {
   const [message, setMessage] = useState("");
   const [cancelTarget, setCancelTarget] = useState<ScheduledTour | null>(null);
   const [busy, setBusy] = useState(false);
-  const [minimum, setMinimum] = useState(20);
-  const [tourPrice, setTourPrice] = useState(20);
-  function applyData(data: { signups: Signup[]; scheduledTours?: ScheduledTour[]; minimum?: number; priceCents?: number }) { setSignups(data.signups); setScheduledTours(data.scheduledTours || []); setMinimum(data.minimum || 20); setTourPrice((data.priceCents || 2000) / 100); }
+  const [minimum, setMinimum] = useState(DEFAULT_TOUR_MINIMUM);
+  const [tourPrice, setTourPrice] = useState(DEFAULT_TOUR_PRICE_CENTS / 100);
+  function applyData(data: { signups: Signup[]; scheduledTours?: ScheduledTour[]; minimum?: number; priceCents?: number }) { setSignups(data.signups); setScheduledTours(data.scheduledTours || []); setMinimum(data.minimum ?? DEFAULT_TOUR_MINIMUM); setTourPrice((data.priceCents ?? DEFAULT_TOUR_PRICE_CENTS) / 100); }
   async function load() { const r = await fetch("/api/manager/tours"); const b = await r.json(); if (!r.ok) throw new Error(b.error); applyData(b); }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
 
@@ -53,14 +60,14 @@ function TourManager() {
     applyData(b); setCancelTarget(null); setMessage(b.managerText || "Tour cancelled, guests rescheduled, and notifications sent.");
   }
 
-  return <section id="tours" className="coupon-manager tour-manager"><p className="eyebrow">Tour operations</p><h2>Scheduled tours</h2><p>Every upcoming flight is listed below. Set the launch threshold and ticket price below. Each flight can hold up to 25 guests; public copy, Stripe Checkout, and future email updates use these settings. Cancelling a flight moves every guest to the next available Saturday and emails the message you provide.</p><p className="media-message" role="status">{message}</p>
-    <form className="tour-threshold-form" onSubmit={saveSettings}><label>Guests required to launch a tour<input type="number" min="1" max="25" value={minimum} onChange={(event) => setMinimum(Number(event.target.value))} required /></label><label>Tour ticket price (USD)<input type="number" min="1" max="1000" step="0.01" value={tourPrice} onChange={(event) => setTourPrice(Number(event.target.value))} required /><small>Applied to each new Stripe Checkout session.</small></label><button className="button" disabled={busy}>{busy ? "Saving..." : "Save tour settings"}</button></form><div className="tour-schedule-grid">{scheduledTours.length ? scheduledTours.map((tour) => <article className="tour-schedule-card" key={tour.date + tour.time}><p className="eyebrow">{tour.confirmed ? "Tour is on" : "Tentatively set"}</p><h3>{tour.displayDate}</h3><strong>{tour.time}</strong><dl><div><dt>Guests</dt><dd>{tour.guests}</dd></div><div><dt>Tickets</dt><dd>{tour.tickets} / 25</dd></div><div><dt>Status</dt><dd>{tour.confirmed ? minimum + "-guest minimum met" : Math.max(minimum - tour.tickets, 0) + " more needed"}</dd></div></dl><button className="tour-cancel-button" type="button" onClick={() => setCancelTarget(tour)} disabled={busy}>Cancel + notify guests</button></article>) : <p className="tour-schedule-empty">No scheduled tours yet.</p>}</div>
+  return <section id="tours" className="coupon-manager tour-manager"><p className="eyebrow">Tour operations</p><h2>Scheduled tours</h2><p>Every upcoming flight is listed below. Set the launch threshold and ticket price below. Each flight can hold up to {TOUR_CAPACITY} guests; public copy, Stripe Checkout, and future email updates use these settings. Cancelling a flight moves every guest to the next available Saturday and emails the message you provide.</p><p className="media-message" role="status">{message}</p>
+    <form className="tour-threshold-form" onSubmit={saveSettings}><label>Guests required to launch a tour<input type="number" min="1" max={TOUR_CAPACITY} value={minimum} onChange={(event) => setMinimum(Number(event.target.value))} required /></label><label>Tour ticket price (USD)<input type="number" min="1" max="1000" step="0.01" value={tourPrice} onChange={(event) => setTourPrice(Number(event.target.value))} required /><small>Applied to each new Stripe Checkout session.</small></label><button className="button" disabled={busy}>{busy ? "Saving..." : "Save tour settings"}</button></form><div className="tour-schedule-grid">{scheduledTours.length ? scheduledTours.map((tour) => <article className="tour-schedule-card" key={tour.date + tour.time}><p className="eyebrow">{tour.confirmed ? "Tour is on" : "Tentatively set"}</p><h3>{tour.displayDate}</h3><strong>{tour.time}</strong><dl><div><dt>Guests</dt><dd>{tour.guests}</dd></div><div><dt>Tickets</dt><dd>{tour.tickets} / {TOUR_CAPACITY}</dd></div><div><dt>Status</dt><dd>{tour.confirmed ? minimum + "-guest minimum met" : Math.max(minimum - tour.tickets, 0) + " more needed"}</dd></div></dl><button className="tour-cancel-button" type="button" onClick={() => setCancelTarget(tour)} disabled={busy}>Cancel + notify guests</button></article>) : <p className="tour-schedule-empty">No scheduled tours yet.</p>}</div>
     {cancelTarget ? <form className="tour-cancel-form" onSubmit={cancel}><p className="eyebrow">Cancel scheduled flight</p><h3>{cancelTarget.displayDate} at {cancelTarget.time}</h3><p>This will move {cancelTarget.guests} guest registration(s) to the next available Saturday flight(s) and send the following message to every guest.</p><label>Message to guests<textarea name="message" required rows={4} defaultValue={"We are sorry, but this brewery tour needs to be rescheduled. Your registration has been moved to the next available tour date."} /></label><div><button className="button" disabled={busy}>{busy ? "Rescheduling..." : "Cancel, reschedule + send"}</button><button className="button button-outline" type="button" onClick={() => setCancelTarget(null)} disabled={busy}>Keep this tour</button></div></form> : null}
     <h3 className="tour-signups-heading">Individual signups</h3><form onSubmit={add} className="manager-add-form"><label>Name<input name="name" required /></label><label>Email<input name="email" type="email" required /></label><label>Tickets<input name="tickets" type="number" min="1" max="6" defaultValue="1" required /></label><button className="button" disabled={busy}>Add guest</button></form><ul className="coupon-manager-list">{signups.length ? signups.map((item) => <li key={item.id}><span><strong>{item.name}</strong> - {item.tickets} ticket(s), {item.tourDate} {item.tourTime}<br />{item.email} · <em>{item.paymentStatus === "paid" ? "Paid via Stripe" : "Payment pending"}</em></span><button type="button" onClick={() => remove(item.id)}>Remove</button></li>) : <li>No tour signups yet.</li>}</ul>
   </section>;
 }
 
-type ManagedEvent = { id: string; title: string; date: string; startTime: string; endTime: string; location: string; description: string; ticketUrl: string; published: boolean };
+type ManagedEvent = { id: string; title: string; date: string; startTime: string; endTime: string; location: string; description: string; ticketUrl: string; imageUrl?: string; published: boolean; recurrence?: { frequency: string; interval: number; weekday?: number; ordinal?: number; endDate?: string } };
 
 function EventManager() {
   const [events, setEvents] = useState<ManagedEvent[]>([]);
@@ -70,8 +77,8 @@ function EventManager() {
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true);
-    const form = event.currentTarget; const values = Object.fromEntries(new FormData(form).entries());
-    const response = await fetch("/api/manager/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...values, published: values.published === "on" }) });
+    const form = event.currentTarget; const values = new FormData(form); values.set("published", values.get("published") === "on" ? "true" : "false");
+    const response = await fetch("/api/manager/events", { method: "POST", body: values });
     const body = await response.json(); setBusy(false);
     if (!response.ok) { setMessage(body.error); return; }
     setEvents(body.events || []); form.reset(); setMessage("Special event saved and published.");
@@ -86,8 +93,8 @@ function EventManager() {
     if (!response.ok) { setMessage(body.error); return; } setEvents(body.events || []); setMessage("Event deleted.");
   }
   return <section id="events" className="coupon-manager manager-events"><p className="eyebrow">Event operations</p><h2>Add a special event</h2><p>Publish non-music events to the Aviator Events page: beer releases, tastings, watch parties, campus gatherings, holiday events, and more. Live music continues to come from Aviator Live.</p><p className="media-message" role="status">{message}</p>
-    <form className="manager-event-form" onSubmit={create}><label>Event title<input name="title" required maxLength={120} placeholder="Example: Summer Lager Release" /></label><label>Date<input name="date" type="date" required /></label><label>Starts<input name="startTime" type="time" required /></label><label>Ends <small>(optional)</small><input name="endTime" type="time" /></label><label className="manager-event-wide">Location<input name="location" required maxLength={120} placeholder="Aviator Hangar Bar" /></label><label className="manager-event-wide">Description<textarea name="description" required rows={3} maxLength={1200} placeholder="Tell guests what is happening and why they should join." /></label><label className="manager-event-wide">Details or ticket URL <small>(optional)</small><input name="ticketUrl" type="url" placeholder="https://..." /></label><label className="manager-event-publish"><input name="published" type="checkbox" defaultChecked /> Publish on the Events page now</label><button className="button" disabled={busy}>{busy ? "Saving..." : "Publish special event"}</button></form>
-    <h3 className="tour-signups-heading">Managed special events</h3><div className="manager-events-list">{events.length ? events.map((item) => <article key={item.id}><div><p className="eyebrow">{item.published ? "Published" : "Draft"}</p><h3>{item.title}</h3><p>{item.date} · {item.startTime}{item.endTime ? `–${item.endTime}` : ""} · {item.location}</p><small>{item.description}</small></div><footer><button type="button" onClick={() => toggle(item)} disabled={busy}>{item.published ? "Unpublish" : "Publish"}</button><button type="button" onClick={() => remove(item.id)} disabled={busy}>Delete</button></footer></article>) : <p className="tour-schedule-empty">No special events have been added yet.</p>}</div>
+    <form className="manager-event-form" onSubmit={create}><label>Event title<input name="title" required maxLength={120} placeholder="Example: Summer Lager Release" /></label><label>Date<input name="date" type="date" required /></label><label>Starts<input name="startTime" type="time" required /></label><label>Ends <small>(optional)</small><input name="endTime" type="time" /></label><label>Repeat<select name="recurrenceFrequency"><option value="none">Does not repeat</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly-date">Every month on this date</option><option value="monthly-weekday">Every month by weekday</option><option value="yearly">Every year</option></select></label><label>Repeat every <small>(interval)</small><input name="recurrenceInterval" type="number" min="1" max="12" defaultValue="1" /></label><label>Weekday <small>(monthly option)</small><select name="recurrenceWeekday"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></label><label>Occurrence <small>(monthly weekday)</small><select name="recurrenceOrdinal"><option value="1">First</option><option value="2">Second</option><option value="3">Third</option><option value="4">Fourth</option><option value="5">Fifth</option><option value="-1">Last</option></select></label><label>Repeat until <small>(optional)</small><input name="recurrenceEndDate" type="date" /></label><label className="manager-event-wide">Location<input name="location" required maxLength={120} placeholder="Aviator Hangar Bar" /></label><label className="manager-event-wide">Description<textarea name="description" required rows={3} maxLength={1200} placeholder="Tell guests what is happening and why they should join." /></label><label className="manager-event-wide">Details or ticket URL <small>(optional)</small><input name="ticketUrl" type="url" placeholder="https://..." /></label><label className="manager-event-wide">Event picture <small>(optional, JPG/PNG/WEBP up to 10 MB)</small><input name="image" type="file" accept="image/jpeg,image/png,image/webp" /></label><label className="manager-event-publish"><input name="published" type="checkbox" defaultChecked /> Publish on the Events page now</label><button className="button" disabled={busy}>{busy ? "Saving..." : "Publish special event"}</button></form>
+    <h3 className="tour-signups-heading">Managed special events</h3><div className="manager-events-list">{events.length ? events.map((item) => <article key={item.id}><div className="manager-event-content">{item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <div className="manager-event-image-placeholder">Event</div>}<div className="manager-event-meta"><p className="eyebrow">{item.published ? "Published" : "Draft"}</p><h3>{item.title}</h3><p>{item.date} · {item.startTime}{item.endTime ? `–${item.endTime}` : ""} · {item.location}</p>{item.recurrence && item.recurrence.frequency !== "none" ? <small>Repeats: {item.recurrence.frequency.replace("-", " ")} every {item.recurrence.interval}{item.recurrence.endDate ? ` until ${item.recurrence.endDate}` : ""}</small> : null}</div><p className="manager-event-description">{item.description}</p></div><footer><button type="button" onClick={() => toggle(item)} disabled={busy}>{item.published ? "Unpublish" : "Publish"}</button><button type="button" onClick={() => remove(item.id)} disabled={busy}>Delete</button></footer></article>) : <p className="tour-schedule-empty">No special events have been added yet.</p>}</div>
   </section>;
 }
 
@@ -130,7 +137,7 @@ function BeerManager() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<PortalBeer | null>(null);
-  async function load() { const response = await fetch("/api/manager/beers"); const body = await response.json(); if (!response.ok) throw new Error(body.error); setBeers(body.beers || []); }
+  async function load() { const response = await fetch("/api/manager/beers", { cache: "no-store" }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setBeers(body.beers || []); }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
   function beginEdit(beer: PortalBeer) { setEditing(beer); setMessage("Editing " + beer.name + " in place."); }
   async function create(event: FormEvent<HTMLFormElement>) {
@@ -189,12 +196,96 @@ function BeverageManager() {
   </section>;
 }
 
-export function ManagerPortal() {
- const [ready,setReady]=useState(false),[authenticated,setAuthenticated]=useState(false),[password,setPassword]=useState(""),[message,setMessage]=useState("");
- useEffect(()=>{fetch("/api/manager/session").then(r=>r.json()).then(b=>setAuthenticated(b.authenticated)).finally(()=>setReady(true));},[]);
- async function login(event:FormEvent){event.preventDefault();const r=await fetch("/api/manager/session",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password})});const b=await r.json();if(!r.ok){setMessage(b.error);return}setAuthenticated(true);setPassword("");}
- async function logout(){await fetch("/api/manager/session",{method:"DELETE"});setAuthenticated(false);}
- if(!ready)return <main className="coupon-validator"><section><p>Checking manager access...</p></section></main>;
- if(!authenticated)return <main className="coupon-validator"><section><p className="eyebrow">Aviator operations</p><h1>Manager login</h1><p>Manage tours, special events, beers, beverages, limited coupon releases, event blackouts, and all media.</p><form onSubmit={login}><label>Manager password<input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} required /></label><button className="button">Open manager portal</button></form>{message&&<p className="coupon-validation-message error">{message}</p>}</section></main>;
- return <main className="manager-portal"><div className="content-wrap"><div className="media-library-heading"><div><p className="eyebrow">Aviator operations</p><h1>Manager Portal</h1><p>Tour operations, special events, beer, beverage and keg management, limited coupon releases, and full media access.</p></div><button className="media-signout" onClick={logout}>Sign out</button></div><nav className="manager-section-nav" aria-label="Manager sections"><a href="#tours">Tours</a><a href="#locations">Locations</a><a href="#coupons">Coupons</a><a href="#beers">Beers</a><a href="#beverages">Beverages</a><a href="#kegs">Kegs</a><a href="#events">Events</a><a href="#media">Menus &amp; Photo Library</a></nav><TourManager/><LocationManager/><div id="coupons"><CouponManager accessKey="manager-session" /></div><BeerManager/><BeverageManager/><KegInventoryManager/><EventManager/><div id="media"><MenuLibraryClient managerMode /></div></div></main>;
+function BreweryPhotosManager() {
+  return <section className="manager-brewery-photos"><WebsitePhotosLibrary accessKey="manager-session" location={{ slug: "brewery", name: "Brewery" }} /></section>;
+}
+
+function AmphitheaterPhotosManager() {
+  return <section className="manager-brewery-photos manager-amphitheater-photos"><WebsitePhotosLibrary accessKey="manager-session" location={{ slug: "aviator-amphitheater", name: "Aviator Amphitheater" }} /></section>;
+}
+
+function ManagerOverview() {
+  return <section className="manager-overview">
+    <p className="eyebrow">Manager dashboard</p>
+    <h2>Choose a section</h2>
+    <div className="manager-overview-grid">
+      {managerSections.filter((item) => item.id !== "overview").map((item) => item.id === "beers" ? <a href={item.href} key={item.id}><strong>{item.label}</strong><span>{item.description}</span></a> : <Link href={item.href} key={item.id}><strong>{item.label}</strong><span>{item.description}</span></Link>)}
+    </div>
+  </section>;
+}
+
+function ManagerSectionContent({ section }: { section: ManagerSection }) {
+  switch (section) {
+    case "newsletter": return <NewsletterManager />;
+    case "tours": return <TourManager />;
+    case "payments": return <PaymentTestManager />;
+    case "locations": return <LocationManager />;
+    case "coupons": return <div id="coupons"><CouponManager accessKey="manager-session" /></div>;
+    case "beers": return <BeerManager />;
+    case "brewery-photos": return <BreweryPhotosManager />;
+    case "amphitheater-photos": return <AmphitheaterPhotosManager />;
+    case "beverages": return <BeverageManager />;
+    case "kegs": return <KegInventoryManager />;
+    case "events": return <EventManager />;
+    case "media": return <div className="manager-media-route"><BrandingManager /><MenuLibraryClient managerMode /></div>;
+    default: return <ManagerOverview />;
+  }
+}
+
+export function ManagerPortal({ section = "overview" }: { section?: ManagerSection }) {
+  const [ready, setReady] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/manager/session").then((response) => response.json()).then((body) => setAuthenticated(body.authenticated)).finally(() => setReady(true));
+  }, []);
+
+  async function login(event: FormEvent) {
+    event.preventDefault();
+    setMessage("");
+    const response = await fetch("/api/manager/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password }) });
+    const body = await response.json();
+    if (!response.ok) {
+      setMessage(body.error);
+      return;
+    }
+    setAuthenticated(true);
+    setPassword("");
+  }
+
+  async function requestPasswordReset() {
+    setResetBusy(true);
+    setMessage("");
+    const response = await fetch("/api/manager/password-reset", { method: "POST" });
+    const body = await response.json();
+    setResetBusy(false);
+    setMessage(response.ok ? body.message : body.error);
+  }
+
+  async function logout() {
+    await fetch("/api/manager/session", { method: "DELETE" });
+    setAuthenticated(false);
+  }
+
+  if (!ready) return <main className="coupon-validator"><section><p>Checking manager access...</p></section></main>;
+  if (!authenticated) return <main className="coupon-validator"><section><p className="eyebrow">Aviator operations</p><h1>Manager login</h1><p>Manage tours, Flight Crew communications, special events, beers, beverages, coupons, and website media.</p><form onSubmit={login}><label>Manager password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label><button className="button">Open manager portal</button><button className="manager-reset-button" type="button" onClick={requestPasswordReset} disabled={resetBusy}>{resetBusy ? "Sending reset email..." : "Reset password"}</button></form>{message ? <p className="coupon-validation-message" role="status">{message}</p> : null}</section></main>;
+
+  const activeSection = managerSections.find((item) => item.id === section) || managerSections[0];
+
+  return <main className="manager-portal">
+    <nav className="manager-top-menu" aria-label="Manager sections">
+      <Link className="manager-top-brand" href="/manager">Aviator <span>Manager</span></Link>
+      <div className="manager-top-links">
+        {managerSections.map((item) => item.id === "beers" ? <a className={item.id === section ? "is-active" : ""} href={item.href} aria-current={item.id === section ? "page" : undefined} key={item.id}>{item.label}</a> : <Link className={item.id === section ? "is-active" : ""} href={item.href} aria-current={item.id === section ? "page" : undefined} key={item.id}>{item.label}</Link>)}
+      </div>
+      <button className="manager-top-signout" type="button" onClick={logout}>Sign out</button>
+    </nav>
+    <div className="content-wrap manager-page-shell">
+      <header className="manager-page-heading"><p className="eyebrow">Aviator operations</p><h1>{activeSection.label}</h1><p>{activeSection.description}</p></header>
+      <div className="manager-route-content"><ManagerSectionContent section={section} /></div>
+    </div>
+  </main>;
 }

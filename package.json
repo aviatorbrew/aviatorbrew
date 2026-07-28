@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "start:public": "next start -H 0.0.0.0 -p ${PORT:-4173}"
+    "start:public": "next start -H 0.0.0.0 -p ${PORT:-4173}",
+    "build:cloudflare": "opennextjs-cloudflare build",
+    "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "build:sites": "opennextjs-cloudflare build && node scripts/patch-opennext-require.mjs && rm -rf .open-next/server-functions/default/public",
+    "pack:sites": "npm run build:sites && tar -czf /tmp/aviatorbrew-sites-opennext-final.tar.gz .openai/hosting.json wrangler.jsonc .open-next"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
@@ -17,12 +21,14 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.2",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "tailwindcss": "^4.1.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "wrangler": "^4.114.0"
   }
 }

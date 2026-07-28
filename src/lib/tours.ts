@@ -1,12 +1,6 @@
-import { promises as fs } from "fs";
-import path from "path";
-import { isMailConfigured, sendMail, verifySmtpOnStart } from "@/lib/mail";
+import { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
 
-export const TOUR_CAPACITY = 25;
-export const DEFAULT_TOUR_MINIMUM = 20;
-export const DEFAULT_TOUR_PRICE_CENTS = 2000;
-// Backward-compatible default. Runtime tour logic reads the manager-configured threshold from storage.
-export const TOUR_MINIMUM = DEFAULT_TOUR_MINIMUM;
+export { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY, TOUR_MINIMUM } from "@/lib/tour-config";
 export type TourSlot = "4:00 PM" | "6:00 PM";
 
 export type TourSignup = {
@@ -34,27 +28,45 @@ export type TourSummary = {
   priceCents: number;
 };
 
-verifySmtpOnStart();
+const smtpConfigured = () => process.env.MAIL_MODE === "smtp" && Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD && process.env.MAIL_FROM_EMAIL);
 
 const validMinimum = (value: unknown) => Number.isInteger(value) && Number(value) >= 1 && Number(value) <= TOUR_CAPACITY ? Number(value) : DEFAULT_TOUR_MINIMUM;
 const validPriceCents = (value: unknown) => Number.isInteger(value) && Number(value) >= 100 && Number(value) <= 100000 ? Number(value) : DEFAULT_TOUR_PRICE_CENTS;
-const emptyStore = (): TourStore => ({ signups: [], notifications: [], minimum: DEFAULT_TOUR_MINIMUM, priceCents: DEFAULT_TOUR_PRICE_CENTS, cancelledTours: [] });
-const dataFile = () => process.env.TOUR_DATA_FILE || path.join(process.cwd(), "data", "tour-signups.json");
+const runtimeNumber = (name: string) => { const raw = process.env[name]; if (raw === undefined || raw === "") return undefined; const value = Number(raw); return Number.isFinite(value) ? value : undefined; };
+const configuredMinimum = () => validMinimum(runtimeNumber("TOUR_MINIMUM") ?? runtimeNumber("NEXT_PUBLIC_TOUR_MINIMUM") ?? DEFAULT_TOUR_MINIMUM);
+const configuredPriceCents = () => validPriceCents(runtimeNumber("TOUR_PRICE_CENTS") ?? runtimeNumber("NEXT_PUBLIC_TOUR_PRICE_CENTS") ?? DEFAULT_TOUR_PRICE_CENTS);
+const emptyStore = (): TourStore => ({ signups: [], notifications: [], minimum: configuredMinimum(), priceCents: configuredPriceCents(), cancelledTours: [] });
+const dataFile = () => process.env.TOUR_DATA_FILE || "data/tour-signups.json";
+const dataDirectory = (file: string) => { const index = file.lastIndexOf("/"); return index > -1 ? file.slice(0, index) || "." : "."; };
+const storageUnavailable = (error: unknown) => {
+  const code = (error as NodeJS.ErrnoException).code;
+  if (code === "ENOENT" || code === "ENOSYS" || code === "EROFS") return true;
+  const message = error instanceof Error ? error.message : String(error);
+  return /not implemented|not supported|not available|unsupported|Cannot find module|readFile.*function|mkdir.*function|writeFile.*function/i.test(message);
+};
 
 async function readStore(): Promise<TourStore> {
   try {
+    const { promises: fs } = await import("fs");
     const parsed = JSON.parse(await fs.readFile(dataFile(), "utf8")) as Partial<TourStore>;
-    return { signups: Array.isArray(parsed.signups) ? parsed.signups : [], notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [], minimum: validMinimum(parsed.minimum), priceCents: validPriceCents(parsed.priceCents), cancelledTours: Array.isArray(parsed.cancelledTours) ? parsed.cancelledTours.filter((key): key is string => typeof key === "string") : [] };
+    const fallback = emptyStore();
+    return { signups: Array.isArray(parsed.signups) ? parsed.signups : [], notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [], minimum: parsed.minimum === undefined ? fallback.minimum : validMinimum(parsed.minimum), priceCents: parsed.priceCents === undefined ? fallback.priceCents : validPriceCents(parsed.priceCents), cancelledTours: Array.isArray(parsed.cancelledTours) ? parsed.cancelledTours.filter((key): key is string => typeof key === "string") : [] };
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptyStore();
+    if (storageUnavailable(error)) return emptyStore();
     throw error;
   }
 }
 
 async function writeStore(store: TourStore) {
-  const file = dataFile();
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, JSON.stringify(store, null, 2) + "\n", "utf8");
+  try {
+    const { promises: fs } = await import("fs");
+    const file = dataFile();
+    await fs.mkdir(dataDirectory(file), { recursive: true });
+    await fs.writeFile(file, JSON.stringify(store, null, 2) + "\n", "utf8");
+  } catch (error) {
+    if (storageUnavailable(error)) throw new Error("Tour signup storage is not writable in this environment. Update hosted tour settings with TOUR_MINIMUM and TOUR_PRICE_CENTS, or configure writable storage.");
+    throw error;
+  }
 }
 
 function easternParts(value: Date) {
@@ -175,7 +187,7 @@ export function formatTourDate(date: string) {
 }
 
 export function isTourEmailConfigured() {
-  return isMailConfigured() || Boolean(process.env.TOUR_EMAIL_WEBHOOK_URL || (process.env.RESEND_API_KEY && process.env.TOUR_FROM_EMAIL));
+  return smtpConfigured() || Boolean(process.env.TOUR_EMAIL_WEBHOOK_URL || (process.env.RESEND_API_KEY && process.env.TOUR_FROM_EMAIL));
 }
 
 type TourMail = { to: string; subject: string; text: string; html: string; category: string };
@@ -193,7 +205,10 @@ function tourEmailHtml(input: { title: string; status: string; date: string; tim
 }
 
 async function deliverTourEmail(message: TourMail) {
-  if (isMailConfigured()) return sendMail({ to: message.to, subject: message.subject, text: message.text, html: message.html, replyTo: "tours@aviatorbrew.com" });
+  if (smtpConfigured()) {
+    const { sendMail } = await import("@/lib/mail");
+    return sendMail({ to: message.to, subject: message.subject, text: message.text, html: message.html, replyTo: "tours@aviatorbrew.com" });
+  }
   const webhook = process.env.TOUR_EMAIL_WEBHOOK_URL;
   if (webhook) {
     const response = await fetch(webhook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...message, replyTo: "tours@aviatorbrew.com", source: "aviatorbrew.com" }) });

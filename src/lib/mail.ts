@@ -5,30 +5,35 @@ type MailMessage = { to: string; subject: string; text: string; html?: string; r
 let transporter: nodemailer.Transporter | undefined;
 let verification: Promise<void> | undefined;
 
-function smtpConfigured() {
+function mailConfigured() {
+  if (process.env.MAIL_MODE === "sendmail") return Boolean(process.env.MAIL_FROM_EMAIL);
   return process.env.MAIL_MODE === "smtp" && Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD && process.env.MAIL_FROM_EMAIL);
 }
 
 function getTransporter() {
-  if (!smtpConfigured()) return undefined;
+  if (!mailConfigured()) return undefined;
   if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 465),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
-    });
+    if (process.env.MAIL_MODE === "sendmail") {
+      transporter = nodemailer.createTransport({ sendmail: true, newline: "unix", path: process.env.SENDMAIL_PATH || "/usr/sbin/sendmail" });
+    } else {
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 465),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+      });
+    }
   }
   return transporter;
 }
 
 export function isMailConfigured() {
-  return smtpConfigured();
+  return mailConfigured();
 }
 
 export function verifySmtpOnStart() {
   const transport = getTransporter();
-  if (!transport || process.env.SMTP_VERIFY_ON_START !== "true") return;
+  if (!transport || process.env.MAIL_MODE !== "smtp" || process.env.SMTP_VERIFY_ON_START !== "true") return;
   if (!verification) {
     verification = transport.verify().then(() => {
       console.info("mail.smtp_verified");
@@ -46,8 +51,7 @@ export async function sendMail(message: MailMessage) {
   }
   const transport = getTransporter();
   if (!transport) return false;
-  verifySmtpOnStart();
-  if (verification) await verification;
+  if (process.env.MAIL_MODE === "smtp") { verifySmtpOnStart(); if (verification) await verification; }
   await transport.sendMail({
     from: { name: process.env.MAIL_FROM_NAME || "Aviator Brewing Company", address: process.env.MAIL_FROM_EMAIL! },
     to: message.to,

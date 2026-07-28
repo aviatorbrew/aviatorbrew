@@ -1,5 +1,11 @@
 .env.local
+.env.deploy.local
+.deploy-state.local
 node_modules
 .next
+cloudflare-env.d.ts
+.dev.vars
+.wrangler
+.open-next
 data/tour-signups.json
 data/coupons.json

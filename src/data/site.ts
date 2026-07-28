@@ -1,6 +1,6 @@
 export type Location = {
   slug: string; name: string; shortName: string; type: string; description: string;
-  address: string; phone: string; hours: string; menu?: string; events?: boolean;
+  address: string; phone: string; hours: string; menu?: string; events?: boolean; comingSoon?: boolean;
   image: string; accessibility: string; parking: string;
 };
 
@@ -26,20 +26,20 @@ export type Event = {
 export const orderFoodUrl = "/order-food";
 
 export const primaryNav = [
-  { label: "Beer", href: "/beer" },
-  { label: "Locations + Dining", href: "/locations" },
+  { label: "Beer", href: "/beer", children: [{ label: "Brewery", href: "/brewery" }] },
+  { label: "Locations", href: "/locations" },
   { label: "Events", href: "/events" },
   { label: "Private Events", href: "/private-events" },
   { label: "About & Tours", href: "/about" },
-  { label: "More", href: "/more" },
 ];
 
 export const locations: Location[] = [
   { slug: "hangar-bar", name: "Aviator Hangar Bar", shortName: "Hangar Bar", type: "Flagship brewery campus", description: "Fresh Aviator beer, scratch-made food, live music, and a front-row seat to the energy of the brewery campus.", address: "688 Brewing Drive, Fuquay-Varina, NC 27526", phone: "919-567-2337", hours: "Sun–Tue 11am–10pm · Wed–Thu 11am–12am · Fri–Sat 11am–1am", menu: "/locations#menus", events: true, image: "/images/locations/hangar-bar.png", accessibility: "Step-free entry and accessible restrooms.", parking: "On-site parking with accessible spaces." },
+  { slug: "aviator-amphitheater", name: "Aviator Amphitheater", shortName: "Aviator Amphitheater", type: "Outdoor concert venue", description: "Big-stage energy for concerts, festivals, and brewery campus nights under the open sky.", address: "688 Brewing Drive, Fuquay-Varina, NC 27526", phone: "919-567-2337", hours: "Event schedule varies", events: true, image: "/images/website-photos/90-brewery-campus.jpg", accessibility: "Accessible event routes and seating are available.", parking: "On-site brewery campus parking is available." },
   { slug: "taphouse", name: "Aviator TapHouse", shortName: "TapHouse", type: "The original Aviator", description: "Brewery-fresh beer and gastropub favorites in the historic Varina train depot.", address: "600 E. Broad St., Fuquay-Varina, NC 27526", phone: "919-552-8826", hours: "Mon–Thu 11:30am–11pm · Fri–Sat 11:30am–1am · Sun 11:30am–10pm", menu: "/locations#menus", image: "/images/locations/taphouse.png", accessibility: "Accessible entry and seating available.", parking: "Street and nearby public parking." },
   { slug: "pizza-pub", name: "Aviator Pizza Pub", shortName: "Pizza Pub", type: "Pizza + BeerShop", description: "Brick-oven pizza, Aviator beer, a rooftop vibe, and beer to take home.", address: "601 E. Broad St., Fuquay-Varina, NC 27526", phone: "919-346-8206", hours: "Mon–Thu 11:30am–11pm · Fri–Sat 11:30am–12am · Sun 11:30am–10pm", menu: "/locations#menus", image: "/images/locations/pizza-pub.png", accessibility: "Accessible entry and main-level seating.", parking: "Street and nearby public parking." },
-  { slug: "harddeck", name: "Aviator HardDeck Restaurant", shortName: "HardDeck", type: "Steakhouse experience", description: "Hand-cut steaks, warm hospitality, and Aviator’s unmistakable energy.", address: "688 Brewing Drive, Fuquay-Varina, NC 27526", phone: "919-567-2337", hours: "Hours coming soon", image: "/images/locations/harddeck.png", accessibility: "Accessibility details coming soon.", parking: "Campus parking available." },
-  { slug: "c-54-airplane-bar", name: "Aviator C-54 Airplane Bar", shortName: "C-54 Airplane Bar", type: "Aviation landmark", description: "A one-of-a-kind bar experience built around an iconic Aviator aircraft.", address: "688 Brewing Drive, Fuquay-Varina, NC 27526", phone: "919-567-2337", hours: "Hours coming soon", image: "/images/locations/c-54-airplane-bar.png", accessibility: "Accessibility details coming soon.", parking: "Campus parking available." },
+  { slug: "harddeck", name: "Aviator HardDeck Restaurant", shortName: "HardDeck", type: "Future steakhouse restaurant", description: "A future campus restaurant planned around hand-cut steaks, warm hospitality, and Aviator’s unmistakable energy.", address: "688 Brewing Drive, Fuquay-Varina, NC 27526", phone: "919-567-2337", hours: "Coming soon", comingSoon: true, image: "/images/locations/harddeck.png", accessibility: "Accessibility details will be published before opening.", parking: "Campus parking details will be published before opening." },
+  { slug: "c-54-airplane-bar", name: "Aviator C-54 Airplane Bar", shortName: "C-54 Airplane Bar", type: "Future aviation landmark bar", description: "A future one-of-a-kind bar experience planned around an iconic Aviator aircraft.", address: "688 Brewing Drive, Fuquay-Varina, NC 27526", phone: "919-567-2337", hours: "Coming soon", comingSoon: true, image: "/images/locations/c-54-airplane-bar.png", accessibility: "Accessibility details will be published before opening.", parking: "Campus parking details will be published before opening." },
   { slug: "ready-room", name: "Ready Room Liquor Lounge", shortName: "Ready Room", type: "Cocktails + private events", description: "A private-event room for up to 70 guests including the bar, with aviation-inspired cocktails, a stage, microphone, full sound, and AV capability.", address: "688 Brewing Drive, Fuquay-Varina, NC 27526", phone: "919-567-2337", hours: "Event hours vary", events: true, image: "/images/locations/ready-room.png", accessibility: "Accessible entry and event seating.", parking: "Campus parking available." },
   { slug: "speakeasy", name: "Aviator Speakeasy Liquor Lounge", shortName: "Speakeasy", type: "Whiskey + cocktails", description: "An intimate lounge for considered cocktails, whiskey, and a little after-hours mystery.", address: "688 Brewing Drive, Fuquay-Varina, NC 27526", phone: "919-567-2337", hours: "Hours coming soon", image: "/images/locations/speakeasy.png", accessibility: "Accessibility details coming soon.", parking: "Campus parking available." },
 ];
@@ -79,7 +79,6 @@ export const events: Event[] = [
 ];
 
 export const pageContent: Record<string, { eyebrow: string; title: string; description: string; action: string; form?: "contact" | "event" | "career" | "band" | "donation" | "job" }> = {
-  brewery: { eyebrow: "The Brewery", title: "Built here. Poured here. Enjoyed here.", description: "Aviator’s new brewery campus brings brewing, food, music, and gathering together under one flight path.", action: "Explore locations" },
   distillery: { eyebrow: "Gold Leaf Distilling", title: "A new spirit of Aviator.", description: "Handcrafted cocktails and distilling experiences are part of the next Aviator chapter.", action: "Visit the campus" },
   "private-events": { eyebrow: "Private Events", title: "Make your next gathering take off.", description: "Private events are hosted in the Ready Room: an aviation-inspired room for up to 70 guests including the bar, with a stage, microphone, full sound, AV capability, menus, and an experienced crew ready to help.", action: "Plan your event", form: "event" },
   careers: { eyebrow: "Careers", title: "Come work where the good times are made.", description: "We’re looking for thoughtful, energetic people who love hospitality, craft, and community.", action: "Tell us about yourself", form: "career" },

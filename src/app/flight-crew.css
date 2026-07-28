@@ -1,0 +1,55 @@
+.newsletter-audience-count small {
+  margin-top: .35rem;
+  color: #efb45f;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.newsletter-welcome-note {
+  padding: 1rem 1.2rem;
+  border-left: 3px solid #efb45f;
+  background: #102f49;
+}
+
+.newsletter-welcome-note h3 { margin: 0 0 .4rem; color: #f2f8fa; }
+.newsletter-welcome-note p { margin: 0; color: #bdd2dd; font-size: .8rem; line-height: 1.5; }
+.flight-crew-welcome-editor .newsletter-copy-form { max-width: none; }
+
+.newsletter-test-address {
+  display: grid;
+  flex: 1;
+  gap: .3rem;
+  color: #d6e7ef;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.newsletter-test-address input {
+  width: min(100%, 24rem);
+  box-sizing: border-box;
+  border: 1px solid #5883a0;
+  background: #071d30;
+  color: #f2f7fa;
+  padding: .65rem;
+  font: inherit;
+}
+
+.newsletter-subscriber-head,
+.newsletter-subscriber-row {
+  grid-template-columns: minmax(15rem, 2fr) minmax(7rem, .65fr) minmax(8rem, .8fr) minmax(8rem, .8fr) 5rem;
+  min-width: 50rem;
+}
+
+.flight-crew-status {
+  color: #efb45f;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.flight-crew-status.confirmed { color: #a9dca9; }
+
+@media (max-width: 620px) {
+  .newsletter-tabs { overflow-x: auto; }
+  .newsletter-tabs button { flex: 0 0 auto; }
+  .newsletter-test-address input { width: 100%; }
+}

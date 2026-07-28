@@ -1,0 +1,64 @@
+.manager-payment-test {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(18rem, 1fr);
+  gap: 1px;
+  border: 1px solid #397099;
+  background: #397099;
+}
+.manager-payment-test-summary,
+.manager-payment-test-status {
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: #0c2a43;
+}
+.manager-payment-test h2,
+.manager-payment-test h3 {
+  margin: 0;
+  color: #f2f7fa;
+  font-family: Impact, Haettenschweiler, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: .9;
+  text-transform: uppercase;
+}
+.manager-payment-test h2 { font-size: clamp(3rem, 6vw, 5.5rem); }
+.manager-payment-test h3 { font-size: clamp(2rem, 3vw, 3rem); }
+.manager-payment-test-summary > p:not(.eyebrow),
+.manager-payment-test-status > p:not(.eyebrow) {
+  max-width: 42rem;
+  color: #c2d7e3;
+  line-height: 1.65;
+}
+.manager-payment-test-warning {
+  display: grid;
+  gap: .35rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border-left: 4px solid #efb45f;
+  background: #071d30;
+}
+.manager-payment-test-warning strong {
+  color: #efb45f;
+  font: 900 .72rem/1 "Courier New", monospace;
+  text-transform: uppercase;
+}
+.manager-payment-test-warning span { color: #eaf4f8; font-size: .88rem; line-height: 1.5; }
+.manager-payment-test .button:disabled { cursor: wait; opacity: .65; }
+.manager-payment-test-status { background: #102f49; }
+.manager-payment-test-status.is-paid { box-shadow: inset 5px 0 0 #58ad78; }
+.manager-payment-test-status.is-pending,
+.manager-payment-test-status.is-checking { box-shadow: inset 5px 0 0 #efb45f; }
+.manager-payment-test-status.is-error { box-shadow: inset 5px 0 0 #dc7460; }
+.manager-payment-test-status dl { display: grid; gap: 1px; margin: 1.5rem 0; background: #477894; }
+.manager-payment-test-status dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem;
+  background: #071d30;
+}
+.manager-payment-test-status dt { color: #a9c4d2; }
+.manager-payment-test-status dd { margin: 0; color: #f2f7fa; font-weight: 800; }
+.manager-payment-test-status a { color: #efb45f; font-weight: 800; }
+@media (max-width: 800px) {
+  .manager-payment-test { grid-template-columns: 1fr; }
+}

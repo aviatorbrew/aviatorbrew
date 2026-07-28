@@ -1,0 +1,103 @@
+2026-07-28T03:00:01-04:00 Changes detected; running GitHub upload.
+
+> aviator-brewing-company@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.21
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1374ms
+   Linting and checking validity of types ...
+   Collecting page data ...
+mail.smtp_verified
+mail.smtp_verified
+mail.smtp_verified
+   Generating static pages (0/46) ...
+   Generating static pages (11/46) 
+   Generating static pages (22/46) 
+   Generating static pages (34/46) 
+ ✓ Generating static pages (46/46)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                          Size  First Load JS
+┌ ƒ /                                             3.95 kB         118 kB
+├ ○ /_not-found                                     220 B         103 kB
+├ ● /[page]                                       3.05 kB         109 kB
+├   ├ /distillery
+├   ├ /private-events
+├   ├ /careers
+├   └ [+5 more paths]
+├ ƒ /about                                        2.33 kB         113 kB
+├ ƒ /api/beer-images/[filename]                     220 B         103 kB
+├ ƒ /api/branding/logo                              220 B         103 kB
+├ ƒ /api/checkout                                   220 B         103 kB
+├ ƒ /api/coupons                                    220 B         103 kB
+├ ƒ /api/coupons/[token]/image                      220 B         103 kB
+├ ƒ /api/coupons/manage                             220 B         103 kB
+├ ƒ /api/coupons/validate                           220 B         103 kB
+├ ƒ /api/event-images/[filename]                    220 B         103 kB
+├ ƒ /api/gift-cards/balance                         220 B         103 kB
+├ ƒ /api/inquiries                                  220 B         103 kB
+├ ƒ /api/itinerary/email                            220 B         103 kB
+├ ƒ /api/keg-orders                                 220 B         103 kB
+├ ƒ /api/manager/beers                              220 B         103 kB
+├ ƒ /api/manager/beyond-beer                        220 B         103 kB
+├ ƒ /api/manager/branding                           220 B         103 kB
+├ ƒ /api/manager/events                             220 B         103 kB
+├ ƒ /api/manager/kegs                               220 B         103 kB
+├ ƒ /api/manager/locations                          220 B         103 kB
+├ ƒ /api/manager/newsletter                         220 B         103 kB
+├ ƒ /api/manager/password-reset                     220 B         103 kB
+├ ƒ /api/manager/payments                           220 B         103 kB
+├ ƒ /api/manager/session                            220 B         103 kB
+├ ƒ /api/manager/tours                              220 B         103 kB
+├ ƒ /api/menu-library/[location]                    220 B         103 kB
+├ ƒ /api/newsletter/confirm                         220 B         103 kB
+├ ƒ /api/newsletter/unsubscribe                     220 B         103 kB
+├ ƒ /api/stripe/webhook                             220 B         103 kB
+├ ƒ /api/tours                                      220 B         103 kB
+├ ƒ /api/tours/weekly-notify                        220 B         103 kB
+├ ƒ /api/website-photo-files/[target]/[filename]    220 B         103 kB
+├ ƒ /api/website-photos                             220 B         103 kB
+├ ƒ /beer                                         2.81 kB         114 kB
+├ ƒ /beer/[slug]                                  1.66 kB         113 kB
+├ ƒ /book-a-band                                    220 B         103 kB
+├ ƒ /brewery                                      1.35 kB         112 kB
+├ ○ /coupon-validate                                949 B         103 kB
+├ ƒ /coupons                                        162 B         105 kB
+├ ƒ /events                                       1.07 kB         107 kB
+├ ● /events/[slug]                                  179 B         111 kB
+├   ├ /events/live-at-the-hangar
+├   ├ /events/sunday-brunch-flight
+├   └ /events/cars-coffee-campus
+├ ƒ /events/live-music                              172 B         106 kB
+├ ○ /gift-card-balance                            1.59 kB         107 kB
+├ ○ /itinerary                                    6.58 kB         114 kB
+├ ƒ /kegs                                          1.8 kB         108 kB
+├ ƒ /locations                                      175 B         111 kB
+├ ● /locations/[slug]                               179 B         111 kB
+├   ├ /locations/hangar-bar
+├   ├ /locations/aviator-amphitheater
+├   ├ /locations/taphouse
+├   └ [+5 more paths]
+├ ƒ /manager                                        135 B         125 kB
+├ ƒ /manager/[section]                              135 B         125 kB
+├ ƒ /manager/reset                                  870 B         107 kB
+├ ○ /media-library                                  166 B         109 kB
+├ ○ /menus                                          220 B         103 kB
+├ ○ /more                                           172 B         106 kB
+├ ƒ /order-food                                     488 B         108 kB
+├ ○ /robots.txt                                     220 B         103 kB
+└ ○ /sitemap.xml                                    220 B         103 kB
++ First Load JS shared by all                      102 kB
+  ├ chunks/1255-612df69cb02f2021.js               46.3 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js           54.2 kB
+  └ other shared chunks (total)                   1.94 kB
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

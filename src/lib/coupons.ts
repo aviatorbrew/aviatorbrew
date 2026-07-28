@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 
-export type CouponOffer = { id: string; title: string; description: string; terms: string; code: string; expiresAt: string; createdAt: string; limit: number };
+export type CouponOffer = { id: string; title: string; description: string; terms: string; code: string; expiresAt: string; createdAt: string; limit: number; issued?: number; redeemed?: number };
 export type CouponClaim = { token: string; offerId: string; claimedAt: string; expiresAt: string; redeemedAt?: string };
 export type CouponBlackout = { date: string; label: string };
 type CouponStore = { offers: CouponOffer[]; claims: CouponClaim[]; blackouts: CouponBlackout[] };
@@ -51,7 +51,8 @@ export async function getCouponOffers() {
 
 export async function getCouponManagerData() {
   const store = await readStore();
-  return { offers: store.offers.sort((a, b) => a.expiresAt.localeCompare(b.expiresAt)), blackouts: store.blackouts.sort((a, b) => a.date.localeCompare(b.date)) };
+  const offers = store.offers.map((offer) => { const claims = store.claims.filter((claim) => claim.offerId === offer.id); return { ...offer, issued: claims.length, redeemed: claims.filter((claim) => Boolean(claim.redeemedAt)).length }; }).sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
+  return { offers, blackouts: store.blackouts.sort((a, b) => a.date.localeCompare(b.date)) };
 }
 
 function clean(value: string, limit: number) { return value.trim().slice(0, limit); }

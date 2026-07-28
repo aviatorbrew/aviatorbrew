@@ -1,23 +1,29 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
+import { locationPhotoManifest } from "@/data/location-photo-manifest";
+import { getFeaturedPhotos, getHiddenPhotos, listUploadedPhotos, type PhotoSource } from "@/lib/website-photo-storage";
 
-export type LocationPhoto = { name: string; url: string; updatedAt: string };
+export type LocationPhoto = { name: string; url: string; updatedAt: string; source: PhotoSource };
+
+function manifestPhotos(slug: string): LocationPhoto[] {
+  return (locationPhotoManifest[slug] || []).map((name) => ({
+    name,
+    updatedAt: "",
+    url: "/images/location-photos/" + slug + "/" + encodeURIComponent(name),
+    source: "bundled",
+  }));
+}
 
 export async function getLocationPhotos(slug: string): Promise<LocationPhoto[]> {
-  const directory = path.join(process.cwd(), "public", "media", "location-photos", slug);
-  try {
-    const entries = await fs.readdir(directory, { withFileTypes: true });
-    const photos = await Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => {
-      const stats = await fs.stat(path.join(directory, entry.name));
-      return { name: entry.name, updatedAt: stats.mtime.toISOString(), url: "/media/location-photos/" + slug + "/" + encodeURIComponent(entry.name) };
-    }));
-    return photos.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  } catch {
-    return [];
-  }
+  const known = manifestPhotos(slug);
+  const [uploads, hidden] = await Promise.all([listUploadedPhotos(slug), getHiddenPhotos()]);
+  const uploadedNames = new Set(uploads.map((photo) => photo.name));
+  const hiddenNames = new Set(hidden[slug] || []);
+  return [...known.filter((photo) => !uploadedNames.has(photo.name) && !hiddenNames.has(photo.name)), ...uploads]
+    .sort((a, b) => b.name.localeCompare(a.name) || b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function getLocationHero(slug: string, fallback: string) {
-  const [photo] = await getLocationPhotos(slug);
-  return photo?.url || fallback;
+  const [photos, featured] = await Promise.all([getLocationPhotos(slug), getFeaturedPhotos()]);
+  const selected = featured[slug];
+  const photo = selected ? photos.find((item) => item.name === selected.name && item.source === selected.source) : photos[0];
+  return photo?.url || photos[0]?.url || fallback;
 }

@@ -1,0 +1,35 @@
+.private-event-payment-button {
+  border-color: #efb45f;
+  background: #efb45f;
+  color: #102b42;
+}
+
+.private-event-payment-button:disabled {
+  cursor: wait;
+  opacity: .78;
+}
+
+.private-event-payment-error {
+  flex-basis: 100%;
+  color: #ffd7cf;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.private-event-payment-status {
+  max-width: 46rem;
+  margin: 1.25rem 0 0;
+  padding: .85rem 1rem;
+  border-left: 4px solid #efb45f;
+  background: rgba(7, 24, 39, .88);
+  color: #eff7fa;
+  line-height: 1.55;
+}
+
+.private-event-payment-status strong {
+  color: #efb45f;
+}
+
+.private-event-payment-status.cancel {
+  border-left-color: #b8cfda;
+}

@@ -1,5 +1,5 @@
-import Image from "next/image";
 import type { BeyondBeer } from "@/data/site";
+import { BeyondBeerImageViewer } from "@/components/beyond-beer-image-viewer";
 
 const menus = [
   { id: "soda", title: "Soda", eyebrow: "Family-friendly flight", description: "Classic Aviator sodas for every member of the crew.", category: "Soda" },
@@ -17,7 +17,7 @@ export function BeyondBeerGallery({ products }: { products: BeyondBeer[] }) {
       return <section className="beverage-menu-section" id={menu.id} key={menu.id}>
         <header><div><p className="eyebrow">{menu.eyebrow}</p><h3>{menu.title}</h3></div><p>{menu.description}</p></header>
         <div className="beyond-beer-grid">{menuProducts.map((product) => <article className="beyond-beer-card" key={product.slug}>
-          <div className="beyond-beer-image"><Image src={product.image} alt={product.name + " Aviator product sell sheet"} fill sizes="(max-width: 680px) 100vw, (max-width: 1020px) 50vw, 33vw" /></div>
+          <div className="beyond-beer-image"><BeyondBeerImageViewer product={product} /></div>
           <div className="beyond-beer-card-copy"><p>{product.category}</p><h4>{product.name}</h4><span>{product.description}</span><strong>{product.note}</strong></div>
         </article>)}</div>
       </section>;

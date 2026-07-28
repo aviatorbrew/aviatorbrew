@@ -22,7 +22,7 @@ function locationInput(body: Record<string, unknown>) {
     throw new Error("Complete the location name, short name, type, description, address, phone, hours, parking, and accessibility details.");
   }
   if (menu && !menu.startsWith("/") && !/^https?:\/\//i.test(menu)) throw new Error("Menu link must begin with /, http://, or https://.");
-  return { slug, value: { name, shortName, type, description, address, phone, hours, menu: menu || undefined, events: body.events === true, accessibility, parking } };
+  return { slug, value: { name, shortName, type, description, address, phone, hours, menu: menu || undefined, events: body.events === true, comingSoon: body.comingSoon === true, accessibility, parking } };
 }
 
 export async function GET(request: NextRequest) {

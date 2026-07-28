@@ -41,8 +41,10 @@ export type LiveMusicSchedule = {
   shows: LiveMusicShow[];
 };
 
+export const liveMusicPageUrl = "https://aviatorlivemusic.com/live-music";
+
 const defaultScheduleUrl = process.env.NODE_ENV === "production"
-  ? "http://aviatorlive.is-with-theband.com/api/public/live-music"
+  ? "https://aviatorlivemusic.com/api/public/live-music"
   : "http://192.168.7.171:5123/api/public/live-music";
 const scheduleUrl = process.env.AVIATOR_LIVE_SCHEDULE_URL || defaultScheduleUrl;
 
@@ -59,6 +61,7 @@ export async function getLiveMusicSchedule(): Promise<{ schedule: LiveMusicSched
 }
 
 const locationStageNames: Record<string, string[]> = {
+  "aviator-amphitheater": ["Aviator Amphitheater"],
   "hangar-bar": ["Hangar Bar Stage"],
   taphouse: ["Aviator TapHouse", "TapHouse Patio"],
   "pizza-pub": ["Aviator Pizza Pub", "Aviator Pizza Pub Backyard"],

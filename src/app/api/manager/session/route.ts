@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { managerCookie, managerSessionToken } from "@/lib/manager-auth";
+import { verifyManagerPassword } from "@/lib/manager-credentials";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json() as { password?: string };
-  if (!process.env.MANAGER_PORTAL_KEY || body.password !== process.env.MANAGER_PORTAL_KEY) return NextResponse.json({ error: "Invalid manager password." }, { status: 401 });
+  if (!await verifyManagerPassword(body.password || "")) return NextResponse.json({ error: "Invalid manager password." }, { status: 401 });
   const response = NextResponse.json({ ok: true });
   response.cookies.set({ name: managerCookie, value: managerSessionToken(), httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 12 });
   return response;

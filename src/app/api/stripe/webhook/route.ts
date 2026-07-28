@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { notifyPrivateEventPayment, type PrivateEventCheckoutSession } from "@/lib/private-event-payments";
 import { markTourPaid } from "@/lib/tours";
 
 export const runtime = "nodejs";
@@ -12,15 +13,30 @@ function signedPayload(secret: string, header: string, body: string) {
   return expected.length === signature.length && timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
 
+type StripeCheckoutEvent = {
+  type?: string;
+  data?: {
+    object?: PrivateEventCheckoutSession & {
+      payment_status?: string;
+    };
+  };
+};
+
 export async function POST(request: NextRequest) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) return NextResponse.json({ error: "Stripe webhook is not configured." }, { status: 503 });
   const raw = await request.text();
   if (!signedPayload(secret, request.headers.get("stripe-signature") || "", raw)) return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
-  const event = JSON.parse(raw) as { type?: string; data?: { object?: { payment_status?: string; metadata?: Record<string, string>; id?: string } } };
-  if (event.type === "checkout.session.completed" && event.data?.object?.payment_status === "paid") {
-    const signupId = event.data.object.metadata?.tourSignupId;
-    if (signupId) await markTourPaid(signupId, event.data.object.id || "");
+  const event = JSON.parse(raw) as StripeCheckoutEvent;
+  const session = event.data?.object;
+  if (event.type === "checkout.session.completed" && session?.payment_status === "paid") {
+    const signupId = session.metadata?.tourSignupId;
+    if (signupId) await markTourPaid(signupId, session.id || "");
+    if (session.metadata?.item === "private-event-room-booking") {
+      if (!session.id) return NextResponse.json({ error: "Stripe Checkout session ID is missing." }, { status: 400 });
+      const notified = await notifyPrivateEventPayment(session);
+      if (!notified) return NextResponse.json({ error: "Payment received, but the event notification email could not be sent." }, { status: 503 });
+    }
   }
   return NextResponse.json({ received: true });
 }

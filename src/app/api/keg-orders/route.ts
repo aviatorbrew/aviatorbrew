@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isMailConfigured, sendMail, verifySmtpOnStart } from "@/lib/mail";
-import { subscribeNewsletter } from "@/lib/newsletter";
+import { requestNewsletterSubscription } from "@/lib/newsletter";
+import { buildFlightCrewConfirmationMessage } from "@/lib/newsletter-email";
 import { getUploadedKegInventory } from "@/lib/keg-inventory";
 
 export const runtime = "nodejs";
@@ -28,16 +29,21 @@ export async function POST(request: Request) {
     if (!keg || quantity > available) return NextResponse.json({ error: "That quantity is no longer available. Please adjust your request and try again." }, { status: 409 });
     if (!isMailConfigured()) throw new Error("Mail delivery is not configured");
 
-    const [sent] = await Promise.all([
-      sendMail({
-        to: "orders@aviatorbrew.com",
-        subject: "Keg order request - " + beerName + " (" + quantity + " x " + packageSize + ")",
-        replyTo: email,
-        text: ["New Aviator keg order request", "", "Beer: " + beerName, "Package: " + packageSize, "Quantity requested: " + quantity, "Available at request: " + available, "", "Name: " + name, "Phone: " + phone, "Email: " + email, business ? "Business: " + business : "", notes ? "Notes: " + notes : "", "", "Newsletter: subscribed from keg order"].filter(Boolean).join("\n"),
-      }),
-      subscribeNewsletter({ email, name, phone, source: "keg-order" }),
+    const signup = await requestNewsletterSubscription({ email, name, phone, source: "keg-order" });
+    const orderMessage = sendMail({
+      to: "orders@aviatorbrew.com",
+      subject: "Keg order request - " + beerName + " (" + quantity + " x " + packageSize + ")",
+      replyTo: email,
+      text: ["New Aviator keg order request", "", "Beer: " + beerName, "Package: " + packageSize, "Quantity requested: " + quantity, "Available at request: " + available, "", "Name: " + name, "Phone: " + phone, "Email: " + email, business ? "Business: " + business : "", notes ? "Notes: " + notes : "", "", "Flight Crew: confirmation requested from keg order"].filter(Boolean).join("\n"),
+    });
+    const confirmationMessage = signup.confirmationRequired
+      ? buildFlightCrewConfirmationMessage(signup.subscriber.email, signup.subscriber.confirmationExpiresAt!)
+      : null;
+    const [sent, confirmationSent] = await Promise.all([
+      orderMessage,
+      confirmationMessage ? sendMail({ to: email, subject: confirmationMessage.subject, text: confirmationMessage.text, html: confirmationMessage.html }) : Promise.resolve(true),
     ]);
-    if (!sent) throw new Error("Mail delivery is not configured");
+    if (!sent || !confirmationSent) throw new Error("Mail delivery is not configured");
     return NextResponse.json({ ok: true, message: "Your request has been sent to Aviator keg sales. We will contact you to confirm availability and pickup details." });
   } catch {
     return NextResponse.json({ error: "We could not send your keg request right now. Please try again or call Aviator." }, { status: 500 });

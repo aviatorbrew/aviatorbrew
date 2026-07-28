@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { beers, type Beer } from "@/data/site";
+import { normalizeBeerImageUrl } from "@/lib/beer-images";
 
 export type ManagedBeer = Beer & { id: string; createdAt: string };
 export type PortalBeer = ManagedBeer & { source: "catalog" | "managed" };
@@ -28,17 +29,20 @@ async function readOverrides(): Promise<Beer[]> {
 }
 function mergeCatalog(overrides: Beer[]) {
   const bySlug = new Map(overrides.map((beer) => [beer.slug, beer]));
-  return beers.map((beer) => ({ ...beer, ...(bySlug.get(beer.slug) || {}) }));
+  return beers.map((beer) => normalizeBeerImage({ ...beer, ...(bySlug.get(beer.slug) || {}) }));
+}
+function normalizeBeerImage<T extends Beer>(beer: T): T {
+  return { ...beer, image: normalizeBeerImageUrl(beer.image) };
 }
 
 export async function getManagedBeers() { return readManaged(); }
 export async function getAllBeers(): Promise<Beer[]> {
   const [managed, overrides] = await Promise.all([readManaged(), readOverrides()]);
-  return [...mergeCatalog(overrides), ...managed];
+  return [...mergeCatalog(overrides), ...managed.map(normalizeBeerImage)];
 }
 export async function getPortalBeers(): Promise<PortalBeer[]> {
   const [managed, overrides] = await Promise.all([readManaged(), readOverrides()]);
-  return [...mergeCatalog(overrides).map((beer) => ({ ...beer, id: "catalog_" + beer.slug, createdAt: "", source: "catalog" as const })), ...managed.map((beer) => ({ ...beer, source: "managed" as const }))];
+  return [...mergeCatalog(overrides).map((beer) => ({ ...beer, id: "catalog_" + beer.slug, createdAt: "", source: "catalog" as const })), ...managed.map((beer) => ({ ...normalizeBeerImage(beer), source: "managed" as const }))];
 }
 export async function getPortalBeer(id: string) { return (await getPortalBeers()).find((beer) => beer.id === id) || null; }
 

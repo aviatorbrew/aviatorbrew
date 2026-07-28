@@ -1,0 +1,449 @@
+/* Primary navigation: Beer owns the Brewery submenu. */
+.desktop-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 5.25rem;
+}
+.desktop-nav-item.has-submenu > a::after {
+  margin-left: .35rem;
+  color: #efb45f;
+  content: "▾";
+}
+.desktop-submenu {
+  position: absolute;
+  top: calc(100% - .45rem);
+  left: -.85rem;
+  display: grid;
+  min-width: 11rem;
+  padding: .45rem;
+  border: 1px solid rgba(184, 217, 236, .3);
+  background: #071827;
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, .3);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-.35rem);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.desktop-submenu a {
+  padding: .75rem;
+  color: #eef7fa;
+  white-space: nowrap;
+}
+.desktop-submenu a:hover {
+  background: #184867;
+}
+.desktop-nav-item:hover .desktop-submenu,
+.desktop-nav-item:focus-within .desktop-submenu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.mobile-nav-group {
+  display: grid;
+}
+.mobile-panel nav .mobile-submenu-link {
+  padding-left: 1.25rem;
+  color: #efb45f;
+  font-size: .9rem;
+}
+
+/* Dedicated brewery page. */
+.brewery-hero {
+  position: relative;
+  display: grid;
+  min-height: min(46rem, calc(100svh - 7rem));
+  align-content: end;
+  overflow: hidden;
+  isolation: isolate;
+  background: #061724;
+}
+.brewery-hero > img {
+  z-index: -2;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(.46) saturate(.9) contrast(1.08);
+}
+.brewery-hero::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: rgba(5, 20, 32, .38);
+  content: "";
+}
+.brewery-hero-content {
+  padding-top: 6rem;
+  padding-bottom: 7.5rem;
+}
+.brewery-hero-content h1 {
+  max-width: 10ch;
+  margin: .6rem 0 1rem;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: 6.7rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: .85;
+  text-transform: uppercase;
+}
+.brewery-hero-content > p:not(.eyebrow) {
+  max-width: 43rem;
+  color: #eef6f8;
+  font-size: 1.15rem;
+  line-height: 1.65;
+}
+.brewery-hero-specs {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid rgba(231, 241, 244, .28);
+  background: rgba(6, 23, 36, .9);
+}
+.brewery-hero-specs span {
+  display: grid;
+  gap: .2rem;
+  padding: 1rem;
+  border-right: 1px solid rgba(231, 241, 244, .2);
+  color: #bed2dd;
+  font-family: "Courier New", monospace;
+  font-size: .68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.brewery-hero-specs span:last-child {
+  border-right: 0;
+}
+.brewery-hero-specs b {
+  color: #efb45f;
+  font-size: 1rem;
+}
+.brewery-intro-band {
+  background: #dce8ed;
+  color: #0b2840;
+}
+.brewery-intro-grid {
+  display: grid;
+  grid-template-columns: .9fr 1.1fr;
+  gap: 5rem;
+}
+.brewery-intro-grid h2,
+.brewery-system-copy h2,
+.brewery-visit-grid h2 {
+  margin: .55rem 0 0;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: 4.3rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: .9;
+  text-transform: uppercase;
+}
+.brewery-intro-grid p:not(.eyebrow) {
+  margin-top: 0;
+  color: #2c5369;
+  font-size: 1.03rem;
+  line-height: 1.75;
+}
+.brewery-process-band {
+  background: #0d2941;
+}
+.brewing-diagram { position: relative; display: grid; gap: 1rem; margin: 0 0 2rem; padding: clamp(1rem, 2.4vw, 1.45rem); border: 1px solid rgba(184, 217, 236, .28); background: linear-gradient(135deg, #102f49, #0a2237); box-shadow: 10px 10px 0 rgba(4, 17, 30, .22); overflow: hidden; }
+.brewing-diagram::before { position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(184, 217, 236, .06) 1px, transparent 1px), linear-gradient(rgba(184, 217, 236, .06) 1px, transparent 1px); background-size: 26px 26px; content: ""; pointer-events: none; }
+.brewing-diagram > * { position: relative; }
+.brewing-diagram-track { height: .45rem; border: 1px solid rgba(184, 217, 236, .28); background: #071827; }
+.brewing-diagram-track span { display: block; height: 100%; background: linear-gradient(90deg, #efb45f, #b8d9ec); transition: width .28s ease; }
+.brewing-diagram-controls { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; border: 1px solid rgba(184, 217, 236, .28); background: rgba(184, 217, 236, .28); }
+.brewing-diagram-controls button { display: grid; gap: .35rem; min-height: 4.6rem; padding: .75rem .65rem; border: 0; background: #11334f; color: #c8dbe5; cursor: pointer; text-align: left; }
+.brewing-diagram-controls button:hover, .brewing-diagram-controls button.is-active { background: #efb45f; color: #0a2237; }
+.brewing-diagram-controls span { font-family: "Courier New", monospace; font-size: .62rem; font-weight: 900; }
+.brewing-diagram-controls strong { font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: 1.1rem; font-weight: 400; line-height: .9; text-transform: uppercase; }
+.brewing-diagram-stage { display: grid; grid-template-columns: minmax(13rem, .6fr) minmax(0, 1fr); gap: clamp(1rem, 3vw, 2rem); align-items: center; min-height: 18rem; padding: clamp(1rem, 3vw, 2rem); border: 1px solid rgba(184, 217, 236, .22); background: rgba(7, 24, 39, .62); }
+.brewing-diagram-vessel { display: grid; justify-items: center; align-content: center; min-height: 15rem; }
+.vessel-cap { width: min(70%, 10rem); height: 1rem; border: 2px solid #b8d9ec; border-bottom: 0; border-radius: 50% 50% 0 0; background: #173d5b; }
+.vessel-body { position: relative; width: min(78%, 12rem); height: 10.5rem; border: 2px solid #b8d9ec; border-radius: 0 0 2.5rem 2.5rem; background: linear-gradient(180deg, rgba(184, 217, 236, .16), rgba(239, 180, 95, .2)); overflow: hidden; }
+.vessel-body i { position: absolute; right: -22%; bottom: -15%; left: -22%; height: 62%; background: linear-gradient(180deg, #efb45f, #b76a31); border-radius: 45% 55% 0 0; animation: brewing-slosh 3.4s ease-in-out infinite; }
+.vessel-base { width: min(50%, 7rem); height: 1rem; border: 2px solid #b8d9ec; border-top: 0; background: #0a2237; }
+.vessel-grain .vessel-body i { height: 35%; background: linear-gradient(180deg, #d5a65e, #86542f); }
+.vessel-mash .vessel-body i { height: 58%; background: linear-gradient(180deg, #dfb665, #a96d35); }
+.vessel-lauter .vessel-body i { height: 48%; background: linear-gradient(180deg, #f1ca75, #c9863a); }
+.vessel-kettle .vessel-body i { height: 68%; background: linear-gradient(180deg, #efb45f, #d66e3a); }
+.vessel-cellar .vessel-body i { height: 76%; background: linear-gradient(180deg, #d9b65f, #8f6737); }
+.vessel-package .vessel-body i { height: 54%; background: linear-gradient(180deg, #f0d37a, #d1983e); }
+.brewing-diagram-stage article { display: grid; gap: 1rem; }
+.brewing-diagram-stage h3 { margin: 0; color: #f2f7f9; font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: clamp(2rem, 4vw, 3.8rem); font-weight: 400; line-height: .9; text-transform: uppercase; }
+.brewing-diagram-stage dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; margin: 0; }
+.brewing-diagram-stage dl div { padding: .75rem; border: 1px solid rgba(184, 217, 236, .24); background: rgba(184, 217, 236, .07); }
+.brewing-diagram-stage dt { color: #efb45f; font-family: "Courier New", monospace; font-size: .62rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.brewing-diagram-stage dd { margin: .25rem 0 0; color: #f2f7f9; font-weight: 900; }
+.brewing-diagram-stage p:not(.eyebrow) { max-width: 44rem; margin: 0; color: #bed0da; line-height: 1.6; }
+@keyframes brewing-slosh { 0%, 100% { transform: rotate(-2deg) translateY(0); } 50% { transform: rotate(2deg) translateY(-.35rem); } }
+.brewery-process-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid rgba(184, 217, 236, .28);
+  list-style: none;
+}
+.brewery-process-grid li {
+  min-height: 17rem;
+  padding: 1.5rem;
+  border-right: 1px solid rgba(184, 217, 236, .28);
+  border-bottom: 1px solid rgba(184, 217, 236, .28);
+}
+.brewery-process-grid li:nth-child(3n) {
+  border-right: 0;
+}
+.brewery-process-grid span {
+  color: #efb45f;
+  font-family: "Courier New", monospace;
+  font-size: .75rem;
+  font-weight: 900;
+}
+.brewery-process-grid h3 {
+  margin: 2.4rem 0 .75rem;
+  color: #f2f7f9;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+.brewery-process-grid p {
+  margin: 0;
+  color: #bed0da;
+  font-size: .9rem;
+  line-height: 1.65;
+}
+.brewery-system-band {
+  padding: 0;
+  background: #cae0e8;
+  color: #0a2940;
+}
+.brewery-system-grid {
+  display: grid;
+  grid-template-columns: 1.08fr .92fr;
+  width: 100%;
+  max-width: none;
+}
+.brewery-system-image {
+  position: relative;
+  min-height: 42rem;
+}
+.brewery-system-image img {
+  object-fit: cover;
+}
+.brewery-system-copy {
+  display: grid;
+  align-content: center;
+  padding: 4rem max(3rem, calc((100vw - 1440px) / 2 + 4.5rem));
+}
+.brewery-system-copy > p:not(.eyebrow) {
+  color: #315a70;
+  line-height: 1.7;
+}
+.brewery-system-copy dl {
+  margin: 1.5rem 0 0;
+  border-top: 1px solid #7695a5;
+}
+.brewery-system-copy dl div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 1rem;
+  padding: .85rem 0;
+  border-bottom: 1px solid #7695a5;
+}
+.brewery-system-copy dt {
+  color: #8e582d;
+  font-family: "Courier New", monospace;
+  font-size: .7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.brewery-system-copy dd {
+  margin: 0;
+  font-weight: 800;
+}
+.brewery-gallery-band {
+  background: #071c2e;
+}
+.brewery-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 17rem;
+  gap: 1rem;
+}
+.brewery-gallery figure {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  background: #143954;
+}
+.brewery-gallery figure.is-featured {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.brewery-gallery img {
+  object-fit: cover;
+}
+.brewery-history-band {
+  background: #dbe6e9;
+  color: #0b2940;
+}
+.brewery-history {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 2px solid #27516b;
+}
+.brewery-history article {
+  min-height: 18rem;
+  padding: 1.4rem;
+  border-right: 1px solid #7895a4;
+}
+.brewery-history article:last-child {
+  border-right: 0;
+}
+.brewery-history b {
+  color: #9a5b2c;
+  font-family: "Courier New", monospace;
+}
+.brewery-history h3 {
+  margin: 3.5rem 0 .8rem;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+.brewery-history p {
+  color: #31566a;
+  line-height: 1.6;
+}
+.brewery-visit-band {
+  padding: 4rem 0;
+  background: #b94f3c;
+  color: #fff8ed;
+}
+.brewery-visit-grid {
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 4rem;
+  align-items: center;
+}
+.brewery-visit-grid > div > p:not(.eyebrow) {
+  max-width: 40rem;
+  line-height: 1.65;
+}
+.brewery-visit-actions {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+}
+.brewery-visit-actions > a:not(.button) {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-weight: 900;
+}
+.brewery-visit-actions svg {
+  width: 1rem;
+}
+
+/* Featured photo selection in manager photo libraries. */
+.website-photo-preview {
+  position: relative;
+  padding: 0 !important;
+}
+.website-photo-preview img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.25;
+  object-fit: cover;
+  background: #c4cdbd;
+}
+.website-photo-preview > strong {
+  position: absolute;
+  top: .55rem;
+  left: .55rem;
+  padding: .38rem .5rem;
+  background: #b94f3c;
+  color: #fff !important;
+  font-size: .58rem !important;
+  text-transform: uppercase;
+}
+.website-photo-card > div:last-child {
+  padding: .7rem;
+}
+.website-photo-card.is-featured {
+  outline: 3px solid #efb45f;
+  outline-offset: -3px;
+}
+.website-photo-actions .feature-photo-button {
+  border-color: #2c6c85 !important;
+  background: #dcecf1 !important;
+  color: #123d59 !important;
+}
+.website-photo-actions .remove-photo-button {
+  border-color: #af5d54 !important;
+  color: #8d342c !important;
+}
+.manager-brewery-photos .website-photo-library {
+  margin-top: 0;
+  border-top: 0;
+}
+.manager-brewery-photos .website-photo-heading h2 {
+  color: #f2f7fa;
+}
+.manager-brewery-photos .website-photo-heading p:not(.eyebrow) {
+  color: #bfd3de;
+}
+.manager-brewery-photos .website-photo-grid {
+  border-color: #5e8ca7;
+  background: #5e8ca7;
+}
+.manager-brewery-photos .website-photo-card {
+  background: #f1f7f8;
+}
+
+@media (max-width: 1000px) {
+  .brewery-hero-content h1 { font-size: 4.8rem; }
+  .brewery-intro-grid { gap: 3rem; }
+  .brewery-intro-grid h2,
+  .brewery-system-copy h2,
+  .brewery-visit-grid h2 { font-size: 3.25rem; }
+  .brewing-diagram-controls { grid-template-columns: repeat(3, 1fr); }
+  .brewery-process-grid { grid-template-columns: repeat(2, 1fr); }
+  .brewery-process-grid li:nth-child(3n) { border-right: 1px solid rgba(184, 217, 236, .28); }
+  .brewery-process-grid li:nth-child(2n) { border-right: 0; }
+  .brewery-history { grid-template-columns: repeat(2, 1fr); }
+  .brewery-history article { border-bottom: 1px solid #7895a4; }
+}
+@media (max-width: 700px) {
+  .brewery-hero { min-height: 42rem; }
+  .brewery-hero-content { padding-bottom: 10rem; }
+  .brewery-hero-content h1 { font-size: 3.45rem; }
+  .brewery-hero-content > p:not(.eyebrow) { font-size: 1rem; }
+  .brewery-hero-specs { grid-template-columns: repeat(2, 1fr); }
+  .brewery-hero-specs span:nth-child(2) { border-right: 0; }
+  .brewery-hero-specs span:nth-child(-n+2) { border-bottom: 1px solid rgba(231, 241, 244, .2); }
+  .brewery-intro-grid,
+  .brewery-system-grid,
+  .brewery-visit-grid { grid-template-columns: 1fr; }
+  .brewery-intro-grid { gap: 2rem; }
+  .brewery-system-image { min-height: 26rem; }
+  .brewery-system-copy { padding: 3rem 1.2rem; }
+  .brewing-diagram-controls { grid-template-columns: repeat(2, 1fr); }
+  .brewing-diagram-stage { grid-template-columns: 1fr; }
+  .brewing-diagram-vessel { min-height: 12rem; }
+  .brewing-diagram-stage dl { grid-template-columns: 1fr; }
+  .brewery-process-grid { grid-template-columns: 1fr; }
+  .brewery-process-grid li,
+  .brewery-process-grid li:nth-child(3n) { min-height: 0; border-right: 0; }
+  .brewery-gallery { grid-template-columns: 1fr; grid-auto-rows: 16rem; }
+  .brewery-gallery figure.is-featured { grid-column: auto; grid-row: auto; }
+  .brewery-history { grid-template-columns: 1fr; }
+  .brewery-history article { min-height: 0; border-right: 0; }
+  .brewery-history h3 { margin-top: 1.8rem; }
+}

@@ -18,6 +18,7 @@ function valuesFromForm(form: HTMLFormElement) {
     hours: String(values.hours || ""),
     menu: String(values.menu || ""),
     events: values.events === "on",
+    comingSoon: values.comingSoon === "on",
     parking: String(values.parking || ""),
     accessibility: String(values.accessibility || ""),
   };
@@ -68,13 +69,14 @@ export function LocationManager() {
           <label className="manager-beer-inline-wide">Hours<input name="hours" required maxLength={220} defaultValue={location.hours} /></label>
           <label className="manager-beer-inline-wide">Address<input name="address" required maxLength={180} defaultValue={location.address} /></label>
           <label className="manager-beer-inline-wide">Menu link<input name="menu" maxLength={300} defaultValue={location.menu || ""} placeholder="/locations#menus" /></label>
+          <label className="manager-event-publish"><input name="comingSoon" type="checkbox" defaultChecked={location.comingSoon === true} /> List this location as coming soon</label>
           <label className="manager-event-publish"><input name="events" type="checkbox" defaultChecked={location.events === true} /> Show live event schedule on this location</label>
           <label className="manager-beer-inline-wide">Description<textarea name="description" required rows={3} maxLength={700} defaultValue={location.description} /></label>
           <label className="manager-beer-inline-wide">Parking<textarea name="parking" required rows={2} maxLength={400} defaultValue={location.parking} /></label>
           <label className="manager-beer-inline-wide">Accessibility<textarea name="accessibility" required rows={2} maxLength={400} defaultValue={location.accessibility} /></label>
           <div className="manager-beer-inline-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save location"}</button><button className="button button-outline" type="button" onClick={() => setEditing(null)} disabled={busy}>Cancel</button></div>
         </form> : <>
-          <div><p className="eyebrow">{location.updatedAt ? "Edited" : "Default content"}</p><h3>{location.name}</h3><p>{location.hours}</p><small>{location.description}</small><small>{location.address} - {location.phone}</small></div>
+          <div><p className="eyebrow">{location.comingSoon ? "Coming soon" : location.updatedAt ? "Edited" : "Default content"}</p><h3>{location.name}</h3><p>{location.hours}</p><small>{location.description}</small><small>{location.address} - {location.phone}</small></div>
           <footer><button type="button" onClick={() => { setEditing(location); setMessage("Editing " + location.shortName + "."); }} disabled={busy}>Edit</button></footer>
         </>}
       </article>;

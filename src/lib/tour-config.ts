@@ -1,0 +1,4 @@
+export const TOUR_CAPACITY = 25;
+export const DEFAULT_TOUR_MINIMUM = 20;
+export const DEFAULT_TOUR_PRICE_CENTS = 2000;
+export const TOUR_MINIMUM = DEFAULT_TOUR_MINIMUM;

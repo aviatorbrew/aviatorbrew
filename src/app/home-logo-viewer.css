@@ -1,0 +1,62 @@
+.home-logo-trigger {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  width: fit-content;
+  margin: 0 0 1.1rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #f2bd62;
+  cursor: zoom-in;
+}
+.home-logo-trigger .home-brand-logo { margin: 0; }
+.home-logo-expand {
+  position: absolute;
+  right: -.5rem;
+  bottom: -.25rem;
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 1px solid rgba(242, 189, 98, .75);
+  background: rgba(3, 17, 31, .9);
+  color: #f2bd62;
+  font-size: .9rem;
+}
+.home-logo-lightbox {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 5rem 1.5rem 2rem;
+  background: rgba(3, 17, 31, .96);
+  cursor: zoom-out;
+}
+.home-logo-lightbox > button {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid #5b8199;
+  background: #0c2a43;
+  color: #f2f8fa;
+  cursor: pointer;
+  font-size: 1.75rem;
+}
+.home-logo-lightbox > button:hover,
+.home-logo-lightbox > button:focus-visible {
+  border-color: #efb45f;
+  background: #174f74;
+  outline: 0;
+}
+.home-logo-full-size {
+  display: block;
+  width: min(80vw, 52rem);
+  height: min(78vh, 52rem);
+  object-fit: contain;
+  cursor: default;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, .5));
+}

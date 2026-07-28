@@ -2,10 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-type WebsitePhoto = { name: string; size: number; updatedAt: string; url: string };
+type WebsitePhoto = {
+  name: string;
+  size: number;
+  updatedAt: string;
+  url: string;
+  source: "uploaded" | "bundled";
+  featured: boolean;
+};
 type LocationTarget = { slug: string; name: string };
 
-function readableSize(bytes: number) { return bytes < 1024 * 1024 ? Math.max(1, Math.round(bytes / 1024)) + " KB" : (bytes / 1024 / 1024).toFixed(1) + " MB"; }
+function readableSize(photo: WebsitePhoto) {
+  if (photo.source === "bundled") return "Bundled website image";
+  return photo.size < 1024 * 1024 ? Math.max(1, Math.round(photo.size / 1024)) + " KB" : (photo.size / 1024 / 1024).toFixed(1) + " MB";
+}
 
 export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: string; location?: LocationTarget }) {
   const [photos, setPhotos] = useState<WebsitePhoto[]>([]);
@@ -13,9 +23,16 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
   const [busy, setBusy] = useState(false);
   const query = location ? "?location=" + encodeURIComponent(location.slug) : "";
   const title = location ? location.name + " Photos" : "General Website Photos";
-  const description = location ? "Drop approved photos for this location. The newest upload automatically becomes its website hero image; every upload appears in its location gallery." : "Upload approved campaign, campus, and other general website imagery.";
+  const description = location
+    ? "Upload approved photos, then choose the image that should lead this page. Every image remains available in the gallery."
+    : "Upload approved campaign, campus, and other general website imagery.";
 
-  const request = useCallback((init: RequestInit = {}) => fetch("/api/website-photos" + query, { ...init, headers: { ...(init.headers || {}), "x-menu-library-key": accessKey } }), [accessKey, query]);
+  const request = useCallback((init: RequestInit = {}) => fetch("/api/website-photos" + query, {
+    ...init,
+    cache: "no-store",
+    headers: { ...(init.headers || {}), "x-menu-library-key": accessKey },
+  }), [accessKey, query]);
+
   const load = useCallback(async () => {
     const response = await request();
     const body = await response.json();
@@ -35,16 +52,37 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Image upload failed.");
       }
-      await load(); setMessage(location ? "Location photo uploaded and ready for the website." : "Website photo uploaded.");
+      await load();
+      setMessage(location ? "Photo uploaded. Choose Set featured to make it the lead image." : "Website photo uploaded.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Image upload failed."); }
     finally { setBusy(false); }
   }
 
-  async function remove(fileName: string) {
-    if (!window.confirm("Remove this photo? This cannot be undone.")) return;
+  async function feature(photo: WebsitePhoto) {
+    if (!location || photo.featured) return;
+    setBusy(true); setMessage("");
+    try {
+      const response = await request({
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ file: photo.name, source: photo.source }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Could not set the featured photo.");
+      await load(); setMessage(photo.name.replace(/^[0-9]+-/, "") + " is now featured.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not set the featured photo."); }
+    finally { setBusy(false); }
+  }
+
+  async function remove(photo: WebsitePhoto) {
+    if (!window.confirm(photo.source === "uploaded" ? "Delete this photo? This cannot be undone." : "Hide this bundled photo from the library and website?")) return;
     setBusy(true);
     try {
-      const deleteResponse = await fetch("/api/website-photos" + query + (query ? "&" : "?") + "file=" + encodeURIComponent(fileName), { method: "DELETE", headers: { "x-menu-library-key": accessKey } });
+      const deleteResponse = await fetch("/api/website-photos" + query + (query ? "&" : "?") + "file=" + encodeURIComponent(photo.name) + "&source=" + encodeURIComponent(photo.source), {
+        method: "DELETE",
+        cache: "no-store",
+        headers: { "x-menu-library-key": accessKey },
+      });
       const body = await deleteResponse.json();
       if (!deleteResponse.ok) throw new Error(body.error || "Could not remove the image.");
       await load(); setMessage("Photo removed.");
@@ -52,5 +90,17 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
     finally { setBusy(false); }
   }
 
-  return <section className="website-photo-library"><div className="website-photo-heading"><div><p className="eyebrow">Website imagery</p><h2>{title}</h2><p>{description}</p></div></div>{message && <p className="media-message" role="status">{message}</p>}<div className="website-photo-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(event.dataTransfer.files); }}><input id={"website-photo-upload-" + (location?.slug || "general")} type="file" accept=".png,.jpg,.jpeg,.webp" multiple onChange={(event) => { if (event.currentTarget.files) upload(event.currentTarget.files); }} /><label htmlFor={"website-photo-upload-" + (location?.slug || "general")}>{busy ? "Uploading..." : "Drop photos here or choose files"}</label><small>PNG, JPG, WEBP - 25 MB max</small></div><div className="website-photo-grid">{photos.length ? photos.map((photo) => <article className="website-photo-card" key={photo.name}><img src={photo.url} alt={photo.name.replace(/^[0-9]+-/, "")} /><div><strong>{photo.name.replace(/^[0-9]+-/, "")}</strong><span>{readableSize(photo.size)} - {new Date(photo.updatedAt).toLocaleDateString()}</span><div className="website-photo-actions"><a href={photo.url} target="_blank" rel="noreferrer">Open</a><button type="button" onClick={() => remove(photo.name)} disabled={busy}>Remove</button></div></div></article>) : <p className="website-photo-empty">No photos uploaded yet.</p>}</div></section>;
+  return <section className="website-photo-library">
+    <div className="website-photo-heading"><div><p className="eyebrow">Website imagery</p><h2>{title}</h2><p>{description}</p></div></div>
+    {message && <p className="media-message" role="status">{message}</p>}
+    <div className="website-photo-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(event.dataTransfer.files); }}>
+      <input id={"website-photo-upload-" + (location?.slug || "general")} type="file" accept=".png,.jpg,.jpeg,.webp" multiple onChange={(event) => { if (event.currentTarget.files) upload(event.currentTarget.files); }} />
+      <label htmlFor={"website-photo-upload-" + (location?.slug || "general")}>{busy ? "Working..." : "Drop photos here or choose files"}</label>
+      <small>PNG, JPG, WEBP - 25 MB max</small>
+    </div>
+    <div className="website-photo-grid">{photos.length ? photos.map((photo) => <article className={"website-photo-card" + (photo.featured ? " is-featured" : "")} key={photo.source + photo.name}>
+      <div className="website-photo-preview"><img src={photo.url} alt={photo.name.replace(/^[0-9]+-/, "")} />{photo.featured ? <strong>Featured</strong> : null}</div>
+      <div><strong>{photo.name.replace(/^[0-9]+-/, "")}</strong><span>{readableSize(photo)}{photo.updatedAt ? " - " + new Date(photo.updatedAt).toLocaleDateString() : ""}</span><div className="website-photo-actions"><a href={photo.url} target="_blank" rel="noreferrer">Open</a>{location && !photo.featured ? <button className="feature-photo-button" type="button" onClick={() => feature(photo)} disabled={busy}>Set featured</button> : null}<button className="remove-photo-button" type="button" onClick={() => remove(photo)} disabled={busy}>Delete</button></div></div>
+    </article>) : <p className="website-photo-empty">No photos uploaded yet.</p>}</div>
+  </section>;
 }
