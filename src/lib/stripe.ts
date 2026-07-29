@@ -48,11 +48,16 @@ type CheckoutInput = {
   origin: string;
 };
 
+function sanitizeStripeMessage(message: string) {
+  return message.replace(/(?:sk|pk)_(?:test|live)_[A-Za-z0-9_]+/g, "[redacted Stripe key]");
+}
+
 export async function createCheckoutSession(input: CheckoutInput) {
   const secret = process.env.STRIPE_SECRET_KEY;
   const item = checkoutCatalog[input.item];
   const unitAmount = input.unitAmount ?? item?.unitAmount;
   if (!secret || !item || !Number.isInteger(input.quantity) || input.quantity < 1 || !Number.isInteger(unitAmount) || unitAmount < 100) return null;
+  if (!/^sk_(test|live)_/.test(secret)) throw new Error("Stripe secret key is invalid. Use an sk_test_ or sk_live_ key for STRIPE_SECRET_KEY.");
 
   const form = new URLSearchParams();
   form.set("mode", "payment");
@@ -77,7 +82,14 @@ export async function createCheckoutSession(input: CheckoutInput) {
     },
     body: form,
   });
-  if (!response.ok) throw new Error("Stripe Checkout could not be started.");
+  if (!response.ok) {
+    let detail = "Stripe Checkout could not be started.";
+    try {
+      const body = await response.json() as { error?: { message?: string } };
+      if (body.error?.message) detail = "Stripe rejected checkout: " + sanitizeStripeMessage(body.error.message);
+    } catch {}
+    throw new Error(detail);
+  }
   const session = await response.json() as { id: string; url: string | null };
   if (!session.url) throw new Error("Stripe Checkout did not return a payment URL.");
   return session;
