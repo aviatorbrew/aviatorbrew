@@ -1,6 +1,9 @@
 import nodemailer from "nodemailer";
+import path from "node:path";
+import { findCustomLogo } from "@/lib/site-branding";
 
-type MailMessage = { to: string; subject: string; text: string; html?: string; replyTo?: string };
+type MailAttachment = { filename: string; path: string; cid?: string; contentType?: string };
+type MailMessage = { to: string; subject: string; text: string; html?: string; replyTo?: string; attachments?: MailAttachment[] };
 
 let transporter: nodemailer.Transporter | undefined;
 let verification: Promise<boolean> | undefined;
@@ -58,12 +61,23 @@ export async function sendMail(message: MailMessage) {
     verifySmtpOnStart();
     if (verification && !await verification) throw new Error("SMTP authentication failed. Check SMTP_USER and SMTP_PASSWORD.");
   }
+  const attachments = [...(message.attachments || [])];
+  if (message.html?.includes("cid:aviator-logo") && !attachments.some((attachment) => attachment.cid === "aviator-logo")) {
+    const customLogo = await findCustomLogo();
+    attachments.push({
+      filename: customLogo ? "aviator-logo" + customLogo.extension : "aviator-logo.png",
+      path: customLogo?.file || path.join(process.cwd(), "public", "images", "aviator-logo.png"),
+      cid: "aviator-logo",
+      contentType: customLogo?.contentType || "image/png",
+    });
+  }
   await transport.sendMail({
     from: { name: process.env.MAIL_FROM_NAME || "Aviator Brewing Company", address: process.env.MAIL_FROM_EMAIL! },
     to: message.to,
     subject: message.subject,
     text: message.text,
     html: message.html,
+    attachments,
     replyTo: message.replyTo || process.env.MAIL_REPLY_TO || process.env.MAIL_FROM_EMAIL,
   });
   return true;
