@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 type MailMessage = { to: string; subject: string; text: string; html?: string; replyTo?: string };
 
 let transporter: nodemailer.Transporter | undefined;
-let verification: Promise<void> | undefined;
+let verification: Promise<boolean> | undefined;
 
 function mailConfigured() {
   if (process.env.MAIL_MODE === "sendmail") return Boolean(process.env.MAIL_FROM_EMAIL);
@@ -37,9 +37,12 @@ export function verifySmtpOnStart() {
   if (!verification) {
     verification = transport.verify().then(() => {
       console.info("mail.smtp_verified");
+      return true;
     }).catch((error: unknown) => {
       console.error("mail.smtp_verification_failed", error instanceof Error ? error.message : "unknown error");
-      throw error;
+      transporter = undefined;
+      verification = undefined;
+      return false;
     });
   }
 }
@@ -51,7 +54,10 @@ export async function sendMail(message: MailMessage) {
   }
   const transport = getTransporter();
   if (!transport) return false;
-  if (process.env.MAIL_MODE === "smtp") { verifySmtpOnStart(); if (verification) await verification; }
+  if (process.env.MAIL_MODE === "smtp") {
+    verifySmtpOnStart();
+    if (verification && !await verification) throw new Error("SMTP authentication failed. Check SMTP_USER and SMTP_PASSWORD.");
+  }
   await transport.sendMail({
     from: { name: process.env.MAIL_FROM_NAME || "Aviator Brewing Company", address: process.env.MAIL_FROM_EMAIL! },
     to: message.to,
