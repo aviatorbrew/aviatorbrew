@@ -27,5 +27,5 @@ export async function getBreweryPhotos(): Promise<BreweryPhoto[]> {
 export async function getBreweryHero() {
   const photos = await getBreweryPhotos();
   const photo = photos[0];
-  return photo?.url || "/images/website-photos/90-brewery-campus.jpg";
+  return photo?.url || "/images/hero-campus.jpg";
 }

@@ -64,10 +64,15 @@ function bundledPhotos(targetName: string) {
 
 
 function bundledPhotoPaths(targetName: string, fileName: string) {
-  if (targetName === "brewery") return [path.join(process.cwd(), "public", "images", "website-photos", fileName)];
-  if (targetName === "general") return [path.join(process.cwd(), "public", "images", "website-photos", fileName)];
+  if (targetName === "brewery" || targetName === "general") return [
+    path.join(process.cwd(), "public", "images", "website-photos", fileName),
+    path.join(process.cwd(), "public", "media", "website-photos", fileName),
+  ];
   if (targetName === "private-events") return [];
-  return [path.join(process.cwd(), "public", "images", "location-photos", targetName, fileName)];
+  return [
+    path.join(process.cwd(), "public", "images", "location-photos", targetName, fileName),
+    path.join(process.cwd(), "public", "media", "location-photos", targetName, fileName),
+  ];
 }
 
 function refreshTarget(targetName: string) {
@@ -188,12 +193,16 @@ export async function DELETE(request: NextRequest) {
       }
     }
   }
-  for (const directory of source === "uploaded" ? [...new Set([photoDirectory(targetName), legacyPhotoDirectory(targetName)])] : []) {
-    try {
-      await fs.unlink(path.join(directory, fileName));
-      removed = true;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  if (source === "uploaded") {
+    await hidePhoto(targetName, fileName);
+    removed = true;
+    for (const directory of [...new Set([photoDirectory(targetName), legacyPhotoDirectory(targetName)])]) {
+      try {
+        await fs.unlink(path.join(directory, fileName));
+        removed = true;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
     }
   }
   if (!removed) return NextResponse.json({ error: "Image not found." }, { status: 404, headers: noStore });

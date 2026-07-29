@@ -22,8 +22,10 @@ export async function getLocationPhotos(slug: string): Promise<LocationPhoto[]> 
 }
 
 export async function getLocationHero(slug: string, fallback: string) {
-  const [photos, featured] = await Promise.all([getLocationPhotos(slug), getFeaturedPhotos()]);
+  const [photos, featured, hidden] = await Promise.all([getLocationPhotos(slug), getFeaturedPhotos(), getHiddenPhotos()]);
   const selected = featured[slug];
   const photo = selected ? photos.find((item) => item.name === selected.name && item.source === selected.source) : photos[0];
-  return photo?.url || photos[0]?.url || fallback;
+  const fallbackName = decodeURIComponent(fallback.split("/").pop() || "");
+  const fallbackHidden = fallbackName ? (hidden[slug] || []).includes(fallbackName) : false;
+  return photo?.url || photos[0]?.url || (fallbackHidden ? "/images/hero-campus.jpg" : fallback);
 }

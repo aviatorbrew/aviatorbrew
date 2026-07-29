@@ -46,14 +46,39 @@ export function websitePhotoUrl(target: string, filename: string) {
   return "/api/website-photo-files/" + encodeURIComponent(target) + "/" + encodeURIComponent(filename);
 }
 
+function hiddenFiles() {
+  return [...new Set([
+    path.join(websitePhotoRoot(), "hidden-photos.json"),
+    path.join(process.cwd(), "public", "media", "hidden-photos.json"),
+  ])];
+}
+
+function mergeHiddenPhotos(target: Record<string, string[]>, source: Record<string, string[]>) {
+  for (const [key, names] of Object.entries(source)) {
+    if (!Array.isArray(names)) continue;
+    target[key] = [...new Set([...(target[key] || []), ...names])];
+  }
+  return target;
+}
+
+async function writeHiddenPhotos(stored: Record<string, string[]>) {
+  await Promise.all(hiddenFiles().map(async (file) => {
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    const temporary = file + ".tmp";
+    await fs.writeFile(temporary, JSON.stringify(stored, null, 2) + "\n", "utf8");
+    await fs.rename(temporary, file);
+  }));
+}
+
 export async function listUploadedPhotos(target: string): Promise<StoredWebsitePhoto[]> {
+  const hidden = new Set((await getHiddenPhotos())[target] || []);
   const photos = new Map<string, StoredWebsitePhoto>();
   const directories = [...new Set([photoDirectory(target), legacyPhotoDirectory(target)])];
   for (const directory of directories) {
     try {
       const entries = await fs.readdir(directory, { withFileTypes: true });
       await Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => {
-        if (photos.has(entry.name)) return;
+        if (photos.has(entry.name) || hidden.has(entry.name)) return;
         const stats = await fs.stat(path.join(directory, entry.name));
         photos.set(entry.name, {
           name: entry.name,
@@ -71,16 +96,18 @@ export async function listUploadedPhotos(target: string): Promise<StoredWebsiteP
 }
 
 const featuredFile = () => path.join(websitePhotoRoot(), "featured-photos.json");
-const hiddenFile = () => path.join(websitePhotoRoot(), "hidden-photos.json");
 
 export async function getHiddenPhotos(): Promise<Record<string, string[]>> {
-  try {
-    const stored = JSON.parse(await fs.readFile(hiddenFile(), "utf8")) as Record<string, string[]>;
-    return stored && typeof stored === "object" ? stored : {};
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
-    throw error;
+  const merged: Record<string, string[]> = {};
+  for (const file of hiddenFiles()) {
+    try {
+      const stored = JSON.parse(await fs.readFile(file, "utf8")) as Record<string, string[]>;
+      if (stored && typeof stored === "object") mergeHiddenPhotos(merged, stored);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
   }
+  return merged;
 }
 
 export async function hidePhoto(target: string, name: string) {
@@ -88,10 +115,7 @@ export async function hidePhoto(target: string, name: string) {
   const names = new Set(Array.isArray(stored[target]) ? stored[target] : []);
   names.add(name);
   stored[target] = [...names];
-  await fs.mkdir(path.dirname(hiddenFile()), { recursive: true });
-  const temporary = hiddenFile() + ".tmp";
-  await fs.writeFile(temporary, JSON.stringify(stored, null, 2) + "\n", "utf8");
-  await fs.rename(temporary, hiddenFile());
+  await writeHiddenPhotos(stored);
 }
 
 export async function getFeaturedPhotos(): Promise<Record<string, FeaturedPhoto>> {
