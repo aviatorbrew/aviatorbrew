@@ -174,20 +174,22 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
     const fiftyLKegs = firstCount(item, ["fiftyLKegs", "fiftyL", "50L Kegs", "50 L Kegs", "50L", "50 L", "1/2 BBL", "Half BBL", "Half Barrels", "50L kegs available now"]);
     if (!beerName || sixthBblKegs === null || fiftyLKegs === null) throw new Error("Item " + (index + 1) + " needs beerName, sixthBblKegs, and fiftyLKegs from the kegs-for-sale items array. Found keys: " + rowKeys(item) + ".");
     const category = text(field(item, ["category", "Category", "Type", "Beer Type"]), 80) || "Other";
-    const packaging = text(field(item, ["packaging", "Packaging", "Package Size", "Package", "Format"]), 80) || "Draft";
-    const sixthBblPriceCents = firstCents(item, ["sixthBblPriceCents", "1/6 BBL Price", "1/6 BBL Keg Price", "Sixtel Price", "Sixtel Keg Price", "1/6 Price"]);
-    const fiftyLPriceCents = firstCents(item, ["fiftyLPriceCents", "50L Price", "50 L Price", "50L Keg Price", "50 L Keg Price", "1/2 BBL Price", "Half BBL Price"]);
-    const case12PriceCents = firstCents(item, ["case12PriceCents", "12oz Case Price", "12 oz Case Price", "12oz Price", "12 oz Price"]);
-    const case16PriceCents = firstCents(item, ["case16PriceCents", "16oz Case Price", "16 oz Case Price", "16oz Price", "16 oz Price"]);
+    const sixthBblPriceCents = firstCents(item, ["sixthBblPriceCents", "sixthBblPrice", "1/6 BBL Price", "1/6 BBL Keg Price", "Sixtel Price", "Sixtel Keg Price", "1/6 Price"]);
+    const fiftyLPriceCents = firstCents(item, ["fiftyLPriceCents", "fiftyLPrice", "50L Price", "50 L Price", "50L Keg Price", "50 L Keg Price", "1/2 BBL Price", "Half BBL Price"]);
+    const case12PriceCents = firstCents(item, ["case12PriceCents", "case12ozPrice", "cases12ozPrice", "12oz Case Price", "12 oz Case Price", "12oz Price", "12 oz Price"]);
+    const case16PriceCents = firstCents(item, ["case16PriceCents", "case16ozPrice", "cases16ozPrice", "16oz Case Price", "16 oz Case Price", "16oz Price", "16 oz Price"]);
     const casePriceCents = firstCents(item, ["casePriceCents", "Case Price"]);
     const rawCaseCount = count(field(item, ["caseCount", "Cases", "Case Count"]));
     const importedCaseSize = text(field(item, ["caseSize", "Case Size"]), 24);
-    const importedCase12Count = firstCount(item, ["case12Count", "12oz Cases", "12 oz Cases", "12oz Case Count", "12 oz Case Count", "12oz Cases Available", "12 oz Cases Available"]);
-    const importedCase16Count = firstCount(item, ["case16Count", "16oz Cases", "16 oz Cases", "16oz Case Count", "16 oz Case Count", "16oz Cases Available", "16 oz Cases Available"]);
+    const importedCase12Count = firstCount(item, ["case12Count", "cases12oz", "12oz Cases", "12 oz Cases", "12oz Case Count", "12 oz Case Count", "12oz Cases Available", "12 oz Cases Available"]);
+    const importedCase16Count = firstCount(item, ["case16Count", "cases16oz", "16oz Cases", "16 oz Cases", "16oz Case Count", "16 oz Case Count", "16oz Cases Available", "16 oz Cases Available"]);
     const case12Count = importedCase12Count ?? (/^12\s*oz$/i.test(importedCaseSize) ? rawCaseCount ?? 0 : 0);
     const case16Count = importedCase16Count ?? (/^16\s*oz$/i.test(importedCaseSize) ? rawCaseCount ?? 0 : 0);
     const caseCount = rawCaseCount ?? case12Count + case16Count;
     const caseSize = importedCaseSize || (case12PriceCents || case12Count ? "12oz" : case16PriceCents || case16Count ? "16oz" : casePriceCents || caseCount ? "Case" : "");
+    const hasDraft = sixthBblKegs > 0 || fiftyLKegs > 0;
+    const hasCases = case12Count > 0 || case16Count > 0 || caseCount > 0;
+    const packaging = text(field(item, ["packaging", "Packaging", "Package Size", "Package", "Format"]), 80) || (hasDraft && hasCases ? "Draft/Cans" : hasCases ? "Cans" : "Draft");
     const sixtelsAvailableViaBackfill = firstCount(item, ["sixtelsAvailableViaBackfill", "sixtelsByBackfill", "sixtelsAvailableByBackfill", "Backfill Sixtels", "Sixtels Available By Backfill", "sixtels available by backfill"]) ?? 0;
     return {
       category,
