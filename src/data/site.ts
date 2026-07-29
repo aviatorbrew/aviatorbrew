@@ -30,7 +30,7 @@ export const primaryNav = [
   { label: "Locations", href: "/locations" },
   { label: "Events", href: "/events" },
   { label: "Private Events", href: "/private-events" },
-  { label: "About & Tours", href: "/about" },
+  { label: "More!", href: "/more", children: [{ label: "About & Tours", href: "/about" }, { label: "Contact Us", href: "/contact" }] },
 ];
 
 export const locations: Location[] = [

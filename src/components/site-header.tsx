@@ -14,7 +14,7 @@ export function SiteHeader() {
       <Link href="/" className="wordmark" aria-label="Aviator Brewing Company home"><BrandLogo className="brand-logo" decorative /> <span className="wordmark-copy">AVIATOR <b>BREWING CO.</b></span></Link>
       <nav className="desktop-nav" aria-label="Primary navigation">
         {primaryNav.map((item) => <div className={"desktop-nav-item" + (item.children?.length ? " has-submenu" : "")} key={item.href}>
-          {item.href === "/beer" ? <a href={item.href} aria-haspopup={item.children?.length ? "true" : undefined}>{item.label}</a> : <Link href={item.href}>{item.label}</Link>}
+          <Link href={item.href} aria-haspopup={item.children?.length ? "true" : undefined}>{item.label}</Link>
           {item.children?.length ? <div className="desktop-submenu">{item.children.map((child) => <Link href={child.href} key={child.href}>{child.label}</Link>)}</div> : null}
         </div>)}
       </nav>
@@ -29,7 +29,7 @@ export function SiteHeader() {
       <div id="mobile-nav" className={`mobile-panel ${open ? "is-open" : ""}`}>
         <nav aria-label="Mobile navigation">
           {primaryNav.map((item) => <div className="mobile-nav-group" key={item.href}>
-            {item.href === "/beer" ? <a href={item.href} onClick={() => setOpen(false)}>{item.label}</a> : <Link href={item.href} onClick={() => setOpen(false)}>{item.label}</Link>}
+            <Link href={item.href} onClick={() => setOpen(false)}>{item.label}</Link>
             {item.children?.map((child) => <Link className="mobile-submenu-link" href={child.href} onClick={() => setOpen(false)} key={child.href}>{child.label}</Link>)}
           </div>)}
           <Link href="/#updates" onClick={() => setOpen(false)}>Join the Flight Crew</Link>
