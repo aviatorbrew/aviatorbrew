@@ -51,7 +51,7 @@ export default async function BreweryPage() {
 
     <section className="section brewery-system-band">
       <div className="content-wrap brewery-system-grid">
-        <div className="brewery-system-image"><Image src={photos[1]?.url || hero} alt="Inside Aviator Brewery" fill unoptimized sizes="(max-width: 800px) 100vw, 52vw" /></div>
+        <div className="brewery-system-image"><Image src={hero} alt="Inside Aviator Brewery" fill unoptimized sizes="(max-width: 800px) 100vw, 52vw" /></div>
         <div className="brewery-system-copy"><p className="eyebrow">The production system</p><h2>A 60-barrel brewhouse built for repeatable work.</h2><p>The four-vessel configuration lets the brewing team move major brewhouse stages through dedicated equipment. Automation supports control and consistency across larger batches while the crew remains responsible for recipes, timing, fermentation, conditioning, and release decisions.</p><dl><div><dt>Brewhouse</dt><dd>Fully automated, 60-barrel system</dd></div><div><dt>Configuration</dt><dd>Four dedicated brewhouse vessels</dd></div><div><dt>Campus</dt><dd>Five acres at 688 Brewing Drive</dd></div><div><dt>Connection</dt><dd>Brewery, hospitality, events, and tours on one campus</dd></div></dl></div>
       </div>
     </section>
@@ -59,7 +59,7 @@ export default async function BreweryPage() {
     <section className="section brewery-gallery-band">
       <div className="content-wrap">
         <div className="section-heading"><div><p className="eyebrow">Inside the brewery</p><h2>The working side of <em>Aviator.</em></h2></div><p>Brewery photography is managed by the Aviator team and updated as the campus and production floor evolve.</p></div>
-        <div className="brewery-gallery">{photos.slice(0, 6).map((photo, index) => <figure className={index === 0 ? "is-featured" : ""} key={photo.name}><Image src={photo.url} alt={"Aviator Brewery view " + (index + 1)} fill unoptimized sizes={index === 0 ? "(max-width: 700px) 100vw, 66vw" : "(max-width: 700px) 100vw, 33vw"} /></figure>)}</div>
+        <div className="brewery-gallery">{photos.slice(0, 6).map((photo, index) => <figure className={index === 0 ? "is-featured" : ""} key={photo.name}><Image src={photo.url} alt={"Aviator Brewery view " + (index + 1)} fill unoptimized sizes={index === 0 ? "(max-width: 700px) 100vw, 66vw" : "(max-width: 700px) 100vw, 33vw"} />{index === 0 ? <figcaption>Featured brewery photo</figcaption> : null}</figure>)}</div>
       </div>
     </section>
 

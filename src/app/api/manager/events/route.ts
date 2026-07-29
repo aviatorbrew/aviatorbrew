@@ -9,6 +9,25 @@ export const runtime = "nodejs";
 const eventImageDirectory = () => process.env.MANAGED_EVENT_IMAGES_DIRECTORY || path.join(process.cwd(), "data", "event-images");
 const allowedImageTypes = new Map([["image/jpeg", ".jpg"], ["image/png", ".png"], ["image/webp", ".webp"]]);
 
+async function eventInputFromRequest(request: NextRequest) {
+  let input: Record<string, unknown>;
+  if (request.headers.get("content-type")?.includes("multipart/form-data")) {
+    const form = await request.formData();
+    input = Object.fromEntries(form.entries()) as Record<string, unknown>;
+    const image = form.get("image");
+    if (image instanceof File && image.size) {
+      const extension = allowedImageTypes.get(image.type);
+      if (!extension) throw new Error("Event images must be JPG, PNG, or WEBP.");
+      if (image.size > 10 * 1024 * 1024) throw new Error("Event images must be 10 MB or smaller.");
+      const filename = "event-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + extension;
+      await fs.mkdir(eventImageDirectory(), { recursive: true });
+      await fs.writeFile(path.join(eventImageDirectory(), filename), Buffer.from(await image.arrayBuffer()));
+      input.imageUrl = "/api/event-images/" + filename;
+    }
+  } else input = await request.json();
+  return input;
+}
+
 export async function GET(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   return NextResponse.json({ events: await getManagedEvents() });
@@ -17,21 +36,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    let input: Record<string, unknown>;
-    if (request.headers.get("content-type")?.includes("multipart/form-data")) {
-      const form = await request.formData();
-      input = Object.fromEntries(form.entries()) as Record<string, unknown>;
-      const image = form.get("image");
-      if (image instanceof File && image.size) {
-        const extension = allowedImageTypes.get(image.type);
-        if (!extension) return NextResponse.json({ error: "Event images must be JPG, PNG, or WEBP." }, { status: 415 });
-        if (image.size > 10 * 1024 * 1024) return NextResponse.json({ error: "Event images must be 10 MB or smaller." }, { status: 413 });
-        const filename = "event-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + extension;
-        await fs.mkdir(eventImageDirectory(), { recursive: true });
-        await fs.writeFile(path.join(eventImageDirectory(), filename), Buffer.from(await image.arrayBuffer()));
-        input.imageUrl = "/api/event-images/" + filename;
-      }
-    } else input = await request.json();
+    const input = await eventInputFromRequest(request);
     await createManagedEvent(input); return NextResponse.json({ ok: true, events: await getManagedEvents() });
   }
   catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Could not create event." }, { status: 400 }); }
@@ -40,8 +45,8 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const body = await request.json() as Partial<ManagedEventInput> & { id?: string };
-    if (!body.id) return NextResponse.json({ error: "Event is required." }, { status: 400 });
+    const body = await eventInputFromRequest(request) as Partial<ManagedEventInput> & { id?: string };
+    if (!body.id || typeof body.id !== "string") return NextResponse.json({ error: "Event is required." }, { status: 400 });
     await updateManagedEvent(body.id, body);
     return NextResponse.json({ ok: true, events: await getManagedEvents() });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update event." }, { status: 400 }); }

@@ -43,7 +43,7 @@ async function graphicPath(graphic: FormDataEntryValue | null, name: string, exi
   return beerImageUrl(imageName);
 }
 
-async function beerFromForm(form: FormData, existing?: { slug: string; image: string }) {
+async function beerFromForm(form: FormData, existing?: { slug: string; image: string; published?: boolean }) {
   const name = clean(form.get("name"), 100);
   const style = clean(form.get("style"), 100);
   const abv = clean(form.get("abv"), 24);
@@ -53,7 +53,9 @@ async function beerFromForm(form: FormData, existing?: { slug: string; image: st
   if (!name || !style || !abv || !description || !categories.has(category) || !statuses.has(status)) throw new Error("Complete the beer name, style, ABV, category, availability, and tasting notes.");
   const slug = existing?.slug || slugify(name);
   if (!slug) throw new Error("Use a valid beer name.");
-  return { slug, name, style, abv, category, description, status: status as "Year-round" | "Seasonal" | "Limited", image: await graphicPath(form.get("graphic"), name, existing?.image) };
+  const publishedEntry = form.get("published");
+  const published = publishedEntry === null ? existing?.published !== false : publishedEntry === "true" || publishedEntry === "on";
+  return { slug, name, style, abv, category, description, status: status as "Year-round" | "Seasonal" | "Limited", image: await graphicPath(form.get("graphic"), name, existing?.image), published };
 }
 
 export async function GET(request: NextRequest) {

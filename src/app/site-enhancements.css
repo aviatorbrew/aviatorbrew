@@ -178,6 +178,33 @@
 .brewing-diagram-stage dd { margin: .25rem 0 0; color: #f2f7f9; font-weight: 900; }
 .brewing-diagram-stage p:not(.eyebrow) { max-width: 44rem; margin: 0; color: #bed0da; line-height: 1.6; }
 @keyframes brewing-slosh { 0%, 100% { transform: rotate(-2deg) translateY(0); } 50% { transform: rotate(2deg) translateY(-.35rem); } }
+.brewing-recipe-lab { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, .7fr); gap: 1rem; align-items: center; padding: 1rem; border: 1px solid rgba(184, 217, 236, .22); background: rgba(7, 24, 39, .5); }
+.brewing-recipe-lab h3 { margin: .35rem 0 .45rem; color: #f2f7f9; font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: 400; line-height: .9; text-transform: uppercase; }
+.brewing-recipe-lab p:not(.eyebrow) { max-width: 46rem; margin: 0; color: #bed0da; line-height: 1.55; }
+.brewing-recipe-buttons { display: grid; gap: .55rem; }
+.brewing-recipe-buttons button { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); gap: .65rem; align-items: center; min-height: 3rem; padding: .55rem .7rem; border: 1px solid rgba(184, 217, 236, .26); background: #0c263d; color: #d6e6ee; cursor: pointer; font-family: "Courier New", monospace; font-size: .74rem; font-weight: 900; text-align: left; text-transform: uppercase; }
+.brewing-recipe-buttons button:hover, .brewing-recipe-buttons button.is-active { border-color: #efb45f; background: #173d5b; color: #f7e4bd; }
+.brewing-recipe-buttons span { display: block; width: 1.6rem; height: 1.6rem; border: 1px solid rgba(255,255,255,.45); }
+.brewing-visual-stack { display: grid; gap: 1rem; align-content: center; }
+.brewing-pint-glass { position: relative; align-self: center; justify-self: center; width: min(62%, 9rem); height: 13rem; border: 3px solid rgba(226, 244, 250, .86); border-top-width: 6px; border-radius: .55rem .55rem 1.45rem 1.45rem; background: linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.04) 35%, rgba(255,255,255,.18)); box-shadow: inset 0 0 1.2rem rgba(255,255,255,.16), 0 1.2rem 2.2rem rgba(0,0,0,.22); overflow: hidden; transform: perspective(18rem) rotateX(-4deg); }
+.brewing-pint-glass::before { position: absolute; right: -2.2rem; top: 3rem; width: 2.5rem; height: 4rem; border: 3px solid rgba(226, 244, 250, .5); border-left: 0; border-radius: 0 2rem 2rem 0; content: ""; }
+.pint-beer { position: absolute; right: .55rem; bottom: .6rem; left: .55rem; height: 72%; border-radius: .15rem .15rem 1rem 1rem; animation: pint-settle 3.6s ease-in-out infinite; }
+.pint-foam { position: absolute; z-index: 2; top: 1.35rem; right: .45rem; left: .45rem; height: 2.15rem; border-radius: 0 0 50% 50%; background: radial-gradient(circle at 18% 35%, #fff 0 .55rem, transparent .58rem), radial-gradient(circle at 42% 20%, #f7fbfc 0 .7rem, transparent .74rem), radial-gradient(circle at 68% 40%, #fff4d7 0 .58rem, transparent .62rem), linear-gradient(#f7fbfc, #ffe9ad); }
+.pint-shine { position: absolute; z-index: 3; top: 2.6rem; bottom: 1.6rem; left: 1.15rem; width: .8rem; border-radius: 999px; background: rgba(255,255,255,.28); }
+@keyframes pint-settle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-.22rem); } }
+.beer-color-card { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: .75rem; align-items: center; padding: .7rem; border: 1px solid rgba(184, 217, 236, .24); background: rgba(184, 217, 236, .07); }
+.beer-color-card > span { display: block; width: 3rem; height: 3rem; border: 1px solid rgba(255,255,255,.42); box-shadow: inset 0 0 0 .35rem rgba(0,0,0,.12); }
+.beer-color-card b { display: block; color: #f2f7f9; font-family: "Courier New", monospace; font-size: .78rem; text-transform: uppercase; }
+.beer-color-card small { display: block; margin-top: .25rem; color: #bed0da; line-height: 1.4; }
+.brewing-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; border: 1px solid rgba(184, 217, 236, .24); background: rgba(184, 217, 236, .24); }
+.brewing-detail-grid article { display: grid; align-content: start; gap: .75rem; min-height: 13rem; padding: 1rem; background: #0c263d; }
+.brewing-detail-grid h4 { margin: 0; color: #f2f7f9; font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: clamp(1.35rem, 2vw, 2rem); font-weight: 400; line-height: .95; text-transform: uppercase; }
+.brewing-detail-grid p:not(.eyebrow) { margin: 0; color: #bed0da; font-size: .9rem; line-height: 1.55; }
+.fermenter-detail { background: linear-gradient(135deg, #11334f, #0c263d) !important; }
+.fermenter-detail dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; margin: 0; }
+.fermenter-detail dl div { padding: .55rem; border: 1px solid rgba(239, 180, 95, .35); background: rgba(239, 180, 95, .08); }
+.fermenter-detail dt { color: #efb45f; font-family: "Courier New", monospace; font-size: .58rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.fermenter-detail dd { margin: .2rem 0 0; color: #f2f7f9; font-weight: 900; }
 .brewery-process-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -287,6 +314,19 @@
 }
 .brewery-gallery img {
   object-fit: cover;
+}
+.brewery-gallery figcaption {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 1;
+  padding: .45rem .65rem;
+  background: #efb45f;
+  color: #082238;
+  font-family: "Courier New", monospace;
+  font-size: .68rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 .brewery-history-band {
   background: #dbe6e9;
@@ -414,6 +454,8 @@
   .brewery-system-copy h2,
   .brewery-visit-grid h2 { font-size: 3.25rem; }
   .brewing-diagram-controls { grid-template-columns: repeat(3, 1fr); }
+  .brewing-recipe-lab { grid-template-columns: 1fr; }
+  .brewing-detail-grid { grid-template-columns: 1fr; }
   .brewery-process-grid { grid-template-columns: repeat(2, 1fr); }
   .brewery-process-grid li:nth-child(3n) { border-right: 1px solid rgba(184, 217, 236, .28); }
   .brewery-process-grid li:nth-child(2n) { border-right: 0; }
@@ -438,6 +480,8 @@
   .brewing-diagram-stage { grid-template-columns: 1fr; }
   .brewing-diagram-vessel { min-height: 12rem; }
   .brewing-diagram-stage dl { grid-template-columns: 1fr; }
+  .fermenter-detail dl { grid-template-columns: 1fr; }
+  .brewing-recipe-buttons { grid-template-columns: 1fr; }
   .brewery-process-grid { grid-template-columns: 1fr; }
   .brewery-process-grid li,
   .brewery-process-grid li:nth-child(3n) { min-height: 0; border-right: 0; }
@@ -446,4 +490,66 @@
   .brewery-history { grid-template-columns: 1fr; }
   .brewery-history article { min-height: 0; border-right: 0; }
   .brewery-history h3 { margin-top: 1.8rem; }
+}
+
+/* Keep location Food/Drinks menu buttons legible on narrow cards. */
+.location-directory-menu-actions .location-menu-action,
+.location-directory-menu-actions .location-menu-pending {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: center;
+  justify-items: start;
+  gap: .28rem;
+  min-width: 0;
+}
+.location-directory-menu-actions .location-menu-action strong,
+.location-directory-menu-actions .location-menu-pending strong,
+.location-directory-menu-actions .location-menu-action span,
+.location-directory-menu-actions .location-menu-pending span {
+  min-width: 0;
+  max-width: 100%;
+}
+.location-directory-menu-actions .location-menu-action strong,
+.location-directory-menu-actions .location-menu-pending strong {
+  overflow-wrap: anywhere;
+  line-height: .9;
+}
+.location-directory-menu-actions .location-menu-action span,
+.location-directory-menu-actions .location-menu-pending span {
+  display: inline-flex;
+  align-items: center;
+  gap: .28rem;
+  white-space: normal;
+  line-height: 1.1;
+}
+.location-directory-menu-actions .location-menu-action span em,
+.location-directory-menu-actions .location-menu-pending span em {
+  font-style: normal;
+}
+.location-directory-menu-actions .location-menu-action svg {
+  flex: 0 0 auto;
+}
+
+.private-event-gallery-band {
+  background: #071c2e;
+}
+.private-event-gallery figure {
+  border: 1px solid rgba(184, 217, 236, .18);
+}
+
+.manager-events-list article.is-editing {
+  grid-template-columns: 1fr;
+}
+.manager-event-edit-form {
+  margin-top: 0;
+}
+.manager-event-edit-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: .75rem;
+  align-items: center;
+}
+.manager-event-edit-actions .button {
+  width: fit-content;
 }

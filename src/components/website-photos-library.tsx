@@ -13,7 +13,7 @@ type WebsitePhoto = {
 type LocationTarget = { slug: string; name: string };
 
 function readableSize(photo: WebsitePhoto) {
-  if (photo.source === "bundled") return "Bundled website image";
+  if (photo.source === "bundled") return "Default website image";
   return photo.size < 1024 * 1024 ? Math.max(1, Math.round(photo.size / 1024)) + " KB" : (photo.size / 1024 / 1024).toFixed(1) + " MB";
 }
 
@@ -23,9 +23,13 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
   const [busy, setBusy] = useState(false);
   const query = location ? "?location=" + encodeURIComponent(location.slug) : "";
   const title = location ? location.name + " Photos" : "General Website Photos";
-  const description = location
-    ? "Upload approved photos, then choose the image that should lead this page. Every image remains available in the gallery."
-    : "Upload approved campaign, campus, and other general website imagery.";
+  const description = location?.slug === "brewery"
+    ? "Upload brewery-only photos for the public Brewery page. Choose Set featured to make one photo the large lead image in the brewery gallery."
+    : location?.slug === "private-events"
+      ? "Upload Ready Room private event photos for the public Private Events page. Choose Set featured to make one photo the large lead image in the room gallery."
+      : location
+        ? "Upload approved photos, then choose the image that should lead this page. Every image remains available in the gallery."
+        : "Upload approved campaign, campus, and other general website imagery.";
 
   const request = useCallback((init: RequestInit = {}) => fetch("/api/website-photos" + query, {
     ...init,
@@ -75,7 +79,7 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
   }
 
   async function remove(photo: WebsitePhoto) {
-    if (!window.confirm(photo.source === "uploaded" ? "Delete this photo? This cannot be undone." : "Hide this bundled photo from the library and website?")) return;
+    if (!window.confirm(photo.source === "uploaded" ? "Delete this photo? This cannot be undone." : "Delete this default photo everywhere? This cannot be undone.")) return;
     setBusy(true);
     try {
       const deleteResponse = await fetch("/api/website-photos" + query + (query ? "&" : "?") + "file=" + encodeURIComponent(photo.name) + "&source=" + encodeURIComponent(photo.source), {
@@ -91,7 +95,7 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
   }
 
   return <section className="website-photo-library">
-    <div className="website-photo-heading"><div><p className="eyebrow">Website imagery</p><h2>{title}</h2><p>{description}</p></div></div>
+    <div className="website-photo-heading"><div><p className="eyebrow">{location?.slug === "brewery" ? "Brewery-only imagery" : location?.slug === "private-events" ? "Private event room imagery" : "Website imagery"}</p><h2>{title}</h2><p>{description}</p></div></div>
     {message && <p className="media-message" role="status">{message}</p>}
     <div className="website-photo-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(event.dataTransfer.files); }}>
       <input id={"website-photo-upload-" + (location?.slug || "general")} type="file" accept=".png,.jpg,.jpeg,.webp" multiple onChange={(event) => { if (event.currentTarget.files) upload(event.currentTarget.files); }} />

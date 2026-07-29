@@ -370,13 +370,14 @@ body {
 .more-action-card strong { display: inline-flex; gap: .45rem; align-items: center; margin-top: auto; color: #f0b65d; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; }
 .keg-inventory-section { background: #071d32; }
 .keg-table-wrap { overflow-x: auto; border: 1px solid rgba(148,202,226,.35); background: #092a44; }
-.keg-table { width: 100%; min-width: 39rem; border-collapse: collapse; color: #e7f1f5; text-align: left; }
+.keg-table { width: 100%; min-width: 58rem; border-collapse: collapse; color: #e7f1f5; text-align: left; }
 .keg-table th, .keg-table td { padding: 1rem 1.2rem; border-bottom: 1px solid rgba(155,205,228,.2); }
 .keg-table thead th { color: #efb45c; background: #06192a; font: 900 .7rem/1 "Courier New", monospace; letter-spacing: .1em; text-transform: uppercase; }
 .keg-table tbody tr:hover { background: rgba(75,145,183,.14); }
 .keg-table tbody th { color: #f4f8fa; font-size: 1rem; }
-.keg-table tbody th small { display: block; margin-top: .25rem; color: #a8c8d8; font-size: .72rem; font-weight: 500; }
+.keg-table tbody th small, .keg-table td small { display: block; margin-top: .25rem; color: #a8c8d8; font-size: .72rem; font-weight: 500; }
 .keg-table td { color: #d6e9f1; font-family: "Courier New", monospace; }
+.keg-table td strong { display: block; color: #f4f8fa; font-size: .95rem; }
 .keg-note { margin: 0; padding: 1rem 1.2rem; color: #c4dae4; background: #0c3452; font-size: .84rem; line-height: 1.5; }
 .keg-unavailable, .gift-card-panel { padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid rgba(147,200,226,.42); background: linear-gradient(145deg, #0c3553, #071e34); box-shadow: 10px 12px 0 rgba(0,0,0,.17); }
 .keg-unavailable h2, .gift-card-panel h2 { margin: .3rem 0 1rem; color: #f0f7fa; font-size: clamp(2rem,4vw,4rem); line-height: .95; }
@@ -519,6 +520,23 @@ body {
 /* Aviator Live schedule */
 .live-music-dispatch { padding: clamp(2.2rem, 5vw, 4rem) 0; background: #0b2a45; background-image: linear-gradient(110deg, rgba(4, 20, 35, .82), rgba(10, 51, 78, .72)), url("/images/atmosphere/storm-runway-atlas.png"); background-position: center; background-size: cover; }
 .live-music-dispatch .content-wrap { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+.live-music-dispatch-wrap { align-items: stretch !important; }
+.live-music-dispatch-copy { display: grid; align-content: center; justify-items: start; gap: 1rem; min-width: 0; }
+.live-music-dispatch-copy .button { margin-top: .25rem; }
+.live-music-dispatch-schedule { display: grid; align-content: start; gap: 1px; width: min(100%, 36rem); border: 1px solid rgba(199, 220, 232, .28); background: rgba(199, 220, 232, .28); }
+.live-music-dispatch-show { display: grid; grid-template-columns: 6.6rem minmax(0, 1fr) auto; align-items: center; gap: .85rem; min-height: 5.8rem; padding: .8rem .9rem; background: rgba(7, 28, 48, .82); color: #f0f7fa; }
+.live-music-dispatch-show time { display: grid; align-content: center; gap: .2rem; min-height: 4.2rem; padding: .45rem .55rem; background: #efb45f; color: #071c30; text-align: center; text-transform: uppercase; }
+.live-music-dispatch-show time span { font-family: "Courier New", monospace; font-size: .62rem; font-weight: 900; letter-spacing: .06em; }
+.live-music-dispatch-show time strong { font-size: .82rem; line-height: 1.1; }
+.live-music-dispatch-show div { min-width: 0; }
+.live-music-dispatch-show p { max-width: none !important; margin: 0 0 .25rem !important; color: #9fc4d8 !important; font-family: "Courier New", monospace; font-size: .62rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.live-music-dispatch-show h3 { margin: 0; overflow-wrap: anywhere; color: #f3f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 400; line-height: .92; text-transform: uppercase; }
+.live-music-dispatch-show small { display: block; margin-top: .3rem; color: #c7dce8; line-height: 1.25; }
+.live-music-dispatch-show > a { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border: 1px solid rgba(239, 180, 95, .58); color: #efb45f; text-decoration: none; }
+.live-music-dispatch-show > a svg { width: 1rem; }
+.live-music-dispatch-empty { display: grid; gap: .35rem; padding: 1.25rem; background: rgba(7, 28, 48, .82); color: #f0f7fa; }
+.live-music-dispatch-empty strong { font-family: "Courier New", monospace; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
+.live-music-dispatch-empty p { max-width: none !important; margin: 0 !important; color: #c7dce8 !important; }
 .live-music-dispatch h2 { margin: .4rem 0 .65rem; color: #f0f7fa; font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 400; letter-spacing: -.02em; line-height: .9; text-transform: uppercase; }
 .live-music-dispatch h2 em { color: #efb45f; font-family: Georgia, serif; font-style: italic; font-weight: 400; text-transform: none; }
 .live-music-dispatch p:not(.eyebrow) { max-width: 38rem; margin: 0; color: #c7dce8; line-height: 1.6; }
@@ -566,7 +584,7 @@ body {
 .live-stage-card footer { display: grid; gap: .35rem; margin-top: auto; padding-top: .9rem; border-top: 1px solid rgba(178, 214, 231, .23); color: #a8c9db; font-size: .73rem; line-height: 1.45; }
 .live-stage-card footer b { color: #efb45f; font-family: "Courier New", monospace; font-size: .62rem; letter-spacing: .06em; }
 @media (max-width: 980px) { .aviator-live-card { grid-template-columns: 5.5rem 7rem minmax(0, 1fr); } .aviator-live-details { grid-column: 2 / -1; grid-template-columns: 1fr 1.25fr auto; align-items: center; border-top: 1px solid rgba(166, 206, 227, .25); border-left: 0; } .live-stage-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 700px) { .live-music-dispatch .content-wrap { align-items: start; flex-direction: column; } .aviator-live-card { grid-template-columns: 5rem 1fr; } .aviator-live-signal { min-height: 12rem; } .aviator-live-copy { grid-column: span 2; } .aviator-live-details { grid-column: span 2; grid-template-columns: 1fr; } .live-stage-grid { grid-template-columns: 1fr; } .live-stage-card { min-height: 17rem; } }
+@media (max-width: 700px) { .live-music-dispatch .content-wrap { align-items: start; flex-direction: column; } .live-music-dispatch-schedule { width: 100%; } .live-music-dispatch-show { grid-template-columns: 5.6rem minmax(0, 1fr); } .live-music-dispatch-show > a { grid-column: 2; width: auto; height: 2rem; justify-self: start; padding: 0 .7rem; } .aviator-live-card { grid-template-columns: 5rem 1fr; } .aviator-live-signal { min-height: 12rem; } .aviator-live-copy { grid-column: span 2; } .aviator-live-details { grid-column: span 2; grid-template-columns: 1fr; } .live-stage-grid { grid-template-columns: 1fr; } .live-stage-card { min-height: 17rem; } }
 
 /* Manager-managed, non-music events */
 .special-events-section { background: #0b2942; }
@@ -596,11 +614,12 @@ body {
 .special-events-section .managed-event-time-block strong { color: #fff5df; font-size: .9rem; font-weight: 900; line-height: 1.15; }
 .special-events-section .managed-event-time-block i { color: #a9c9d9; font-family: "Courier New", monospace; font-size: .78em; font-style: normal; text-transform: uppercase; }
 .special-events-section .managed-event-description { padding: 0 1rem .65rem; border-top: 0; background: transparent; }
-.special-events-section .managed-event-description p { margin: 0 0 .55rem; color: #d0e1ea; font-size: .86rem; line-height: 1.45; white-space: pre-line; }
+.special-events-section .managed-event-description p { margin: 0 0 .55rem; color: #d0e1ea; font-size: .86rem; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
 .special-events-section .managed-event-description a { color: #f0bd62; font-size: .76rem; }
 @media (max-width: 700px) { .special-events-section .managed-event-card { grid-template-columns: clamp(8.75rem, 40vw, 11rem) minmax(0, 1fr); } .special-events-section .managed-event-summary { grid-template-columns: minmax(4.4rem, 5rem) minmax(0, 1fr); gap: .35rem .75rem; padding: .65rem .8rem .38rem; } .special-events-section .managed-event-summary h3 { font-size: clamp(1.25rem, 6vw, 1.75rem); } .special-events-section .managed-event-description { padding: 0 .8rem .6rem; } .special-events-section .managed-event-description p { font-size: .8rem; line-height: 1.42; } }
 
 .managed-event-card .event-content { background: linear-gradient(100deg, #173d5b, #11314d); }
+.managed-event-copy { overflow-wrap: anywhere; white-space: pre-wrap; }
 .manager-events { background: #0c2b45; }
 .manager-event-form { display: grid; grid-template-columns: 2fr repeat(3, minmax(7rem, 1fr)); gap: .85rem; margin-top: 1.4rem; padding: 1.25rem; border: 1px solid rgba(184, 217, 236, .28); background: #113650; }
 .manager-event-form label { display: grid; gap: .35rem; color: #d9e8ef; font-size: .76rem; font-weight: 800; }
@@ -613,7 +632,7 @@ body {
 .manager-event-form > .button { align-self: end; width: fit-content; }
 .manager-events-list { display: grid; gap: .7rem; }
 .manager-events-list article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem 1.5rem; padding: 1rem; border: 1px solid rgba(184, 217, 236, .23); background: #10334e; }
-.manager-events-list article > div { display: grid; gap: .3rem; }.manager-event-content { display: grid !important; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); gap: .8rem 1rem !important; }.manager-event-content > img, .manager-event-image-placeholder { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #24465e; color: #a9c3d1; display: grid; place-items: center; font-family: "Courier New", monospace; font-size: .65rem; text-transform: uppercase; }.manager-event-meta { min-width: 0; display: grid; align-content: start; gap: .3rem; }.manager-event-description { grid-column: 1 / -1; margin: .2rem 0 0; }
+.manager-events-list article > div { display: grid; gap: .3rem; }.manager-event-content { display: grid !important; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); gap: .8rem 1rem !important; }.manager-event-content > img, .manager-event-image-placeholder { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #24465e; color: #a9c3d1; display: grid; place-items: center; font-family: "Courier New", monospace; font-size: .65rem; text-transform: uppercase; }.manager-event-meta { min-width: 0; display: grid; align-content: start; gap: .3rem; }.manager-event-description { grid-column: 1 / -1; margin: .2rem 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .manager-events-list .eyebrow { margin: 0; font-size: .6rem; }
 .manager-events-list h3 { margin: 0; color: #f0f7fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.35rem; font-weight: 400; letter-spacing: .02em; text-transform: uppercase; }
 .manager-events-list p:not(.eyebrow), .manager-events-list small { margin: 0; color: #bfd4df; line-height: 1.5; }
@@ -729,7 +748,10 @@ body {
 .beer-pdf-artwork a, .beer-pdf-detail a { display: grid; height: 100%; place-items: center; padding: 1rem; color: #102b45; font: 800 .75rem/1.4 "Courier New", monospace; text-align: center; text-decoration: none; text-transform: uppercase; }
 .manager-beer-pdf { display: grid; width: 5.25rem; height: 5.8rem; place-items: center; box-sizing: border-box; border: 1px solid #4e7995; background: #d2e3ea; color: #123752; font: 900 .68rem/1.35 "Courier New", monospace; letter-spacing: .06em; text-align: center; text-decoration: none; text-transform: uppercase; }
 .manager-beer-pdf:hover { background: #f0b45e; color: #09243a; }
-@media (max-width: 760px) { .manager-beer-pdf { width: 4rem; height: 5rem; } }
+.manager-beer-thumb { position: relative; width: 5.25rem; height: 5.8rem; overflow: hidden; border: 1px solid #4e7995; background: #d2e3ea; }
+.manager-beer-thumb img { object-fit: contain; padding: .35rem; }
+.manager-beer-thumb .beer-pdf-artwork { background: #d2e3ea; }
+@media (max-width: 760px) { .manager-beer-pdf, .manager-beer-thumb { width: 4rem; height: 5rem; } }
 
 
 /* Inline beer editing */
@@ -759,7 +781,16 @@ body {
 .manager-keg-status li { display: flex; justify-content: space-between; gap: .75rem; padding: .65rem .75rem; background: #102f48; color: #dbeaf0; font-size: .8rem; }
 .manager-keg-status li span { color: #f0b45e; white-space: nowrap; }
 .manager-keg-status.is-empty { display: block; }
-@media (max-width: 680px) { .manager-keg-status { grid-template-columns: 1fr; } .manager-keg-status li { align-items: start; flex-direction: column; gap: .25rem; } }
+.manager-keg-list { display: grid; gap: .4rem; margin-top: 1rem; }
+.manager-keg-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .55rem .75rem; border: 1px solid rgba(184,217,236,.24); background: #102f48; }
+.manager-keg-row.is-hidden { opacity: .62; background: #26313c; }
+.manager-keg-row h3, .manager-keg-row p { margin: 0; }
+.manager-keg-row h3 { margin: .12rem 0; color: #f3f8fa; font-size: .98rem; line-height: 1.1; }
+.manager-keg-row p:not(.eyebrow), .manager-keg-row small { color: #a8c8d8; font-size: .72rem; line-height: 1.3; }
+.manager-keg-row footer { flex: 0 0 auto; }
+.manager-keg-row button { border: 1px solid rgba(239,180,95,.8); background: transparent; color: #f7d39c; padding: .42rem .58rem; font: 900 .62rem/1 "Courier New", monospace; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.manager-keg-row button:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 680px) { .manager-keg-status { grid-template-columns: 1fr; } .manager-keg-status li, .manager-keg-row { align-items: start; flex-direction: column; gap: .25rem; } }
 
 
 /* Homepage campus directory */
@@ -1074,8 +1105,11 @@ body {
 
 
 /* Manager password recovery and newsletter operations */
+.manager-login-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .85rem 1.4rem; margin-top: .75rem; }
+.manager-login-actions .button { margin-top: 0; }
 .manager-reset-button {
   justify-self: start;
+  margin-left: .25rem;
   border: 0;
   background: transparent;
   color: #efb45f;
@@ -1695,3 +1729,50 @@ body {
   .manager-overview-grid a { min-height: 0; }
   .manager-page-heading h1 { font-size: 2.8rem; }
 }
+
+.beer-category-group { display: grid; grid-column: 1 / -1; gap: 1px; }
+.beer-category-group h3 { margin: 0; padding: .85rem 1rem; border-bottom: 1px solid rgba(184,217,236,.24); background: #08243a; color: #efb45f; font: 900 .78rem/1 "Courier New", monospace; letter-spacing: .12em; text-transform: uppercase; }
+.beer-category-group > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; }
+@media(max-width:800px){.beer-category-group > div{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.beer-category-group > div{grid-template-columns:1fr}}
+
+.manager-keg-export { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-top: 1rem; }
+.manager-keg-export label { display: flex; align-items: center; gap: .4rem; color: #dcecf2; font: 800 .72rem/1.2 "Courier New", monospace; text-transform: uppercase; }
+.manager-keg-export input { width: auto; }
+.manager-keg-export button { border: 1px solid rgba(239,180,95,.85); background: #efb45f; color: #102f48; padding: .55rem .7rem; font: 900 .66rem/1 "Courier New", monospace; text-transform: uppercase; cursor: pointer; }
+.manager-keg-row.is-editing { display: block; padding: .8rem; }
+.manager-keg-edit-form { display: grid; grid-template-columns: repeat(4, minmax(8rem, 1fr)); gap: .7rem; width: 100%; padding: 0; border: 0; background: transparent; }
+.manager-keg-edit-form label { display: grid; gap: .3rem; color: #d8e9f0; font-size: .68rem; font-weight: 900; text-transform: uppercase; }
+.manager-keg-edit-form input { min-height: 2.45rem; border: 1px solid #4f7b97; background: #071d30; color: #f4f9fb; padding: .5rem; font-size: .82rem; }
+.manager-keg-edit-form .manager-keg-check { display: flex; align-items: center; gap: .45rem; align-self: end; min-height: 2.45rem; }
+.manager-keg-edit-form .manager-keg-check input { width: auto; min-height: auto; }
+.manager-keg-edit-actions { display: flex; flex-wrap: wrap; align-items: end; gap: .55rem; grid-column: 1 / -1; }
+@media (max-width: 980px) { .manager-keg-edit-form { grid-template-columns: repeat(2, minmax(8rem, 1fr)); } }
+@media (max-width: 560px) { .manager-keg-edit-form { grid-template-columns: 1fr; } }
+
+
+
+.beer-release-alert { padding: clamp(1.1rem, 3vw, 2rem) clamp(1rem, 4vw, 4.5rem); background: #071827; color: #f2f8fb; }
+.beer-release-alert-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(11rem, 18rem); gap: clamp(1rem, 3vw, 2rem); align-items: stretch; width: min(var(--max), 100%); margin: auto; border: 2px solid #4b7fa3; background: linear-gradient(135deg, #0d2d49 0%, #123f61 60%, #0a2136 100%); box-shadow: 9px 9px 0 rgba(4, 17, 30, .25); position: relative; overflow: hidden; }
+.beer-release-alert-inner::before { position: absolute; inset: 0 auto 0 0; width: .55rem; background: repeating-linear-gradient(180deg, #efb45f 0 14px, #102842 14px 24px); content: ""; }
+.beer-release-alert-copy { display: grid; gap: .85rem; align-content: center; padding: clamp(1.2rem, 3vw, 2rem) clamp(1.2rem, 3vw, 2.2rem); padding-left: clamp(1.8rem, 4vw, 2.8rem); }
+.beer-release-alert-copy .eyebrow { color: #efb45f; }
+.beer-release-alert-copy h2 { margin: 0; max-width: 14ch; color: #f4f8fa; font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: clamp(2rem, 4vw, 4.2rem); font-weight: 400; line-height: .88; text-transform: uppercase; }
+.beer-release-alert-copy dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin: .2rem 0 0; }
+.beer-release-alert-copy div { min-width: 0; padding-top: .55rem; border-top: 1px solid rgba(184, 217, 236, .26); }
+.beer-release-alert-copy dt { color: #93bdd3; font-family: "Courier New", monospace; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.beer-release-alert-copy dd { margin: .25rem 0 0; color: #f0f6f9; font-size: .92rem; font-weight: 800; line-height: 1.35; }
+.beer-release-sell-sheet { display: grid; min-height: 12rem; place-items: center; border-left: 1px solid rgba(184, 217, 236, .25); background: #d9e7ed; color: #0d2940; text-decoration: none; }
+.beer-release-sell-sheet img { display: block; width: 100%; height: 100%; max-height: 17rem; object-fit: contain; padding: .7rem; box-sizing: border-box; }
+.beer-release-sell-sheet span { display: grid; place-items: center; gap: .35rem; padding: 1rem; text-align: center; }
+.beer-release-sell-sheet strong { font-family: Impact, Haettenschweiler, sans-serif; font-size: 2rem; font-weight: 400; text-transform: uppercase; }
+.beer-release-sell-sheet small { color: #385b70; font-family: "Courier New", monospace; font-size: .68rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.beer-release-sell-sheet:hover { background: #efb45f; }
+.manager-beer-release-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.manager-beer-release-form .manager-event-publish, .manager-beer-release-form .manager-event-wide { grid-column: 1 / -1; }
+.manager-beer-release-preview { display: grid; grid-template-columns: minmax(0, 1fr) 10rem; gap: 1rem; align-items: center; margin-top: 1rem; padding: 1rem; border: 1px solid #3f6c89; background: #0a2941; }
+.manager-beer-release-preview h3 { font-size: 1.6rem; }
+.manager-beer-release-preview a { color: #efb45f; font-weight: 900; }
+.manager-beer-release-preview img { width: 10rem; height: 8rem; object-fit: contain; background: #d9e7ed; }
+.manager-beer-release-preview > span { display: grid; width: 10rem; height: 8rem; place-items: center; background: #d9e7ed; color: #102842; font-weight: 900; text-transform: uppercase; }
+@media (max-width: 760px) { .beer-release-alert-inner, .manager-beer-release-form, .manager-beer-release-preview { grid-template-columns: 1fr; } .beer-release-alert-copy dl { grid-template-columns: 1fr; } .beer-release-sell-sheet { border-top: 1px solid rgba(184, 217, 236, .25); border-left: 0; } .beer-release-sell-sheet img { max-height: 18rem; } .manager-beer-release-preview img, .manager-beer-release-preview > span { width: 100%; } }

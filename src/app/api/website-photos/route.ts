@@ -52,6 +52,7 @@ function bundledPhotos(targetName: string) {
       source: "bundled" as const,
     }));
   }
+  if (targetName === "private-events") return [];
   return (locationPhotoManifest[targetName] || []).map((name) => ({
     name,
     size: 0,
@@ -61,10 +62,19 @@ function bundledPhotos(targetName: string) {
   }));
 }
 
+
+function bundledPhotoPaths(targetName: string, fileName: string) {
+  if (targetName === "brewery") return [path.join(process.cwd(), "public", "images", "website-photos", fileName)];
+  if (targetName === "general") return [path.join(process.cwd(), "public", "images", "website-photos", fileName)];
+  if (targetName === "private-events") return [];
+  return [path.join(process.cwd(), "public", "images", "location-photos", targetName, fileName)];
+}
+
 function refreshTarget(targetName: string) {
   revalidatePath("/");
   revalidatePath("/order-food");
   if (targetName === "brewery") revalidatePath("/brewery");
+  else if (targetName === "private-events") revalidatePath("/private-events");
   else if (targetName !== "general") {
     revalidatePath("/locations");
     revalidatePath("/locations/" + targetName);
@@ -166,9 +176,17 @@ export async function DELETE(request: NextRequest) {
   if (source === "bundled") {
     const hidden = await getHiddenPhotos();
     const alreadyHidden = (hidden[targetName] || []).includes(fileName);
-    if (!bundledPhotos(targetName).some((photo) => photo.name === fileName) || alreadyHidden) return NextResponse.json({ error: "Image not found." }, { status: 404, headers: noStore });
-    await hidePhoto(targetName, fileName);
+    const bundled = bundledPhotos(targetName).some((photo) => photo.name === fileName);
+    if (!bundled && !alreadyHidden) return NextResponse.json({ error: "Image not found." }, { status: 404, headers: noStore });
+    if (!alreadyHidden) await hidePhoto(targetName, fileName);
     removed = true;
+    for (const filePath of bundledPhotoPaths(targetName, fileName)) {
+      try {
+        await fs.unlink(filePath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+    }
   }
   for (const directory of source === "uploaded" ? [...new Set([photoDirectory(targetName), legacyPhotoDirectory(targetName)])] : []) {
     try {

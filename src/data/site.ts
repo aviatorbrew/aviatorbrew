@@ -6,7 +6,7 @@ export type Location = {
 
 export type Beer = {
   slug: string; name: string; style: string; abv: string; category: string;
-  description: string; status: "Year-round" | "Seasonal" | "Limited"; image: string;
+  description: string; status: "Year-round" | "Seasonal" | "Limited"; image: string; published?: boolean;
 };
 
 export type BeyondBeer = {
@@ -26,7 +26,7 @@ export type Event = {
 export const orderFoodUrl = "/order-food";
 
 export const primaryNav = [
-  { label: "Beer", href: "/beer", children: [{ label: "Brewery", href: "/brewery" }] },
+  { label: "Beer", href: "/beer", children: [{ label: "Brewery", href: "/brewery" }, { label: "Keg Sales", href: "/kegs" }] },
   { label: "Locations", href: "/locations" },
   { label: "Events", href: "/events" },
   { label: "Private Events", href: "/private-events" },
@@ -45,23 +45,40 @@ export const locations: Location[] = [
 ];
 
 export const beers: Beer[] = [
-  { slug: "hogwild-ipa", name: "HogWild IPA", style: "West Coast IPA", abv: "6.7% ABV", category: "IPA", description: "Bright, bitter, and unapologetically hoppy with a clean finish.", status: "Year-round", image: "/images/products/hogwild.png" },
-  { slug: "3bones-kolsch", name: "3Bones Kölsch", style: "Kölsch", abv: "4.9% ABV", category: "Ale", description: "Crisp, delicate, and built for an easy second round.", status: "Year-round", image: "/images/products/3bones.png" },
-  { slug: "aviator-lager", name: "Aviator Lager", style: "American Lager", abv: "4.8% ABV", category: "Lager", description: "Clean, refreshing, and always ready for the next adventure.", status: "Year-round", image: "/images/products/aviator-lager.png" },
-  { slug: "airlift-pilsner", name: "Airlift Pilsner", style: "Pilsner", abv: "5.2% ABV", category: "Lager", description: "A crisp pour with classic noble-hop character.", status: "Year-round", image: "/images/products/airlift.png" },
-  { slug: "costa-baja", name: "Costa Baja", style: "Mexican Lager", abv: "4.7% ABV", category: "Lager", description: "Sun-ready, lime-friendly, and made for a long afternoon.", status: "Seasonal", image: "/images/products/costa-baja.png" },
-  { slug: "hangar-gold", name: "Hangar Gold", style: "Helles Lager", abv: "5.0% ABV", category: "Lager", description: "Golden, smooth, and malt-balanced with a clean landing.", status: "Year-round", image: "/images/products/hangar-gold.png" },
-  { slug: "blackmamba-stout", name: "BlackMamba Stout", style: "Stout", abv: "6.5% ABV", category: "Dark Beer", description: "Chocolatey, full-bodied, and silky from the first sip to the last.", status: "Year-round", image: "/images/products/blackmamba-approved.png" },
-  { slug: "devils-tramping-ground", name: "Devils Tramping Ground Tripel", style: "Belgian Tripel", abv: "9.2% ABV", category: "High Gravity", description: "Golden, fruity, lightly spiced, and deceptively smooth.", status: "Year-round", image: "/images/products/devils.png" },
+  { slug: "jetstream-ipa", name: "Jetstream IPA", style: "Tropical IPA", abv: "6.4% ABV", category: "IPA", description: "A tropical IPA with passion fruit, pineapple, and citrus character from Nectaron, Mosaic, Riwaka, and Galaxy hops.", status: "Seasonal", image: "/images/products/jetstream-ipa.png" },
+  { slug: "maximum-overhop", name: "Maximum OverHop", style: "Double West Coast IPA", abv: "8.0% ABV", category: "IPA", description: "Intense citrus, pine, resinous hop character, and assertive bitterness. Built for hop heads. Expect turbulence.", status: "Limited", image: "/images/products/maximum-overhop.png" },
+  { slug: "purplehaze", name: "PurpleHaze", style: "Blackberry Tropical IPA", abv: "6.7% ABV", category: "IPA", description: "A tropical IPA infused with blackberry and funky tropical hop character.", status: "Seasonal", image: "/images/products/purplehaze.png" },
+  { slug: "hopocalypse-now", name: "Hopocalypse Now", style: "East Coast IPA", abv: "6.0% ABV", category: "IPA", description: "A full-scale hop invasion packed with flavor without heavy bitterness.", status: "Seasonal", image: "/images/products/hopocalypse-now.png" },
+  { slug: "jet-juice-5-ipa", name: "Jet Juice 5 IPA", style: "Tropical IPA", abv: "8.0% ABV", category: "IPA", description: "A bold tropical IPA bursting with bright citrus flavor.", status: "Limited", image: "/images/products/jet-juice-5-ipa.png" },
+  { slug: "hogwild-ipa", name: "HogWild IPA", style: "West Coast IPA", abv: "6.7% ABV", category: "IPA", description: "Our West Coast IPA brewed with Centennial, Apollo, Cascade, Chinook, and Nugget hops.", status: "Year-round", image: "/images/products/hogwild.png" },
+  { slug: "cosmic-crush-ipl", name: "Cosmic Crush IPL", style: "India Pale Lager", abv: "6.1% ABV", category: "Lager", description: "A cold-brewed lager featuring Amarillo, Citra, and Mosaic hops.", status: "Seasonal", image: "/images/products/cosmic-crush-ipl.png" },
+  { slug: "airlift-pilsner", name: "Airlift Pilsner", style: "Pilsner", abv: "5.5% ABV", category: "Lager", description: "A crisp golden pilsner with a smooth malt body and flavorful hop character.", status: "Year-round", image: "/images/products/airlift.png" },
+  { slug: "aviator-lager", name: "Aviator Lager", style: "Lager", abv: "5.0% ABV", category: "Lager", description: "A clean, cold-brewed lager with a crisp and refreshing finish.", status: "Year-round", image: "/images/products/aviator-lager.png" },
+  { slug: "hangar-gold", name: "Hangar Gold", style: "German-Style Helles Lager", abv: "5.0% ABV", category: "Lager", description: "A crisp helles with smooth malt character, subtle noble hops, and a clean finish.", status: "Year-round", image: "/images/products/hangar-gold.png" },
+  { slug: "blackmamba-stout", name: "BlackMamba Oatmeal Stout", style: "Oatmeal Stout", abv: "6.5% ABV", category: "Dark Beer", description: "A full-bodied oatmeal stout with a smooth, creamy body, served on nitro.", status: "Year-round", image: "/images/products/blackmamba-approved.png" },
+  { slug: "blueberry-warhead-sour", name: "Blueberry WarHead Sour", style: "Blueberry Sour Ale", abv: "5.1% ABV", category: "Ale", description: "A lip-puckering sour loaded with bright blueberry flavor that pops like Warhead candy.", status: "Seasonal", image: "/images/products/costa-baja.png" },
+  { slug: "hotrod-red-ale", name: "HotRod Red Ale", style: "American Red Ale", abv: "6.1% ABV", category: "Ale", description: "A slightly hoppy red ale brewed with Cascade and Centennial hops.", status: "Seasonal", image: "/images/products/hotrod-red-ale.png" },
+  { slug: "berserker", name: "Berserker Barleywine", style: "Barleywine-Style Ale", abv: "11.0% ABV", category: "High Gravity", description: "A malt monster layered with caramel, toffee, and dark fruit, finishing warm and smooth.", status: "Limited", image: "/images/products/berserker.png" },
+  { slug: "sharkfight-orange-grapefruit-ale", name: "SharkFight Orange & Grapefruit Ale", style: "Citrus Wheat Ale", abv: "5.2% ABV", category: "Ale", description: "A wheat ale infused with grapefruit and orange for a bright, juicy citrus punch.", status: "Seasonal", image: "/images/products/costa-baja.png" },
+  { slug: "apple-lite", name: "Apple Lite", style: "Apple Light Beer", abv: "4.2% ABV", category: "Ale", description: "A crisp light beer with fresh apple flavor, gentle sweetness, and a smooth finish.", status: "Seasonal", image: "/images/products/apple-lite.png" },
+  { slug: "madbeach-wheat", name: "MadBeach Wheat", style: "Orange Wheat Ale", abv: "4.8% ABV", category: "Ale", description: "Wheat and pale ale malts are infused with fresh orange for a bright citrus wheat ale.", status: "Seasonal", image: "/images/products/costa-baja.png" },
+  { slug: "devils-tramping-ground", name: "Devils Tramping Ground Tripel Ale", style: "Belgian Tripel", abv: "9.2% ABV", category: "High Gravity", description: "A classic Belgian Tripel that is light in color with fruity character and gentle sweetness on the finish.", status: "Year-round", image: "/images/products/devils.png" },
+  { slug: "skyhammer-imperial-wheat", name: "SkyHammer Imperial Wheat", style: "Imperial Wheat Ale", abv: "8.2% ABV", category: "High Gravity", description: "A bold imperial wheat ale that hits with altitude and attitude.", status: "Limited", image: "/images/products/skyhammer-imperial-wheat.png" },
+  { slug: "aviator-lite", name: "Aviator Lite", style: "Light Beer", abv: "4.2% ABV", category: "Lager", description: "A flavorful light beer with 89 calories, low carbohydrates, and high protein.", status: "Year-round", image: "/images/products/aviator-lite.png" },
+  { slug: "3bones-kolsch", name: "3Bones Kölsch", style: "Kölsch", abv: "5.2% ABV", category: "Ale", description: "A crisp German-style ale named for Cologne Cathedral, where the relics of the Three Kings are traditionally said to rest.", status: "Year-round", image: "/images/products/3bones.png" },
+  { slug: "bee-17-honey-ale", name: "Bee-17 Honey Ale", style: "Honey Ale", abv: "5.8% ABV", category: "Ale", description: "Brewed with 250 pounds of local wildflower honey for floral aroma, subtle honey sweetness, and a crisp finish balanced by earthy-spicy Hallertau hops.", status: "Seasonal", image: "/images/products/bee-17-honey-ale.png" },
+  { slug: "bee-17-mango-honey-ale", name: "Bee-17 Mango Honey Ale", style: "Mango Honey Ale", abv: "5.8% ABV", category: "Ale", description: "Local wildflower honey and juicy mango combine in a bright, smooth, and refreshing golden ale.", status: "Seasonal", image: "/images/products/bee-17-mango-honey-ale.png" },
   { slug: "nightjump", name: "NightJump", style: "Imperial Stout", abv: "10.0% ABV", category: "Limited Release", description: "A rich, deep release for darker nights and bigger stories.", status: "Limited", image: "/images/black-mamba.jpg" },
 ];
 
 export const beyondBeer: BeyondBeer[] = [
-  { slug: "aviator-root-beer", name: "Aviator Root Beer", category: "Soda", description: "A classic, full-flavor soda made for the whole crew.", note: "Non-alcoholic - Family friendly", image: "/images/products/root-beer-cream-soda.png" },
-  { slug: "aviator-cream-soda", name: "Aviator Cream Soda", category: "Soda", description: "A smooth, nostalgic companion for the next campus stop.", note: "Non-alcoholic - Family friendly", image: "/images/products/root-beer-cream-soda.png" },
-  { slug: "strawberry-wave", name: "Strawberry Wave", category: "THC Soda", description: "A bright THC soda option from the Aviator beverage lineup.", note: "21+ only - Enjoy responsibly", image: "/images/products/strawberry-wave-thc.png" },
-  { slug: "orange-dream", name: "Orange Dream", category: "THC Soda", description: "A citrus-forward THC soda option for the adult beverage lineup.", note: "21+ only - Enjoy responsibly", image: "/images/products/orange-dream-thc.png" },
-  { slug: "aviator-seltzer", name: "Aviator Seltzer", category: "Seltzer", description: "A crisp Aviator seltzer for an easy, refreshing landing.", note: "Availability varies by location", image: "/images/products/seltzer.png" },
+  { slug: "orange-dream", name: "Orange Dream THC Soda", category: "THC Soda", description: "Bright orange and smooth vanilla come together in a creamy, refreshing soda.", note: "5 mg THC + 2 mg CBD per 12-ounce can - 21+ only", image: "/images/products/orange-dream-thc.png" },
+  { slug: "strawberry-wave", name: "Strawberry Wave THC Soda", category: "THC Soda", description: "Ripe strawberry and creamy vanilla roll together in a smooth, refreshing blend.", note: "5 mg THC + 2 mg CBD per 12-ounce can - 21+ only", image: "/images/products/strawberry-wave-thc.png" },
+  { slug: "cucumber-lime-thc-soda", name: "Cucumber Lime THC Soda", category: "THC Soda", description: "Cool cucumber and zesty lime come together in a clean, refreshing blend.", note: "5 mg THC + 2 mg CBD per 12-ounce can - 21+ only", image: "/images/products/thc-seltzer.png" },
+  { slug: "aviator-apple-hibiscus", name: "Aviator Apple Hibiscus", category: "Seltzer", description: "A crisp, floral blend of apple and hibiscus.", note: "4.3% ABV - 100% gluten-free", image: "/images/products/seltzer.png" },
+  { slug: "aviator-root-beer", name: "Aviator Root Beer", category: "Soda", description: "Our full-flavored craft-brewed root beer in a 16-ounce can.", note: "0.0% ABV - Non-alcoholic - 100% gluten-free", image: "/images/products/root-beer-cream-soda.png" },
+  { slug: "aviator-cream-soda", name: "Aviator Cream Soda", category: "Soda", description: "Our smooth craft-brewed cream soda in a 16-ounce can.", note: "0.0% ABV - Non-alcoholic - 100% gluten-free", image: "/images/products/root-beer-cream-soda.png" },
+  { slug: "aviator-hop-water", name: "Aviator Hop Water", category: "Soda", description: "Crisp craft-brewed hop water with hop aroma and a refreshing finish.", note: "0.0% ABV - Zero carbs, zero calories, zero alcohol, and 100% gluten-free", image: "/images/products/seltzer.png" },
 ];
 
 export const musicVenues: MusicVenue[] = [

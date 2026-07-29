@@ -52,7 +52,7 @@ function validateWelcome(value: unknown): FlightCrewWelcome {
 
 async function getContent() {
   const [beers, events, locations, liveMusic] = await Promise.all([
-    getPortalBeers(),
+    getPortalBeers().then((items) => items.filter((beer) => beer.published !== false)),
     getPublishedEvents({ monthsAhead: 3 }),
     getAllLocations(),
     getLiveMusicSchedule(),

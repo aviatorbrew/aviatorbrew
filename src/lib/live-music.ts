@@ -41,10 +41,10 @@ export type LiveMusicSchedule = {
   shows: LiveMusicShow[];
 };
 
-export const liveMusicPageUrl = "https://aviatorlivemusic.com/live-music";
+export const liveMusicPageUrl = "https://aviatorlive.beer/live-music";
 
 const defaultScheduleUrl = process.env.NODE_ENV === "production"
-  ? "https://aviatorlivemusic.com/api/public/live-music"
+  ? "https://aviatorlive.beer/api/public/live-music"
   : "http://192.168.7.171:5123/api/public/live-music";
 const scheduleUrl = process.env.AVIATOR_LIVE_SCHEDULE_URL || defaultScheduleUrl;
 

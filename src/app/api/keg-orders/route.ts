@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     if (!inventory) throw new Error("Inventory unavailable");
     const keg = inventory.items.find((item) => item.beerName === beerName);
     const available = packageSize === "1/6 bbl" ? keg?.sixthBblKegs || 0 : keg?.fiftyLKegs || 0;
-    if (!keg || quantity > available) return NextResponse.json({ error: "That quantity is no longer available. Please adjust your request and try again." }, { status: 409 });
+    const priceCents = packageSize === "1/6 bbl" ? keg?.sixthBblPriceCents : keg?.fiftyLPriceCents;
+    if (!keg || keg.hidden === true || (keg.sixthBblKegs < 1 && keg.fiftyLKegs < 1 && (keg.caseCount || 0) < 1) || typeof priceCents !== "number" || quantity > available) return NextResponse.json({ error: "That quantity is no longer available. Please adjust your request and try again." }, { status: 409 });
     if (!isMailConfigured()) throw new Error("Mail delivery is not configured");
 
     const signup = await requestNewsletterSubscription({ email, name, phone, source: "keg-order" });
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       to: "orders@aviatorbrew.com",
       subject: "Keg order request - " + beerName + " (" + quantity + " x " + packageSize + ")",
       replyTo: email,
-      text: ["New Aviator keg order request", "", "Beer: " + beerName, "Package: " + packageSize, "Quantity requested: " + quantity, "Available at request: " + available, "", "Name: " + name, "Phone: " + phone, "Email: " + email, business ? "Business: " + business : "", notes ? "Notes: " + notes : "", "", "Flight Crew: confirmation requested from keg order"].filter(Boolean).join("\n"),
+      text: ["New Aviator keg order request", "", "Beer: " + beerName, "Package: " + (packageSize === "50 L" ? "1/2 bbl" : packageSize), "Price each: $" + (priceCents / 100).toFixed(2), "Quantity requested: " + quantity, "Available at request: " + available, "", "Name: " + name, "Phone: " + phone, "Email: " + email, business ? "Business: " + business : "", notes ? "Notes: " + notes : "", "", "Flight Crew: confirmation requested from keg order"].filter(Boolean).join("\n"),
     });
     const confirmationMessage = signup.confirmationRequired
       ? buildFlightCrewConfirmationMessage(signup.subscriber.email, signup.subscriber.confirmationExpiresAt!)

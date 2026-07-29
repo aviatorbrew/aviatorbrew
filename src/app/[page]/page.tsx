@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { InquiryForm } from "@/components/inquiry-form";
@@ -6,6 +7,7 @@ import { ArrowUpRight, MapPin } from "@/components/icons";
 import { PrivateEventPaymentButton } from "@/components/private-event-payment-button";
 import { getPrivateEventPaymentResult } from "@/lib/private-event-checkout";
 import { notifyPrivateEventPayment } from "@/lib/private-event-payments";
+import { getPrivateEventPhotos } from "@/lib/private-event-photos";
 import { pageContent } from "@/data/site";
 
 const faqs = [
@@ -45,6 +47,7 @@ export default async function ContentPage({
   const paymentNotificationSent = verifiedPayment === "paid" && paymentResult?.session
     ? await notifyPrivateEventPayment(paymentResult.session)
     : false;
+  const privateEventPhotos = page === "private-events" ? await getPrivateEventPhotos() : [];
 
   return <>
     <section className="page-hero">
@@ -84,5 +87,7 @@ export default async function ContentPage({
 
     {page === "faq" && <section className="section section-dark"><div className="content-wrap"><div className="story-timeline">{faqs.map(([question, answer]) => <div key={question}><strong>{question}</strong><span>{answer}</span></div>)}</div></div></section>}
     {formKind && <section id="inquiry" className="section section-dark"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">{content.eyebrow}</p><h2>Let&apos;s get the <em>details moving.</em></h2></div></div><InquiryForm kind={formKind} /></div></section>}
+
+    {page === "private-events" && privateEventPhotos.length ? <section className="section private-event-gallery-band"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Ready Room photos</p><h2>See the room <em>set for the next event.</em></h2></div><p>Private event room photography is managed by the Aviator team and updated as the space changes.</p></div><div className="private-event-gallery brewery-gallery">{privateEventPhotos.slice(0, 6).map((photo, index) => <figure className={index === 0 ? "is-featured" : ""} key={photo.name}><Image src={photo.url} alt={"Aviator Ready Room private event view " + (index + 1)} fill unoptimized sizes={index === 0 ? "(max-width: 700px) 100vw, 66vw" : "(max-width: 700px) 100vw, 33vw"} />{index === 0 ? <figcaption>Featured event room photo</figcaption> : null}</figure>)}</div></div></section> : null}
   </>;
 }

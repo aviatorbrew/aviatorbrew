@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
 import { managerSections, type ManagerSection } from "@/lib/manager-sections";
@@ -11,6 +11,7 @@ import { BrandingManager } from "@/components/branding-manager";
 import { NewsletterManager } from "@/components/newsletter-manager";
 import { PaymentTestManager } from "@/components/payment-test-manager";
 import { WebsitePhotosLibrary } from "@/components/website-photos-library";
+import { BeerImageViewer } from "@/components/beer-image-viewer";
 
 type Signup = { id: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
 type ScheduledTour = { date: string; displayDate: string; time: "4:00 PM" | "6:00 PM"; guests: number; tickets: number; confirmed: boolean };
@@ -69,10 +70,31 @@ function TourManager() {
 
 type ManagedEvent = { id: string; title: string; date: string; startTime: string; endTime: string; location: string; description: string; ticketUrl: string; imageUrl?: string; published: boolean; recurrence?: { frequency: string; interval: number; weekday?: number; ordinal?: number; endDate?: string } };
 
+function EventFormFields({ event }: { event?: ManagedEvent }) {
+  const recurrence = event?.recurrence;
+  return <>
+    <label>Event title<input name="title" required maxLength={120} placeholder="Example: Summer Lager Release" defaultValue={event?.title || ""} /></label>
+    <label>Date<input name="date" type="date" required defaultValue={event?.date || ""} /></label>
+    <label>Starts<input name="startTime" type="time" required defaultValue={event?.startTime || ""} /></label>
+    <label>Ends <small>(optional)</small><input name="endTime" type="time" defaultValue={event?.endTime || ""} /></label>
+    <label>Repeat<select name="recurrenceFrequency" defaultValue={recurrence?.frequency || "none"}><option value="none">Does not repeat</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly-date">Every month on this date</option><option value="monthly-weekday">Every month by weekday</option><option value="yearly">Every year</option></select></label>
+    <label>Repeat every <small>(interval)</small><input name="recurrenceInterval" type="number" min="1" max="12" defaultValue={recurrence?.interval || 1} /></label>
+    <label>Weekday <small>(monthly option)</small><select name="recurrenceWeekday" defaultValue={recurrence?.weekday ?? 0}><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></label>
+    <label>Occurrence <small>(monthly weekday)</small><select name="recurrenceOrdinal" defaultValue={recurrence?.ordinal ?? 1}><option value="1">First</option><option value="2">Second</option><option value="3">Third</option><option value="4">Fourth</option><option value="5">Fifth</option><option value="-1">Last</option></select></label>
+    <label>Repeat until <small>(optional)</small><input name="recurrenceEndDate" type="date" defaultValue={recurrence?.endDate || ""} /></label>
+    <label className="manager-event-wide">Location<input name="location" required maxLength={120} placeholder="Aviator Hangar Bar" defaultValue={event?.location || ""} /></label>
+    <label className="manager-event-wide">Description<textarea name="description" required rows={3} maxLength={1200} placeholder="Tell guests what is happening and why they should join." defaultValue={event?.description || ""} /></label>
+    <label className="manager-event-wide">Details or ticket URL <small>(optional)</small><input name="ticketUrl" type="url" placeholder="https://..." defaultValue={event?.ticketUrl || ""} /></label>
+    <label className="manager-event-wide">Event picture <small>{event?.imageUrl ? "Optional replacement, JPG/PNG/WEBP up to 10 MB" : "Optional, JPG/PNG/WEBP up to 10 MB"}</small><input name="image" type="file" accept="image/jpeg,image/png,image/webp" /></label>
+    <label className="manager-event-publish"><input name="published" type="checkbox" defaultChecked={event ? event.published : true} /> Publish on the Events page</label>
+  </>;
+}
+
 function EventManager() {
   const [events, setEvents] = useState<ManagedEvent[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<ManagedEvent | null>(null);
   async function load() { const response = await fetch("/api/manager/events"); const body = await response.json(); if (!response.ok) throw new Error(body.error); setEvents(body.events || []); }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
   async function create(event: FormEvent<HTMLFormElement>) {
@@ -81,7 +103,15 @@ function EventManager() {
     const response = await fetch("/api/manager/events", { method: "POST", body: values });
     const body = await response.json(); setBusy(false);
     if (!response.ok) { setMessage(body.error); return; }
-    setEvents(body.events || []); form.reset(); setMessage("Special event saved and published.");
+    setEvents(body.events || []); form.reset(); setMessage("Special event saved.");
+  }
+  async function update(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!editing) return; setBusy(true);
+    const values = new FormData(event.currentTarget); values.set("id", editing.id); values.set("published", values.get("published") === "on" ? "true" : "false");
+    const response = await fetch("/api/manager/events", { method: "PATCH", body: values });
+    const body = await response.json(); setBusy(false);
+    if (!response.ok) { setMessage(body.error); return; }
+    setEvents(body.events || []); setEditing(null); setMessage("Event details updated.");
   }
   async function toggle(item: ManagedEvent) {
     setBusy(true); const response = await fetch("/api/manager/events", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...item, published: !item.published }) }); const body = await response.json(); setBusy(false);
@@ -90,20 +120,98 @@ function EventManager() {
   async function remove(id: string) {
     if (!window.confirm("Delete this special event? This cannot be undone.")) return;
     setBusy(true); const response = await fetch("/api/manager/events?id=" + encodeURIComponent(id), { method: "DELETE" }); const body = await response.json(); setBusy(false);
-    if (!response.ok) { setMessage(body.error); return; } setEvents(body.events || []); setMessage("Event deleted.");
+    if (!response.ok) { setMessage(body.error); return; } setEvents(body.events || []); if (editing?.id === id) setEditing(null); setMessage("Event deleted.");
   }
   return <section id="events" className="coupon-manager manager-events"><p className="eyebrow">Event operations</p><h2>Add a special event</h2><p>Publish non-music events to the Aviator Events page: beer releases, tastings, watch parties, campus gatherings, holiday events, and more. Live music continues to come from Aviator Live.</p><p className="media-message" role="status">{message}</p>
-    <form className="manager-event-form" onSubmit={create}><label>Event title<input name="title" required maxLength={120} placeholder="Example: Summer Lager Release" /></label><label>Date<input name="date" type="date" required /></label><label>Starts<input name="startTime" type="time" required /></label><label>Ends <small>(optional)</small><input name="endTime" type="time" /></label><label>Repeat<select name="recurrenceFrequency"><option value="none">Does not repeat</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly-date">Every month on this date</option><option value="monthly-weekday">Every month by weekday</option><option value="yearly">Every year</option></select></label><label>Repeat every <small>(interval)</small><input name="recurrenceInterval" type="number" min="1" max="12" defaultValue="1" /></label><label>Weekday <small>(monthly option)</small><select name="recurrenceWeekday"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></label><label>Occurrence <small>(monthly weekday)</small><select name="recurrenceOrdinal"><option value="1">First</option><option value="2">Second</option><option value="3">Third</option><option value="4">Fourth</option><option value="5">Fifth</option><option value="-1">Last</option></select></label><label>Repeat until <small>(optional)</small><input name="recurrenceEndDate" type="date" /></label><label className="manager-event-wide">Location<input name="location" required maxLength={120} placeholder="Aviator Hangar Bar" /></label><label className="manager-event-wide">Description<textarea name="description" required rows={3} maxLength={1200} placeholder="Tell guests what is happening and why they should join." /></label><label className="manager-event-wide">Details or ticket URL <small>(optional)</small><input name="ticketUrl" type="url" placeholder="https://..." /></label><label className="manager-event-wide">Event picture <small>(optional, JPG/PNG/WEBP up to 10 MB)</small><input name="image" type="file" accept="image/jpeg,image/png,image/webp" /></label><label className="manager-event-publish"><input name="published" type="checkbox" defaultChecked /> Publish on the Events page now</label><button className="button" disabled={busy}>{busy ? "Saving..." : "Publish special event"}</button></form>
-    <h3 className="tour-signups-heading">Managed special events</h3><div className="manager-events-list">{events.length ? events.map((item) => <article key={item.id}><div className="manager-event-content">{item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <div className="manager-event-image-placeholder">Event</div>}<div className="manager-event-meta"><p className="eyebrow">{item.published ? "Published" : "Draft"}</p><h3>{item.title}</h3><p>{item.date} · {item.startTime}{item.endTime ? `–${item.endTime}` : ""} · {item.location}</p>{item.recurrence && item.recurrence.frequency !== "none" ? <small>Repeats: {item.recurrence.frequency.replace("-", " ")} every {item.recurrence.interval}{item.recurrence.endDate ? ` until ${item.recurrence.endDate}` : ""}</small> : null}</div><p className="manager-event-description">{item.description}</p></div><footer><button type="button" onClick={() => toggle(item)} disabled={busy}>{item.published ? "Unpublish" : "Publish"}</button><button type="button" onClick={() => remove(item.id)} disabled={busy}>Delete</button></footer></article>) : <p className="tour-schedule-empty">No special events have been added yet.</p>}</div>
+    <form className="manager-event-form" onSubmit={create}><EventFormFields /><button className="button" disabled={busy}>{busy ? "Saving..." : "Publish special event"}</button></form>
+    <h3 className="tour-signups-heading">Managed special events</h3><div className="manager-events-list">{events.length ? events.map((item) => {
+      const isEditing = editing?.id === item.id;
+      return <article className={isEditing ? "is-editing" : ""} key={item.id}>{isEditing ? <form className="manager-event-form manager-event-edit-form" onSubmit={update}><EventFormFields event={item} /><div className="manager-event-edit-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save event changes"}</button><button className="button button-outline" type="button" onClick={() => setEditing(null)} disabled={busy}>Cancel</button></div></form> : <><div className="manager-event-content">{item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <div className="manager-event-image-placeholder">Event</div>}<div className="manager-event-meta"><p className="eyebrow">{item.published ? "Published" : "Draft"}</p><h3>{item.title}</h3><p>{item.date} · {item.startTime}{item.endTime ? `–${item.endTime}` : ""} · {item.location}</p>{item.recurrence && item.recurrence.frequency !== "none" ? <small>Repeats: {item.recurrence.frequency.replace("-", " ")} every {item.recurrence.interval}{item.recurrence.endDate ? ` until ${item.recurrence.endDate}` : ""}</small> : null}{item.ticketUrl ? <small>Link: {item.ticketUrl}</small> : null}</div><p className="manager-event-description">{item.description}</p></div><footer><button type="button" onClick={() => { setEditing(item); setMessage("Editing " + item.title + "."); }} disabled={busy}>Edit</button><button type="button" onClick={() => toggle(item)} disabled={busy}>{item.published ? "Unpublish" : "Publish"}</button><button type="button" onClick={() => remove(item.id)} disabled={busy}>Delete</button></footer></>} </article>;
+    }) : <p className="tour-schedule-empty">No special events have been added yet.</p>}</div>
   </section>;
 }
 
-type KegInventoryStatus = { items: { beerName: string; sixthBblKegs: number; fiftyLKegs: number }[]; updatedAt: string; uploadedAt: string } | null;
+type KegInventoryItem = { beerName: string; category: string; packaging: string; sixthBblKegs: number; fiftyLKegs: number; totalBbl: number; sixthBblPriceCents?: number; fiftyLPriceCents?: number; caseSize?: string; casePriceCents?: number; case12PriceCents?: number; case16PriceCents?: number; caseCount?: number; hidden?: boolean };
+type KegInventoryStatus = { items: KegInventoryItem[]; updatedAt: string; uploadedAt: string } | null;
+
+type KegEditValues = {
+  beerName: string;
+  category: string;
+  packaging: string;
+  sixthBblKegs: number;
+  fiftyLKegs: number;
+  totalBbl: number;
+  sixthBblPrice: string;
+  fiftyLPrice: string;
+  caseSize: string;
+  casePrice: string;
+  caseCount: number;
+  hidden: boolean;
+};
+
+function kegMoney(cents?: number) { return typeof cents === "number" ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100) : "-"; }
+function kegHasInventory(item: KegInventoryItem) { return item.sixthBblKegs > 0 || item.fiftyLKegs > 0 || (item.caseCount || 0) > 0; }
+function kegHasMatchedPrice(item: KegInventoryItem) { return typeof item.sixthBblPriceCents === "number" || typeof item.fiftyLPriceCents === "number" || typeof item.casePriceCents === "number"; }
+function kegDollars(cents?: number) { return typeof cents === "number" ? String(cents / 100) : ""; }
+function kegCents(value: string) { const number = Number(value); return Number.isFinite(number) && number >= 0 ? Math.round(number * 100) : undefined; }
+function editValues(item: KegInventoryItem): KegEditValues {
+  return { beerName: item.beerName, category: item.category, packaging: item.packaging, sixthBblKegs: item.sixthBblKegs, fiftyLKegs: item.fiftyLKegs, totalBbl: item.totalBbl, sixthBblPrice: kegDollars(item.sixthBblPriceCents), fiftyLPrice: kegDollars(item.fiftyLPriceCents), caseSize: item.caseSize || "", casePrice: kegDollars(item.casePriceCents), caseCount: item.caseCount || 0, hidden: item.hidden === true };
+}
+function pdfText(value: string) { return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)"); }
+function pdfMoney(cents?: number) { return typeof cents === "number" ? "$" + (cents / 100).toFixed(0) : "-"; }
+function downloadKegPdf(items: KegInventoryItem[], includeZeroInventory: boolean) {
+  const rows = items.filter((item) => item.hidden !== true && (includeZeroInventory || kegHasInventory(item))).sort((a, b) => a.category.localeCompare(b.category) || a.beerName.localeCompare(b.beerName));
+  const created = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const lines = ["Aviator Brewing Company Keg Sales", "Exported " + created + (includeZeroInventory ? " - includes zero inventory" : " - available inventory only"), "", ...rows.map((item) => {
+    const packages = [
+      "1/6 BBL: " + item.sixthBblKegs + " available, " + pdfMoney(item.sixthBblPriceCents),
+      "50L: " + item.fiftyLKegs + " available, " + pdfMoney(item.fiftyLPriceCents),
+      item.case12PriceCents ? "12oz case: " + pdfMoney(item.case12PriceCents) : "",
+      item.case16PriceCents ? "16oz case: " + pdfMoney(item.case16PriceCents) : "",
+    ].filter(Boolean).join(" | ");
+    return item.beerName + " - " + item.category + " - " + packages;
+  })];
+  if (!rows.length) lines.push("No kegs match this export.");
+  const pageHeight = 792;
+  const pageWidth = 612;
+  const margin = 42;
+  const lineHeight = 17;
+  const pages: string[][] = [];
+  let page: string[] = [];
+  for (const line of lines) {
+    if (page.length >= 40) { pages.push(page); page = []; }
+    page.push(line);
+  }
+  pages.push(page);
+  const objects: string[] = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [" + pages.map((_, index) => (3 + index * 2) + " 0 R").join(" ") + "] /Count " + pages.length + " >>"];
+  pages.forEach((pageLines, index) => {
+    const pageObject = 3 + index * 2;
+    const contentObject = pageObject + 1;
+    objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + pageWidth + " " + pageHeight + "] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents " + contentObject + " 0 R >>");
+    const content = ["BT", "/F1 11 Tf", "14 TL", margin + " " + (pageHeight - margin) + " Td", ...pageLines.map((line, lineIndex) => (lineIndex ? "T* " : "") + "(" + pdfText(line.slice(0, 112)) + ") Tj"), "ET"].join("\n");
+    objects.push("<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream");
+  });
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => { offsets.push(pdf.length); pdf += (index + 1) + " 0 obj\n" + object + "\nendobj\n"; });
+  const xref = pdf.length;
+  pdf += "xref\n0 " + (objects.length + 1) + "\n0000000000 65535 f \n" + offsets.slice(1).map((offset) => String(offset).padStart(10, "0") + " 00000 n ").join("\n") + "\n";
+  pdf += "trailer\n<< /Size " + (objects.length + 1) + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF";
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([pdf], { type: "application/pdf" }));
+  link.download = "aviator-keg-sales.pdf";
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 
 function KegInventoryManager() {
   const [inventory, setInventory] = useState<KegInventoryStatus>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<KegInventoryItem | null>(null);
+  const [editForm, setEditForm] = useState<KegEditValues | null>(null);
+  const [exportZeroInventory, setExportZeroInventory] = useState(false);
+  const [selectedKegFile, setSelectedKegFile] = useState<File | null>(null);
   async function load() {
     const response = await fetch("/api/manager/kegs");
     const body = await response.json();
@@ -111,25 +219,123 @@ function KegInventoryManager() {
     setInventory(body.inventory || null);
   }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
-  async function upload(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true); setMessage("");
-    const form = event.currentTarget;
-    const response = await fetch("/api/manager/kegs", { method: "POST", body: new FormData(form) });
+  function beginEdit(item: KegInventoryItem) { setEditing(item); setEditForm(editValues(item)); setMessage("Editing " + item.beerName + "."); }
+  function updateEdit<K extends keyof KegEditValues>(key: K, value: KegEditValues[K]) { setEditForm((current) => current ? { ...current, [key]: value } : current); }
+  async function uploadFile(file: File, reset: () => void) {
+    setBusy(true); setMessage("Importing keg inventory...");
+    const formData = new FormData();
+    formData.set("file", file);
+    const response = await fetch("/api/manager/kegs", { method: "POST", body: formData });
     const body = await response.json();
     setBusy(false);
-    if (!response.ok) { setMessage(body.error || "Could not upload inventory."); return; }
-    setInventory(body.inventory); form.reset();
-    setMessage(body.inventory.items.length + " keg lines are now published on the public Kegs page.");
+    const copyMessage = body.savedCopy ? " Saved copy: " + body.savedCopy + "." : "";
+    if (!response.ok) { setMessage((body.error || "Could not import keg inventory.") + copyMessage); return; }
+    setInventory(body.inventory); reset();
+    setMessage((body.inventory.items || []).length + " keg/package rows imported. " + (body.inventory.items || []).filter((item: KegInventoryItem) => kegHasMatchedPrice(item)).length + " include package pricing. " + (body.inventory.items || []).filter((item: KegInventoryItem) => !item.hidden && kegHasInventory(item)).length + " are visible on the public Kegs page." + copyMessage);
+  }
+  async function upload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedKegFile) { setMessage("Choose a keg inventory JSON or CSV file first."); return; }
+    await uploadFile(selectedKegFile, () => setSelectedKegFile(null));
+  }
+  async function importSelectedFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0] || null;
+    setSelectedKegFile(file);
+    if (!file) { setMessage(""); return; }
+    const rawText = await file.text();
+    if (file.name.toLowerCase().endsWith(".csv")) {
+      const rows = rawText.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim()).length;
+      setMessage("Selected " + file.name + ": about " + Math.max(rows - 1, 0) + " CSV keg rows ready to import.");
+      return;
+    }
+    try {
+      const source = JSON.parse(rawText.replace(/^\uFEFF/, "")) as { items?: unknown };
+      if (!Array.isArray(source?.items)) {
+        setMessage("Selected " + file.name + ", but it has no items array. Choose the kegs-for-sale JSON export or use a CSV with headers.");
+        return;
+      }
+      setMessage("Selected " + file.name + ": " + source.items.length + " keg rows ready to import.");
+    } catch {
+      setMessage("Selected " + file.name + ", but it is not valid JSON. CSV files should end in .csv.");
+    }
+  }
+  async function clearInventory() {
+    if (!window.confirm("Clear all keg/package sales rows? This removes the currently imported availability and package pricing.")) return;
+    setBusy(true); setMessage("");
+    const response = await fetch("/api/manager/kegs", { method: "DELETE" });
+    const body = await response.json();
+    setBusy(false);
+    if (!response.ok) { setMessage(body.error || "Could not clear keg inventory."); return; }
+    setInventory(body.inventory);
+    setMessage("Keg/package sales inventory cleared.");
+  }
+  async function toggle(item: KegInventoryItem) {
+    setBusy(true); setMessage("");
+    const response = await fetch("/api/manager/kegs", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ beerName: item.beerName, hidden: !item.hidden }) });
+    const body = await response.json();
+    setBusy(false);
+    if (!response.ok) { setMessage(body.error || "Could not update keg visibility."); return; }
+    setInventory(body.inventory); setMessage(item.beerName + (item.hidden ? " published for sale." : " hidden from keg sales."));
+  }
+  async function saveEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editing || !editForm) return;
+    setBusy(true); setMessage("");
+    const response = await fetch("/api/manager/kegs", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({
+      action: "edit",
+      beerName: editing.beerName,
+      nextBeerName: editForm.beerName,
+      category: editForm.category,
+      packaging: editForm.packaging,
+      sixthBblKegs: editForm.sixthBblKegs,
+      fiftyLKegs: editForm.fiftyLKegs,
+      totalBbl: editForm.totalBbl,
+      sixthBblPriceCents: kegCents(editForm.sixthBblPrice),
+      fiftyLPriceCents: kegCents(editForm.fiftyLPrice),
+      caseSize: editForm.caseSize,
+      casePriceCents: kegCents(editForm.casePrice),
+      caseCount: editForm.caseCount,
+      hidden: editForm.hidden,
+    }) });
+    const body = await response.json();
+    setBusy(false);
+    if (!response.ok) { setMessage(body.error || "Could not save keg details."); return; }
+    setInventory(body.inventory); setEditing(null); setEditForm(null); setMessage(editForm.beerName + " keg details saved.");
   }
   const lastUpdated = inventory?.updatedAt ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(inventory.updatedAt)) : "";
-  return <section id="kegs" className="coupon-manager manager-kegs"><p className="eyebrow">Keg operations</p><h2>Publish keg inventory</h2><p>Export the BrewOps keg-for-sale feed as JSON, then drop it here. This replaces the public inventory immediately, so the deployed website never needs access to the internal BrewOps system.</p><p className="media-message" role="status">{message}</p>
-    <form className="manager-keg-upload" onSubmit={upload}><label>Current BrewOps inventory JSON<input name="file" type="file" accept=".json,application/json" required /><small>Expected: items with beerName, sixthBblKegs, fiftyLKegs, and optional totalBbl, backfillPickupNote, and updatedAt. 1 MB max.</small></label><button className="button" disabled={busy}>{busy ? "Publishing..." : "Publish inventory"}</button></form>
-    {inventory ? <div className="manager-keg-status"><div><p className="eyebrow">Public inventory live</p><h3>{inventory.items.length} keg lines published</h3><p>Inventory timestamp: {lastUpdated}. Upload time: {new Date(inventory.uploadedAt).toLocaleString()}.</p></div><ul>{inventory.items.slice(0, 8).map((item) => <li key={item.beerName}><strong>{item.beerName}</strong><span>{item.sixthBblKegs} sixtels · {item.fiftyLKegs} 50 L</span></li>)}{inventory.items.length > 8 ? <li>+ {inventory.items.length - 8} more lines</li> : null}</ul></div> : <div className="manager-keg-status is-empty"><p className="eyebrow">No inventory published</p><p>Upload the current BrewOps JSON to make keg availability and ordering live on the website.</p></div>}
+  const visibleCount = inventory?.items.filter((item) => !item.hidden && kegHasInventory(item)).length || 0;
+  return <section id="kegs" className="coupon-manager manager-kegs"><p className="eyebrow">Keg/package sales</p><h2>Keg/package sales</h2><p>Upload BrewOps inventory counts and package pricing together. Imports replace current availability and pricing for the uploaded kegs; each keg can still be edited, hidden, published, or exported for sales.</p><p className="media-message" role="status">{message}</p>
+    <form className="manager-keg-upload" onSubmit={upload}><label>Import keg inventory JSON or CSV<input name="file" type="file" accept=".json,.csv,application/json,text/csv" onChange={importSelectedFile} disabled={busy} /><small>Choose kegs-for-sale.json or a CSV export, then click Import selected keg list. CSV headers can include Beer, Package Size, 1/6 BBL Kegs, 1/6 BBL Price, 50L Kegs, 50L Price, 12oz Case Price, 16oz Case Price, Total BBL, and Backfill Sixtels.</small>{selectedKegFile ? <small>Selected: {selectedKegFile.name}</small> : null}</label><button className="button" disabled={busy || !selectedKegFile}>{busy ? "Importing..." : "Import selected keg list"}</button><button className="button button-outline" type="button" onClick={clearInventory} disabled={busy}>Clear inventory</button></form>
+    {inventory ? <div className="manager-keg-status"><div><p className="eyebrow">Public inventory live</p><h3>{visibleCount} of {inventory.items.length} keg lines visible</h3><p>Inventory timestamp: {lastUpdated}. Upload time: {new Date(inventory.uploadedAt).toLocaleString()}.</p><div className="manager-keg-export"><label><input type="checkbox" checked={exportZeroInventory} onChange={(event) => setExportZeroInventory(event.currentTarget.checked)} /> Include kegs with 0 inventory</label><button type="button" onClick={() => downloadKegPdf(inventory.items, exportZeroInventory)}>Export PDF</button></div></div><ul>{inventory.items.slice(0, 8).map((item) => <li key={item.beerName}><strong>{item.beerName}</strong><span>{item.sixthBblKegs} sixtels · {item.fiftyLKegs} halves</span></li>)}{inventory.items.length > 8 ? <li>+ {inventory.items.length - 8} more lines below</li> : null}</ul></div> : <div className="manager-keg-status is-empty"><p className="eyebrow">No inventory published</p><p>Upload BrewOps JSON or CSV to add current keg availability counts and package pricing.</p></div>}
+    {inventory ? <div className="manager-keg-list"><h3 className="tour-signups-heading">Keg/package sales</h3>{inventory.items.map((item) => {
+      const hasInventory = kegHasInventory(item); const publicHidden = item.hidden || !hasInventory; const isEditing = editing?.beerName === item.beerName;
+      return <article className={"manager-keg-row" + (publicHidden ? " is-hidden" : "") + (isEditing ? " is-editing" : "")} key={item.beerName}>{isEditing && editForm ? <form className="manager-keg-edit-form" onSubmit={saveEdit}><label>Keg name<input required maxLength={120} value={editForm.beerName} onChange={(event) => updateEdit("beerName", event.currentTarget.value)} /></label><label>Category<input required maxLength={80} value={editForm.category} onChange={(event) => updateEdit("category", event.currentTarget.value)} /></label><label>Packaging<input required maxLength={80} value={editForm.packaging} onChange={(event) => updateEdit("packaging", event.currentTarget.value)} /></label><label>1/6 BBL inventory<input type="number" min="0" max="10000" value={editForm.sixthBblKegs} onChange={(event) => updateEdit("sixthBblKegs", Number(event.currentTarget.value))} /></label><label>50L inventory<input type="number" min="0" max="10000" value={editForm.fiftyLKegs} onChange={(event) => updateEdit("fiftyLKegs", Number(event.currentTarget.value))} /></label><label>Total BBL<input type="number" min="0" max="100000" step="0.01" value={editForm.totalBbl} onChange={(event) => updateEdit("totalBbl", Number(event.currentTarget.value))} /></label><label>1/6 BBL price<input type="number" min="0" step="0.01" value={editForm.sixthBblPrice} onChange={(event) => updateEdit("sixthBblPrice", event.currentTarget.value)} /></label><label>50L price<input type="number" min="0" step="0.01" value={editForm.fiftyLPrice} onChange={(event) => updateEdit("fiftyLPrice", event.currentTarget.value)} /></label><label>Case size<input maxLength={24} value={editForm.caseSize} onChange={(event) => updateEdit("caseSize", event.currentTarget.value)} /></label><label>Case price<input type="number" min="0" step="0.01" value={editForm.casePrice} onChange={(event) => updateEdit("casePrice", event.currentTarget.value)} /></label><label>Case inventory<input type="number" min="0" max="10000" value={editForm.caseCount} onChange={(event) => updateEdit("caseCount", Number(event.currentTarget.value))} /></label><label className="manager-keg-check"><input type="checkbox" checked={editForm.hidden} onChange={(event) => updateEdit("hidden", event.currentTarget.checked)} /> Hide from public keg sales</label><div className="manager-keg-edit-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save keg details"}</button><button className="button button-outline" type="button" onClick={() => { setEditing(null); setEditForm(null); }} disabled={busy}>Cancel</button></div></form> : <><div><p className="eyebrow">{item.category} · {item.packaging} · {item.hidden ? "Hidden" : hasInventory ? "Published" : "Auto hidden - no inventory"}</p><h3>{item.beerName}</h3><p>1/6 bbl {kegMoney(item.sixthBblPriceCents)} · 1/2 bbl {kegMoney(item.fiftyLPriceCents)}{item.casePriceCents ? " · " + item.caseSize + " case " + kegMoney(item.casePriceCents) : ""}</p><small>{item.sixthBblKegs} sixtels · {item.fiftyLKegs} half barrels · {item.caseCount || 0} cases</small></div><footer><button type="button" onClick={() => beginEdit(item)} disabled={busy}>Edit</button><button type="button" onClick={() => toggle(item)} disabled={busy || !hasInventory}>{!hasInventory ? "Auto hidden" : item.hidden ? "Publish" : "Hide"}</button></footer></>}</article>;
+    })}</div> : null}
   </section>;
 }
 
-type PortalBeer = { id: string; source: "catalog" | "managed"; slug: string; name: string; style: string; abv: string; category: string; description: string; status: string; image: string };
+type BeerReleaseAlert = { enabled: boolean; beerName: string; releaseDate: string; releaseTime: string; locations: string; specials: string; sellSheetUrl: string; updatedAt: string };
+
+function BeerReleaseAlertManager() {
+  const [alert, setAlert] = useState<BeerReleaseAlert | null>(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function load() { const response = await fetch("/api/manager/beer-release-alert", { cache: "no-store" }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setAlert(body.alert); }
+  useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setBusy(true);
+    const form = event.currentTarget; const values = new FormData(form); values.set("enabled", values.get("enabled") === "on" ? "true" : "false");
+    const response = await fetch("/api/manager/beer-release-alert", { method: "PATCH", body: values });
+    const body = await response.json(); setBusy(false);
+    if (!response.ok) { setMessage(body.error || "Could not save beer release alert."); return; }
+    setAlert(body.alert); form.reset(); setMessage("Beer release alert saved for the homepage.");
+  }
+  return <section id="beer-release-alert" className="coupon-manager manager-beer-release-alert"><p className="eyebrow">Homepage alert</p><h2>Alert Beer Release</h2><p>Show a bold release notice directly under the scrolling banner. Upload the sell sheet here; clicking it on the homepage opens the original file full size.</p><p className="media-message" role="status">{message}</p>
+    {alert ? <><form className="manager-beer-release-form" onSubmit={save}><label className="manager-event-publish"><input name="enabled" type="checkbox" defaultChecked={alert.enabled} /> Publish beer release alert</label><label>Beer release name<input name="beerName" required maxLength={120} defaultValue={alert.beerName} placeholder="Example: Jetstream IPA" /></label><label>Release date<input name="releaseDate" type="date" defaultValue={alert.releaseDate} /></label><label>Release time<input name="releaseTime" type="time" defaultValue={alert.releaseTime} /></label><label className="manager-event-wide">Locations<input name="locations" maxLength={300} defaultValue={alert.locations} placeholder="Example: Brewery, Hangar Bar, TapHouse" /></label><label className="manager-event-wide">Specials<input name="specials" maxLength={300} defaultValue={alert.specials} placeholder="Example: Free pint glass while supplies last" /></label><label className="manager-event-wide">Sell sheet <small>{alert.sellSheetUrl ? "Optional replacement, JPG/PNG/WEBP/PDF up to 25 MB" : "JPG/PNG/WEBP/PDF up to 25 MB"}</small><input name="sellSheet" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" /></label><button className="button" disabled={busy}>{busy ? "Saving..." : "Save beer release alert"}</button></form>{alert.sellSheetUrl ? <article className="manager-beer-release-preview"><div><p className="eyebrow">Current sell sheet</p><h3>{alert.beerName || "Beer release"}</h3><a href={alert.sellSheetUrl} target="_blank" rel="noreferrer">Open original file</a></div>{alert.sellSheetUrl.toLowerCase().endsWith(".pdf") ? <span>PDF sell sheet</span> : <img src={alert.sellSheetUrl} alt="" />}</article> : null}</> : <p>Loading beer release alert...</p>}
+  </section>;
+}
+
+type PortalBeer = { id: string; source: "catalog" | "managed"; slug: string; name: string; style: string; abv: string; category: string; description: string; status: "Year-round" | "Seasonal" | "Limited"; image: string; published: boolean };
 type PortalBeverage = { id: string; source: "catalog" | "managed"; slug: string; name: string; category: string; description: string; note: string; image: string };
 
 function BeerManager() {
@@ -143,27 +349,32 @@ function BeerManager() {
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true);
     const form = event.currentTarget; const response = await fetch("/api/manager/beers", { method: "POST", body: new FormData(form) }); const body = await response.json(); setBusy(false);
-    if (!response.ok) { setMessage(body.error); return; } setBeers(body.beers || []); form.reset(); setMessage("Beer and label graphic added to the public flight line.");
+    if (!response.ok) { setMessage(body.error); return; } setBeers(body.beers || []); form.reset(); setMessage("Beer added to the master list.");
   }
   async function update(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true);
     const response = await fetch("/api/manager/beers", { method: "PATCH", body: new FormData(event.currentTarget) }); const body = await response.json(); setBusy(false);
-    if (!response.ok) { setMessage(body.error); return; } setBeers(body.beers || []); setEditing(null); setMessage("Beer details updated on the public flight line.");
+    if (!response.ok) { setMessage(body.error); return; } setBeers(body.beers || []); setEditing(null); setMessage("Beer details updated.");
+  }
+  async function togglePublished(beer: PortalBeer) {
+    const form = new FormData();
+    form.set("id", beer.id); form.set("name", beer.name); form.set("style", beer.style); form.set("abv", beer.abv); form.set("category", beer.category); form.set("status", beer.status); form.set("description", beer.description); form.set("published", beer.published ? "false" : "true");
+    setBusy(true); const response = await fetch("/api/manager/beers", { method: "PATCH", body: form }); const body = await response.json(); setBusy(false);
+    if (!response.ok) { setMessage(body.error); return; } setBeers(body.beers || []); setMessage(beer.name + (beer.published ? " hidden from the website." : " published to the website."));
   }
   async function remove(beer: PortalBeer) {
-    if (!window.confirm("Remove " + beer.name + " from the public beer list?")) return;
+    if (!window.confirm("Remove " + beer.name + " from the master beer list?")) return;
     setBusy(true); const response = await fetch("/api/manager/beers?id=" + encodeURIComponent(beer.id), { method: "DELETE" }); const body = await response.json(); setBusy(false);
-    if (!response.ok) { setMessage(body.error); return; } setBeers(body.beers || []); setMessage(beer.name + " removed.");
+    if (!response.ok) { setMessage(body.error); return; } setBeers(body.beers || []); setMessage(beer.name + " removed from the master list.");
   }
-  return <section id="beers" className="coupon-manager manager-beers"><p className="eyebrow">Beer operations</p><h2>Beer flight line</h2><p>All public beers are listed below. Select Edit to update that beer directly in its row—including the core catalog.</p><p className="media-message" role="status">{message}</p>
-    <form className="manager-beer-form" onSubmit={create}><label>Beer name<input name="name" required maxLength={100} placeholder="Example: Runway Red" /></label><label>Style<input name="style" required maxLength={100} placeholder="Amber ale" /></label><label>ABV<input name="abv" required maxLength={24} placeholder="5.5% ABV" /></label><label>Category<select name="category" defaultValue="Ale"><option>IPA</option><option>Lager</option><option>Ale</option><option>Dark Beer</option><option>High Gravity</option><option>Limited Release</option></select></label><label>Availability<select name="status" defaultValue="Seasonal"><option>Year-round</option><option>Seasonal</option><option>Limited</option></select></label><label className="manager-beer-graphic">Beer graphic<input name="graphic" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf" required /><small>PNG, JPG, WEBP, or PDF · 25 MB max</small></label><label className="manager-beer-wide">Tasting notes<textarea name="description" required rows={3} maxLength={500} placeholder="Describe the flavor, aroma, and finish." /></label><button className="button" disabled={busy}>{busy ? "Adding beer..." : "Add beer to flight line"}</button></form>
-    <h3 className="tour-signups-heading">All beers</h3><div className="manager-beer-list">{beers.map((beer) => {
+  return <section id="beers" className="coupon-manager manager-beers"><p className="eyebrow">Beer operations</p><h2>Beer master list</h2><p>Keep every beer in the master list, then choose which beers are published and visible on the website.</p><p className="media-message" role="status">{message}</p>
+    <h3 className="tour-signups-heading">Master list of beers</h3><div className="manager-beer-list">{beers.map((beer) => {
       const isEditing = editing?.id === beer.id;
-      return <article className={"manager-beer-row" + (isEditing ? " is-editing" : "")} key={beer.id}>{beer.image.toLowerCase().endsWith(".pdf") ? <a className="manager-beer-pdf" href={beer.image} target="_blank" rel="noreferrer">PDF<br />artwork</a> : <img src={beer.image} alt="" />}{isEditing ? <form className="manager-beer-inline-form" onSubmit={update}><input type="hidden" name="id" value={beer.id} /><label>Beer name<input name="name" required maxLength={100} defaultValue={beer.name} /></label><label>Style<input name="style" required maxLength={100} defaultValue={beer.style} /></label><label>ABV<input name="abv" required maxLength={24} defaultValue={beer.abv} /></label><label>Category<select name="category" defaultValue={beer.category}><option>IPA</option><option>Lager</option><option>Ale</option><option>Dark Beer</option><option>High Gravity</option><option>Limited Release</option></select></label><label>Availability<select name="status" defaultValue={beer.status}><option>Year-round</option><option>Seasonal</option><option>Limited</option></select></label><label>Replace graphic <input name="graphic" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf" /><small>PNG, JPG, WEBP, or PDF · optional</small></label><label className="manager-beer-inline-wide">Tasting notes<textarea name="description" required rows={3} maxLength={500} defaultValue={beer.description} /></label><div className="manager-beer-inline-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save changes"}</button><button className="button button-outline" type="button" onClick={() => setEditing(null)} disabled={busy}>Cancel</button></div></form> : <><div><p className="eyebrow">{beer.source === "catalog" ? "Core catalog" : "Manager added"} · {beer.status}</p><h3>{beer.name}</h3><p>{beer.style} · {beer.abv} · {beer.category}</p><small>{beer.description}</small></div><footer><button type="button" onClick={() => beginEdit(beer)} disabled={busy}>Edit</button>{beer.source === "managed" ? <button type="button" onClick={() => remove(beer)} disabled={busy}>Remove</button> : null}</footer></>}</article>;
+      return <article className={"manager-beer-row" + (isEditing ? " is-editing" : "") + (!beer.published ? " is-unpublished" : "")} key={beer.id}><BeerImageViewer beer={beer} className="manager-beer-thumb" />{isEditing ? <form className="manager-beer-inline-form" onSubmit={update}><input type="hidden" name="id" value={beer.id} /><label>Beer name<input name="name" required maxLength={100} defaultValue={beer.name} /></label><label>Style<input name="style" required maxLength={100} defaultValue={beer.style} /></label><label>ABV<input name="abv" required maxLength={24} defaultValue={beer.abv} /></label><label>Category<select name="category" defaultValue={beer.category}><option>IPA</option><option>Lager</option><option>Ale</option><option>Dark Beer</option><option>High Gravity</option><option>Limited Release</option></select></label><label>Availability<select name="status" defaultValue={beer.status}><option>Year-round</option><option>Seasonal</option><option>Limited</option></select></label><label>Replace graphic <input name="graphic" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf" /><small>PNG, JPG, WEBP, or PDF · optional</small></label><label className="manager-event-publish"><input name="published" type="checkbox" value="true" defaultChecked={beer.published !== false} /> Publish this beer on the website</label><label className="manager-beer-inline-wide">Tasting notes<textarea name="description" required rows={3} maxLength={500} defaultValue={beer.description} /></label><div className="manager-beer-inline-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save changes"}</button><button className="button button-outline" type="button" onClick={() => setEditing(null)} disabled={busy}>Cancel</button></div></form> : <><div><p className="eyebrow">{beer.source === "catalog" ? "Core catalog" : "Manager added"} · {beer.status} · {beer.published ? "Published" : "Hidden"}</p><h3>{beer.name}</h3><p>{beer.style} · {beer.abv} · {beer.category}</p><small>{beer.description}</small></div><footer><button type="button" onClick={() => beginEdit(beer)} disabled={busy}>Edit</button><button type="button" onClick={() => togglePublished(beer)} disabled={busy}>{beer.published ? "Hide" : "Publish"}</button>{beer.source === "managed" ? <button type="button" onClick={() => remove(beer)} disabled={busy}>Remove</button> : null}</footer></>}</article>;
     })}</div>
+    <h3 className="tour-signups-heading">Add a beer</h3><form className="manager-beer-form" onSubmit={create}><label>Beer name<input name="name" required maxLength={100} placeholder="Example: Runway Red" /></label><label>Style<input name="style" required maxLength={100} placeholder="Amber ale" /></label><label>ABV<input name="abv" required maxLength={24} placeholder="5.5% ABV" /></label><label>Category<select name="category" defaultValue="Ale"><option>IPA</option><option>Lager</option><option>Ale</option><option>Dark Beer</option><option>High Gravity</option><option>Limited Release</option></select></label><label>Availability<select name="status" defaultValue="Seasonal"><option>Year-round</option><option>Seasonal</option><option>Limited</option></select></label><label className="manager-beer-graphic">Beer graphic<input name="graphic" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf" required /><small>PNG, JPG, WEBP, or PDF · 25 MB max</small></label><label className="manager-event-publish"><input name="published" type="checkbox" value="true" defaultChecked /> Publish this beer on the website</label><label className="manager-beer-wide">Tasting notes<textarea name="description" required rows={3} maxLength={500} placeholder="Describe the flavor, aroma, and finish." /></label><button className="button" disabled={busy}>{busy ? "Adding beer..." : "Add beer to master list"}</button></form>
   </section>;
 }
-
 function BeverageManager() {
   const [beverages, setBeverages] = useState<PortalBeverage[]>([]);
   const [message, setMessage] = useState("");
@@ -200,6 +411,10 @@ function BreweryPhotosManager() {
   return <section className="manager-brewery-photos"><WebsitePhotosLibrary accessKey="manager-session" location={{ slug: "brewery", name: "Brewery" }} /></section>;
 }
 
+function PrivateEventPhotosManager() {
+  return <section className="manager-brewery-photos manager-private-event-photos"><WebsitePhotosLibrary accessKey="manager-session" location={{ slug: "private-events", name: "Private Event Room" }} /></section>;
+}
+
 function AmphitheaterPhotosManager() {
   return <section className="manager-brewery-photos manager-amphitheater-photos"><WebsitePhotosLibrary accessKey="manager-session" location={{ slug: "aviator-amphitheater", name: "Aviator Amphitheater" }} /></section>;
 }
@@ -222,7 +437,9 @@ function ManagerSectionContent({ section }: { section: ManagerSection }) {
     case "locations": return <LocationManager />;
     case "coupons": return <div id="coupons"><CouponManager accessKey="manager-session" /></div>;
     case "beers": return <BeerManager />;
+    case "beer-release-alert": return <BeerReleaseAlertManager />;
     case "brewery-photos": return <BreweryPhotosManager />;
+    case "private-event-photos": return <PrivateEventPhotosManager />;
     case "amphitheater-photos": return <AmphitheaterPhotosManager />;
     case "beverages": return <BeverageManager />;
     case "kegs": return <KegInventoryManager />;
@@ -271,7 +488,7 @@ export function ManagerPortal({ section = "overview" }: { section?: ManagerSecti
   }
 
   if (!ready) return <main className="coupon-validator"><section><p>Checking manager access...</p></section></main>;
-  if (!authenticated) return <main className="coupon-validator"><section><p className="eyebrow">Aviator operations</p><h1>Manager login</h1><p>Manage tours, Flight Crew communications, special events, beers, beverages, coupons, and website media.</p><form onSubmit={login}><label>Manager password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label><button className="button">Open manager portal</button><button className="manager-reset-button" type="button" onClick={requestPasswordReset} disabled={resetBusy}>{resetBusy ? "Sending reset email..." : "Reset password"}</button></form>{message ? <p className="coupon-validation-message" role="status">{message}</p> : null}</section></main>;
+  if (!authenticated) return <main className="coupon-validator"><section><p className="eyebrow">Aviator operations</p><h1>Manager login</h1><p>Manage tours, Flight Crew communications, special events, beers, beverages, coupons, and website media.</p><form className="manager-login-form" onSubmit={login}><label>Manager password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label><div className="manager-login-actions"><button className="button">Open manager portal</button><button className="manager-reset-button" type="button" onClick={requestPasswordReset} disabled={resetBusy}>{resetBusy ? "Sending reset email..." : "Reset password"}</button></div></form>{message ? <p className="coupon-validation-message" role="status">{message}</p> : null}</section></main>;
 
   const activeSection = managerSections.find((item) => item.id === section) || managerSections[0];
 

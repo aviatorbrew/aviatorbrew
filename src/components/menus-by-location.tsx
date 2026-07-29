@@ -32,7 +32,7 @@ async function getLocationMenus(): Promise<LocationMenus[]> {
 
 function MenuAction({ location, type, item }: { location: LocationMenus; type: "food" | "drinks"; item: PublishedMenu }) {
   const label = labelForMenu(location.slug, type);
-  return item ? <a className="location-menu-action" href={item.url} target="_blank" rel="noreferrer" data-analytics={type + "_menu_" + location.slug}><strong>{label}</strong><span>View menu <ArrowUpRight /></span></a> : <div className="location-menu-pending"><strong>{label}</strong><span>Coming soon!</span></div>;
+  return item ? <a className="location-menu-action" href={item.url} target="_blank" rel="noreferrer" data-analytics={type + "_menu_" + location.slug}><strong>{label}</strong><span><em>View menu</em> <ArrowUpRight /></span></a> : <div className="location-menu-pending"><strong>{label}</strong><span><em>Coming soon!</em></span></div>;
 }
 
 /** One complete directory: location details and its current food/drink menus live together. */

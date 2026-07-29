@@ -1,0 +1,252 @@
+[
+  {
+    "category": "Ales/Lagers",
+    "beerName": "3 Bones Kolsch 5.2%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "12oz",
+    "casePriceCents": 4200
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "Amber Ale 5.5%",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "Sours (Base)",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 10000
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "BlackMamba Stout 6.5%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 10000,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "16oz",
+    "casePriceCents": 5800
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "Costa Baja Lager 5.0%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "Devils Tripel 9.2%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 10500,
+    "fiftyLPriceCents": 19500,
+    "caseSize": "12oz",
+    "casePriceCents": 5800
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "HotRod Red 6.1%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "Airlift Pilsner 5.1%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "12oz",
+    "casePriceCents": 4200
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "Lager 5.0%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "12oz",
+    "casePriceCents": 4200
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "Lite 4.8%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 7500,
+    "fiftyLPriceCents": 14500,
+    "caseSize": "12oz",
+    "casePriceCents": 3200
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "MadBeach Wheat 4.8%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "12oz",
+    "casePriceCents": 4600
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "Pale Ale",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "SharkFight 4.8%",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500
+  },
+  {
+    "category": "Ales/Lagers",
+    "beerName": "SkyHammer Imperial Wheat 8.8%",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 10500,
+    "fiftyLPriceCents": 19500
+  },
+  {
+    "category": "IPA",
+    "beerName": "Cosmic Crush IPL 6.1%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 10000,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "16oz",
+    "casePriceCents": 6200
+  },
+  {
+    "category": "IPA",
+    "beerName": "HogWild IPA 6.5%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 10000,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "12oz",
+    "casePriceCents": 5000
+  },
+  {
+    "category": "IPA",
+    "beerName": "The Haze is Strong 7.1%",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 11500,
+    "fiftyLPriceCents": 20500
+  },
+  {
+    "category": "IPA",
+    "beerName": "Hazed & Confused 6.4%",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 11500,
+    "fiftyLPriceCents": 20500
+  },
+  {
+    "category": "IPA",
+    "beerName": "Jet Juice 7.8%",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 12000,
+    "fiftyLPriceCents": 21500
+  },
+  {
+    "category": "Specialty",
+    "beerName": "Night Jump BA Stout 13%",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 15000
+  },
+  {
+    "category": "Specialty",
+    "beerName": "Berserker Barleywine 11%",
+    "packaging": "Draft",
+    "sixthBblPriceCents": 12500,
+    "fiftyLPriceCents": 22500
+  },
+  {
+    "category": "Specialty",
+    "beerName": "Milli Vanilli Stout 11%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 12500,
+    "fiftyLPriceCents": 22500,
+    "caseSize": "16oz",
+    "casePriceCents": 6800
+  },
+  {
+    "category": "Specialty",
+    "beerName": "OktoberBeast 7.2%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "16oz",
+    "casePriceCents": 5600
+  },
+  {
+    "category": "Specialty",
+    "beerName": "PumpkinBeast 5.8%",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 9500,
+    "fiftyLPriceCents": 18500,
+    "caseSize": "12oz",
+    "casePriceCents": 4200
+  },
+  {
+    "category": "Sours",
+    "beerName": "Sour Cherry WarHead",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 10500,
+    "fiftyLPriceCents": 19500
+  },
+  {
+    "category": "Seltzer",
+    "beerName": "WildBerry",
+    "packaging": "Cans",
+    "caseSize": "12oz",
+    "casePriceCents": 4500
+  },
+  {
+    "category": "Seltzer",
+    "beerName": "Black Cherry",
+    "packaging": "Cans",
+    "caseSize": "12oz",
+    "casePriceCents": 4500
+  },
+  {
+    "category": "Seltzer",
+    "beerName": "Orange Fusion",
+    "packaging": "Cans",
+    "caseSize": "12oz",
+    "casePriceCents": 4500
+  },
+  {
+    "category": "Soda",
+    "beerName": "Root Beer",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 8000,
+    "fiftyLPriceCents": 15500,
+    "caseSize": "16oz",
+    "casePriceCents": 4400
+  },
+  {
+    "category": "Soda",
+    "beerName": "Cream Soda",
+    "packaging": "Draft/Cans",
+    "sixthBblPriceCents": 8000,
+    "fiftyLPriceCents": 15500,
+    "caseSize": "16oz",
+    "casePriceCents": 4400
+  },
+  {
+    "category": "THC Soda",
+    "beerName": "Orange Dream",
+    "packaging": "Cans",
+    "caseSize": "12oz",
+    "casePriceCents": 5900
+  },
+  {
+    "category": "THC Soda",
+    "beerName": "Strawberry Wave",
+    "packaging": "Cans",
+    "caseSize": "12oz",
+    "casePriceCents": 5900
+  }
+]

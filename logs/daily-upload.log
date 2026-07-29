@@ -101,3 +101,267 @@ Route (app)                                          Size  First Load JS
 ●  (SSG)      prerendered as static HTML (uses generateStaticParams)
 ƒ  (Dynamic)  server-rendered on demand
 
+[main 73922eb] Daily Aviator Live update
+ 235 files changed, 13155 insertions(+), 1596 deletions(-)
+ create mode 100644 logs/daily-upload.log
+ create mode 100644 open-next.config.ts
+ create mode 100644 public/images/atmosphere/aeronautical-cloud-chart-restored.png
+ create mode 100644 public/images/hero-runway-wwii-restored.png
+ create mode 100644 public/images/location-photos/c-54-airplane-bar/50-c54-beer-background.jpg
+ create mode 100644 public/images/location-photos/c-54-airplane-bar/60-c54-brewery-top.jpg
+ create mode 100644 public/images/location-photos/c-54-airplane-bar/70-c54-brewery-front.jpg
+ create mode 100644 public/images/location-photos/c-54-airplane-bar/80-c54-gate.jpg
+ create mode 100644 public/images/location-photos/c-54-airplane-bar/90-c54-propeller.jpg
+ create mode 100644 public/images/location-photos/hangar-bar/50-hangar-bar-courtyard.jpg
+ create mode 100644 public/images/location-photos/hangar-bar/60-hangar-bar-taps.jpg
+ create mode 100644 public/images/location-photos/hangar-bar/70-hangar-bar-patio.jpg
+ create mode 100644 public/images/location-photos/hangar-bar/80-hangar-bar-lounge.jpg
+ create mode 100644 public/images/location-photos/hangar-bar/90-hangar-bar-brewery.jpg
+ create mode 100644 public/images/location-photos/harddeck/50-harddeck-burger.jpg
+ create mode 100644 public/images/location-photos/harddeck/60-harddeck-ribs.jpg
+ create mode 100644 public/images/location-photos/harddeck/70-harddeck-bbq.jpg
+ create mode 100644 public/images/location-photos/harddeck/80-harddeck-entry.jpg
+ create mode 100644 public/images/location-photos/harddeck/90-harddeck-smokehouse.jpg
+ create mode 100644 public/images/location-photos/pizza-pub/50-pizza-pub-oven.jpg
+ create mode 100644 public/images/location-photos/pizza-pub/60-pizza-pub-pepperoni.jpg
+ create mode 100644 public/images/location-photos/pizza-pub/70-pizza-pub-pizza.jpg
+ create mode 100644 public/images/location-photos/pizza-pub/80-pizza-pub-bar.jpg
+ create mode 100644 public/images/location-photos/pizza-pub/90-pizza-pub-storefront.jpg
+ create mode 100644 public/images/location-photos/ready-room/50-ready-room-barrels.jpg
+ create mode 100644 public/images/location-photos/ready-room/60-ready-room-table.jpg
+ create mode 100644 public/images/location-photos/ready-room/70-ready-room-tasting.jpg
+ create mode 100644 public/images/location-photos/ready-room/80-ready-room-flight.jpg
+ create mode 100644 public/images/location-photos/ready-room/90-ready-room-lounge.jpg
+ create mode 100644 public/images/location-photos/speakeasy/50-speakeasy-beer-background.jpg
+ create mode 100644 public/images/location-photos/speakeasy/60-speakeasy-barrels.jpg
+ create mode 100644 public/images/location-photos/speakeasy/70-speakeasy-ledge.jpg
+ create mode 100644 public/images/location-photos/speakeasy/80-speakeasy-table.jpg
+ create mode 100644 public/images/location-photos/speakeasy/90-speakeasy-lounge.jpg
+ create mode 100644 public/images/location-photos/taphouse/60-taphouse-beer-table.jpg
+ create mode 100644 public/images/location-photos/taphouse/70-taphouse-patio.jpg
+ create mode 100644 public/images/location-photos/taphouse/80-taphouse-dining.jpg
+ create mode 100644 public/images/location-photos/taphouse/90-taphouse-exterior.jpg
+ create mode 100644 public/images/p51-strafing-hero-restored.png
+ create mode 100644 public/images/website-photos/80-bbq.jpg
+ create mode 100644 public/images/website-photos/81-pizza.jpg
+ create mode 100644 public/images/website-photos/82-beer-flight.jpg
+ create mode 100644 public/images/website-photos/83-propeller.jpg
+ create mode 100644 public/images/website-photos/84-ready-room.jpg
+ create mode 100644 public/images/website-photos/85-smokehouse.jpg
+ create mode 100644 public/images/website-photos/86-pizza-pub.jpg
+ create mode 100644 public/images/website-photos/87-taphouse.jpg
+ create mode 100644 public/images/website-photos/88-patio.jpg
+ create mode 100644 public/images/website-photos/89-beer-taps.jpg
+ create mode 100644 public/images/website-photos/90-brewery-campus.jpg
+ create mode 100644 public/media/location-photos/c-54-airplane-bar/50-c54-beer-background.jpg
+ create mode 100644 public/media/location-photos/c-54-airplane-bar/60-c54-brewery-top.jpg
+ create mode 100644 public/media/location-photos/c-54-airplane-bar/70-c54-brewery-front.jpg
+ create mode 100644 public/media/location-photos/c-54-airplane-bar/80-c54-gate.jpg
+ create mode 100644 public/media/location-photos/c-54-airplane-bar/90-c54-propeller.jpg
+ create mode 100644 public/media/location-photos/hangar-bar/50-hangar-bar-courtyard.jpg
+ create mode 100644 public/media/location-photos/hangar-bar/60-hangar-bar-taps.jpg
+ create mode 100644 public/media/location-photos/hangar-bar/70-hangar-bar-patio.jpg
+ create mode 100644 public/media/location-photos/hangar-bar/80-hangar-bar-lounge.jpg
+ create mode 100644 public/media/location-photos/hangar-bar/90-hangar-bar-brewery.jpg
+ create mode 100644 public/media/location-photos/harddeck/50-harddeck-burger.jpg
+ create mode 100644 public/media/location-photos/harddeck/60-harddeck-ribs.jpg
+ create mode 100644 public/media/location-photos/harddeck/70-harddeck-bbq.jpg
+ create mode 100644 public/media/location-photos/harddeck/80-harddeck-entry.jpg
+ create mode 100644 public/media/location-photos/harddeck/90-harddeck-smokehouse.jpg
+ create mode 100644 public/media/location-photos/pizza-pub/50-pizza-pub-oven.jpg
+ create mode 100644 public/media/location-photos/pizza-pub/60-pizza-pub-pepperoni.jpg
+ create mode 100644 public/media/location-photos/pizza-pub/70-pizza-pub-pizza.jpg
+ create mode 100644 public/media/location-photos/pizza-pub/80-pizza-pub-bar.jpg
+ create mode 100644 public/media/location-photos/pizza-pub/90-pizza-pub-storefront.jpg
+ create mode 100644 public/media/location-photos/ready-room/50-ready-room-barrels.jpg
+ create mode 100644 public/media/location-photos/ready-room/60-ready-room-table.jpg
+ create mode 100644 public/media/location-photos/ready-room/70-ready-room-tasting.jpg
+ create mode 100644 public/media/location-photos/ready-room/80-ready-room-flight.jpg
+ create mode 100644 public/media/location-photos/ready-room/90-ready-room-lounge.jpg
+ create mode 100644 public/media/location-photos/speakeasy/50-speakeasy-beer-background.jpg
+ create mode 100644 public/media/location-photos/speakeasy/60-speakeasy-barrels.jpg
+ create mode 100644 public/media/location-photos/speakeasy/70-speakeasy-ledge.jpg
+ create mode 100644 public/media/location-photos/speakeasy/80-speakeasy-table.jpg
+ create mode 100644 public/media/location-photos/speakeasy/90-speakeasy-lounge.jpg
+ create mode 100644 public/media/location-photos/taphouse/60-taphouse-beer-table.jpg
+ create mode 100644 public/media/location-photos/taphouse/70-taphouse-patio.jpg
+ create mode 100644 public/media/location-photos/taphouse/80-taphouse-dining.jpg
+ create mode 100644 public/media/location-photos/taphouse/90-taphouse-exterior.jpg
+ create mode 100644 public/media/website-photos/80-bbq.jpg
+ create mode 100644 public/media/website-photos/81-pizza.jpg
+ create mode 100644 public/media/website-photos/82-beer-flight.jpg
+ create mode 100644 public/media/website-photos/83-propeller.jpg
+ create mode 100644 public/media/website-photos/84-ready-room.jpg
+ create mode 100644 public/media/website-photos/85-smokehouse.jpg
+ create mode 100644 public/media/website-photos/86-pizza-pub.jpg
+ create mode 100644 public/media/website-photos/87-taphouse.jpg
+ create mode 100644 public/media/website-photos/88-patio.jpg
+ create mode 100644 public/media/website-photos/89-beer-taps.jpg
+ create mode 100644 public/media/website-photos/90-brewery-campus.jpg
+ create mode 100755 scripts/daily-upload-if-changed.sh
+ create mode 100644 scripts/patch-opennext-require.mjs
+ create mode 100755 scripts/upload-to-github.sh
+ create mode 100644 src/app/api/beer-images/[filename]/route.ts
+ create mode 100644 src/app/api/branding/logo/route.ts
+ create mode 100644 src/app/api/event-images/[filename]/route.ts
+ create mode 100644 src/app/api/itinerary/email/route.ts
+ create mode 100644 src/app/api/manager/branding/route.ts
+ create mode 100644 src/app/api/manager/newsletter/route.ts
+ create mode 100644 src/app/api/manager/password-reset/route.ts
+ create mode 100644 src/app/api/manager/payments/route.ts
+ create mode 100644 src/app/api/newsletter/confirm/route.ts
+ create mode 100644 src/app/api/newsletter/unsubscribe/route.ts
+ create mode 100644 src/app/api/website-photo-files/[target]/[filename]/route.ts
+ create mode 100644 src/app/brewery/page.tsx
+ create mode 100644 src/app/flight-crew.css
+ create mode 100644 src/app/home-logo-viewer.css
+ create mode 100644 src/app/itinerary.css
+ create mode 100644 src/app/itinerary/page.tsx
+ create mode 100644 src/app/manager/[section]/page.tsx
+ create mode 100644 src/app/manager/reset/page.tsx
+ create mode 100644 src/app/payment-test.css
+ create mode 100644 src/app/private-event-payment.css
+ create mode 100644 src/app/site-enhancements.css
+ create mode 100644 src/components/beer-image-viewer.tsx
+ create mode 100644 src/components/beyond-beer-image-viewer.tsx
+ create mode 100644 src/components/brand-logo.tsx
+ create mode 100644 src/components/branding-manager.tsx
+ create mode 100644 src/components/brewing-diagram.tsx
+ create mode 100644 src/components/event-image-viewer.tsx
+ create mode 100644 src/components/home-logo-viewer.tsx
+ create mode 100644 src/components/manager-password-reset.tsx
+ create mode 100644 src/components/newsletter-manager.tsx
+ create mode 100644 src/components/night-out-planner.tsx
+ create mode 100644 src/components/payment-test-manager.tsx
+ create mode 100644 src/components/private-event-payment-button.tsx
+ create mode 100644 src/data/brewery-photo-manifest.ts
+ create mode 100644 src/data/itinerary.ts
+ create mode 100644 src/data/location-photo-manifest.ts
+ create mode 100644 src/lib/beer-images.ts
+ create mode 100644 src/lib/brewery-photos.ts
+ create mode 100644 src/lib/flight-crew-welcome.ts
+ create mode 100644 src/lib/manager-credentials.ts
+ create mode 100644 src/lib/manager-payment-test.ts
+ create mode 100644 src/lib/manager-sections.ts
+ create mode 100644 src/lib/newsletter-campaigns.ts
+ create mode 100644 src/lib/newsletter-email.ts
+ create mode 100644 src/lib/private-event-checkout.ts
+ create mode 100644 src/lib/private-event-payments.ts
+ create mode 100644 src/lib/site-branding.ts
+ create mode 100644 src/lib/tour-config.ts
+ create mode 100644 src/lib/website-photo-storage.ts
+ create mode 100644 wrangler.jsonc
+To https://github.com/aviatorbrew/aviatorlive.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/aviatorbrew/aviatorlive.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+2026-07-29T03:00:01-04:00 Changes detected; running GitHub upload.
+
+> aviator-brewing-company@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.21
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1398ms
+   Linting and checking validity of types ...
+   Collecting page data ...
+mail.smtp_verified
+mail.smtp_verified
+mail.smtp_verified
+   Generating static pages (0/46) ...
+   Generating static pages (11/46) 
+   Generating static pages (22/46) 
+   Generating static pages (34/46) 
+ ✓ Generating static pages (46/46)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                          Size  First Load JS
+┌ ƒ /                                             3.95 kB         118 kB
+├ ○ /_not-found                                     229 B         103 kB
+├ ● /[page]                                       3.06 kB         114 kB
+├   ├ /distillery
+├   ├ /private-events
+├   ├ /careers
+├   └ [+5 more paths]
+├ ƒ /about                                        2.33 kB         113 kB
+├ ƒ /api/beer-images/[filename]                     229 B         103 kB
+├ ƒ /api/beer-release-alert-assets/[filename]       229 B         103 kB
+├ ƒ /api/branding/logo                              229 B         103 kB
+├ ƒ /api/checkout                                   229 B         103 kB
+├ ƒ /api/coupons                                    229 B         103 kB
+├ ƒ /api/coupons/[token]/image                      229 B         103 kB
+├ ƒ /api/coupons/manage                             229 B         103 kB
+├ ƒ /api/coupons/validate                           229 B         103 kB
+├ ƒ /api/event-images/[filename]                    229 B         103 kB
+├ ƒ /api/gift-cards/balance                         229 B         103 kB
+├ ƒ /api/inquiries                                  229 B         103 kB
+├ ƒ /api/itinerary/email                            229 B         103 kB
+├ ƒ /api/keg-orders                                 229 B         103 kB
+├ ƒ /api/manager/beer-release-alert                 229 B         103 kB
+├ ƒ /api/manager/beers                              229 B         103 kB
+├ ƒ /api/manager/beyond-beer                        229 B         103 kB
+├ ƒ /api/manager/branding                           229 B         103 kB
+├ ƒ /api/manager/events                             229 B         103 kB
+├ ƒ /api/manager/keg-pricing                        229 B         103 kB
+├ ƒ /api/manager/kegs                               229 B         103 kB
+├ ƒ /api/manager/locations                          229 B         103 kB
+├ ƒ /api/manager/newsletter                         229 B         103 kB
+├ ƒ /api/manager/password-reset                     229 B         103 kB
+├ ƒ /api/manager/payments                           229 B         103 kB
+├ ƒ /api/manager/session                            229 B         103 kB
+├ ƒ /api/manager/tours                              229 B         103 kB
+├ ƒ /api/menu-library/[location]                    229 B         103 kB
+├ ƒ /api/newsletter/confirm                         229 B         103 kB
+├ ƒ /api/newsletter/unsubscribe                     229 B         103 kB
+├ ƒ /api/stripe/webhook                             229 B         103 kB
+├ ƒ /api/tours                                      229 B         103 kB
+├ ƒ /api/tours/weekly-notify                        229 B         103 kB
+├ ƒ /api/website-photo-files/[target]/[filename]    229 B         103 kB
+├ ƒ /api/website-photos                             229 B         103 kB
+├ ƒ /beer                                         2.93 kB         114 kB
+├ ƒ /beer/[slug]                                  1.66 kB         113 kB
+├ ƒ /book-a-band                                    229 B         103 kB
+├ ƒ /brewery                                      3.13 kB         114 kB
+├ ○ /coupon-validate                                949 B         103 kB
+├ ƒ /coupons                                        162 B         105 kB
+├ ƒ /events                                       1.05 kB         104 kB
+├ ● /events/[slug]                                  179 B         111 kB
+├   ├ /events/live-at-the-hangar
+├   ├ /events/sunday-brunch-flight
+├   └ /events/cars-coffee-campus
+├ ƒ /events/live-music                              172 B         106 kB
+├ ○ /gift-card-balance                            1.59 kB         107 kB
+├ ○ /itinerary                                    6.58 kB         114 kB
+├ ƒ /kegs                                         2.16 kB         108 kB
+├ ƒ /locations                                      175 B         111 kB
+├ ● /locations/[slug]                               179 B         111 kB
+├   ├ /locations/hangar-bar
+├   ├ /locations/aviator-amphitheater
+├   ├ /locations/taphouse
+├   └ [+5 more paths]
+├ ƒ /manager                                        138 B         135 kB
+├ ƒ /manager/[section]                              138 B         135 kB
+├ ƒ /manager/reset                                  870 B         107 kB
+├ ○ /media-library                                  166 B         109 kB
+├ ○ /menus                                          229 B         103 kB
+├ ○ /more                                           172 B         106 kB
+├ ƒ /order-food                                     488 B         108 kB
+├ ○ /robots.txt                                     229 B         103 kB
+└ ○ /sitemap.xml                                    229 B         103 kB
++ First Load JS shared by all                      102 kB
+  ├ chunks/1255-612df69cb02f2021.js               46.3 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js           54.2 kB
+  └ other shared chunks (total)                   1.94 kB
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

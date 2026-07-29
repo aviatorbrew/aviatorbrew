@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       if (!isMailConfigured() && process.env.MAIL_MODE !== "record") throw new Error("Email delivery is not configured");
       const [welcome, beers, events, locations, music] = await Promise.all([
         getFlightCrewWelcome(),
-        getPortalBeers(),
+        getPortalBeers().then((items) => items.filter((beer) => beer.published !== false)),
         getPublishedEvents({ monthsAhead: 3 }),
         getAllLocations(),
         getLiveMusicSchedule(),
