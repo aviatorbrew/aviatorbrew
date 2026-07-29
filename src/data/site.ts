@@ -26,7 +26,7 @@ export type Event = {
 export const orderFoodUrl = "/order-food";
 
 export const primaryNav = [
-  { label: "Beer", href: "/beer", children: [{ label: "Brewery", href: "/brewery" }, { label: "Keg Sales", href: "/kegs" }] },
+  { label: "Beer", href: "/beer", children: [{ label: "Brewery", href: "/brewery" }, { label: "Keg/package sale", href: "/kegs" }] },
   { label: "Locations", href: "/locations" },
   { label: "Events", href: "/events" },
   { label: "Private Events", href: "/private-events" },

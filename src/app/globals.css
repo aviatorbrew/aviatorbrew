@@ -1772,13 +1772,29 @@ body {
 .manager-beer-release-list { display: grid; gap: 1rem; margin-top: 1.25rem; }
 .manager-beer-release-item { padding: 1rem; border: 1px solid #315a78; background: #09253d; }
 .manager-beer-release-item.is-hidden { opacity: .82; }
-.manager-beer-release-form .manager-event-publish, .manager-beer-release-form .manager-event-wide { grid-column: 1 / -1; }
+.manager-beer-release-form .manager-event-publish, .manager-beer-release-form .manager-event-wide, .manager-beer-release-form header, .manager-beer-release-edit-actions { grid-column: 1 / -1; }
+.manager-beer-release-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 1rem; align-items: center; }
+.manager-beer-release-summary { display: grid; gap: .35rem; min-width: 0; }
+.manager-beer-release-summary h3 { margin: 0; color: #f4f8fa; font-size: clamp(1.35rem, 2.5vw, 2rem); line-height: 1; }
+.manager-beer-release-summary p { margin: 0; color: #d9e7ed; font-weight: 800; }
+.manager-beer-release-summary small, .manager-beer-release-summary span { color: #a9c8d8; line-height: 1.35; }
+.manager-beer-release-summary a { color: #efb45f; font-weight: 900; }
+.manager-beer-release-thumb { display: grid; width: 7.5rem; height: 5.5rem; place-items: center; background: #d9e7ed; border: 1px solid #4b7fa3; }
+.manager-beer-release-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.manager-beer-release-thumb span { color: #102842; font-weight: 900; text-transform: uppercase; }
+.manager-beer-release-row footer, .manager-beer-release-edit-actions { display: flex; flex-wrap: wrap; gap: .55rem; justify-content: flex-end; }
+.manager-beer-release-add { justify-self: start; }
+.manager-release-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(3, 14, 24, .78); }
+.manager-release-modal-card { width: min(760px, 100%); max-height: 90vh; overflow: auto; padding: 1rem; border: 1px solid #4b7fa3; background: #09253d; box-shadow: 0 24px 70px rgba(0, 0, 0, .36); }
+.manager-release-modal-card header { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; margin-bottom: .35rem; }
+.manager-release-modal-card header h3 { margin: 0; color: #f4f8fa; font-size: 1.55rem; }
+.manager-release-modal-card header button { flex: 0 0 auto; }
 .manager-beer-release-preview { display: grid; grid-template-columns: minmax(0, 1fr) 10rem; gap: 1rem; align-items: center; margin-top: 1rem; padding: 1rem; border: 1px solid #3f6c89; background: #0a2941; }
 .manager-beer-release-preview h3 { font-size: 1.6rem; }
 .manager-beer-release-preview a { color: #efb45f; font-weight: 900; }
 .manager-beer-release-preview img { width: 10rem; height: 8rem; object-fit: contain; background: #d9e7ed; }
 .manager-beer-release-preview > span { display: grid; width: 10rem; height: 8rem; place-items: center; background: #d9e7ed; color: #102842; font-weight: 900; text-transform: uppercase; }
-@media (max-width: 760px) { .beer-release-alert-inner, .manager-beer-release-form, .manager-beer-release-preview { grid-template-columns: 1fr; } .beer-release-alert-copy dl { grid-template-columns: 1fr; } .beer-release-sell-sheet { border-top: 1px solid rgba(184, 217, 236, .25); border-left: 0; } .beer-release-sell-sheet img { max-height: 18rem; } .manager-beer-release-preview img, .manager-beer-release-preview > span { width: 100%; } }
+@media (max-width: 760px) { .beer-release-alert-inner, .manager-beer-release-form, .manager-beer-release-preview, .manager-beer-release-row { grid-template-columns: 1fr; } .beer-release-alert-copy dl { grid-template-columns: 1fr; } .beer-release-sell-sheet { border-top: 1px solid rgba(184, 217, 236, .25); border-left: 0; } .beer-release-sell-sheet img { max-height: 18rem; } .manager-beer-release-preview img, .manager-beer-release-preview > span, .manager-beer-release-thumb { width: 100%; } .manager-beer-release-row footer, .manager-beer-release-edit-actions { justify-content: flex-start; } }
 
 .keg-case-lines { display: grid; gap: .35rem; }
 .keg-case-lines span { display: grid; gap: .08rem; }

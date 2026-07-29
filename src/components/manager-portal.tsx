@@ -329,6 +329,8 @@ function BeerReleaseAlertManager() {
   const [alerts, setAlerts] = useState<BeerReleaseAlert[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   async function load() { const response = await fetch("/api/manager/beer-release-alert", { cache: "no-store" }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setAlerts(body.alerts || []); }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
   async function create(event: FormEvent<HTMLFormElement>) {
@@ -337,7 +339,7 @@ function BeerReleaseAlertManager() {
     const response = await fetch("/api/manager/beer-release-alert", { method: "POST", body: values });
     const body = await response.json(); setBusy(false);
     if (!response.ok) { setMessage(body.error || "Could not create new release alert."); return; }
-    setAlerts(body.alerts || []); form.reset(); setMessage("New Release Alert created.");
+    setAlerts(body.alerts || []); setAdding(false); form.reset(); setMessage("New Release Alert created.");
   }
   async function save(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault(); setBusy(true); setMessage("");
@@ -345,7 +347,7 @@ function BeerReleaseAlertManager() {
     const response = await fetch("/api/manager/beer-release-alert", { method: "PATCH", body: values });
     const body = await response.json(); setBusy(false);
     if (!response.ok) { setMessage(body.error || "Could not save New Release Alert."); return; }
-    setAlerts(body.alerts || []); setMessage("New Release Alert saved.");
+    setAlerts(body.alerts || []); setEditingId(null); setMessage("New Release Alert saved.");
   }
   async function setPublished(alert: BeerReleaseAlert, enabled: boolean) {
     setBusy(true); setMessage("");
@@ -355,19 +357,21 @@ function BeerReleaseAlertManager() {
     setAlerts(body.alerts || []); setMessage(enabled ? "New Release Alert published on the homepage." : "New Release Alert unpublished from the homepage.");
   }
   async function remove(alert: BeerReleaseAlert) {
-    if (!window.confirm("Delete this New Release Alert?")) return;
+    if (!window.confirm("Are you sure you want to delete " + (alert.beerName || "this New Release Alert") + "?")) return;
     setBusy(true); setMessage("");
     const response = await fetch("/api/manager/beer-release-alert?id=" + encodeURIComponent(alert.id), { method: "DELETE" });
     const body = await response.json(); setBusy(false);
     if (!response.ok) { setMessage(body.error || "Could not delete New Release Alert."); return; }
-    setAlerts(body.alerts || []); setMessage("New Release Alert deleted.");
+    setAlerts(body.alerts || []); if (editingId === alert.id) setEditingId(null); setMessage("New Release Alert deleted.");
   }
+  function releaseWhen(alert: BeerReleaseAlert) { return [alert.releaseDate, alert.releaseTime].filter(Boolean).join(" at ") || "Release time not set"; }
+  function releaseStatus(alert: BeerReleaseAlert) { return alert.enabled && alert.beerName ? "Published" : alert.enabled ? "Needs release name" : "Unpublished"; }
   function fields(alert?: BeerReleaseAlert) {
     return <><label className="manager-event-publish"><input name="enabled" type="checkbox" defaultChecked={alert?.enabled || false} /> Publish New Release Alert</label><label>Release name<input name="beerName" required maxLength={120} defaultValue={alert?.beerName || ""} placeholder="Example: Jetstream IPA, Barrel Pick, THC soda" /></label><label>Release date<input name="releaseDate" type="date" defaultValue={alert?.releaseDate || ""} /></label><label>Release time<input name="releaseTime" type="time" defaultValue={alert?.releaseTime || ""} /></label><label className="manager-event-wide">Locations<input name="locations" maxLength={300} defaultValue={alert?.locations || ""} placeholder="Example: Brewery, Hangar Bar, TapHouse" /></label><label className="manager-event-wide">Specials<input name="specials" maxLength={300} defaultValue={alert?.specials || ""} placeholder="Example: Free pint glass while supplies last" /></label><label className="manager-event-wide">Sell sheet <small>{alert?.sellSheetUrl ? "Optional replacement, JPG/PNG/WEBP/PDF up to 25 MB" : "JPG/PNG/WEBP/PDF up to 25 MB"}</small><input name="sellSheet" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" /></label></>;
   }
   return <section id="beer-release-alert" className="coupon-manager manager-beer-release-alert"><p className="eyebrow">Homepage alert</p><h2>New Release Alerts</h2><p>Show bold release notices directly under the scrolling banner. Use these for beer, liquor, THC soda, seltzer, or any other Aviator release.</p><p className="media-message" role="status">{message}</p>
-    <form className="manager-beer-release-form" onSubmit={create}>{fields()}<button className="button" disabled={busy}>{busy ? "Saving..." : "Create New Release Alert"}</button></form>
-    <div className="manager-beer-release-list"><h3 className="tour-signups-heading">Saved New Release Alerts</h3>{alerts.length ? alerts.map((alert) => { const visible = Boolean(alert.enabled && alert.beerName); return <article className={"manager-beer-release-item" + (!visible ? " is-hidden" : "")} key={alert.id}><div className="manager-keg-status manager-beer-release-status"><div><p className="eyebrow">Homepage status</p><h3>{visible ? "Published" : "Unpublished"}</h3><p>{visible ? "This release is visible directly under the scrolling banner." : alert.enabled ? "Add a release name to make this visible on the homepage." : "This release is saved but hidden from the homepage."}</p></div><div className="manager-keg-export"><button type="button" onClick={() => setPublished(alert, true)} disabled={busy || visible}>Publish</button><button type="button" onClick={() => setPublished(alert, false)} disabled={busy || !alert.enabled}>Unpublish</button><button type="button" onClick={() => remove(alert)} disabled={busy}>Delete</button></div></div><form key={alert.updatedAt || alert.id} className="manager-beer-release-form" onSubmit={(event) => save(event, alert.id)}>{fields(alert)}<button className="button" disabled={busy}>{busy ? "Saving..." : "Save New Release Alert"}</button></form>{alert.sellSheetUrl ? <article className="manager-beer-release-preview"><div><p className="eyebrow">Current sell sheet</p><h3>{alert.beerName || "New release"}</h3><a href={alert.sellSheetUrl} target="_blank" rel="noreferrer">Open original file</a></div>{alert.sellSheetUrl.toLowerCase().endsWith(".pdf") ? <span>PDF sell sheet</span> : <img src={alert.sellSheetUrl} alt="" />}</article> : null}</article>; }) : <p>No New Release Alerts saved yet.</p>}</div>
+    <div className="manager-beer-release-list"><h3 className="tour-signups-heading">Saved New Release Alerts</h3>{alerts.length ? alerts.map((alert) => { const visible = Boolean(alert.enabled && alert.beerName); const editing = editingId === alert.id; return <article className={"manager-beer-release-item" + (!visible ? " is-hidden" : "")} key={alert.id}>{editing ? <form key={alert.updatedAt || alert.id} className="manager-beer-release-form" onSubmit={(event) => save(event, alert.id)}>{fields(alert)}<div className="manager-beer-release-edit-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save New Release Alert"}</button><button className="button button-outline" type="button" onClick={() => setEditingId(null)} disabled={busy}>Cancel</button></div></form> : <div className="manager-beer-release-row"><div className="manager-beer-release-summary"><p className="eyebrow">{releaseStatus(alert)}</p><h3>{alert.beerName || "Untitled New Release"}</h3><p>{releaseWhen(alert)}</p><small>{alert.locations || "Locations not set"}{alert.specials ? " · " + alert.specials : ""}</small>{alert.sellSheetUrl ? <a href={alert.sellSheetUrl} target="_blank" rel="noreferrer">Open sell sheet</a> : <span>No sell sheet uploaded</span>}</div>{alert.sellSheetUrl ? <div className="manager-beer-release-thumb">{alert.sellSheetUrl.toLowerCase().endsWith(".pdf") ? <span>PDF</span> : <img src={alert.sellSheetUrl} alt="" />}</div> : null}<footer><button type="button" onClick={() => setEditingId(alert.id)} disabled={busy}>Edit</button><button type="button" onClick={() => setPublished(alert, !alert.enabled)} disabled={busy}>{alert.enabled ? "Unpublish" : "Publish"}</button><button type="button" onClick={() => remove(alert)} disabled={busy}>Delete</button></footer></div>}</article>; }) : <p>No New Release Alerts saved yet.</p>}<button className="button manager-beer-release-add" type="button" onClick={() => setAdding(true)} disabled={busy}>Add New Release</button></div>
+    {adding ? <div className="manager-release-modal" role="dialog" aria-modal="true" aria-labelledby="new-release-title"><form className="manager-release-modal-card manager-beer-release-form" onSubmit={create}><header><div><p className="eyebrow">New release</p><h3 id="new-release-title">Add New Release Alert</h3></div><button type="button" onClick={() => setAdding(false)} disabled={busy} aria-label="Close new release window">Close</button></header>{fields()}<div className="manager-beer-release-edit-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Create New Release Alert"}</button><button className="button button-outline" type="button" onClick={() => setAdding(false)} disabled={busy}>Cancel</button></div></form></div> : null}
   </section>;
 }
 

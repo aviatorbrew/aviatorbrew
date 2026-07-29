@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       confirmationMessage ? sendMail({ to: email, subject: confirmationMessage.subject, text: confirmationMessage.text, html: confirmationMessage.html }) : Promise.resolve(true),
     ]);
     if (!sent || !confirmationSent) throw new Error("Mail delivery is not configured");
-    return NextResponse.json({ ok: true, message: "Your request has been sent to Aviator keg sales. We will contact you to confirm availability and pickup details." });
+    return NextResponse.json({ ok: true, message: "Your request has been sent to Aviator sales. We will contact you to confirm availability and pickup details." });
   } catch {
     return NextResponse.json({ error: "We could not send your order request right now. Please try again or call Aviator." }, { status: 500 });
   }
