@@ -64,6 +64,10 @@ export async function PATCH(request: NextRequest) {
           fiftyLPriceCents: body.fiftyLPriceCents,
           caseSize: typeof body.caseSize === "string" ? body.caseSize : undefined,
           casePriceCents: body.casePriceCents,
+          case12PriceCents: body.case12PriceCents,
+          case16PriceCents: body.case16PriceCents,
+          case12Count: body.case12Count,
+          case16Count: body.case16Count,
           caseCount: body.caseCount,
           hidden: body.hidden === true,
         })

@@ -1776,3 +1776,7 @@ body {
 .manager-beer-release-preview img { width: 10rem; height: 8rem; object-fit: contain; background: #d9e7ed; }
 .manager-beer-release-preview > span { display: grid; width: 10rem; height: 8rem; place-items: center; background: #d9e7ed; color: #102842; font-weight: 900; text-transform: uppercase; }
 @media (max-width: 760px) { .beer-release-alert-inner, .manager-beer-release-form, .manager-beer-release-preview { grid-template-columns: 1fr; } .beer-release-alert-copy dl { grid-template-columns: 1fr; } .beer-release-sell-sheet { border-top: 1px solid rgba(184, 217, 236, .25); border-left: 0; } .beer-release-sell-sheet img { max-height: 18rem; } .manager-beer-release-preview img, .manager-beer-release-preview > span { width: 100%; } }
+
+.keg-case-lines { display: grid; gap: .35rem; }
+.keg-case-lines span { display: grid; gap: .08rem; }
+.keg-case-lines strong { white-space: nowrap; }

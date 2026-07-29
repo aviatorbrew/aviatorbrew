@@ -14,6 +14,8 @@ export type KegInventoryItem = {
   casePriceCents?: number;
   case12PriceCents?: number;
   case16PriceCents?: number;
+  case12Count?: number;
+  case16Count?: number;
   caseCount?: number;
   hidden?: boolean;
   sixtelsAvailableViaBackfill?: number;
@@ -178,7 +180,14 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
     const case12PriceCents = firstCents(item, ["case12PriceCents", "12oz Case Price", "12 oz Case Price", "12oz Price", "12 oz Price"]);
     const case16PriceCents = firstCents(item, ["case16PriceCents", "16oz Case Price", "16 oz Case Price", "16oz Price", "16 oz Price"]);
     const casePriceCents = firstCents(item, ["casePriceCents", "Case Price"]);
-    const caseSize = text(field(item, ["caseSize", "Case Size"]), 24) || (case12PriceCents ? "12oz" : case16PriceCents ? "16oz" : casePriceCents ? "Case" : "");
+    const rawCaseCount = count(field(item, ["caseCount", "Cases", "Case Count"]));
+    const importedCaseSize = text(field(item, ["caseSize", "Case Size"]), 24);
+    const importedCase12Count = firstCount(item, ["case12Count", "12oz Cases", "12 oz Cases", "12oz Case Count", "12 oz Case Count", "12oz Cases Available", "12 oz Cases Available"]);
+    const importedCase16Count = firstCount(item, ["case16Count", "16oz Cases", "16 oz Cases", "16oz Case Count", "16 oz Case Count", "16oz Cases Available", "16 oz Cases Available"]);
+    const case12Count = importedCase12Count ?? (/^12\s*oz$/i.test(importedCaseSize) ? rawCaseCount ?? 0 : 0);
+    const case16Count = importedCase16Count ?? (/^16\s*oz$/i.test(importedCaseSize) ? rawCaseCount ?? 0 : 0);
+    const caseCount = rawCaseCount ?? case12Count + case16Count;
+    const caseSize = importedCaseSize || (case12PriceCents || case12Count ? "12oz" : case16PriceCents || case16Count ? "16oz" : casePriceCents || caseCount ? "Case" : "");
     const sixtelsAvailableViaBackfill = firstCount(item, ["sixtelsAvailableViaBackfill", "sixtelsByBackfill", "sixtelsAvailableByBackfill", "Backfill Sixtels", "Sixtels Available By Backfill", "sixtels available by backfill"]) ?? 0;
     return {
       category,
@@ -193,7 +202,9 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
       ...(casePriceCents === undefined ? case12PriceCents === undefined ? case16PriceCents === undefined ? {} : { casePriceCents: case16PriceCents } : { casePriceCents: case12PriceCents } : { casePriceCents }),
       ...(case12PriceCents === undefined ? {} : { case12PriceCents }),
       ...(case16PriceCents === undefined ? {} : { case16PriceCents }),
-      caseCount: count(field(item, ["caseCount", "Cases", "Case Count"])) ?? 0,
+      case12Count,
+      case16Count,
+      caseCount,
       ...(item?.hidden === true ? { hidden: true } : {}),
       sixtelsAvailableViaBackfill,
     } satisfies KegInventoryItem;
@@ -238,7 +249,7 @@ export async function getUploadedKegInventory(options: { includeHidden?: boolean
   catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") return null; }
   try {
     const inventory = normalizeKegInventory(parsed);
-    const items = options.includeHidden ? inventory.items : inventory.items.filter((item) => item.hidden !== true && (item.sixthBblKegs > 0 || item.fiftyLKegs > 0 || (item.caseCount || 0) > 0));
+    const items = options.includeHidden ? inventory.items : inventory.items.filter((item) => item.hidden !== true && (item.sixthBblKegs > 0 || item.fiftyLKegs > 0 || (item.case12Count || 0) > 0 || (item.case16Count || 0) > 0 || (item.caseCount || 0) > 0));
     return { ...inventory, items };
   } catch { return null; }
 }
@@ -277,6 +288,10 @@ export type KegInventoryPatch = {
   fiftyLPriceCents?: unknown;
   caseSize?: string;
   casePriceCents?: unknown;
+  case12PriceCents?: unknown;
+  case16PriceCents?: unknown;
+  case12Count?: unknown;
+  case16Count?: unknown;
   caseCount?: unknown;
   hidden?: boolean;
 };
@@ -318,6 +333,9 @@ export async function updateKegItem(patch: KegInventoryPatch) {
   const sixthBblKegs = count(patch.sixthBblKegs) ?? target.sixthBblKegs;
   const fiftyLKegs = count(patch.fiftyLKegs) ?? target.fiftyLKegs;
   const totalBblValue = typeof patch.totalBbl === "number" || typeof patch.totalBbl === "string" ? patch.totalBbl : target.totalBbl;
+  const case12Count = count(patch.case12Count) ?? target.case12Count ?? 0;
+  const case16Count = count(patch.case16Count) ?? target.case16Count ?? 0;
+  const caseCount = count(patch.caseCount) ?? case12Count + case16Count;
   const updated: KegInventoryItem = {
     ...target,
     beerName: nextBeerName,
@@ -330,9 +348,11 @@ export async function updateKegItem(patch: KegInventoryPatch) {
     ...(cents(patch.fiftyLPriceCents) === undefined ? { fiftyLPriceCents: undefined } : { fiftyLPriceCents: cents(patch.fiftyLPriceCents) }),
     caseSize: text(patch.caseSize, 24) || undefined,
     ...(cents(patch.casePriceCents) === undefined ? { casePriceCents: undefined } : { casePriceCents: cents(patch.casePriceCents) }),
-    case12PriceCents: target.case12PriceCents,
-    case16PriceCents: target.case16PriceCents,
-    caseCount: count(patch.caseCount) ?? 0,
+    ...(cents(patch.case12PriceCents) === undefined ? { case12PriceCents: target.case12PriceCents } : { case12PriceCents: cents(patch.case12PriceCents) }),
+    ...(cents(patch.case16PriceCents) === undefined ? { case16PriceCents: target.case16PriceCents } : { case16PriceCents: cents(patch.case16PriceCents) }),
+    case12Count,
+    case16Count,
+    caseCount,
     hidden: patch.hidden === true ? true : undefined,
   };
   const inventory = { ...current, items: current.items.map((item) => identityKey(item.beerName) === targetKey ? updated : item), uploadedAt: new Date().toISOString() };
