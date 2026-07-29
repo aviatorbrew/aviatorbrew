@@ -13,22 +13,22 @@
     "pack:sites": "npm run build:sites && tar -czf /tmp/aviatorbrew-sites-opennext-final.tar.gz .openai/hosting.json wrangler.jsonc .open-next"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
     "next": "^15.5.0",
     "nodemailer": "^9.0.3",
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.8.0"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.2",
-    "@tailwindcss/postcss": "^4.1.0",
-    "@types/node": "^22.0.0",
-    "@types/nodemailer": "^8.0.1",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "tailwindcss": "^4.1.0",
-    "typescript": "^5.8.0",
     "wrangler": "^4.114.0"
   }
 }
