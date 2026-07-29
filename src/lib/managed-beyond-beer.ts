@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { beyondBeer, type BeyondBeer } from "@/data/site";
+import { normalizeBeverageImageUrl } from "@/lib/beverage-images";
 
 export type ManagedBeyondBeer = BeyondBeer & { id: string; createdAt: string };
 export type PortalBeyondBeer = ManagedBeyondBeer & { source: "catalog" | "managed" };
@@ -26,18 +27,22 @@ async function readOverrides(): Promise<BeyondBeer[]> {
   const stored = await readJson<unknown>(overridesFile(), []);
   return Array.isArray(stored) ? stored.filter((item): item is BeyondBeer => Boolean(item && typeof item === "object" && typeof (item as BeyondBeer).slug === "string")) : [];
 }
+function normalizeBeverageImage<T extends BeyondBeer>(item: T): T {
+  return { ...item, image: normalizeBeverageImageUrl(item.image) };
+}
+
 function mergeCatalog(overrides: BeyondBeer[]) {
   const bySlug = new Map(overrides.map((item) => [item.slug, item]));
-  return beyondBeer.map((item) => ({ ...item, ...(bySlug.get(item.slug) || {}) }));
+  return beyondBeer.map((item) => normalizeBeverageImage({ ...item, ...(bySlug.get(item.slug) || {}) }));
 }
 
 export async function getAllBeyondBeer(): Promise<BeyondBeer[]> {
   const [managed, overrides] = await Promise.all([readManaged(), readOverrides()]);
-  return [...mergeCatalog(overrides), ...managed];
+  return [...mergeCatalog(overrides), ...managed.map(normalizeBeverageImage)];
 }
 export async function getPortalBeyondBeer(): Promise<PortalBeyondBeer[]> {
   const [managed, overrides] = await Promise.all([readManaged(), readOverrides()]);
-  return [...mergeCatalog(overrides).map((item) => ({ ...item, id: "catalog_" + item.slug, createdAt: "", source: "catalog" as const })), ...managed.map((item) => ({ ...item, source: "managed" as const }))];
+  return [...mergeCatalog(overrides).map((item) => ({ ...item, id: "catalog_" + item.slug, createdAt: "", source: "catalog" as const })), ...managed.map((item) => ({ ...normalizeBeverageImage(item), source: "managed" as const }))];
 }
 export async function getPortalBeyondBeerItem(id: string) { return (await getPortalBeyondBeer()).find((item) => item.id === id) || null; }
 
