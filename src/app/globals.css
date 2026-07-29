@@ -594,6 +594,11 @@ body {
 .special-events-section .managed-event-card:nth-child(2n) { background: #123650; }
 .special-events-section .managed-event-media { width: 100%; min-height: 0; overflow: hidden; background: #08243a; border: 0; border-right: 1px solid rgba(181,216,235,.24); }
 .special-events-section .managed-event-media img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: cover; }
+.managed-event-gallery { display: grid; width: 100%; height: 100%; min-height: 100%; }
+.managed-event-gallery.has-multiple { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(4.5rem, 1fr); gap: 1px; background: rgba(181,216,235,.24); }
+.managed-event-gallery .event-image-trigger { width: 100%; min-height: 0; border: 0; padding: 0; background: #08243a; }
+.managed-event-gallery .event-image-trigger:first-child { grid-column: 1 / -1; min-height: 7rem; }
+.managed-event-gallery .event-image-trigger img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .special-events-section .event-image-trigger { position: relative; display: block; width: 100%; height: 100%; min-height: 0; aspect-ratio: 4 / 3; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
 .special-events-section .event-image-trigger img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: cover; }
 .special-events-section .managed-event-image-placeholder { display: grid; width: 100%; min-height: 0; aspect-ratio: 4 / 3; place-items: center; color: #b6d0df; font-family: "Courier New", monospace; font-size: .62rem; text-transform: uppercase; }
@@ -620,6 +625,13 @@ body {
 
 .managed-event-card .event-content { background: linear-gradient(100deg, #173d5b, #11314d); }
 .managed-event-copy { overflow-wrap: anywhere; white-space: pre-wrap; }
+.events-page-media-section { background: #082238; }
+.events-page-media-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; border: 1px solid rgba(184, 217, 236, .28); background: rgba(184, 217, 236, .28); }
+.events-page-media-grid figure { position: relative; min-width: 0; margin: 0; aspect-ratio: 1.2; overflow: hidden; background: #102f49; }
+.events-page-media-grid figure:first-child { grid-column: span 2; grid-row: span 2; }
+.events-page-media-grid img, .events-page-media-grid video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.events-page-media-grid figcaption { position: absolute; left: .7rem; bottom: .7rem; padding: .32rem .45rem; background: rgba(6, 24, 38, .82); color: #f0bd62; font-family: "Courier New", monospace; font-size: .58rem; font-weight: 900; text-transform: uppercase; }
+@media (max-width: 800px) { .events-page-media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .events-page-media-grid figure:first-child { grid-column: span 2; grid-row: span 1; } }
 .manager-events { background: #0c2b45; }
 .manager-event-form { display: grid; grid-template-columns: 2fr repeat(3, minmax(7rem, 1fr)); gap: .85rem; margin-top: 1.4rem; padding: 1.25rem; border: 1px solid rgba(184, 217, 236, .28); background: #113650; }
 .manager-event-form label { display: grid; gap: .35rem; color: #d9e8ef; font-size: .76rem; font-weight: 800; }
@@ -632,7 +644,7 @@ body {
 .manager-event-form > .button { align-self: end; width: fit-content; }
 .manager-events-list { display: grid; gap: .7rem; }
 .manager-events-list article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem 1.5rem; padding: 1rem; border: 1px solid rgba(184, 217, 236, .23); background: #10334e; }
-.manager-events-list article > div { display: grid; gap: .3rem; }.manager-event-content { display: grid !important; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); gap: .8rem 1rem !important; }.manager-event-content > img, .manager-event-image-placeholder { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #24465e; color: #a9c3d1; display: grid; place-items: center; font-family: "Courier New", monospace; font-size: .65rem; text-transform: uppercase; }.manager-event-meta { min-width: 0; display: grid; align-content: start; gap: .3rem; }.manager-event-description { grid-column: 1 / -1; margin: .2rem 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.manager-events-list article > div { display: grid; gap: .3rem; }.manager-event-content { display: grid !important; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); gap: .8rem 1rem !important; }.manager-event-content > img, .manager-event-image-placeholder, .manager-event-thumb-strip { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #24465e; color: #a9c3d1; display: grid; place-items: center; font-family: "Courier New", monospace; font-size: .65rem; text-transform: uppercase; }.manager-event-thumb-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden; padding: 0; }.manager-event-thumb-strip img { width: 100%; height: 100%; object-fit: cover; min-width: 0; }.manager-event-thumb-strip img.is-lead { grid-column: span 2; }.manager-event-thumb-strip span { display: grid; width: 100%; height: 100%; place-items: center; background: #102f49; color: #efb45f; font-weight: 900; }.manager-event-current-photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; padding: .8rem; border: 1px solid #315a78; background: #0a2941; }.manager-event-current-photos > .eyebrow { grid-column: 1 / -1; }.manager-event-current-photos label { gap: .35rem; min-width: 0; }.manager-event-current-photos img { width: 100%; aspect-ratio: 1.25; object-fit: cover; background: #24465e; }.manager-event-current-photos span, .manager-event-current-photos small { color: #c8dce6; font-size: .68rem; }.manager-event-current-photos input { width: auto; min-height: auto; margin-right: .25rem; }.manager-event-meta { min-width: 0; display: grid; align-content: start; gap: .3rem; }.manager-event-description { grid-column: 1 / -1; margin: .2rem 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .manager-events-list .eyebrow { margin: 0; font-size: .6rem; }
 .manager-events-list h3 { margin: 0; color: #f0f7fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.35rem; font-weight: 400; letter-spacing: .02em; text-transform: uppercase; }
 .manager-events-list p:not(.eyebrow), .manager-events-list small { margin: 0; color: #bfd4df; line-height: 1.5; }
@@ -640,7 +652,7 @@ body {
 .manager-events-list button { border: 1px solid #4b7894; background: #0b263d; color: #f0b45e; padding: .55rem .7rem; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 900; }
 .manager-events-list button:last-child { color: #f0c2b5; }
 @media (max-width: 850px) { .manager-event-form { grid-template-columns: 1fr 1fr; } .manager-event-form .manager-event-publish { grid-column: 1 / -1; } }
-@media (max-width: 600px) { .manager-event-form { grid-template-columns: 1fr; } .manager-event-form .manager-event-publish { grid-column: 1; } .manager-events-list article { grid-template-columns: 1fr; }.manager-event-content { grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); } .manager-events-list footer { width: 100%; } }
+@media (max-width: 600px) { .manager-event-form { grid-template-columns: 1fr; } .manager-event-form .manager-event-publish { grid-column: 1; } .manager-events-list article { grid-template-columns: 1fr; }.manager-event-content { grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); } .manager-event-current-photos { grid-template-columns: repeat(2, minmax(0, 1fr)); } .manager-events-list footer { width: 100%; } }
 
 /* Manager portal navigation and beer catalog */
 .manager-section-nav { position: sticky; top: .75rem; z-index: 8; display: flex; flex-wrap: wrap; gap: 1px; margin: 1.5rem 0; border: 1px solid #46799a; background: #46799a; box-shadow: 6px 6px 0 rgba(3, 19, 33, .24); }

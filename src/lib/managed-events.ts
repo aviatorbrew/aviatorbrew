@@ -21,6 +21,7 @@ export type ManagedEvent = {
   description: string;
   ticketUrl: string;
   imageUrl?: string;
+  galleryImages?: string[];
   published: boolean;
   recurrence?: ManagedRecurrence;
   createdAt: string;
@@ -35,6 +36,8 @@ export type ManagedEventInput = Omit<ManagedEvent, "id" | "createdAt" | "updated
   recurrenceOrdinal?: string | number;
   recurrenceEndDate?: string;
   imageUrl?: string;
+  galleryImages?: string[];
+  removeGalleryImages?: string[];
 };
 
 const file = () => process.env.MANAGED_EVENTS_DATA_FILE || path.join(process.cwd(), "data", "managed-events.json");
@@ -50,6 +53,7 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   const description = clean(input.description, 1200);
   const ticketUrl = clean(input.ticketUrl, 500);
   const imageUrl = clean(input.imageUrl, 500);
+  const galleryImages = Array.isArray(input.galleryImages) ? input.galleryImages.map((item) => clean(item, 500)).filter(Boolean).slice(0, 12) : [];
   if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime) || !location || !description) throw new Error("Add an event title, date, start time, location, and description.");
   if (endTime && !/^\d{2}:\d{2}$/.test(endTime)) throw new Error("Use a valid end time.");
   if (ticketUrl && !/^https?:\/\//i.test(ticketUrl)) throw new Error("Ticket link must begin with http:// or https://.");
@@ -64,7 +68,7 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   if (endDate && endDate.length !== 10) throw new Error("Use a valid recurrence end date.");
   if (frequency === "monthly-weekday" && (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 || ![1, 2, 3, 4, 5, -1].includes(ordinal))) throw new Error("Choose a weekday and occurrence for monthly recurrence.");
   const recurrence = frequency === "none" ? undefined : { frequency, interval, ...(frequency === "monthly-weekday" ? { weekday, ordinal } : {}), ...(endDate ? { endDate } : {}) };
-  return { title, date, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), published: input.published === true, ...(recurrence ? { recurrence } : {}) };
+  return { title, date, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), ...(galleryImages.length ? { galleryImages } : {}), published: input.published === true, ...(recurrence ? { recurrence } : {}) };
 }
 
 async function readAll(): Promise<ManagedEvent[]> {
@@ -86,6 +90,15 @@ async function save(events: ManagedEvent[]) {
 }
 
 function sorted(events: ManagedEvent[]) { return [...events].sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime)); }
+
+function uniqueImages(images: string[]) {
+  return [...new Set(images.map((image) => clean(image, 500)).filter(Boolean))].slice(0, 12);
+}
+
+function normalizeEventImages(event: ManagedEvent) {
+  const galleryImages = uniqueImages([...(event.imageUrl ? [event.imageUrl] : []), ...(event.galleryImages || [])]);
+  return { ...event, imageUrl: event.imageUrl || galleryImages[0], ...(galleryImages.length ? { galleryImages } : { galleryImages: undefined }) };
+}
 
 function easternDate(value = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value);
@@ -129,7 +142,7 @@ function expandEvent(event: ManagedEvent, through: string) {
   return results;
 }
 
-export async function getManagedEvents() { return sorted(await readAll()); }
+export async function getManagedEvents() { return sorted((await readAll()).map(normalizeEventImages)); }
 export async function getPublishedEvents(options: { monthsAhead?: number } = {}) {
   const today = easternDate();
   const through = addMonths(today, typeof options.monthsAhead === "number" ? options.monthsAhead : 12);
@@ -140,7 +153,9 @@ export async function getPublishedEvents(options: { monthsAhead?: number } = {})
 }
 
 export async function createManagedEvent(input: Partial<ManagedEventInput>) {
-  const event = { ...validate(input), id: "event_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } satisfies ManagedEvent;
+  const validated = validate(input);
+  const galleryImages = uniqueImages([...(validated.imageUrl ? [validated.imageUrl] : []), ...(validated.galleryImages || [])]);
+  const event = { ...validated, imageUrl: validated.imageUrl || galleryImages[0], ...(galleryImages.length ? { galleryImages } : {}), id: "event_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } satisfies ManagedEvent;
   const events = await readAll();
   events.push(event);
   await save(events);
@@ -151,7 +166,13 @@ export async function updateManagedEvent(id: string, input: Partial<ManagedEvent
   const events = await readAll();
   const index = events.findIndex((event) => event.id === id);
   if (index < 0) throw new Error("Event not found.");
-  const event = { ...events[index], ...validate({ ...events[index], ...input }), updatedAt: new Date().toISOString() } satisfies ManagedEvent;
+  const existing = normalizeEventImages(events[index]);
+  const removeImages = new Set(Array.isArray(input.removeGalleryImages) ? input.removeGalleryImages.map((image) => clean(image, 500)).filter(Boolean) : []);
+  const appendedImages = Array.isArray(input.galleryImages) ? input.galleryImages.map((image) => clean(image, 500)).filter(Boolean) : [];
+  const mergedGallery = uniqueImages([...(existing.galleryImages || []), ...appendedImages]).filter((image) => !removeImages.has(image));
+  const nextImageUrl = removeImages.has(existing.imageUrl || "") ? mergedGallery[0] : existing.imageUrl || mergedGallery[0];
+  const validated = validate({ ...existing, ...input, imageUrl: nextImageUrl, galleryImages: mergedGallery });
+  const event = { ...existing, ...validated, imageUrl: validated.imageUrl, galleryImages: validated.galleryImages, updatedAt: new Date().toISOString() } satisfies ManagedEvent;
   events[index] = event;
   await save(events);
   return event;

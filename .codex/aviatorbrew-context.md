@@ -43,6 +43,7 @@ Last updated: 2026-07-29
 - Otherwise, if BEER_OVERRIDES_DATA_FILE is set, website photos are stored next to that file in website-photos.
 - Otherwise, local fallback is public/media.
 - Amphitheater photo target slug: aviator-amphitheater
+- Events page media target slug: events. This powers the public /events photo/video area and is uploaded from the manager Events section.
 
 ## Security
 - Do not store plaintext passwords, Stripe secret keys, SMTP passwords, or private SSH credentials in this context file.

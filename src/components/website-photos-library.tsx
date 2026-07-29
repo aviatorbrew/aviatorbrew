@@ -92,8 +92,10 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
     ? "Upload brewery-only photos for the public Brewery page. Choose Set featured to make one photo the large lead image in the brewery gallery."
     : location?.slug === "private-events"
       ? "Upload Ready Room private event photos for the public Private Events page. Choose Set featured to make one photo the large lead image in the room gallery."
-      : location
-        ? "Upload approved photos, then choose the image that should lead this page. Every image remains available in the gallery."
+      : location?.slug === "events"
+        ? "Upload photos and short videos of friends, events, and Aviator nights for the public Events page gallery."
+        : location
+          ? "Upload approved photos, then choose the image that should lead this page. Every image remains available in the gallery."
         : "Upload approved campaign, campus, and other general website imagery.";
 
   const request = useCallback((init: RequestInit = {}) => fetch("/api/website-photos" + query, {
@@ -123,7 +125,7 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
         if (!response.ok) throw new Error(await readError(response, "Image upload failed."));
       }
       await load();
-      setMessage(location ? "Photo uploaded. Choose Set featured to make it the lead image." : "Website photo uploaded.");
+      setMessage(location?.slug === "events" ? "Event page media uploaded." : location ? "Photo uploaded. Choose Set featured to make it the lead image." : "Website photo uploaded.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Image upload failed."); }
     finally { setBusy(false); }
   }
@@ -161,7 +163,7 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
   }
 
   return <section className="website-photo-library">
-    <div className="website-photo-heading"><div><p className="eyebrow">{location?.slug === "brewery" ? "Brewery-only imagery" : location?.slug === "private-events" ? "Private event room imagery" : "Website imagery"}</p><h2>{title}</h2><p>{description}</p></div></div>
+    <div className="website-photo-heading"><div><p className="eyebrow">{location?.slug === "brewery" ? "Brewery-only imagery" : location?.slug === "private-events" ? "Private event room imagery" : location?.slug === "events" ? "Events page media" : "Website imagery"}</p><h2>{title}</h2><p>{description}</p></div></div>
     {message && <p className="media-message" role="status">{message}</p>}
     <div className="website-photo-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(event.dataTransfer.files); }}>
       <input id={"website-photo-upload-" + (location?.slug || "general")} type="file" accept=".png,.jpg,.jpeg,.webp,.mp4,.webm,.mov,.m4v,image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" multiple onChange={(event) => { if (event.currentTarget.files) upload(event.currentTarget.files); }} />

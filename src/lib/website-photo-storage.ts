@@ -17,7 +17,7 @@ export type StoredWebsitePhoto = {
 const locationSlugs = new Set(locations.map((location) => location.slug));
 
 export function validPhotoTarget(target: string) {
-  return target === "general" || target === "brewery" || target === "private-events" || locationSlugs.has(target);
+  return target === "general" || target === "brewery" || target === "private-events" || target === "events" || locationSlugs.has(target);
 }
 
 export function websitePhotoRoot() {
@@ -33,6 +33,7 @@ export function photoDirectory(target: string) {
   if (target === "general") return path.join(root, "website-photos");
   if (target === "brewery") return path.join(root, "brewery-photos");
   if (target === "private-events") return path.join(root, "private-event-photos");
+  if (target === "events") return path.join(root, "event-page-media");
   return path.join(root, "location-photos", target);
 }
 
@@ -41,6 +42,7 @@ export function legacyPhotoDirectory(target: string) {
   if (target === "general") return path.join(root, "website-photos");
   if (target === "brewery") return path.join(root, "brewery-photos");
   if (target === "private-events") return path.join(root, "private-event-photos");
+  if (target === "events") return path.join(root, "event-page-media");
   return path.join(root, "location-photos", target);
 }
 

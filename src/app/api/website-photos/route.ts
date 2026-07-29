@@ -56,7 +56,7 @@ function bundledPhotos(targetName: string) {
       mediaType: "image" as const,
     }));
   }
-  if (targetName === "private-events") return [];
+  if (targetName === "private-events" || targetName === "events") return [];
   return (locationPhotoManifest[targetName] || []).map((name) => ({
     name,
     size: 0,
@@ -73,7 +73,7 @@ function bundledPhotoPaths(targetName: string, fileName: string) {
     path.join(process.cwd(), "public", "images", "website-photos", fileName),
     path.join(process.cwd(), "public", "media", "website-photos", fileName),
   ];
-  if (targetName === "private-events") return [];
+  if (targetName === "private-events" || targetName === "events") return [];
   return [
     path.join(process.cwd(), "public", "images", "location-photos", targetName, fileName),
     path.join(process.cwd(), "public", "media", "location-photos", targetName, fileName),
@@ -85,6 +85,7 @@ function refreshTarget(targetName: string) {
   revalidatePath("/order-food");
   if (targetName === "brewery") revalidatePath("/brewery");
   else if (targetName === "private-events") revalidatePath("/private-events");
+  else if (targetName === "events") revalidatePath("/events");
   else if (targetName !== "general") {
     revalidatePath("/locations");
     revalidatePath("/locations/" + targetName);
@@ -119,9 +120,10 @@ export async function GET(request: NextRequest) {
   const files = [...uploads, ...bundledPhotos(targetName).filter((photo) => !uploadedNames.has(photo.name) && !hiddenNames.has(photo.name))]
     .sort((a, b) => b.name.localeCompare(a.name) || b.updatedAt.localeCompare(a.updatedAt));
   const selected = featured[targetName];
-  const active = selected && files.some((photo) => photo.name === selected.name && photo.source === selected.source)
+  const firstImage = files.find((photo) => photo.mediaType === "image");
+  const active = selected && files.some((photo) => photo.name === selected.name && photo.source === selected.source && photo.mediaType === "image")
     ? selected
-    : files[0] ? { name: files[0].name, source: files[0].source } : null;
+    : firstImage ? { name: firstImage.name, source: firstImage.source } : null;
   return NextResponse.json({
     files: files.map((photo) => ({ ...photo, featured: Boolean(active && active.name === photo.name && active.source === photo.source) })),
   }, { headers: noStore });
