@@ -1,7 +1,7 @@
 import { locationPhotoManifest } from "@/data/location-photo-manifest";
-import { getFeaturedPhotos, getHiddenPhotos, listUploadedPhotos, type PhotoSource } from "@/lib/website-photo-storage";
+import { getFeaturedPhotos, getHiddenPhotos, listUploadedPhotos, type PhotoSource, type WebsiteMediaType } from "@/lib/website-photo-storage";
 
-export type LocationPhoto = { name: string; url: string; updatedAt: string; source: PhotoSource };
+export type LocationPhoto = { name: string; url: string; updatedAt: string; source: PhotoSource; mediaType: WebsiteMediaType };
 
 function manifestPhotos(slug: string): LocationPhoto[] {
   return (locationPhotoManifest[slug] || []).map((name) => ({
@@ -9,6 +9,7 @@ function manifestPhotos(slug: string): LocationPhoto[] {
     updatedAt: "",
     url: "/images/location-photos/" + slug + "/" + encodeURIComponent(name),
     source: "bundled",
+    mediaType: "image",
   }));
 }
 
@@ -24,8 +25,8 @@ export async function getLocationPhotos(slug: string): Promise<LocationPhoto[]> 
 export async function getLocationHero(slug: string, fallback: string) {
   const [photos, featured, hidden] = await Promise.all([getLocationPhotos(slug), getFeaturedPhotos(), getHiddenPhotos()]);
   const selected = featured[slug];
-  const photo = selected ? photos.find((item) => item.name === selected.name && item.source === selected.source) : photos[0];
+  const photo = selected ? photos.find((item) => item.name === selected.name && item.source === selected.source && item.mediaType === "image") : photos.find((item) => item.mediaType === "image");
   const fallbackName = decodeURIComponent(fallback.split("/").pop() || "");
   const fallbackHidden = fallbackName ? (hidden[slug] || []).includes(fallbackName) : false;
-  return photo?.url || photos[0]?.url || (fallbackHidden ? "/images/hero-campus.jpg" : fallback);
+  return photo?.url || photos.find((item) => item.mediaType === "image")?.url || (fallbackHidden ? "/images/hero-campus.jpg" : fallback);
 }

@@ -14,6 +14,7 @@ import {
   photoDirectory,
   setFeaturedPhoto,
   validPhotoTarget,
+  websiteMediaType,
   websitePhotoUrl,
   type PhotoSource,
 } from "@/lib/website-photo-storage";
@@ -22,8 +23,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const allowedExtensions = new Set([".png", ".jpg", ".jpeg", ".webp"]);
-const maxBytes = 25 * 1024 * 1024;
+const allowedImageExtensions = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+const allowedVideoExtensions = new Set([".mp4", ".webm", ".mov", ".m4v"]);
+const maxImageBytes = 25 * 1024 * 1024;
+const maxVideoBytes = 60 * 1024 * 1024;
 const noStore = { "Cache-Control": "private, no-store, max-age=0, must-revalidate" };
 
 function authorized(request: NextRequest) { return canManageMedia(request); }
@@ -50,6 +53,7 @@ function bundledPhotos(targetName: string) {
       updatedAt: "",
       url: "/images/website-photos/" + encodeURIComponent(name),
       source: "bundled" as const,
+      mediaType: "image" as const,
     }));
   }
   if (targetName === "private-events") return [];
@@ -59,6 +63,7 @@ function bundledPhotos(targetName: string) {
     updatedAt: "",
     url: "/images/location-photos/" + targetName + "/" + encodeURIComponent(name),
     source: "bundled" as const,
+    mediaType: "image" as const,
   }));
 }
 
@@ -87,7 +92,7 @@ function refreshTarget(targetName: string) {
 }
 
 async function featuredSelectionExists(targetName: string, fileName: string, source: PhotoSource) {
-  if (source === "uploaded") return (await listUploadedPhotos(targetName)).some((photo) => photo.name === fileName);
+  if (source === "uploaded") return (await listUploadedPhotos(targetName)).some((photo) => photo.name === fileName && photo.mediaType === "image");
   const hidden = await getHiddenPhotos();
   return !(hidden[targetName] || []).includes(fileName) && bundledPhotos(targetName).some((photo) => photo.name === fileName);
 }
@@ -130,11 +135,14 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const upload = formData.get("file");
     if (!(upload instanceof File)) return NextResponse.json({ error: "Choose an image to upload." }, { status: 400, headers: noStore });
-    if (upload.size > maxBytes) return NextResponse.json({ error: "Images must be 25 MB or smaller." }, { status: 413, headers: noStore });
     const fileName = safeFileName(upload.name);
-    if (!fileName || !allowedExtensions.has(path.extname(fileName).toLowerCase())) {
-      return NextResponse.json({ error: "Use a PNG, JPG, or WEBP image." }, { status: 415, headers: noStore });
+    const extension = path.extname(fileName).toLowerCase();
+    const mediaType = websiteMediaType(fileName);
+    if (!fileName || !mediaType || (!allowedImageExtensions.has(extension) && !allowedVideoExtensions.has(extension))) {
+      return NextResponse.json({ error: "Use a PNG, JPG, WEBP, MP4, WEBM, MOV, or M4V file." }, { status: 415, headers: noStore });
     }
+    if (mediaType === "image" && upload.size > maxImageBytes) return NextResponse.json({ error: "Images must be 25 MB or smaller." }, { status: 413, headers: noStore });
+    if (mediaType === "video" && upload.size > maxVideoBytes) return NextResponse.json({ error: "Short videos must be 60 MB or smaller." }, { status: 413, headers: noStore });
     const directory = photoDirectory(targetName);
     await fs.mkdir(directory, { recursive: true });
     const savedName = Date.now() + "-" + fileName;
@@ -145,10 +153,11 @@ export async function POST(request: NextRequest) {
       size: upload.size,
       url: websitePhotoUrl(targetName, savedName),
       source: "uploaded",
+      mediaType,
     }, { status: 201, headers: noStore });
   } catch (error) {
     console.error("Website photo upload failed", error);
-    return NextResponse.json({ error: "Photo upload failed. Try a smaller JPG, PNG, or WEBP image." }, { status: 500, headers: noStore });
+    return NextResponse.json({ error: "Media upload failed. Try a smaller JPG, PNG, WEBP, MP4, WEBM, MOV, or M4V file." }, { status: 500, headers: noStore });
   }
 }
 
@@ -165,7 +174,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Choose a valid featured photo." }, { status: 400, headers: noStore });
   }
   const exists = source === "uploaded"
-    ? (await listUploadedPhotos(targetName)).some((photo) => photo.name === file)
+    ? (await listUploadedPhotos(targetName)).some((photo) => photo.name === file && photo.mediaType === "image")
     : bundledPhotos(targetName).some((photo) => photo.name === file) && !((await getHiddenPhotos())[targetName] || []).includes(file);
   if (!exists) return NextResponse.json({ error: "Photo not found." }, { status: 404, headers: noStore });
   await setFeaturedPhoto(targetName, { name: file, source });

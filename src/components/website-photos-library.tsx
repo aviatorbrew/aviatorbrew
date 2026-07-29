@@ -9,6 +9,7 @@ type WebsitePhoto = {
   url: string;
   source: "uploaded" | "bundled";
   featured: boolean;
+  mediaType?: "image" | "video";
 };
 type LocationTarget = { slug: string; name: string };
 
@@ -17,10 +18,12 @@ function readableSize(photo: WebsitePhoto) {
   return photo.size < 1024 * 1024 ? Math.max(1, Math.round(photo.size / 1024)) + " KB" : (photo.size / 1024 / 1024).toFixed(1) + " MB";
 }
 
-const maxUploadBytes = 25 * 1024 * 1024;
+const maxImageUploadBytes = 25 * 1024 * 1024;
+const maxVideoUploadBytes = 60 * 1024 * 1024;
 const compressAboveBytes = 8 * 1024 * 1024;
 const maxImageEdge = 2400;
-const uploadExtensions = new Set(["png", "jpg", "jpeg", "webp"]);
+const imageExtensions = new Set(["png", "jpg", "jpeg", "webp"]);
+const videoExtensions = new Set(["mp4", "webm", "mov", "m4v"]);
 
 function fileExtension(file: File) {
   return file.name.split(".").pop()?.toLowerCase() || "";
@@ -47,7 +50,11 @@ function canvasBlob(canvas: HTMLCanvasElement) {
 
 async function preparePhotoUpload(file: File) {
   const extension = fileExtension(file);
-  if (!uploadExtensions.has(extension)) throw new Error("Use a PNG, JPG, or WEBP image.");
+  if (videoExtensions.has(extension)) {
+    if (file.size > maxVideoUploadBytes) throw new Error("Short videos must be 60 MB or smaller.");
+    return file;
+  }
+  if (!imageExtensions.has(extension)) throw new Error("Use a PNG, JPG, WEBP, MP4, WEBM, MOV, or M4V file.");
   if (file.size <= compressAboveBytes) return file;
 
   const objectUrl = URL.createObjectURL(file);
@@ -66,12 +73,12 @@ async function preparePhotoUpload(file: File) {
     const blob = await canvasBlob(canvas);
     if (blob && blob.size < file.size) return new File([blob], compressedName(file), { type: "image/jpeg" });
   } catch {
-    if (file.size > maxUploadBytes) throw new Error("This image is too large to upload. Export it as a JPG under 25 MB and try again.");
+    if (file.size > maxImageUploadBytes) throw new Error("This image is too large to upload. Export it as a JPG under 25 MB and try again.");
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
 
-  if (file.size > maxUploadBytes) throw new Error("Images must be 25 MB or smaller.");
+  if (file.size > maxImageUploadBytes) throw new Error("Images must be 25 MB or smaller.");
   return file;
 }
 
@@ -157,13 +164,13 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
     <div className="website-photo-heading"><div><p className="eyebrow">{location?.slug === "brewery" ? "Brewery-only imagery" : location?.slug === "private-events" ? "Private event room imagery" : "Website imagery"}</p><h2>{title}</h2><p>{description}</p></div></div>
     {message && <p className="media-message" role="status">{message}</p>}
     <div className="website-photo-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(event.dataTransfer.files); }}>
-      <input id={"website-photo-upload-" + (location?.slug || "general")} type="file" accept=".png,.jpg,.jpeg,.webp" multiple onChange={(event) => { if (event.currentTarget.files) upload(event.currentTarget.files); }} />
+      <input id={"website-photo-upload-" + (location?.slug || "general")} type="file" accept=".png,.jpg,.jpeg,.webp,.mp4,.webm,.mov,.m4v,image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" multiple onChange={(event) => { if (event.currentTarget.files) upload(event.currentTarget.files); }} />
       <label htmlFor={"website-photo-upload-" + (location?.slug || "general")}>{busy ? "Working..." : "Drop photos here or choose files"}</label>
-      <small>PNG, JPG, WEBP - large photos are compressed automatically</small>
+      <small>PNG, JPG, WEBP, MP4, WEBM, MOV, M4V - large photos are compressed automatically; videos max 60 MB</small>
     </div>
     <div className="website-photo-grid">{photos.length ? photos.map((photo) => <article className={"website-photo-card" + (photo.featured ? " is-featured" : "")} key={photo.source + photo.name}>
-      <div className="website-photo-preview"><img src={photo.url} alt={photo.name.replace(/^[0-9]+-/, "")} />{photo.featured ? <strong>Featured</strong> : null}</div>
-      <div><strong>{photo.name.replace(/^[0-9]+-/, "")}</strong><span>{readableSize(photo)}{photo.updatedAt ? " - " + new Date(photo.updatedAt).toLocaleDateString() : ""}</span><div className="website-photo-actions"><a href={photo.url} target="_blank" rel="noreferrer">Open</a>{location && !photo.featured ? <button className="feature-photo-button" type="button" onClick={() => feature(photo)} disabled={busy}>Set featured</button> : null}<button className="remove-photo-button" type="button" onClick={() => remove(photo)} disabled={busy}>Delete</button></div></div>
+      <div className="website-photo-preview">{photo.mediaType === "video" ? <video src={photo.url} controls muted playsInline preload="metadata" /> : <img src={photo.url} alt={photo.name.replace(/^[0-9]+-/, "")} />}{photo.featured ? <strong>Featured</strong> : null}</div>
+      <div><strong>{photo.name.replace(/^[0-9]+-/, "")}</strong><span>{readableSize(photo)}{photo.updatedAt ? " - " + new Date(photo.updatedAt).toLocaleDateString() : ""}</span><div className="website-photo-actions"><a href={photo.url} target="_blank" rel="noreferrer">Open</a>{location && !photo.featured && photo.mediaType !== "video" ? <button className="feature-photo-button" type="button" onClick={() => feature(photo)} disabled={busy}>Set featured</button> : null}{location && photo.mediaType === "video" ? <span className="website-photo-video-note">Gallery video</span> : null}<button className="remove-photo-button" type="button" onClick={() => remove(photo)} disabled={busy}>Delete</button></div></div>
     </article>) : <p className="website-photo-empty">No photos uploaded yet.</p>}</div>
   </section>;
 }

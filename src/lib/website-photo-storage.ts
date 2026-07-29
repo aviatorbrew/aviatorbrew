@@ -3,6 +3,7 @@ import path from "node:path";
 import { locations } from "@/data/site";
 
 export type PhotoSource = "uploaded" | "bundled";
+export type WebsiteMediaType = "image" | "video";
 export type FeaturedPhoto = { source: PhotoSource; name: string };
 export type StoredWebsitePhoto = {
   name: string;
@@ -10,6 +11,7 @@ export type StoredWebsitePhoto = {
   updatedAt: string;
   url: string;
   source: "uploaded";
+  mediaType: WebsiteMediaType;
 };
 
 const locationSlugs = new Set(locations.map((location) => location.slug));
@@ -46,6 +48,13 @@ export function websitePhotoUrl(target: string, filename: string) {
   return "/api/website-photo-files/" + encodeURIComponent(target) + "/" + encodeURIComponent(filename);
 }
 
+export function websiteMediaType(filename: string): WebsiteMediaType | null {
+  const extension = path.extname(filename).toLowerCase();
+  if ([".png", ".jpg", ".jpeg", ".webp"].includes(extension)) return "image";
+  if ([".mp4", ".webm", ".mov", ".m4v"].includes(extension)) return "video";
+  return null;
+}
+
 function hiddenFiles() {
   return [...new Set([
     path.join(websitePhotoRoot(), "hidden-photos.json"),
@@ -78,7 +87,8 @@ export async function listUploadedPhotos(target: string): Promise<StoredWebsiteP
     try {
       const entries = await fs.readdir(directory, { withFileTypes: true });
       await Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => {
-        if (photos.has(entry.name) || hidden.has(entry.name)) return;
+        const mediaType = websiteMediaType(entry.name);
+        if (!mediaType || photos.has(entry.name) || hidden.has(entry.name)) return;
         const stats = await fs.stat(path.join(directory, entry.name));
         photos.set(entry.name, {
           name: entry.name,
@@ -86,6 +96,7 @@ export async function listUploadedPhotos(target: string): Promise<StoredWebsiteP
           updatedAt: stats.mtime.toISOString(),
           url: websitePhotoUrl(target, entry.name),
           source: "uploaded",
+          mediaType,
         });
       }));
     } catch (error) {

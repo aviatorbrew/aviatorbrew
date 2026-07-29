@@ -11,6 +11,10 @@ const contentTypes: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".png": "image/png",
   ".webp": "image/webp",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".m4v": "video/mp4",
 };
 
 export async function GET(_request: Request, { params }: { params: Promise<{ target: string; filename: string }> }) {
@@ -27,6 +31,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tar
       const file = await fs.readFile(path.join(directory, filename));
       return new NextResponse(new Uint8Array(file), {
         headers: {
+          "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=31536000, immutable",
           "Content-Type": contentType,
           "X-Content-Type-Options": "nosniff",

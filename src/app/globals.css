@@ -224,7 +224,7 @@ body {
 /* Location photography and coupon operations */
 .location-gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 2rem; }
 .location-gallery-image { position: relative; min-height: 18rem; overflow: hidden; border: 1px solid rgba(184, 217, 236, .28); background: #0a2740; }
-.location-gallery-image img { object-fit: cover; }
+.location-gallery-image img, .location-gallery-image video { width: 100%; height: 100%; object-fit: cover; } .location-gallery-image video { display: block; }
 .coupon-deck-section { background: #082941; }
 .coupon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 2px solid #366685; background: #366685; }
 .coupon-offer { display: grid; align-content: start; gap: 1rem; min-height: 24rem; padding: 1.5rem; background: linear-gradient(145deg, #103b5b, #08243b); }

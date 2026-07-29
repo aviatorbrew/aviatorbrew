@@ -36,6 +36,7 @@ Last updated: 2026-07-29
 
 ## Media And Data Storage
 - Website photo upload API: /api/website-photos
+- Website media uploads support images plus short videos: PNG, JPG, WEBP, MP4, WEBM, MOV, and M4V. Videos are gallery media only; featured location/brewery/private-event heroes stay image-only.
 - Uploaded photo files are served through /api/website-photo-files/[target]/[filename]
 - Featured/hidden photo selections live under the website photo root.
 - If WEBSITE_PHOTOS_DIRECTORY is set, uploaded photos and feature selections use that directory.

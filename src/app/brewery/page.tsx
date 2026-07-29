@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, MapPin } from "@/components/icons";
 import { BrewingDiagram } from "@/components/brewing-diagram";
-import { getBreweryHero, getBreweryPhotos } from "@/lib/brewery-photos";
+import { getBreweryHero, getBreweryPhotos, type BreweryPhoto } from "@/lib/brewery-photos";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -19,6 +19,12 @@ const processSteps = [
   ["05", "Condition + check", "The beer is given time to settle into balance. The crew checks the batch against its recipe and release goals before it moves forward."],
   ["06", "Package + pour", "Finished beer moves to the format built for its next stop, from brewery-fresh draft pours to packaged releases headed across the Aviator lineup."],
 ];
+
+function BreweryGalleryMedia({ photo, alt, sizes }: { photo: BreweryPhoto; alt: string; sizes: string }) {
+  return photo.mediaType === "video"
+    ? <video src={photo.url} controls muted playsInline preload="metadata" />
+    : <Image src={photo.url} alt={alt} fill unoptimized sizes={sizes} />;
+}
 
 export default async function BreweryPage() {
   const [hero, photos] = await Promise.all([getBreweryHero(), getBreweryPhotos()]);
@@ -59,7 +65,7 @@ export default async function BreweryPage() {
     <section className="section brewery-gallery-band">
       <div className="content-wrap">
         <div className="section-heading"><div><p className="eyebrow">Inside the brewery</p><h2>The working side of <em>Aviator.</em></h2></div><p>Brewery photography is managed by the Aviator team and updated as the campus and production floor evolve.</p></div>
-        <div className="brewery-gallery">{photos.slice(0, 6).map((photo, index) => <figure className={index === 0 ? "is-featured" : ""} key={photo.name}><Image src={photo.url} alt={"Aviator Brewery view " + (index + 1)} fill unoptimized sizes={index === 0 ? "(max-width: 700px) 100vw, 66vw" : "(max-width: 700px) 100vw, 33vw"} />{index === 0 ? <figcaption>Featured brewery photo</figcaption> : null}</figure>)}</div>
+        <div className="brewery-gallery">{photos.slice(0, 6).map((photo, index) => <figure className={index === 0 ? "is-featured" : ""} key={photo.name}><BreweryGalleryMedia photo={photo} alt={"Aviator Brewery view " + (index + 1)} sizes={index === 0 ? "(max-width: 700px) 100vw, 66vw" : "(max-width: 700px) 100vw, 33vw"} />{index === 0 ? <figcaption>Featured brewery photo</figcaption> : null}</figure>)}</div>
       </div>
     </section>
 

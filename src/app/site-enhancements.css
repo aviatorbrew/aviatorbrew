@@ -312,8 +312,14 @@
   grid-column: span 2;
   grid-row: span 2;
 }
-.brewery-gallery img {
+.brewery-gallery img,
+.brewery-gallery video {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+}
+.brewery-gallery video {
+  display: block;
 }
 .brewery-gallery figcaption {
   position: absolute;
@@ -396,12 +402,24 @@
   position: relative;
   padding: 0 !important;
 }
-.website-photo-preview img {
+.website-photo-preview img,
+.website-photo-preview video {
   display: block;
   width: 100%;
   aspect-ratio: 1.25;
   object-fit: cover;
   background: #c4cdbd;
+}
+.website-photo-video-note {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #66806a;
+  padding: .35rem .45rem;
+  color: #294a3c;
+  font-family: "Courier New", monospace;
+  font-size: .6rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 .website-photo-preview > strong {
   position: absolute;
