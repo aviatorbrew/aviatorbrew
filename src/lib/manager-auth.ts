@@ -1,10 +1,11 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest } from "next/server";
+import { managerCredentialSessionSecret } from "@/lib/manager-credentials";
 
 const cookieName = "aviator_manager";
 
 function signature() {
-  const secret = process.env.MANAGER_PORTAL_KEY;
+  const secret = managerCredentialSessionSecret();
   return secret ? createHmac("sha256", secret).update("aviator-manager-session-v1").digest("hex") : "";
 }
 

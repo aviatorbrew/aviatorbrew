@@ -1,4 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
@@ -10,16 +11,42 @@ type ManagerCredentialStore = {
   resetExpiresAt?: string;
 };
 
-const dataFile = () => process.env.MANAGER_AUTH_DATA_FILE || path.join(process.cwd(), "data", "manager-auth.json");
+const bundledDataFile = () => path.join(process.cwd(), "data", "manager-auth.json");
+const dataFile = () => process.env.MANAGER_AUTH_DATA_FILE || bundledDataFile();
+
+function parseStore(value: string): ManagerCredentialStore {
+  const parsed = JSON.parse(value) as ManagerCredentialStore;
+  return parsed && typeof parsed === "object" ? parsed : {};
+}
+
+async function readStoreFile(file: string): Promise<ManagerCredentialStore> {
+  return parseStore(await fs.readFile(file, "utf8"));
+}
 
 async function readStore(): Promise<ManagerCredentialStore> {
+  const primary = dataFile();
   try {
-    const value = JSON.parse(await fs.readFile(dataFile(), "utf8")) as ManagerCredentialStore;
-    return value && typeof value === "object" ? value : {};
+    return await readStoreFile(primary);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
-    throw error;
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    const fallback = bundledDataFile();
+    if (primary === fallback) return {};
+    try {
+      return await readStoreFile(fallback);
+    } catch (fallbackError) {
+      if ((fallbackError as NodeJS.ErrnoException).code === "ENOENT") return {};
+      throw fallbackError;
+    }
   }
+}
+
+function readStoreSync(): ManagerCredentialStore {
+  const files = Array.from(new Set([dataFile(), bundledDataFile()]));
+  for (const file of files) {
+    if (!existsSync(file)) continue;
+    return parseStore(readFileSync(file, "utf8"));
+  }
+  return {};
 }
 
 async function writeStore(value: ManagerCredentialStore) {
@@ -41,6 +68,13 @@ function tokenDigest(token: string) {
 function secureEqual(left: string, right: string) {
   if (!left || !right || left.length !== right.length) return false;
   return timingSafeEqual(Buffer.from(left), Buffer.from(right));
+}
+
+export function managerCredentialSessionSecret() {
+  const configured = process.env.MANAGER_PORTAL_KEY;
+  if (configured) return configured;
+  const store = readStoreSync();
+  return store.passwordHash || "";
 }
 
 export async function verifyManagerPassword(password: string) {
