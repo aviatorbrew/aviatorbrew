@@ -1,9 +1,10 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { locations, type Location } from "@/data/site";
+import { getLocationHero } from "@/lib/location-photos";
 
 export type LocationOverride = Location & { updatedAt: string };
-export type PortalLocation = Location & { id: string; updatedAt: string | null };
+export type PortalLocation = Location & { id: string; updatedAt: string | null; heroImage: string };
 
 const overridesFile = () => process.env.LOCATION_OVERRIDES_DATA_FILE || path.join(process.cwd(), "data", "location-overrides.json");
 const editableSlugs = new Set(locations.map((location) => location.slug));
@@ -43,7 +44,12 @@ export async function getLocation(slug: string): Promise<Location | null> {
 export async function getPortalLocations(): Promise<PortalLocation[]> {
   const overrides = await readOverrides();
   const updatedBySlug = new Map(overrides.map((location) => [location.slug, location.updatedAt]));
-  return mergeLocations(overrides).map((location) => ({ ...location, id: "catalog_" + location.slug, updatedAt: updatedBySlug.get(location.slug) || null }));
+  return Promise.all(mergeLocations(overrides).map(async (location) => ({
+    ...location,
+    id: "catalog_" + location.slug,
+    updatedAt: updatedBySlug.get(location.slug) || null,
+    heroImage: await getLocationHero(location.slug, location.image),
+  })));
 }
 
 export async function updateLocation(slug: string, input: Omit<Location, "slug" | "image"> & { menu?: string; events?: boolean }) {

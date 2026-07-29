@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { Location } from "@/data/site";
 
-type PortalLocation = Location & { id: string; updatedAt: string | null };
+type PortalLocation = Location & { id: string; updatedAt: string | null; heroImage?: string };
 
 function valuesFromForm(form: HTMLFormElement) {
   const values = Object.fromEntries(new FormData(form).entries());
@@ -59,7 +59,7 @@ export function LocationManager() {
     <div className="manager-beer-list">{locations.map((location) => {
       const isEditing = editing?.slug === location.slug;
       return <article className={"manager-beer-row" + (isEditing ? " is-editing" : "")} key={location.slug}>
-        <img src={location.image} alt="" />
+        <img src={location.heroImage || location.image} alt="" />
         {isEditing ? <form className="manager-beer-inline-form" onSubmit={update}>
           <input type="hidden" name="slug" value={location.slug} />
           <label>Location name<input name="name" required maxLength={140} defaultValue={location.name} /></label>
