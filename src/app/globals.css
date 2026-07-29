@@ -1752,7 +1752,7 @@ body {
 
 
 
-.beer-release-alert { padding: clamp(1.1rem, 3vw, 2rem) clamp(1rem, 4vw, 4.5rem); background: #071827; color: #f2f8fb; }
+.beer-release-alert { display: grid; gap: 1rem; padding: clamp(1.1rem, 3vw, 2rem) clamp(1rem, 4vw, 4.5rem); background: #071827; color: #f2f8fb; }
 .beer-release-alert-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(11rem, 18rem); gap: clamp(1rem, 3vw, 2rem); align-items: stretch; width: min(var(--max), 100%); margin: auto; border: 2px solid #4b7fa3; background: linear-gradient(135deg, #0d2d49 0%, #123f61 60%, #0a2136 100%); box-shadow: 9px 9px 0 rgba(4, 17, 30, .25); position: relative; overflow: hidden; }
 .beer-release-alert-inner::before { position: absolute; inset: 0 auto 0 0; width: .55rem; background: repeating-linear-gradient(180deg, #efb45f 0 14px, #102842 14px 24px); content: ""; }
 .beer-release-alert-copy { display: grid; gap: .85rem; align-content: center; padding: clamp(1.2rem, 3vw, 2rem) clamp(1.2rem, 3vw, 2.2rem); padding-left: clamp(1.8rem, 4vw, 2.8rem); }
@@ -1769,6 +1769,9 @@ body {
 .beer-release-sell-sheet small { color: #385b70; font-family: "Courier New", monospace; font-size: .68rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
 .beer-release-sell-sheet:hover { background: #efb45f; }
 .manager-beer-release-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.manager-beer-release-list { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.manager-beer-release-item { padding: 1rem; border: 1px solid #315a78; background: #09253d; }
+.manager-beer-release-item.is-hidden { opacity: .82; }
 .manager-beer-release-form .manager-event-publish, .manager-beer-release-form .manager-event-wide { grid-column: 1 / -1; }
 .manager-beer-release-preview { display: grid; grid-template-columns: minmax(0, 1fr) 10rem; gap: 1rem; align-items: center; margin-top: 1rem; padding: 1rem; border: 1px solid #3f6c89; background: #0a2941; }
 .manager-beer-release-preview h3 { font-size: 1.6rem; }

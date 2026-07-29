@@ -7,8 +7,14 @@ function releaseDateTime(alert: BeerReleaseAlert) {
   return date + " at " + time;
 }
 
-export function BeerReleaseAlertBand({ alert }: { alert: BeerReleaseAlert }) {
-  if (!alert.enabled || !alert.beerName) return null;
+function ReleaseAlertCard({ alert, index }: { alert: BeerReleaseAlert; index: number }) {
   const isPdf = alert.sellSheetUrl.toLowerCase().endsWith(".pdf");
-  return <section className="beer-release-alert" aria-labelledby="beer-release-alert-title"><div className="beer-release-alert-inner"><div className="beer-release-alert-copy"><p className="eyebrow">Alert Beer Release</p><h2 id="beer-release-alert-title">{alert.beerName}</h2><dl><div><dt>Release</dt><dd>{releaseDateTime(alert)}</dd></div>{alert.locations ? <div><dt>Locations</dt><dd>{alert.locations}</dd></div> : null}{alert.specials ? <div><dt>Specials</dt><dd>{alert.specials}</dd></div> : null}</dl></div>{alert.sellSheetUrl ? <a className="beer-release-sell-sheet" href={alert.sellSheetUrl} target="_blank" rel="noreferrer" aria-label={"Open " + alert.beerName + " sell sheet full size"}>{isPdf ? <span><strong>Sell Sheet</strong><small>Open PDF full size</small></span> : <img src={alert.sellSheetUrl} alt={alert.beerName + " sell sheet"} loading="lazy" />}</a> : <div className="beer-release-sell-sheet beer-release-sell-sheet-empty"><span><strong>Sell Sheet</strong><small>Upload in manager portal</small></span></div>}</div></section>;
+  const titleId = "new-release-alert-title-" + index;
+  return <div className="beer-release-alert-inner" aria-labelledby={titleId}><div className="beer-release-alert-copy"><p className="eyebrow">New Release Alert</p><h2 id={titleId}>{alert.beerName}</h2><dl><div><dt>Release</dt><dd>{releaseDateTime(alert)}</dd></div>{alert.locations ? <div><dt>Locations</dt><dd>{alert.locations}</dd></div> : null}{alert.specials ? <div><dt>Specials</dt><dd>{alert.specials}</dd></div> : null}</dl></div>{alert.sellSheetUrl ? <a className="beer-release-sell-sheet" href={alert.sellSheetUrl} target="_blank" rel="noreferrer" aria-label={"Open " + alert.beerName + " sell sheet full size"}>{isPdf ? <span><strong>Sell Sheet</strong><small>Open PDF full size</small></span> : <img src={alert.sellSheetUrl} alt={alert.beerName + " sell sheet"} loading="lazy" />}</a> : <div className="beer-release-sell-sheet beer-release-sell-sheet-empty"><span><strong>Sell Sheet</strong><small>Upload in manager portal</small></span></div>}</div>;
+}
+
+export function BeerReleaseAlertBand({ alerts }: { alerts: BeerReleaseAlert[] }) {
+  const published = alerts.filter((alert) => alert.enabled && alert.beerName);
+  if (!published.length) return null;
+  return <section className="beer-release-alert" aria-label="New release alerts">{published.map((alert, index) => <ReleaseAlertCard alert={alert} index={index} key={alert.id || alert.beerName + index} />)}</section>;
 }

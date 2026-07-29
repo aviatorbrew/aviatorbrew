@@ -14,8 +14,8 @@ export const managerSections = [
   {
     id: "beer-release-alert",
     href: "/manager/beer-release-alert",
-    label: "Beer Release Alert",
-    description: "Update the bold homepage beer release alert and sell sheet.",
+    label: "New Release Alerts",
+    description: "Update bold homepage release alerts and sell sheets.",
   },
   {
     id: "beverages",
