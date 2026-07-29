@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findItineraryStop, type ItineraryPhase, type ItineraryStop } from "@/data/itinerary";
 import { isMailConfigured, sendMail, verifySmtpOnStart } from "@/lib/mail";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export const runtime = "nodejs";
 verifySmtpOnStart();
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
     if (stops.some((stop) => stop.comingSoon)) return NextResponse.json({ error: "Choose locations that are currently open." }, { status: 400 });
     if (!isMailConfigured() && process.env.MAIL_MODE !== "record") return NextResponse.json({ error: "Email delivery is not configured." }, { status: 503 });
 
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://aviatorbrew.com").replace(/\/$/, "");
+    const siteUrl = publicSiteUrl(request.nextUrl.origin);
     const scheduled = scheduleStops(stops, startTime);
     const stopHtml = scheduled.map(({ stop, time }, index) => `<tr><td style="padding:24px 26px;border-top:1px solid #36566a"><div style="color:#e8ad55;font-size:12px;font-weight:800;text-transform:uppercase">${escapeHtml(formatTime(time))} &bull; ${escapeHtml(phaseLabels[stop.phase])} stop ${index + 1}</div><h2 style="margin:8px 0;color:#f4f7f8;font-size:24px">${escapeHtml(stop.label)}</h2><p style="margin:0 0 12px;color:#c7d7de;line-height:1.5">${escapeHtml(stop.description)}</p><p style="margin:0 0 14px;color:#eef5f7">${escapeHtml(stop.address)}</p><div style="margin:0 0 14px;color:#b8cbd3;font-size:14px;line-height:1.6">${stop.highlights.map((item) => `<strong style="color:#f4f7f8">${escapeHtml(item.name)}</strong> - ${escapeHtml(item.detail)}`).join("<br>")}</div><a href="https://maps.google.com/?q=${encodeURIComponent(stop.address)}" style="color:#e8ad55">Directions</a>${stop.menuUrl ? ` &bull; <a href="${siteUrl}${stop.menuUrl}" style="color:#e8ad55">Current menu</a>` : ""}</td></tr>`).join("");
     const html = `<!doctype html><html><body style="margin:0;background:#e4eaec;font-family:Arial,sans-serif;color:#10243a"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#102b3a;border:1px solid #36566a"><tr><td style="padding:28px 26px;background:#17201c"><div style="color:#e8ad55;font-size:12px;font-weight:800;text-transform:uppercase">Aviator Night-Out Flight Plan</div><h1 style="margin:10px 0 8px;color:#f4f7f8;font-size:32px">${escapeHtml(formatDate(date))}</h1><p style="margin:0;color:#c7d7de">${partySize} guest${partySize === 1 ? "" : "s"} &bull; ${stops.length} stop${stops.length === 1 ? "" : "s"}</p></td></tr>${stopHtml}<tr><td style="padding:22px 26px;border-top:1px solid #36566a;background:#17201c;color:#9fb2ba;font-size:12px;line-height:1.5">Menu highlights and prices reflect current uploaded menus and may change. Confirm hours and availability before your visit.<br><a href="${siteUrl}/itinerary" style="color:#e8ad55">Build another Aviator itinerary</a></td></tr></table></td></tr></table></body></html>`;

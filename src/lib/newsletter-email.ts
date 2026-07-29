@@ -4,6 +4,7 @@ import type { ManagedEvent } from "@/lib/managed-events";
 import type { LiveMusicShow } from "@/lib/live-music";
 import type { Location } from "@/data/site";
 import type { FlightCrewWelcome } from "@/lib/flight-crew-welcome";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export type NewsletterSections = {
   beers: boolean;
@@ -27,7 +28,7 @@ export type NewsletterDraft = {
   sections: NewsletterSections;
 };
 
-const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL || "https://aviatorbrew.com").replace(/\/$/, "");
+const siteUrl = () => publicSiteUrl();
 const secret = () => process.env.NEWSLETTER_CONFIRMATION_SECRET || process.env.NEWSLETTER_UNSUBSCRIBE_SECRET || process.env.MANAGER_PORTAL_KEY || "";
 
 function escapeHtml(value: string) {

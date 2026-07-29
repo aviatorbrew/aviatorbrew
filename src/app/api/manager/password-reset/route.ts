@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createManagerPasswordReset, resetManagerPassword } from "@/lib/manager-credentials";
 import { isMailConfigured, sendMail } from "@/lib/mail";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const token = await createManagerPasswordReset();
-    const origin = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, "");
+    const origin = publicSiteUrl(request.nextUrl.origin);
     const resetUrl = `${origin}/manager/reset?token=${encodeURIComponent(token)}`;
     const delivered = await sendMail({
       to: email,

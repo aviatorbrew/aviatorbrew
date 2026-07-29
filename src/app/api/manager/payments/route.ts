@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
 import { getManagerPaymentTestResult } from "@/lib/manager-payment-test";
 import { createCheckoutSession } from "@/lib/stripe";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export const runtime = "nodejs";
 
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const origin = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, "");
+    const origin = publicSiteUrl(request.nextUrl.origin);
     const session = await createCheckoutSession({
       item: "manager-payment-test",
       quantity: 1,
