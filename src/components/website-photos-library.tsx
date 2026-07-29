@@ -17,6 +17,64 @@ function readableSize(photo: WebsitePhoto) {
   return photo.size < 1024 * 1024 ? Math.max(1, Math.round(photo.size / 1024)) + " KB" : (photo.size / 1024 / 1024).toFixed(1) + " MB";
 }
 
+const maxUploadBytes = 25 * 1024 * 1024;
+const compressAboveBytes = 8 * 1024 * 1024;
+const maxImageEdge = 2400;
+const uploadExtensions = new Set(["png", "jpg", "jpeg", "webp"]);
+
+function fileExtension(file: File) {
+  return file.name.split(".").pop()?.toLowerCase() || "";
+}
+
+function compressedName(file: File) {
+  return file.name.replace(/\.[^.]+$/, "") + "-web.jpg";
+}
+
+async function readError(response: Response, fallback: string) {
+  const text = await response.text().catch(() => "");
+  if (!text) return fallback;
+  try {
+    const body = JSON.parse(text) as { error?: string };
+    return body.error || fallback;
+  } catch {
+    return text.slice(0, 180) || fallback;
+  }
+}
+
+function canvasBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", .86));
+}
+
+async function preparePhotoUpload(file: File) {
+  const extension = fileExtension(file);
+  if (!uploadExtensions.has(extension)) throw new Error("Use a PNG, JPG, or WEBP image.");
+  if (file.size <= compressAboveBytes) return file;
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    const largestSide = Math.max(image.naturalWidth, image.naturalHeight);
+    const scale = largestSide > maxImageEdge ? maxImageEdge / largestSide : 1;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Could not prepare this photo for upload.");
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await canvasBlob(canvas);
+    if (blob && blob.size < file.size) return new File([blob], compressedName(file), { type: "image/jpeg" });
+  } catch {
+    if (file.size > maxUploadBytes) throw new Error("This image is too large to upload. Export it as a JPG under 25 MB and try again.");
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  if (file.size > maxUploadBytes) throw new Error("Images must be 25 MB or smaller.");
+  return file;
+}
+
 export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: string; location?: LocationTarget }) {
   const [photos, setPhotos] = useState<WebsitePhoto[]>([]);
   const [message, setMessage] = useState("");
@@ -51,10 +109,11 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
     setBusy(true); setMessage("");
     try {
       for (const file of Array.from(files)) {
-        const formData = new FormData(); formData.append("file", file);
+        setMessage(file.size > compressAboveBytes ? "Preparing " + file.name + " for upload..." : "Uploading " + file.name + "...");
+        const prepared = await preparePhotoUpload(file);
+        const formData = new FormData(); formData.append("file", prepared);
         const response = await request({ method: "POST", body: formData });
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error || "Image upload failed.");
+        if (!response.ok) throw new Error(await readError(response, "Image upload failed."));
       }
       await load();
       setMessage(location ? "Photo uploaded. Choose Set featured to make it the lead image." : "Website photo uploaded.");
@@ -100,7 +159,7 @@ export function WebsitePhotosLibrary({ accessKey, location }: { accessKey: strin
     <div className="website-photo-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(event.dataTransfer.files); }}>
       <input id={"website-photo-upload-" + (location?.slug || "general")} type="file" accept=".png,.jpg,.jpeg,.webp" multiple onChange={(event) => { if (event.currentTarget.files) upload(event.currentTarget.files); }} />
       <label htmlFor={"website-photo-upload-" + (location?.slug || "general")}>{busy ? "Working..." : "Drop photos here or choose files"}</label>
-      <small>PNG, JPG, WEBP - 25 MB max</small>
+      <small>PNG, JPG, WEBP - large photos are compressed automatically</small>
     </div>
     <div className="website-photo-grid">{photos.length ? photos.map((photo) => <article className={"website-photo-card" + (photo.featured ? " is-featured" : "")} key={photo.source + photo.name}>
       <div className="website-photo-preview"><img src={photo.url} alt={photo.name.replace(/^[0-9]+-/, "")} />{photo.featured ? <strong>Featured</strong> : null}</div>

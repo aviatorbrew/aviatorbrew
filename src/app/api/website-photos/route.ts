@@ -126,25 +126,30 @@ export async function POST(request: NextRequest) {
   if (!authorized(request)) return deny();
   const targetName = target(request);
   if (!targetName) return NextResponse.json({ error: "Invalid photo target." }, { status: 400, headers: noStore });
-  const formData = await request.formData();
-  const upload = formData.get("file");
-  if (!(upload instanceof File)) return NextResponse.json({ error: "Choose an image to upload." }, { status: 400, headers: noStore });
-  if (upload.size > maxBytes) return NextResponse.json({ error: "Images must be 25 MB or smaller." }, { status: 413, headers: noStore });
-  const fileName = safeFileName(upload.name);
-  if (!fileName || !allowedExtensions.has(path.extname(fileName).toLowerCase())) {
-    return NextResponse.json({ error: "Use a PNG, JPG, or WEBP image." }, { status: 415, headers: noStore });
+  try {
+    const formData = await request.formData();
+    const upload = formData.get("file");
+    if (!(upload instanceof File)) return NextResponse.json({ error: "Choose an image to upload." }, { status: 400, headers: noStore });
+    if (upload.size > maxBytes) return NextResponse.json({ error: "Images must be 25 MB or smaller." }, { status: 413, headers: noStore });
+    const fileName = safeFileName(upload.name);
+    if (!fileName || !allowedExtensions.has(path.extname(fileName).toLowerCase())) {
+      return NextResponse.json({ error: "Use a PNG, JPG, or WEBP image." }, { status: 415, headers: noStore });
+    }
+    const directory = photoDirectory(targetName);
+    await fs.mkdir(directory, { recursive: true });
+    const savedName = Date.now() + "-" + fileName;
+    await fs.writeFile(path.join(directory, savedName), Buffer.from(await upload.arrayBuffer()));
+    refreshTarget(targetName);
+    return NextResponse.json({
+      name: savedName,
+      size: upload.size,
+      url: websitePhotoUrl(targetName, savedName),
+      source: "uploaded",
+    }, { status: 201, headers: noStore });
+  } catch (error) {
+    console.error("Website photo upload failed", error);
+    return NextResponse.json({ error: "Photo upload failed. Try a smaller JPG, PNG, or WEBP image." }, { status: 500, headers: noStore });
   }
-  const directory = photoDirectory(targetName);
-  await fs.mkdir(directory, { recursive: true });
-  const savedName = Date.now() + "-" + fileName;
-  await fs.writeFile(path.join(directory, savedName), Buffer.from(await upload.arrayBuffer()));
-  refreshTarget(targetName);
-  return NextResponse.json({
-    name: savedName,
-    size: upload.size,
-    url: websitePhotoUrl(targetName, savedName),
-    source: "uploaded",
-  }, { status: 201, headers: noStore });
 }
 
 export async function PATCH(request: NextRequest) {
