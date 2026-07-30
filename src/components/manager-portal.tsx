@@ -15,6 +15,9 @@ import { BeerImageViewer } from "@/components/beer-image-viewer";
 
 type Signup = { id: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
 type ScheduledTour = { date: string; displayDate: string; time: "4:00 PM" | "6:00 PM"; guests: number; tickets: number; confirmed: boolean };
+type DatabaseTable = { schema: string; name: string; type: string };
+type DatabaseHealth = { configured?: boolean; connected?: boolean; latencyMs?: number; summary?: { host?: string; port?: string | null; database?: string | null; ssl?: boolean } | null; server?: Record<string, unknown>; error?: string };
+type DatabaseRows = { table?: DatabaseTable; columns?: string[]; rows?: Record<string, unknown>[]; limit?: number; offset?: number; error?: string };
 
 function TourManager() {
   const [signups, setSignups] = useState<Signup[]>([]);
@@ -491,6 +494,62 @@ function AmphitheaterPhotosManager() {
   return <section className="manager-brewery-photos manager-amphitheater-photos"><WebsitePhotosLibrary accessKey="manager-session" location={{ slug: "aviator-amphitheater", name: "Aviator Amphitheater" }} /></section>;
 }
 
+
+function DatabaseManager() {
+  const [health, setHealth] = useState<DatabaseHealth | null>(null);
+  const [tables, setTables] = useState<DatabaseTable[]>([]);
+  const [selected, setSelected] = useState("");
+  const [rows, setRows] = useState<DatabaseRows | null>(null);
+  const [limit, setLimit] = useState(50);
+  const [offset, setOffset] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function request<T>(url: string) {
+    const response = await fetch(url, { cache: "no-store" });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error || "Database request failed.");
+    return body as T;
+  }
+
+  async function checkHealth() {
+    setBusy(true); setMessage("Checking database...");
+    try {
+      const body = await request<DatabaseHealth>("/api/manager/database?mode=health");
+      setHealth(body); setMessage(body.connected ? "Database connection is healthy." : "Database is not connected.");
+    } catch (error) { setHealth({ error: error instanceof Error ? error.message : "Database request failed." }); setMessage(error instanceof Error ? error.message : "Database request failed."); }
+    finally { setBusy(false); }
+  }
+
+  async function loadTables() {
+    setBusy(true); setMessage("Loading tables...");
+    try {
+      const body = await request<{ tables: DatabaseTable[] }>("/api/manager/database?mode=tables");
+      setTables(body.tables || []); setMessage((body.tables || []).length ? "Tables loaded." : "No user tables found.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not load tables."); }
+    finally { setBusy(false); }
+  }
+
+  async function loadRows(tableValue = selected, nextOffset = offset) {
+    if (!tableValue) { setMessage("Choose a table first."); return; }
+    const [schema, table] = tableValue.split(".");
+    setBusy(true); setMessage("Loading table rows...");
+    try {
+      const body = await request<DatabaseRows>("/api/manager/database?mode=rows&schema=" + encodeURIComponent(schema) + "&table=" + encodeURIComponent(table) + "&limit=" + limit + "&offset=" + nextOffset);
+      setRows(body); setOffset(nextOffset); setMessage("Loaded " + (body.rows?.length || 0) + " row(s).");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not load table rows."); }
+    finally { setBusy(false); }
+  }
+
+  useEffect(() => { checkHealth().then(loadTables).catch((error) => setMessage(error.message)); }, []);
+
+  return <section id="database" className="coupon-manager manager-database"><p className="eyebrow">Database tools</p><h2>Postgres health + table browser</h2><p>Read-only tools for checking the configured Postgres connection, listing database tables, and viewing table data. The app uses the Render <code>DATABASE_URL</code> environment variable.</p><p className="media-message" role="status">{message}</p>
+    <div className="manager-database-actions"><button className="button" type="button" onClick={checkHealth} disabled={busy}>{busy ? "Checking..." : "Check health"}</button><button className="button button-outline" type="button" onClick={loadTables} disabled={busy}>Refresh tables</button></div>
+    <div className="manager-database-status"><article><p className="eyebrow">Connection</p><h3>{health?.connected ? "Connected" : health?.error ? "Not connected" : "Checking"}</h3><p>{health?.error || (health?.latencyMs !== undefined ? "Latency " + health.latencyMs + " ms" : "Waiting for database check.")}</p></article><article><p className="eyebrow">Configured target</p><h3>{health?.summary?.database || "Database"}</h3><p>{health?.summary?.host ? health.summary.host + ":" + (health.summary.port || "5432") + (health.summary.ssl ? " - SSL" : "") : "DATABASE_URL is checked server-side."}</p></article></div>
+    <div className="manager-database-browser"><aside><h3>Tables</h3>{tables.length ? <ul>{tables.map((table) => { const value = table.schema + "." + table.name; return <li key={value}><button className={selected === value ? "is-active" : ""} type="button" onClick={() => { setSelected(value); loadRows(value, 0); }} disabled={busy}><span>{table.schema}</span><strong>{table.name}</strong><small>{table.type}</small></button></li>; })}</ul> : <p>No tables loaded yet.</p>}</aside><section><div className="manager-database-query-bar"><label>Rows per page<input type="number" min="1" max="200" value={limit} onChange={(event) => setLimit(Number(event.target.value) || 50)} /></label><button type="button" onClick={() => loadRows(selected, 0)} disabled={busy || !selected}>Reload rows</button><button type="button" onClick={() => loadRows(selected, Math.max(0, offset - limit))} disabled={busy || !selected || offset <= 0}>Previous</button><button type="button" onClick={() => loadRows(selected, offset + limit)} disabled={busy || !selected || (rows?.rows?.length || 0) < limit}>Next</button></div>{rows?.columns?.length ? <div className="manager-database-table-wrap"><table><thead><tr>{rows.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{(rows.rows || []).map((row, index) => <tr key={index}>{rows.columns!.map((column) => <td key={column}>{row[column] === null || row[column] === undefined ? <span className="manager-database-null">NULL</span> : String(row[column])}</td>)}</tr>)}</tbody></table></div> : <p className="tour-schedule-empty">Choose a table to preview rows.</p>}</section></div>
+  </section>;
+}
+
 function ManagerOverview() {
   return <section className="manager-overview">
     <p className="eyebrow">Manager dashboard</p>
@@ -516,6 +575,7 @@ function ManagerSectionContent({ section }: { section: ManagerSection }) {
     case "beverages": return <BeverageManager />;
     case "kegs": return <KegInventoryManager />;
     case "events": return <EventManager />;
+    case "database": return <DatabaseManager />;
     case "media": return <div className="manager-media-route"><BrandingManager /><MenuLibraryClient managerMode /></div>;
     default: return <ManagerOverview />;
   }

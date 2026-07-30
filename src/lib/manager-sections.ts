@@ -89,6 +89,12 @@ export const managerSections = [
     label: "Payments",
     description: "Run and verify a $1 live Stripe Checkout test.",
   },
+  {
+    id: "database",
+    href: "/manager/database",
+    label: "Database",
+    description: "Check Postgres health, list tables, and browse table rows.",
+  },
 ] as const;
 
 export type ManagerSection = (typeof managerSections)[number]["id"];
