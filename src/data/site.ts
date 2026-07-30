@@ -26,11 +26,12 @@ export type Event = {
 export const orderFoodUrl = "/order-food";
 
 export const primaryNav = [
-  { label: "Beer", href: "/beer", children: [{ label: "Brewery", href: "/brewery" }, { label: "Keg/package sale", href: "/kegs" }] },
+  { label: "Flight Log", href: "/flight-log", featured: true },
+  { label: "Beer", href: "/beer" },
+  { label: "Brewery", href: "/brewery" },
+  { label: "Beverage Sales", href: "/kegs" },
   { label: "Locations", href: "/locations" },
-  { label: "Events", href: "/events" },
-  { label: "Private Events", href: "/private-events" },
-  { label: "More!", href: "/more", children: [{ label: "About & Tours", href: "/about" }, { label: "Contact Us", href: "/contact" }] },
+  { label: "MORE", href: "/more", children: [{ label: "About", href: "/about" }, { label: "Tours", href: "/about#brewery-tours" }, { label: "Contact Us", href: "/contact" }] },
 ];
 
 export const locations: Location[] = [

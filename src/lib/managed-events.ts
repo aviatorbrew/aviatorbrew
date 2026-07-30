@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { databaseConfigured, withDatabase } from "@/lib/database";
 
 export type RecurrenceFrequency = "none" | "daily" | "weekly" | "biweekly" | "monthly-date" | "monthly-weekday" | "yearly";
 
@@ -71,7 +72,7 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   return { title, date, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), ...(galleryImages.length ? { galleryImages } : {}), published: input.published === true, ...(recurrence ? { recurrence } : {}) };
 }
 
-async function readAll(): Promise<ManagedEvent[]> {
+async function readFileEvents(): Promise<ManagedEvent[]> {
   try {
     const stored = JSON.parse(await fs.readFile(file(), "utf8")) as unknown;
     if (!Array.isArray(stored)) return [];
@@ -82,11 +83,96 @@ async function readAll(): Promise<ManagedEvent[]> {
   }
 }
 
-async function save(events: ManagedEvent[]) {
+async function saveFileEvents(events: ManagedEvent[]) {
   await fs.mkdir(path.dirname(file()), { recursive: true });
   const temp = file() + ".tmp";
   await fs.writeFile(temp, JSON.stringify(events, null, 2) + "\n", "utf8");
   await fs.rename(temp, file());
+}
+
+function eventStart(event: ManagedEvent) {
+  return event.date + "T" + event.startTime + ":00-05:00";
+}
+
+function eventEnd(event: ManagedEvent) {
+  return event.endTime ? event.date + "T" + event.endTime + ":00-05:00" : null;
+}
+
+async function readDatabaseEvents(): Promise<ManagedEvent[] | null> {
+  if (!databaseConfigured()) return null;
+  return withDatabase(async (client) => {
+    const result = await client.query(
+      `SELECT slug, title, starts_at, ends_at, location, description, details, published, created_at, updated_at
+       FROM website.events
+       WHERE event_type = $1
+       ORDER BY starts_at NULLS LAST, updated_at DESC`,
+      ["special"],
+    );
+    return result.rows.map((row): ManagedEvent => {
+      const details = row.details && typeof row.details === "object" ? row.details as Partial<ManagedEvent> : {};
+      const startsAt = row.starts_at instanceof Date ? row.starts_at : row.starts_at ? new Date(row.starts_at) : null;
+      const endsAt = row.ends_at instanceof Date ? row.ends_at : row.ends_at ? new Date(row.ends_at) : null;
+      return normalizeEventImages({
+        id: clean(details.id || row.slug, 120),
+        title: clean(row.title || details.title, 120),
+        date: clean(details.date || (startsAt && !Number.isNaN(startsAt.getTime()) ? startsAt.toISOString().slice(0, 10) : ""), 10),
+        startTime: clean(details.startTime || (startsAt && !Number.isNaN(startsAt.getTime()) ? startsAt.toISOString().slice(11, 16) : ""), 5),
+        endTime: clean(details.endTime || (endsAt && !Number.isNaN(endsAt.getTime()) ? endsAt.toISOString().slice(11, 16) : ""), 5),
+        location: clean(row.location || details.location, 120),
+        description: clean(row.description || details.description, 1200),
+        ticketUrl: clean(details.ticketUrl, 500),
+        imageUrl: clean(details.imageUrl, 500) || undefined,
+        galleryImages: Array.isArray(details.galleryImages) ? details.galleryImages.map((image) => clean(image, 500)).filter(Boolean) : undefined,
+        published: row.published === true,
+        recurrence: details.recurrence,
+        createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : clean(details.createdAt, 40) || new Date().toISOString(),
+        updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : clean(details.updatedAt, 40) || new Date().toISOString(),
+      });
+    });
+  });
+}
+
+async function upsertDatabaseEvent(event: ManagedEvent) {
+  if (!databaseConfigured()) return false;
+  await withDatabase(async (client) => {
+    await client.query(
+      `INSERT INTO website.events (slug, title, event_type, starts_at, ends_at, location, description, details, published, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, now())
+       ON CONFLICT (slug) DO UPDATE SET
+         title = EXCLUDED.title,
+         event_type = EXCLUDED.event_type,
+         starts_at = EXCLUDED.starts_at,
+         ends_at = EXCLUDED.ends_at,
+         location = EXCLUDED.location,
+         description = EXCLUDED.description,
+         details = EXCLUDED.details,
+         published = EXCLUDED.published,
+         updated_at = now()`,
+      [event.id, event.title, "special", eventStart(event), eventEnd(event), event.location, event.description, JSON.stringify(event), event.published],
+    );
+  });
+  return true;
+}
+
+async function deleteDatabaseEvent(id: string) {
+  if (!databaseConfigured()) return false;
+  await withDatabase(async (client) => {
+    await client.query("DELETE FROM website.events WHERE event_type = $1 AND slug = $2", ["special", id]);
+  });
+  return true;
+}
+
+async function readAll(): Promise<ManagedEvent[]> {
+  const fileEvents = await readFileEvents();
+  try {
+    const databaseEvents = await readDatabaseEvents();
+    if (!databaseEvents) return fileEvents;
+    const byId = new Map(fileEvents.map((event) => [event.id, event]));
+    for (const event of databaseEvents) byId.set(event.id, event);
+    return [...byId.values()];
+  } catch {
+    return fileEvents;
+  }
 }
 
 function sorted(events: ManagedEvent[]) { return [...events].sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime)); }
@@ -158,7 +244,7 @@ export async function createManagedEvent(input: Partial<ManagedEventInput>) {
   const event = { ...validated, imageUrl: validated.imageUrl || galleryImages[0], ...(galleryImages.length ? { galleryImages } : {}), id: "event_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } satisfies ManagedEvent;
   const events = await readAll();
   events.push(event);
-  await save(events);
+  if (!(await upsertDatabaseEvent(event))) await saveFileEvents(events);
   return event;
 }
 
@@ -174,12 +260,14 @@ export async function updateManagedEvent(id: string, input: Partial<ManagedEvent
   const validated = validate({ ...existing, ...input, imageUrl: nextImageUrl, galleryImages: mergedGallery });
   const event = { ...existing, ...validated, imageUrl: validated.imageUrl, galleryImages: validated.galleryImages, updatedAt: new Date().toISOString() } satisfies ManagedEvent;
   events[index] = event;
-  await save(events);
+  if (!(await upsertDatabaseEvent(event))) await saveFileEvents(events);
   return event;
 }
 
 export async function deleteManagedEvent(id: string) {
   const events = await readAll();
   if (!events.some((event) => event.id === id)) throw new Error("Event not found.");
-  await save(events.filter((event) => event.id !== id));
+  await deleteDatabaseEvent(id);
+  const fileEvents = await readFileEvents();
+  if (fileEvents.some((event) => event.id === id)) await saveFileEvents(fileEvents.filter((event) => event.id !== id));
 }

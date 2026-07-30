@@ -1,4 +1,5 @@
 import { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
+import { databaseConfigured, withDatabase } from "@/lib/database";
 
 export { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY, TOUR_MINIMUM } from "@/lib/tour-config";
 export type TourSlot = "4:00 PM" | "6:00 PM";
@@ -45,7 +46,7 @@ const storageUnavailable = (error: unknown) => {
   return /not implemented|not supported|not available|unsupported|Cannot find module|readFile.*function|mkdir.*function|writeFile.*function/i.test(message);
 };
 
-async function readStore(): Promise<TourStore> {
+async function readFileStore(): Promise<TourStore> {
   try {
     const { promises: fs } = await import("fs");
     const parsed = JSON.parse(await fs.readFile(dataFile(), "utf8")) as Partial<TourStore>;
@@ -57,7 +58,7 @@ async function readStore(): Promise<TourStore> {
   }
 }
 
-async function writeStore(store: TourStore) {
+async function writeFileStore(store: TourStore) {
   try {
     const { promises: fs } = await import("fs");
     const file = dataFile();
@@ -67,6 +68,61 @@ async function writeStore(store: TourStore) {
     if (storageUnavailable(error)) throw new Error("Tour signup storage is not writable in this environment. Update hosted tour settings with TOUR_MINIMUM and TOUR_PRICE_CENTS, or configure writable storage.");
     throw error;
   }
+}
+
+function iso(value: unknown) { return value instanceof Date ? value.toISOString() : String(value || ""); }
+function dateOnly(value: unknown) { return value instanceof Date ? value.toISOString().slice(0, 10) : String(value || "").slice(0, 10); }
+async function readDatabaseStore(): Promise<TourStore | null> {
+  if (!databaseConfigured()) return null;
+  return withDatabase(async (client) => {
+    const [signupsResult, notificationsResult, cancellationsResult, settingsResult] = await Promise.all([
+      client.query("SELECT id, created_at, name, email, tickets, message, tour_date, tour_time, payment_status, stripe_session_id FROM website.tour_signups ORDER BY created_at"),
+      client.query("SELECT key, sent_at FROM website.tour_notifications ORDER BY sent_at"),
+      client.query("SELECT key FROM website.tour_cancellations ORDER BY cancelled_at"),
+      client.query("SELECT value FROM website.settings WHERE key = $1", ["tour_settings"]),
+    ]);
+    const settings = settingsResult.rows[0]?.value && typeof settingsResult.rows[0].value === "object" ? settingsResult.rows[0].value as Partial<TourStore> : {};
+    if (!signupsResult.rowCount && !notificationsResult.rowCount && !cancellationsResult.rowCount && !settingsResult.rowCount) return null;
+    return {
+      signups: signupsResult.rows.map((row): TourSignup => ({ id: row.id, createdAt: iso(row.created_at), name: row.name, email: row.email, tickets: Number(row.tickets) || 0, message: row.message || "", tourDate: dateOnly(row.tour_date), tourTime: row.tour_time, ...(row.payment_status ? { paymentStatus: row.payment_status } : {}), ...(row.stripe_session_id ? { stripeSessionId: row.stripe_session_id } : {}) })),
+      notifications: notificationsResult.rows.map((row): TourNotification => ({ key: row.key, sentAt: iso(row.sent_at) })),
+      cancelledTours: cancellationsResult.rows.map((row) => row.key),
+      minimum: validMinimum(settings.minimum ?? configuredMinimum()),
+      priceCents: validPriceCents(settings.priceCents ?? configuredPriceCents()),
+    };
+  });
+}
+async function writeDatabaseStore(store: TourStore) {
+  if (!databaseConfigured()) return false;
+  await withDatabase(async (client) => {
+    await client.query("BEGIN");
+    try {
+      await client.query("DELETE FROM website.tour_signups");
+      await client.query("DELETE FROM website.tour_notifications");
+      await client.query("DELETE FROM website.tour_cancellations");
+      for (const signup of store.signups) await client.query("INSERT INTO website.tour_signups (id,created_at,name,email,tickets,message,tour_date,tour_time,payment_status,stripe_session_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)", [signup.id, signup.createdAt, signup.name, signup.email, signup.tickets, signup.message || "", signup.tourDate, signup.tourTime, signup.paymentStatus || null, signup.stripeSessionId || null]);
+      for (const notification of store.notifications) await client.query("INSERT INTO website.tour_notifications (key,sent_at) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET sent_at=EXCLUDED.sent_at", [notification.key, notification.sentAt]);
+      for (const key of store.cancelledTours) await client.query("INSERT INTO website.tour_cancellations (key) VALUES ($1) ON CONFLICT (key) DO NOTHING", [key]);
+      await client.query("INSERT INTO website.settings (key,value,description,updated_at) VALUES ($1,$2::jsonb,$3,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, description=EXCLUDED.description, updated_at=now()", ["tour_settings", JSON.stringify({ minimum: store.minimum, priceCents: store.priceCents }), "Tour launch and pricing settings"]);
+      await client.query("COMMIT");
+    } catch (error) { await client.query("ROLLBACK").catch(() => undefined); throw error; }
+  });
+  return true;
+}
+async function readStore(): Promise<TourStore> {
+  const fileStore = await readFileStore();
+  try {
+    const dbStore = await readDatabaseStore();
+    if (!dbStore) return fileStore;
+    const signups = new Map(fileStore.signups.map((signup) => [signup.id, signup]));
+    for (const signup of dbStore.signups) signups.set(signup.id, signup);
+    const notifications = new Map(fileStore.notifications.map((notification) => [notification.key, notification]));
+    for (const notification of dbStore.notifications) notifications.set(notification.key, notification);
+    return { signups: [...signups.values()], notifications: [...notifications.values()], minimum: dbStore.minimum, priceCents: dbStore.priceCents, cancelledTours: [...new Set([...fileStore.cancelledTours, ...dbStore.cancelledTours])] };
+  } catch { return fileStore; }
+}
+async function writeStore(store: TourStore) {
+  if (!(await writeDatabaseStore(store))) await writeFileStore(store);
 }
 
 function easternParts(value: Date) {

@@ -18,6 +18,12 @@ export const managerSections = [
     description: "Update bold homepage release alerts and sell sheets.",
   },
   {
+    id: "flight-log",
+    href: "/manager/flight-log",
+    label: "Flight Log",
+    description: "Create, publish, pin, and archive official Aviator dispatches.",
+  },
+  {
     id: "beverages",
     href: "/manager/beverages",
     label: "Beverages",
@@ -26,8 +32,8 @@ export const managerSections = [
   {
     id: "kegs",
     href: "/manager/kegs",
-    label: "Keg/package sales",
-    description: "Import current keg availability and package pricing.",
+    label: "Beverage Sales",
+    description: "Import current keg, case, and package availability with pricing.",
   },
   {
     id: "brewery-photos",

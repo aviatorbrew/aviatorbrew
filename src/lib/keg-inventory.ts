@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { databaseConfigured, withDatabase } from "@/lib/database";
 
 export type KegInventoryItem = {
   beerName: string;
@@ -117,6 +118,147 @@ function validDate(value: unknown, fallback: string) {
 
 function identityKey(name: string) {
   return name.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").replace(/\b\d+(?:\.\d+)?%?\b/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function dollarsFromCents(value?: number) {
+  return typeof value === "number" && Number.isFinite(value) ? Number((value / 100).toFixed(2)) : 0;
+}
+
+function centsFromDollars(value: unknown) {
+  const number = typeof value === "number" ? value : typeof value === "string" ? Number(value) : 0;
+  return Number.isFinite(number) ? Math.round(number * 100) : 0;
+}
+
+function visibleKegItem(item: KegInventoryItem) {
+  return item.hidden !== true && (item.sixthBblKegs > 0 || item.fiftyLKegs > 0 || (item.case12Count || 0) > 0 || (item.case16Count || 0) > 0 || (item.caseCount || 0) > 0);
+}
+
+async function readDatabaseKegInventory(options: { includeHidden?: boolean } = {}): Promise<KegInventory | null> {
+  if (!databaseConfigured()) return null;
+  return withDatabase(async (client) => {
+    const result = await client.query(
+      `SELECT beer_name, normalized_name, category, packaging, sixth_bbl_kegs, sixth_bbl_price, fifty_l_kegs, fifty_l_price,
+              cases_12oz, case_12oz_price, cases_16oz, case_16oz_price, case_size, case_price,
+              total_bbl, inventory_value, batches, source_file, imported_at, updated_at, hidden, sixtels_available_via_backfill
+       FROM website.keg_package_inventory
+       ORDER BY beer_name`,
+    );
+    const metaResult = await client.query("SELECT value FROM website.settings WHERE key = $1", ["keg_package_inventory_meta"]);
+    const hasDatabaseInventoryState = (metaResult.rowCount || 0) > 0;
+    if (result.rowCount === 0 && !hasDatabaseInventoryState) return null;
+    const meta = metaResult.rows[0]?.value && typeof metaResult.rows[0].value === "object" ? metaResult.rows[0].value as Partial<KegInventory> : {};
+    const items = result.rows.map((row): KegInventoryItem => ({
+      beerName: row.beer_name,
+      category: row.category || "Other",
+      packaging: row.packaging || "Draft",
+      sixthBblKegs: Number(row.sixth_bbl_kegs) || 0,
+      fiftyLKegs: Number(row.fifty_l_kegs) || 0,
+      totalBbl: Number(row.total_bbl) || 0,
+      sixthBblPriceCents: centsFromDollars(row.sixth_bbl_price),
+      fiftyLPriceCents: centsFromDollars(row.fifty_l_price),
+      caseSize: row.case_size || undefined,
+      casePriceCents: centsFromDollars(row.case_price),
+      case12PriceCents: centsFromDollars(row.case_12oz_price),
+      case16PriceCents: centsFromDollars(row.case_16oz_price),
+      case12Count: Number(row.cases_12oz) || 0,
+      case16Count: Number(row.cases_16oz) || 0,
+      caseCount: (Number(row.cases_12oz) || 0) + (Number(row.cases_16oz) || 0),
+      hidden: row.hidden === true ? true : undefined,
+      sixtelsAvailableViaBackfill: Number(row.sixtels_available_via_backfill) || 0,
+    }));
+    const filtered = options.includeHidden ? items : items.filter(visibleKegItem);
+    const now = new Date().toISOString();
+    return {
+      schemaVersion: 2,
+      exportType: "kegs-for-sale",
+      columns: [],
+      items: filtered,
+      backfillPickupNote: text(meta.backfillPickupNote, 500),
+      updatedAt: text(meta.updatedAt, 40) || now,
+      inventoryUpdatedAt: text(meta.inventoryUpdatedAt, 40) || text(meta.updatedAt, 40) || now,
+      exportedAt: text(meta.exportedAt, 40) || now,
+      uploadedAt: text(meta.uploadedAt, 40) || now,
+    };
+  });
+}
+
+async function saveDatabaseKegInventory(inventory: KegInventory) {
+  if (!databaseConfigured()) return false;
+  await withDatabase(async (client) => {
+    await client.query("BEGIN");
+    try {
+      await client.query("DELETE FROM website.keg_package_inventory");
+      for (const item of inventory.items) {
+        await client.query(
+          `INSERT INTO website.keg_package_inventory (
+             beer_name, normalized_name, category, packaging, sixth_bbl_kegs, sixth_bbl_price, fifty_l_kegs, fifty_l_price,
+             cases_12oz, case_12oz_price, cases_16oz, case_16oz_price, case_size, case_price,
+             total_bbl, inventory_value, batches, source_file, imported_at, updated_at, hidden, sixtels_available_via_backfill
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,now(),now(),$19,$20)
+           ON CONFLICT (normalized_name) DO UPDATE SET
+             beer_name = EXCLUDED.beer_name,
+             category = EXCLUDED.category,
+             packaging = EXCLUDED.packaging,
+             sixth_bbl_kegs = EXCLUDED.sixth_bbl_kegs,
+             sixth_bbl_price = EXCLUDED.sixth_bbl_price,
+             fifty_l_kegs = EXCLUDED.fifty_l_kegs,
+             fifty_l_price = EXCLUDED.fifty_l_price,
+             cases_12oz = EXCLUDED.cases_12oz,
+             case_12oz_price = EXCLUDED.case_12oz_price,
+             cases_16oz = EXCLUDED.cases_16oz,
+             case_16oz_price = EXCLUDED.case_16oz_price,
+             case_size = EXCLUDED.case_size,
+             case_price = EXCLUDED.case_price,
+             total_bbl = EXCLUDED.total_bbl,
+             inventory_value = EXCLUDED.inventory_value,
+             batches = EXCLUDED.batches,
+             source_file = EXCLUDED.source_file,
+             updated_at = now(),
+             hidden = EXCLUDED.hidden,
+             sixtels_available_via_backfill = EXCLUDED.sixtels_available_via_backfill`,
+          [
+            item.beerName,
+            identityKey(item.beerName),
+            item.category || "Other",
+            item.packaging || "Draft",
+            item.sixthBblKegs || 0,
+            dollarsFromCents(item.sixthBblPriceCents),
+            item.fiftyLKegs || 0,
+            dollarsFromCents(item.fiftyLPriceCents),
+            item.case12Count || 0,
+            dollarsFromCents(item.case12PriceCents),
+            item.case16Count || 0,
+            dollarsFromCents(item.case16PriceCents),
+            item.caseSize || null,
+            dollarsFromCents(item.casePriceCents),
+            item.totalBbl || 0,
+            0,
+            null,
+            inventory.exportedAt || inventory.uploadedAt || null,
+            item.hidden === true,
+            item.sixtelsAvailableViaBackfill || 0,
+          ],
+        );
+      }
+      await client.query(
+        `INSERT INTO website.settings (key, value, description, updated_at)
+         VALUES ($1, $2::jsonb, $3, now())
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, description = EXCLUDED.description, updated_at = now()`,
+        ["keg_package_inventory_meta", JSON.stringify({
+          backfillPickupNote: inventory.backfillPickupNote || "",
+          updatedAt: inventory.updatedAt,
+          inventoryUpdatedAt: inventory.inventoryUpdatedAt || inventory.updatedAt,
+          exportedAt: inventory.exportedAt || inventory.uploadedAt,
+          uploadedAt: inventory.uploadedAt,
+        }), "Keg/package inventory import metadata"],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    }
+  });
+  return true;
 }
 
 function parseCsvRows(rawText: string) {
@@ -246,12 +388,18 @@ export function normalizeKegInventory(value: unknown, previous?: KegInventory | 
 }
 
 export async function getUploadedKegInventory(options: { includeHidden?: boolean } = {}): Promise<KegInventory | null> {
+  try {
+    const databaseInventory = await readDatabaseKegInventory(options);
+    if (databaseInventory) return databaseInventory;
+  } catch {
+    // Keep the legacy file fallback available if the database is temporarily unavailable.
+  }
   let parsed: unknown = { items: [] };
   try { parsed = JSON.parse(await fs.readFile(dataFile(), "utf8")) as unknown; }
   catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") return null; }
   try {
     const inventory = normalizeKegInventory(parsed);
-    const items = options.includeHidden ? inventory.items : inventory.items.filter((item) => item.hidden !== true && (item.sixthBblKegs > 0 || item.fiftyLKegs > 0 || (item.case12Count || 0) > 0 || (item.case16Count || 0) > 0 || (item.caseCount || 0) > 0));
+    const items = options.includeHidden ? inventory.items : inventory.items.filter(visibleKegItem);
     return { ...inventory, items };
   } catch { return null; }
 }
@@ -301,7 +449,7 @@ export type KegInventoryPatch = {
 export async function saveKegInventory(value: unknown) {
   const previous = await getUploadedKegInventory({ includeHidden: true });
   const inventory = normalizeKegInventory(value, previous, { requireKegsForSaleExport: true, preserveHidden: false });
-  await saveInventory(inventory);
+  if (!(await saveDatabaseKegInventory(inventory))) await saveInventory(inventory);
   return inventory;
 }
 
@@ -319,7 +467,7 @@ export async function importBundledKegInventory() {
 export async function clearKegInventory() {
   const now = new Date().toISOString();
   const inventory: KegInventory = { schemaVersion: 2, exportType: "kegs-for-sale", columns: [], items: [], updatedAt: now, uploadedAt: now, inventoryUpdatedAt: now, exportedAt: now };
-  await saveInventory(inventory);
+  if (!(await saveDatabaseKegInventory(inventory))) await saveInventory(inventory);
   return inventory;
 }
 
@@ -358,7 +506,7 @@ export async function updateKegItem(patch: KegInventoryPatch) {
     hidden: patch.hidden === true ? true : undefined,
   };
   const inventory = { ...current, items: current.items.map((item) => identityKey(item.beerName) === targetKey ? updated : item), uploadedAt: new Date().toISOString() };
-  await saveInventory(inventory);
+  if (!(await saveDatabaseKegInventory(inventory))) await saveInventory(inventory);
   return inventory;
 }
 

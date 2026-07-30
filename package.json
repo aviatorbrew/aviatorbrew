@@ -10,7 +10,12 @@
     "build:cloudflare": "opennextjs-cloudflare build",
     "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "build:sites": "opennextjs-cloudflare build && node scripts/patch-opennext-require.mjs && rm -rf .open-next/server-functions/default/public",
-    "pack:sites": "npm run build:sites && tar -czf /tmp/aviatorbrew-sites-opennext-final.tar.gz .openai/hosting.json wrangler.jsonc .open-next"
+    "pack:sites": "npm run build:sites && tar -czf /tmp/aviatorbrew-sites-opennext-final.tar.gz .openai/hosting.json wrangler.jsonc .open-next",
+    "db:migrate": "node scripts/migrate-database.mjs",
+    "render:migrate": "node scripts/migrate-database.mjs",
+    "flight-log:seed": "node scripts/seed-flight-log.mjs",
+    "test:flight-log": "node scripts/test-flight-log.mjs",
+    "test:flight-log-auth": "node scripts/test-flight-log-auth.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isMailConfigured, sendMail, verifySmtpOnStart } from "@/lib/mail";
+import { databaseConfigured, withDatabase } from "@/lib/database";
 import { requestNewsletterSubscription } from "@/lib/newsletter";
 import { buildFlightCrewConfirmationMessage } from "@/lib/newsletter-email";
 
@@ -14,6 +15,13 @@ function escapeHtml(value: string) {
 export const runtime = "nodejs";
 verifySmtpOnStart();
 
+async function recordInquiry(body: Record<string, string>) {
+  if (!databaseConfigured() || body.kind === "newsletter") return;
+  await withDatabase(async (client) => {
+    await client.query("INSERT INTO website.form_inquiries (kind,email,name,payload,source) VALUES ($1,$2,$3,$4::jsonb,$5)", [body.kind, body.email, body.name || null, JSON.stringify(body), "aviatorbrew.com"]);
+  }).catch(() => undefined);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json() as Record<string, string>;
@@ -25,6 +33,8 @@ export async function POST(request: Request) {
       const response = await fetch(webhook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, source: "aviatorbrew.com" }) });
       if (!response.ok) throw new Error("Submission endpoint unavailable");
     }
+
+    await recordInquiry(body);
 
     if (body.kind === "newsletter") {
       const signup = await requestNewsletterSubscription({ email: body.email, source: "website-flight-crew" });

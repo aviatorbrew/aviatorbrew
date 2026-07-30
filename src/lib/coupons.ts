@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { databaseConfigured, withDatabase } from "@/lib/database";
 
 export type CouponOffer = { id: string; title: string; description: string; terms: string; code: string; expiresAt: string; createdAt: string; limit: number; issued?: number; redeemed?: number };
 export type CouponClaim = { token: string; offerId: string; claimedAt: string; expiresAt: string; redeemedAt?: string };
@@ -9,7 +10,7 @@ type CouponStore = { offers: CouponOffer[]; claims: CouponClaim[]; blackouts: Co
 const file = () => process.env.COUPON_DATA_FILE || path.join(process.cwd(), "data", "coupons.json");
 const empty = (): CouponStore => ({ offers: [], claims: [], blackouts: [] });
 
-async function readStore(): Promise<CouponStore> {
+async function readFileStore(): Promise<CouponStore> {
   try {
     const data = JSON.parse(await fs.readFile(file(), "utf8")) as Partial<CouponStore>;
     return { offers: Array.isArray(data.offers) ? data.offers : [], claims: Array.isArray(data.claims) ? data.claims : [], blackouts: Array.isArray(data.blackouts) ? data.blackouts : [] };
@@ -19,9 +20,61 @@ async function readStore(): Promise<CouponStore> {
   }
 }
 
-async function writeStore(store: CouponStore) {
+async function writeFileStore(store: CouponStore) {
   await fs.mkdir(path.dirname(file()), { recursive: true });
   await fs.writeFile(file(), JSON.stringify(store, null, 2) + "\n", "utf8");
+}
+
+function dateString(value: unknown) {
+  return value instanceof Date ? value.toISOString().slice(0, 10) : String(value || "").slice(0, 10);
+}
+async function readDatabaseStore(): Promise<CouponStore | null> {
+  if (!databaseConfigured()) return null;
+  return withDatabase(async (client) => {
+    const [offersResult, claimsResult, blackoutsResult] = await Promise.all([
+      client.query("SELECT id, title, description, terms, code, expires_at, created_at, limit_count FROM website.coupon_offers ORDER BY expires_at"),
+      client.query("SELECT token, offer_id, claimed_at, expires_at, redeemed_at FROM website.coupon_claims ORDER BY claimed_at DESC"),
+      client.query("SELECT date, label FROM website.coupon_blackouts ORDER BY date"),
+    ]);
+    return {
+      offers: offersResult.rows.map((row): CouponOffer => ({ id: row.id, title: row.title, description: row.description, terms: row.terms || "", code: row.code, expiresAt: dateString(row.expires_at), createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ""), limit: Number(row.limit_count) || 1 })),
+      claims: claimsResult.rows.map((row): CouponClaim => ({ token: row.token, offerId: row.offer_id, claimedAt: row.claimed_at instanceof Date ? row.claimed_at.toISOString() : String(row.claimed_at || ""), expiresAt: dateString(row.expires_at), ...(row.redeemed_at ? { redeemedAt: row.redeemed_at instanceof Date ? row.redeemed_at.toISOString() : String(row.redeemed_at) } : {}) })),
+      blackouts: blackoutsResult.rows.map((row): CouponBlackout => ({ date: dateString(row.date), label: row.label })),
+    };
+  });
+}
+async function writeDatabaseStore(store: CouponStore) {
+  if (!databaseConfigured()) return false;
+  await withDatabase(async (client) => {
+    await client.query("BEGIN");
+    try {
+      await client.query("DELETE FROM website.coupon_claims");
+      await client.query("DELETE FROM website.coupon_blackouts");
+      await client.query("DELETE FROM website.coupon_offers");
+      for (const offer of store.offers) await client.query("INSERT INTO website.coupon_offers (id,title,description,terms,code,expires_at,limit_count,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", [offer.id, offer.title, offer.description, offer.terms || "", offer.code, offer.expiresAt, offer.limit || 1, offer.createdAt]);
+      for (const claim of store.claims) await client.query("INSERT INTO website.coupon_claims (token,offer_id,claimed_at,expires_at,redeemed_at) VALUES ($1,$2,$3,$4,$5)", [claim.token, claim.offerId, claim.claimedAt, claim.expiresAt, claim.redeemedAt || null]);
+      for (const blackout of store.blackouts) await client.query("INSERT INTO website.coupon_blackouts (date,label) VALUES ($1,$2) ON CONFLICT (date) DO UPDATE SET label=EXCLUDED.label", [blackout.date, blackout.label]);
+      await client.query("COMMIT");
+    } catch (error) { await client.query("ROLLBACK").catch(() => undefined); throw error; }
+  });
+  return true;
+}
+async function readStore(): Promise<CouponStore> {
+  const fileStore = await readFileStore();
+  try {
+    const dbStore = await readDatabaseStore();
+    if (!dbStore) return fileStore;
+    const offers = new Map(fileStore.offers.map((offer) => [offer.id, offer]));
+    for (const offer of dbStore.offers) offers.set(offer.id, offer);
+    const claims = new Map(fileStore.claims.map((claim) => [claim.token, claim]));
+    for (const claim of dbStore.claims) claims.set(claim.token, claim);
+    const blackouts = new Map(fileStore.blackouts.map((blackout) => [blackout.date, blackout]));
+    for (const blackout of dbStore.blackouts) blackouts.set(blackout.date, blackout);
+    return { offers: [...offers.values()], claims: [...claims.values()], blackouts: [...blackouts.values()] };
+  } catch { return fileStore; }
+}
+async function writeStore(store: CouponStore) {
+  if (!(await writeDatabaseStore(store))) await writeFileStore(store);
 }
 
 function easternDate(now = new Date()) {

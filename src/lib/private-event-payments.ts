@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { isMailConfigured, sendMail } from "@/lib/mail";
+import { databaseConfigured, withDatabase } from "@/lib/database";
 
 export type PrivateEventCheckoutSession = {
   id: string;
@@ -27,7 +28,7 @@ function notificationFile() {
   return path.join(process.cwd(), "data", "private-event-payments.json");
 }
 
-async function readNotifications(): Promise<NotificationRecord[]> {
+async function readFileNotifications(): Promise<NotificationRecord[]> {
   try {
     const value = JSON.parse(await fs.readFile(notificationFile(), "utf8")) as unknown;
     return Array.isArray(value) ? value.filter((item): item is NotificationRecord => Boolean(
@@ -39,8 +40,8 @@ async function readNotifications(): Promise<NotificationRecord[]> {
   }
 }
 
-async function recordNotification(sessionId: string) {
-  const records = await readNotifications();
+async function recordFileNotification(sessionId: string) {
+  const records = await readFileNotifications();
   if (records.some((record) => record.sessionId === sessionId)) return;
   records.unshift({ sessionId, notifiedAt: new Date().toISOString() });
   const destination = notificationFile();
@@ -48,6 +49,33 @@ async function recordNotification(sessionId: string) {
   const temporary = destination + ".tmp";
   await fs.writeFile(temporary, JSON.stringify(records.slice(0, 1000), null, 2) + "\n", "utf8");
   await fs.rename(temporary, destination);
+}
+
+async function readDatabaseNotifications(): Promise<NotificationRecord[] | null> {
+  if (!databaseConfigured()) return null;
+  return withDatabase(async (client) => {
+    const result = await client.query("SELECT session_id, notified_at FROM website.private_event_payment_notifications ORDER BY notified_at DESC LIMIT 1000");
+    return result.rows.map((row): NotificationRecord => ({ sessionId: row.session_id, notifiedAt: row.notified_at instanceof Date ? row.notified_at.toISOString() : String(row.notified_at || "") }));
+  });
+}
+async function readNotifications(): Promise<NotificationRecord[]> {
+  const fileRecords = await readFileNotifications();
+  try {
+    const dbRecords = await readDatabaseNotifications();
+    if (!dbRecords) return fileRecords;
+    const byId = new Map(fileRecords.map((record) => [record.sessionId, record]));
+    for (const record of dbRecords) byId.set(record.sessionId, record);
+    return [...byId.values()];
+  } catch { return fileRecords; }
+}
+async function recordPaymentNotification(session: PrivateEventCheckoutSession) {
+  if (databaseConfigured()) {
+    await withDatabase(async (client) => {
+      await client.query("INSERT INTO website.private_event_payment_notifications (session_id, payload, notified_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (session_id) DO UPDATE SET payload=EXCLUDED.payload, notified_at=EXCLUDED.notified_at", [session.id, JSON.stringify(session)]);
+    });
+    return;
+  }
+  await recordFileNotification(session.id);
 }
 
 function formatAmount(amount: number, currency: string) {
@@ -83,6 +111,6 @@ export async function notifyPrivateEventPayment(session: PrivateEventCheckoutSes
     replyTo: details?.email || undefined,
   });
   if (!delivered) return false;
-  await recordNotification(session.id);
+  await recordPaymentNotification(session);
   return true;
 }

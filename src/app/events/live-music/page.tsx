@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ArrowUpRight, Calendar, MapPin } from "@/components/icons";
 import { getLiveMusicSchedule, liveMusicPageUrl, type LiveMusicShow } from "@/lib/live-music";
 
@@ -56,7 +55,6 @@ function ShowCard({ show, stage }: { show: LiveMusicShow; stage?: string }) {
 }
 
 export default async function LiveMusicPage() {
-  redirect(liveMusicPageUrl);
   const { schedule, error } = await getLiveMusicSchedule();
   const shows = schedule?.shows || [];
   const venues = schedule?.venues || [];
