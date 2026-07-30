@@ -1,0 +1,25 @@
+[
+  {
+    "id": "cars-coffee-campus",
+    "title": "Cars + Coffee on Campus",
+    "date": "2026-08-01",
+    "startTime": "09:00",
+    "endTime": "12:00",
+    "location": "Aviator Brewery Campus",
+    "description": "Bring the ride, meet the community, and stay for the first pint.",
+    "ticketUrl": "",
+    "imageUrl": "/images/beer-taps.jpg",
+    "galleryImages": [
+      "/images/beer-taps.jpg"
+    ],
+    "published": true,
+    "recurrence": {
+      "frequency": "monthly-weekday",
+      "interval": 1,
+      "weekday": 6,
+      "ordinal": 1
+    },
+    "createdAt": "2026-07-29T23:50:00.000Z",
+    "updatedAt": "2026-07-29T23:50:00.000Z"
+  }
+]
