@@ -632,7 +632,10 @@ body {
 .events-page-media-grid img, .events-page-media-grid video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .events-page-media-grid figcaption { position: absolute; left: .7rem; bottom: .7rem; padding: .32rem .45rem; background: rgba(6, 24, 38, .82); color: #f0bd62; font-family: "Courier New", monospace; font-size: .58rem; font-weight: 900; text-transform: uppercase; }
 @media (max-width: 800px) { .events-page-media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .events-page-media-grid figure:first-child { grid-column: span 2; grid-row: span 1; } }
-.manager-events { background: #0c2b45; }
+.manager-events { display: grid; background: #0c2b45; }
+.manager-events-saved-panel { order: 2; margin-top: 1rem; }
+.manager-events-media-panel { order: 3; }
+.manager-events-media-panel .website-photo-library { margin-top: 1.4rem; }
 .manager-event-form { display: grid; grid-template-columns: 2fr repeat(3, minmax(7rem, 1fr)); gap: .85rem; margin-top: 1.4rem; padding: 1.25rem; border: 1px solid rgba(184, 217, 236, .28); background: #113650; }
 .manager-event-form label { display: grid; gap: .35rem; color: #d9e8ef; font-size: .76rem; font-weight: 800; }
 .manager-event-form label small { color: #9dbaca; font-weight: 400; }
