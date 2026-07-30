@@ -105,7 +105,6 @@ export default async function EventsPage() {
       <p className="eyebrow">Events + live music</p>
       <h1>What&apos;s <em>taking off?</em></h1>
       <p>Live bands, amphitheater shows, beer releases, watch parties, weekly specials, Cars + Coffee, and the kind of plans worth putting on the calendar.</p>
-      <div className="hero-actions"><a className="button" href={liveMusicPageUrl} target="_blank" rel="noreferrer" data-analytics="events_live_music_schedule"><Calendar />Live music schedule</a></div>
     </div></section>
 
 
