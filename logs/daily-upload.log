@@ -365,3 +365,138 @@ Route (app)                                          Size  First Load JS
 ●  (SSG)      prerendered as static HTML (uses generateStaticParams)
 ƒ  (Dynamic)  server-rendered on demand
 
+[main 9b16a85] Daily Aviator Live update
+ 52 files changed, 1828 insertions(+), 214 deletions(-)
+ create mode 100644 public/images/products/apple-lite.png
+ create mode 100644 public/images/products/aviator-lite.png
+ create mode 100644 public/images/products/bee-17-honey-ale.png
+ create mode 100644 public/images/products/bee-17-mango-honey-ale.png
+ create mode 100644 public/images/products/berserker.png
+ create mode 100644 public/images/products/cosmic-crush-ipl.png
+ create mode 100644 public/images/products/hopocalypse-now.png
+ create mode 100644 public/images/products/hotrod-red-ale.png
+ create mode 100644 public/images/products/jet-juice-5-ipa.png
+ create mode 100644 public/images/products/jetstream-ipa.png
+ create mode 100644 public/images/products/maximum-overhop.png
+ create mode 100644 public/images/products/purplehaze.png
+ create mode 100644 public/images/products/skyhammer-imperial-wheat.png
+ create mode 100644 src/app/api/beer-release-alert-assets/[filename]/route.ts
+ create mode 100644 src/app/api/manager/beer-release-alert/route.ts
+ create mode 100644 src/app/api/manager/keg-pricing/route.ts
+ create mode 100644 src/components/beer-release-alert.tsx
+ create mode 100644 src/data/keg-pricing.json
+ create mode 100644 src/lib/beer-release-alert.ts
+ create mode 100644 src/lib/private-event-photos.ts
+To https://github.com/aviatorbrew/aviatorlive.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/aviatorbrew/aviatorlive.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+2026-07-30T03:00:01-04:00 Changes detected; running GitHub upload.
+
+> aviator-brewing-company@0.1.0 build
+> next build && node scripts/prepare-standalone.mjs
+
+   ▲ Next.js 15.5.21
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1666ms
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/45) ...
+   Generating static pages (11/45) 
+   Generating static pages (22/45) 
+   Generating static pages (33/45) 
+ ✓ Generating static pages (45/45)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                          Size  First Load JS
+┌ ƒ /                                             3.95 kB         118 kB
+├ ○ /_not-found                                     231 B         103 kB
+├ ● /[page]                                       3.07 kB         114 kB
+├   ├ /distillery
+├   ├ /private-events
+├   ├ /careers
+├   └ [+5 more paths]
+├ ƒ /about                                        2.33 kB         113 kB
+├ ƒ /api/beer-images/[filename]                     231 B         103 kB
+├ ƒ /api/beer-release-alert-assets/[filename]       231 B         103 kB
+├ ƒ /api/beverage-images/[filename]                 231 B         103 kB
+├ ƒ /api/branding/logo                              231 B         103 kB
+├ ƒ /api/checkout                                   231 B         103 kB
+├ ƒ /api/coupons                                    231 B         103 kB
+├ ƒ /api/coupons/[token]/image                      231 B         103 kB
+├ ƒ /api/coupons/manage                             231 B         103 kB
+├ ƒ /api/coupons/validate                           231 B         103 kB
+├ ƒ /api/event-images/[filename]                    231 B         103 kB
+├ ƒ /api/gift-cards/balance                         231 B         103 kB
+├ ƒ /api/inquiries                                  231 B         103 kB
+├ ƒ /api/itinerary/email                            231 B         103 kB
+├ ƒ /api/keg-orders                                 231 B         103 kB
+├ ƒ /api/manager/beer-release-alert                 231 B         103 kB
+├ ƒ /api/manager/beers                              231 B         103 kB
+├ ƒ /api/manager/beyond-beer                        231 B         103 kB
+├ ƒ /api/manager/branding                           231 B         103 kB
+├ ƒ /api/manager/events                             231 B         103 kB
+├ ƒ /api/manager/keg-pricing                        231 B         103 kB
+├ ƒ /api/manager/kegs                               231 B         103 kB
+├ ƒ /api/manager/locations                          231 B         103 kB
+├ ƒ /api/manager/newsletter                         231 B         103 kB
+├ ƒ /api/manager/password-reset                     231 B         103 kB
+├ ƒ /api/manager/payments                           231 B         103 kB
+├ ƒ /api/manager/session                            231 B         103 kB
+├ ƒ /api/manager/tours                              231 B         103 kB
+├ ƒ /api/menu-library/[location]                    231 B         103 kB
+├ ƒ /api/newsletter/confirm                         231 B         103 kB
+├ ƒ /api/newsletter/unsubscribe                     231 B         103 kB
+├ ƒ /api/stripe/webhook                             231 B         103 kB
+├ ƒ /api/tours                                      231 B         103 kB
+├ ƒ /api/tours/weekly-notify                        231 B         103 kB
+├ ƒ /api/website-photo-files/[target]/[filename]    231 B         103 kB
+├ ƒ /api/website-photos                             231 B         103 kB
+├ ƒ /beer                                         2.93 kB         114 kB
+├ ƒ /beer/[slug]                                  1.66 kB         113 kB
+├ ƒ /book-a-band                                    231 B         103 kB
+├ ƒ /brewery                                      3.62 kB         115 kB
+├ ○ /coupon-validate                                949 B         103 kB
+├ ƒ /coupons                                        162 B         105 kB
+├ ƒ /events                                       1.05 kB         104 kB
+├ ● /events/[slug]                                  179 B         111 kB
+├   ├ /events/live-at-the-hangar
+├   ├ /events/sunday-brunch-flight
+├   └ /events/cars-coffee-campus
+├ ƒ /events/live-music                              172 B         106 kB
+├ ○ /gift-card-balance                            1.59 kB         107 kB
+├ ○ /itinerary                                    6.58 kB         114 kB
+├ ƒ /kegs                                         2.33 kB         108 kB
+├ ƒ /locations                                      175 B         111 kB
+├ ● /locations/[slug]                               179 B         111 kB
+├   ├ /locations/hangar-bar
+├   ├ /locations/aviator-amphitheater
+├   ├ /locations/taphouse
+├   └ [+5 more paths]
+├ ƒ /manager                                        138 B         137 kB
+├ ƒ /manager/[section]                              138 B         137 kB
+├ ƒ /manager/reset                                  870 B         107 kB
+├ ○ /media-library                                  166 B         110 kB
+├ ○ /menus                                          231 B         103 kB
+├ ○ /more                                           172 B         106 kB
+├ ƒ /order-food                                     488 B         108 kB
+├ ○ /robots.txt                                     231 B         103 kB
+└ ○ /sitemap.xml                                    231 B         103 kB
++ First Load JS shared by all                      102 kB
+  ├ chunks/1255-612df69cb02f2021.js               46.3 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js           54.2 kB
+  └ other shared chunks (total)                   1.94 kB
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+standalone.prepared
