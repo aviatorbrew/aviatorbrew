@@ -117,13 +117,27 @@ export async function registerFlightLogCustomer(input: Record<string, unknown>, 
   const verificationToken = randomBytes(32).toString("base64url");
   const now = new Date();
   const customer = await withDatabase(async (client) => {
-    const duplicate = await client.query("SELECT id FROM flight_log.profiles WHERE lower(email) = lower($1) OR lower(handle) = lower($2) LIMIT 1", [nextEmail, nextCallsign]);
-    if ((duplicate.rowCount || 0) > 0) throw new Error("An account already exists with that email or callsign.");
-    const result = await client.query(
+    const duplicate = await client.query(
+      "SELECT id, email, handle, email_verified_at FROM flight_log.profiles WHERE lower(email) = lower($1) OR lower(handle) = lower($2)",
+      [nextEmail, nextCallsign],
+    );
+    const duplicateEmail = duplicate.rows.find((row) => String(row.email || "").toLowerCase() === nextEmail);
+    const duplicateCallsign = duplicate.rows.find((row) => String(row.handle || "").toLowerCase() === nextCallsign.toLowerCase());
+    if (duplicateCallsign && (!duplicateEmail || Number(duplicateCallsign.id) !== Number(duplicateEmail.id))) throw new Error("That callsign is already taken. Try another one.");
+    if (duplicateEmail?.email_verified_at) throw new Error("An account already exists with that email. Sign in or reset your password.");
+    const displayName = firstName + " " + lastName;
+    const profileValues = [nextCallsign, displayName, nextEmail, digest(nextEmail), firstName, lastName, salt, passwordDigest(nextPassword, salt), digest(verificationToken), new Date(now.getTime() + verificationMinutes * 60 * 1000).toISOString(), JSON.stringify({ flightCrewSource: "flight-log-registration" })];
+    const result = duplicateEmail ? await client.query(
+      `UPDATE flight_log.profiles
+       SET handle=$1, display_name=$2, email=$3, email_hash=$4, first_name=$5, last_name=$6, password_salt=$7, password_hash=$8, verification_token_hash=$9, verification_expires_at=$10, role='member', status='pending_verification', flight_crew_joined_at=COALESCE(flight_crew_joined_at, now()), metadata=COALESCE(metadata, '{}'::jsonb) || $11::jsonb, updated_at=now()
+       WHERE id=$12
+       RETURNING *`,
+      [...profileValues, duplicateEmail.id],
+    ) : await client.query(
       `INSERT INTO flight_log.profiles (handle, display_name, email, email_hash, first_name, last_name, password_salt, password_hash, verification_token_hash, verification_expires_at, role, status, flight_crew_joined_at, metadata)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'member','pending_verification',now(),$11::jsonb)
        RETURNING *`,
-      [nextCallsign, `${firstName} ${lastName}`, nextEmail, digest(nextEmail), firstName, lastName, salt, passwordDigest(nextPassword, salt), digest(verificationToken), new Date(now.getTime() + verificationMinutes * 60 * 1000).toISOString(), JSON.stringify({ flightCrewSource: "flight-log-registration" })],
+      profileValues,
     );
     await client.query(
       `INSERT INTO website.newsletter_subscribers (email,name,source,status,subscribed_at,confirmation_expires_at,confirmation_sent_at)
