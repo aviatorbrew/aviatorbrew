@@ -123,6 +123,64 @@
   background: #dce8ed;
   color: #0b2840;
 }
+.brewery-open-counter {
+  border-top: 1px solid rgba(184, 217, 236, .22);
+  border-bottom: 1px solid rgba(184, 217, 236, .22);
+  background: #071827;
+  background-image: linear-gradient(90deg, rgba(184, 217, 236, .07) 1px, transparent 1px), linear-gradient(rgba(184, 217, 236, .07) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.brewery-open-counter-inner {
+  display: grid;
+  grid-template-columns: minmax(16rem, .55fr) minmax(0, 1fr);
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: stretch;
+  padding-top: clamp(1.25rem, 3vw, 2rem);
+  padding-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+.brewery-open-counter h2 {
+  margin: .35rem 0 0;
+  color: #f2f7f9;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(2.2rem, 4vw, 4.6rem);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: .88;
+  text-transform: uppercase;
+}
+.brewery-open-counter dl {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid rgba(184, 217, 236, .26);
+  background: rgba(184, 217, 236, .26);
+}
+.brewery-open-counter dl div {
+  display: grid;
+  gap: .35rem;
+  align-content: center;
+  min-height: 6.5rem;
+  padding: .9rem .75rem;
+  background: #102f49;
+}
+.brewery-open-counter dt {
+  color: #bed2dd;
+  font-family: "Courier New", monospace;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.brewery-open-counter dd {
+  margin: 0;
+  color: #efb45f;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(1.9rem, 3.5vw, 4rem);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: .9;
+}
 .brewery-intro-grid {
   display: grid;
   grid-template-columns: .9fr 1.1fr;
@@ -471,6 +529,8 @@
   .brewery-intro-grid h2,
   .brewery-system-copy h2,
   .brewery-visit-grid h2 { font-size: 3.25rem; }
+  .brewery-open-counter-inner { grid-template-columns: 1fr; }
+  .brewery-open-counter dl { grid-template-columns: repeat(3, 1fr); }
   .brewing-diagram-controls { grid-template-columns: repeat(3, 1fr); }
   .brewing-recipe-lab { grid-template-columns: 1fr; }
   .brewing-detail-grid { grid-template-columns: 1fr; }
@@ -488,6 +548,7 @@
   .brewery-hero-specs { grid-template-columns: repeat(2, 1fr); }
   .brewery-hero-specs span:nth-child(2) { border-right: 0; }
   .brewery-hero-specs span:nth-child(-n+2) { border-bottom: 1px solid rgba(231, 241, 244, .2); }
+  .brewery-open-counter dl { grid-template-columns: repeat(2, 1fr); }
   .brewery-intro-grid,
   .brewery-system-grid,
   .brewery-visit-grid { grid-template-columns: 1fr; }

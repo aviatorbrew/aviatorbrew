@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, MapPin } from "@/components/icons";
 import { BrewingDiagram } from "@/components/brewing-diagram";
+import { OpenSinceCounter } from "@/components/open-since-counter";
 import { getBreweryHero, getBreweryPhotos, type BreweryPhoto } from "@/lib/brewery-photos";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,8 @@ export default async function BreweryPage() {
       </div>
       <div className="brewery-hero-specs content-wrap" aria-label="Brewery facts"><span><b>2008</b> First hangar batch</span><span><b>60 BBL</b> Brewhouse</span><span><b>04</b> Brewhouse vessels</span><span><b>2025</b> Campus opened</span></div>
     </section>
+
+    <OpenSinceCounter />
 
     <section className="section brewery-intro-band">
       <div className="content-wrap brewery-intro-grid">
