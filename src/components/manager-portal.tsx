@@ -74,6 +74,18 @@ function eventGalleryImages(event: ManagedEvent) {
   return [...new Set([...(event.imageUrl ? [event.imageUrl] : []), ...(event.galleryImages || [])])];
 }
 
+async function readEventManagerResponse(response: Response) {
+  const text = await response.text();
+  let body: { events?: ManagedEvent[]; error?: string } = {};
+  try { body = text ? JSON.parse(text) : {}; }
+  catch { body = { error: text || "Event request failed." }; }
+  if (!response.ok) throw new Error(body.error || "Event request failed.");
+  return body;
+}
+
+function eventErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Event request failed.";
+}
 
 function EventFormFields({ event }: { event?: ManagedEvent }) {
   const recurrence = event?.recurrence;
@@ -100,32 +112,46 @@ function EventManager() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<ManagedEvent | null>(null);
-  async function load() { const response = await fetch("/api/manager/events"); const body = await response.json(); if (!response.ok) throw new Error(body.error); setEvents(body.events || []); }
+  async function load() { const response = await fetch("/api/manager/events"); const body = await readEventManagerResponse(response); setEvents(body.events || []); }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
   async function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true);
+    event.preventDefault(); setBusy(true); setMessage("Saving event...");
     const form = event.currentTarget; const values = new FormData(form); values.set("published", values.get("published") === "on" ? "true" : "false");
-    const response = await fetch("/api/manager/events", { method: "POST", body: values });
-    const body = await response.json(); setBusy(false);
-    if (!response.ok) { setMessage(body.error); return; }
-    setEvents(body.events || []); form.reset(); setMessage("Special event saved.");
+    try {
+      const response = await fetch("/api/manager/events", { method: "POST", body: values });
+      const body = await readEventManagerResponse(response);
+      setEvents(body.events || []); form.reset(); setMessage("Special event saved.");
+    } catch (error) { setMessage(eventErrorMessage(error)); }
+    finally { setBusy(false); }
   }
   async function update(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (!editing) return; setBusy(true);
+    event.preventDefault(); if (!editing) return; setBusy(true); setMessage("Saving event changes...");
     const values = new FormData(event.currentTarget); values.set("id", editing.id); values.set("published", values.get("published") === "on" ? "true" : "false");
-    const response = await fetch("/api/manager/events", { method: "PATCH", body: values });
-    const body = await response.json(); setBusy(false);
-    if (!response.ok) { setMessage(body.error); return; }
-    setEvents(body.events || []); setEditing(null); setMessage("Event details updated.");
+    try {
+      const response = await fetch("/api/manager/events", { method: "PATCH", body: values });
+      const body = await readEventManagerResponse(response);
+      setEvents(body.events || []); setEditing(null); setMessage("Event details updated.");
+    } catch (error) { setMessage(eventErrorMessage(error)); }
+    finally { setBusy(false); }
   }
   async function toggle(item: ManagedEvent) {
-    setBusy(true); const response = await fetch("/api/manager/events", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...item, published: !item.published }) }); const body = await response.json(); setBusy(false);
-    if (!response.ok) { setMessage(body.error); return; } setEvents(body.events || []); setMessage(item.published ? "Event removed from the public page." : "Event published to the public Events page.");
+    setBusy(true); setMessage(item.published ? "Unpublishing event..." : "Publishing event...");
+    try {
+      const response = await fetch("/api/manager/events", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...item, published: !item.published }) });
+      const body = await readEventManagerResponse(response);
+      setEvents(body.events || []); setMessage(item.published ? "Event removed from the public page." : "Event published to the public Events page.");
+    } catch (error) { setMessage(eventErrorMessage(error)); }
+    finally { setBusy(false); }
   }
   async function remove(id: string) {
     if (!window.confirm("Delete this special event? This cannot be undone.")) return;
-    setBusy(true); const response = await fetch("/api/manager/events?id=" + encodeURIComponent(id), { method: "DELETE" }); const body = await response.json(); setBusy(false);
-    if (!response.ok) { setMessage(body.error); return; } setEvents(body.events || []); if (editing?.id === id) setEditing(null); setMessage("Event deleted.");
+    setBusy(true); setMessage("Deleting event...");
+    try {
+      const response = await fetch("/api/manager/events?id=" + encodeURIComponent(id), { method: "DELETE" });
+      const body = await readEventManagerResponse(response);
+      setEvents(body.events || []); if (editing?.id === id) setEditing(null); setMessage("Event deleted.");
+    } catch (error) { setMessage(eventErrorMessage(error)); }
+    finally { setBusy(false); }
   }
   return <section id="events" className="coupon-manager manager-events"><p className="eyebrow">Event operations</p><h2>Add a special event</h2><p>Publish non-music events to the Aviator Events page: beer releases, tastings, watch parties, campus gatherings, holiday events, and more. Live music continues to come from Aviator Live.</p><p className="media-message" role="status">{message}</p>
     <form className="manager-event-form" onSubmit={create}><EventFormFields /><button className="button" disabled={busy}>{busy ? "Saving..." : "Publish special event"}</button></form>
