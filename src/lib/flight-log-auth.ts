@@ -13,6 +13,8 @@ export type FlightLogCustomer = {
   displayName: string;
   emailVerified: boolean;
   flightCrewJoinedAt?: string;
+  avatarUrl?: string;
+  bio?: string;
 };
 
 export const flightLogSessionCookie = "aviator_flight_log";
@@ -61,6 +63,8 @@ function customerFromRow(row: Record<string, unknown>): FlightLogCustomer {
     callsign: String(row.handle || ""),
     displayName: String(row.display_name || row.handle || ""),
     emailVerified: Boolean(row.email_verified_at),
+    avatarUrl: String(row.avatar_url || "") || undefined,
+    bio: String(row.bio || "") || undefined,
     flightCrewJoinedAt: row.flight_crew_joined_at instanceof Date ? row.flight_crew_joined_at.toISOString() : row.flight_crew_joined_at ? String(row.flight_crew_joined_at) : undefined,
   };
 }
@@ -227,11 +231,48 @@ export async function destroyFlightLogSession(token?: string) {
   if (!token || !databaseConfigured()) return;
   await withDatabase(async (client) => { await client.query("DELETE FROM flight_log.sessions WHERE token_hash=$1", [digest(token)]); });
 }
+function secureFlightLogCookie() {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || process.env.APP_URL;
+  if (configured) {
+    try { return new URL(configured).protocol === "https:"; } catch { return false; }
+  }
+  return process.env.NODE_ENV === "production";
+}
+
+export async function updateFlightLogProfile(profileId: number, input: { avatarUrl?: string; bio?: string }) {
+  requireDatabaseForFlightLogAuth();
+  const avatarUrl = clean(input.avatarUrl, 500);
+  const bio = clean(input.bio, 500);
+  const result = await withDatabase(async (client) => client.query(
+    "UPDATE flight_log.profiles SET avatar_url=COALESCE(NULLIF($1,''), avatar_url), bio=CASE WHEN $2 = '' THEN bio ELSE $2 END, updated_at=now() WHERE id=$3 RETURNING *",
+    [avatarUrl, bio, profileId],
+  ));
+  if (!result.rows[0]) throw new Error("Profile not found.");
+  return customerFromRow(result.rows[0]);
+}
+
+export type FlightLogCheckIn = { id: number; kind: string; label: string; slug: string; notes: string; checkedInAt: string };
+export async function getFlightLogProfileSummary(profileId: number) {
+  if (!databaseConfigured()) return { beer: [], locations: [], food: [], events: [] } as Record<string, FlightLogCheckIn[]>;
+  const result = await withDatabase(async (client) => client.query(
+    "SELECT id, checkin_type, target_label, target_slug, notes, checked_in_at FROM flight_log.check_ins WHERE profile_id=$1 ORDER BY checked_in_at DESC LIMIT 100",
+    [profileId],
+  ));
+  const groups: Record<string, FlightLogCheckIn[]> = { beer: [], locations: [], food: [], events: [] };
+  for (const row of result.rows) {
+    const item = { id: Number(row.id), kind: String(row.checkin_type || ""), label: String(row.target_label || ""), slug: String(row.target_slug || ""), notes: String(row.notes || ""), checkedInAt: row.checked_in_at instanceof Date ? row.checked_in_at.toISOString() : String(row.checked_in_at || "") };
+    if (item.kind === "beer") groups.beer.push(item);
+    else if (item.kind === "location") groups.locations.push(item);
+    else if (item.kind === "food") groups.food.push(item);
+    else if (item.kind === "event") groups.events.push(item);
+  }
+  return groups;
+}
 export function setFlightLogSessionCookie(response: NextResponse, token: string, expiresAt: Date) {
-  response.cookies.set({ name: flightLogSessionCookie, value: token, httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", expires: expiresAt });
+  response.cookies.set({ name: flightLogSessionCookie, value: token, httpOnly: true, sameSite: "lax", secure: secureFlightLogCookie(), path: "/", expires: expiresAt });
 }
 export function clearFlightLogSessionCookie(response: NextResponse) {
-  response.cookies.set({ name: flightLogSessionCookie, value: "", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 0 });
+  response.cookies.set({ name: flightLogSessionCookie, value: "", httpOnly: true, sameSite: "lax", secure: secureFlightLogCookie(), path: "/", maxAge: 0 });
 }
 export function rateLimitKey(request: NextRequest, action: string, subject = "") {
   return [action, request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local", subject.toLowerCase()].join(":");

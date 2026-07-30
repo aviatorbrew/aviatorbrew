@@ -291,6 +291,22 @@ const schemaStatements = [
     PRIMARY KEY (requester_profile_id, addressee_profile_id),
     CONSTRAINT flight_log_friendships_distinct_profiles CHECK (requester_profile_id <> addressee_profile_id)
   )`,
+  `CREATE TABLE IF NOT EXISTS flight_log.check_ins (
+    id bigserial PRIMARY KEY,
+    profile_id bigint NOT NULL REFERENCES flight_log.profiles(id) ON DELETE CASCADE,
+    checkin_type text NOT NULL,
+    target_slug text,
+    target_label text NOT NULL,
+    notes text NOT NULL DEFAULT '',
+    rating integer,
+    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+    checked_in_at timestamptz NOT NULL DEFAULT now(),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT flight_log_check_ins_type_check CHECK (checkin_type IN ('beer','location','food','event'))
+  )`,
+  `CREATE INDEX IF NOT EXISTS flight_log_check_ins_profile_idx ON flight_log.check_ins (profile_id, checked_in_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS flight_log_check_ins_target_idx ON flight_log.check_ins (checkin_type, target_slug)`,
+
   `CREATE TABLE IF NOT EXISTS flight_log.friend_invites (
     id bigserial PRIMARY KEY,
     inviter_profile_id bigint REFERENCES flight_log.profiles(id) ON DELETE SET NULL,

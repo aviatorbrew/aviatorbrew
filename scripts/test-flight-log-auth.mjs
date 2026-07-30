@@ -58,6 +58,10 @@ try {
   assert(response.status === 200, "login succeeds");
   const cookie = response.headers.get("set-cookie") || "";
   assert(cookie.includes("aviator_flight_log"), "login sets session cookie");
+  if (baseUrl.startsWith("http://")) assert(!/;\s*Secure/i.test(cookie), "local HTTP login cookie is not marked Secure");
+  response = await fetch(baseUrl + "/flight-log", { headers: { cookie } });
+  let html = await response.text();
+  assert(/Signed in/.test(html) && /My Profile/.test(html), "signed-in experience shows profile controls");
   response = await fetch(baseUrl + "/api/flight-log/auth/logout", { method: "POST", headers: { cookie } });
   assert(response.status === 200, "logout succeeds");
   response = await fetch(baseUrl + "/api/flight-log/auth/forgot-password", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
@@ -66,7 +70,7 @@ try {
   response = await fetch(baseUrl + "/api/flight-log/auth/reset-password", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: resetToken, password: "NewTestPassword12345", confirmation: "NewTestPassword12345" }) });
   assert(response.status === 200, "password reset succeeds");
   response = await fetch(baseUrl + "/flight-log");
-  const html = await response.text();
+  html = await response.text();
   assert(/Join Flight Crew/.test(html) && /Sign In/.test(html), "logged-out experience shows join and sign in CTAs");
   console.log("flight-log-auth.integration-tests.passed");
 } finally {

@@ -898,3 +898,100 @@
 .flight-log-profile-grid article { padding: 1rem; border: 1px solid #c5d6df; background: #edf5f8; }
 .flight-log-profile-grid h2 { margin: 0 0 .4rem; color: #102d46; font-family: Impact, Haettenschweiler, sans-serif; font-size: 2rem; font-weight: 400; line-height: .9; text-transform: uppercase; }
 @media (max-width: 760px) { .flight-log-profile-grid { grid-template-columns: 1fr; } }
+
+.flight-log-profile-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.flight-log-profile-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.flight-log-profile-photo {
+  width: 112px;
+  height: 112px;
+  border: 3px solid rgba(239, 174, 88, 0.75);
+  background: #102d46;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-weight: 900;
+  font-size: 32px;
+}
+
+.flight-log-profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.flight-log-avatar-form {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+  padding: 14px;
+  border: 1px solid rgba(10, 45, 70, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.flight-log-avatar-form label {
+  display: grid;
+  gap: 6px;
+  min-width: min(100%, 280px);
+  font-weight: 800;
+  color: #102d46;
+}
+
+.flight-log-avatar-form input {
+  border: 1px solid rgba(10, 45, 70, 0.18);
+  padding: 10px;
+  background: #fff;
+}
+
+.flight-log-profile-card {
+  border: 1px solid rgba(10, 45, 70, 0.14);
+  background: rgba(255, 255, 255, 0.76);
+  padding: 16px;
+  min-height: 150px;
+}
+
+.flight-log-profile-card h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.flight-log-profile-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.flight-log-profile-card li {
+  display: grid;
+  gap: 3px;
+  border-top: 1px solid rgba(10, 45, 70, 0.1);
+  padding-top: 10px;
+}
+
+.flight-log-profile-card li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.flight-log-profile-card span {
+  color: #5b7280;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .flight-log-profile-head { grid-template-columns: 1fr; }
+  .flight-log-profile-photo { width: 96px; height: 96px; }
+}
