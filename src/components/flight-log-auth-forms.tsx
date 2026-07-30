@@ -23,12 +23,13 @@ export function FlightLogAuthForm({ mode, token = "" }: { mode: Mode; token?: st
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true); setError(""); setMessage("");
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       if (mode === "join") {
         await submitJson("/api/flight-log/auth/register", { firstName: value(form, "firstName"), lastName: value(form, "lastName"), email: value(form, "email"), callsign: value(form, "callsign"), password: value(form, "password"), passwordConfirmation: value(form, "passwordConfirmation"), agree: form.get("agree") === "on" });
         setMessage("Account created. Check your email to verify your address before posting or checking in.");
-        event.currentTarget.reset();
+        formElement.reset();
       }
       if (mode === "sign-in") {
         await submitJson("/api/flight-log/auth/login", { emailOrCallsign: value(form, "emailOrCallsign"), password: value(form, "password"), remember: form.get("remember") === "on" });
