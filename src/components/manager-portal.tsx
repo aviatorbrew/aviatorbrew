@@ -551,6 +551,29 @@ function DatabaseManager() {
   </section>;
 }
 
+
+function EmailTestManager() {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function sendTestEmail() {
+    setBusy(true);
+    setMessage("Sending test email to mark@aviatorbrew.com...");
+    try {
+      const response = await fetch("/api/manager/test-email", { method: "POST" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Could not send test email.");
+      setMessage(body.message || "Test email sent to mark@aviatorbrew.com.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not send test email.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <section id="email-test" className="coupon-manager manager-email-test"><p className="eyebrow">Email diagnostics</p><h2>Send test email</h2><p>Send a live diagnostics email to <strong>mark@aviatorbrew.com</strong> using the website mail configuration.</p><p className="media-message" role="status">{message}</p><button className="button" type="button" onClick={sendTestEmail} disabled={busy}>{busy ? "Sending..." : "Send test email"}</button></section>;
+}
+
 function ManagerOverview() {
   return <section className="manager-overview">
     <p className="eyebrow">Manager dashboard</p>
@@ -578,6 +601,7 @@ function ManagerSectionContent({ section }: { section: ManagerSection }) {
     case "kegs": return <KegInventoryManager />;
     case "events": return <EventManager />;
     case "database": return <DatabaseManager />;
+    case "email-test": return <EmailTestManager />;
     case "media": return <div className="manager-media-route"><BrandingManager /><MenuLibraryClient managerMode /></div>;
     default: return <ManagerOverview />;
   }

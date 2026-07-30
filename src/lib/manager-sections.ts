@@ -96,6 +96,12 @@ export const managerSections = [
     description: "Run and verify a $1 live Stripe Checkout test.",
   },
   {
+    id: "email-test",
+    href: "/manager/email-test",
+    label: "Email Test",
+    description: "Send a diagnostics email to mark@aviatorbrew.com.",
+  },
+  {
     id: "database",
     href: "/manager/database",
     label: "Database",
