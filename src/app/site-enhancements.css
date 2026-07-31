@@ -1194,3 +1194,189 @@
 .flight-log-beverage-checkin p strong, .flight-log-beverage-checkin p span { display: block; }
 .flight-log-beverage-checkin p strong { color: #102d46; }
 .flight-log-beverage-checkin > div { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; }
+
+/* Dark Flight Log customer theme */
+.flight-log-community-shell,
+.flight-log-auth-page {
+  background:
+    radial-gradient(circle at 18% -8%, rgba(239, 180, 95, .16), transparent 30rem),
+    radial-gradient(circle at 92% 6%, rgba(93, 179, 213, .13), transparent 28rem),
+    #050d16;
+  color: #f4f8fa;
+}
+.flight-log-community-hero {
+  border-bottom: 1px solid rgba(239, 180, 95, .28);
+  background:
+    linear-gradient(115deg, rgba(4, 13, 23, .98), rgba(12, 37, 57, .92) 54%, rgba(38, 22, 12, .82)),
+    repeating-linear-gradient(90deg, rgba(184, 217, 236, .05) 0 1px, transparent 1px 8px);
+  color: #f7fbfd;
+}
+.flight-log-community-hero h1,
+.flight-log-auth-page h1,
+.flight-log-activity-card h2,
+.flight-log-data-panel h2,
+.flight-log-account-card h2,
+.flight-log-profile-grid h2,
+.flight-log-profile-card h2 {
+  color: #f7fbfd;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .22);
+}
+.flight-log-community-hero p:not(.eyebrow),
+.flight-log-auth-page p,
+.flight-log-profile-head p,
+.flight-log-activity-card p:not(.flight-log-activity-meta),
+.flight-log-data-panel p,
+.flight-log-account-card p,
+.flight-log-right li,
+.flight-log-composer p,
+.flight-log-beverage-checkin p,
+.flight-log-check-in-action span,
+.flight-log-check-in-action a,
+.flight-log-action-note,
+.flight-log-tags,
+.flight-log-profile-card span,
+.flight-log-reaction-row small {
+  color: #c9dbe4;
+}
+.flight-log-left nav,
+.flight-log-right section,
+.flight-log-account-card,
+.flight-log-composer,
+.flight-log-activity-card,
+.flight-log-data-panel,
+.flight-log-auth-page > section,
+.flight-log-profile-grid article,
+.flight-log-profile-card,
+.flight-log-avatar-form,
+.flight-log-beverage-checkin,
+.flight-log-comments article {
+  border-color: rgba(184, 217, 236, .22);
+  background: linear-gradient(145deg, rgba(12, 32, 49, .98), rgba(6, 18, 30, .98));
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, .26);
+}
+.flight-log-left nav,
+.flight-log-right section,
+.flight-log-account-card,
+.flight-log-composer,
+.flight-log-activity-card,
+.flight-log-data-panel,
+.flight-log-auth-page > section {
+  outline: 1px solid rgba(239, 180, 95, .08);
+}
+.flight-log-left a {
+  color: #dcecf3;
+}
+.flight-log-left a:hover,
+.flight-log-left a.is-active {
+  background: #efb45f;
+  color: #071827;
+}
+.flight-log-avatar,
+.flight-log-profile-photo {
+  border-color: rgba(239, 180, 95, .72);
+  background: #efb45f;
+  color: #071827;
+}
+.flight-log-composer input,
+.flight-log-auth-form input,
+.flight-log-comment-form input,
+.flight-log-post-composer textarea,
+.flight-log-post-composer input,
+.flight-log-friend-form input,
+.flight-log-avatar-form input,
+.flight-log-beverage-checkin select {
+  border-color: rgba(184, 217, 236, .3);
+  background: #071827;
+  color: #f4f8fa;
+}
+.flight-log-composer input::placeholder,
+.flight-log-auth-form input::placeholder,
+.flight-log-comment-form input::placeholder,
+.flight-log-post-composer textarea::placeholder,
+.flight-log-post-composer input::placeholder,
+.flight-log-friend-form input::placeholder {
+  color: #91adbd;
+}
+.flight-log-auth-form label,
+.flight-log-avatar-form label,
+.flight-log-beverage-checkin label,
+.flight-log-data-panel strong,
+.flight-log-comments strong,
+.flight-log-friends-card h3,
+.flight-log-profile-card li strong,
+.flight-log-beverage-checkin p strong {
+  color: #f6c77e;
+}
+.flight-log-activity-card h2 a:hover,
+.flight-log-activity-meta strong,
+.flight-log-data-panel span,
+.flight-log-activity-meta,
+.flight-log-activity-card footer,
+.flight-log-auth-links a,
+.flight-log-auth-foot a {
+  color: #f0b45e;
+}
+.flight-log-activity-card footer,
+.flight-log-post-actions,
+.flight-log-data-panel article,
+.flight-log-profile-card li,
+.flight-log-comments article {
+  border-color: rgba(184, 217, 236, .18);
+}
+.flight-log-data-panel button,
+.flight-log-mini-button,
+.flight-log-comment-form button,
+.flight-log-friend-form button,
+.flight-log-profile-card li button,
+.flight-log-reaction-row button {
+  border-color: rgba(239, 180, 95, .72);
+  background: #efb45f;
+  color: #071827;
+}
+.flight-log-data-panel button:hover,
+.flight-log-mini-button:hover,
+.flight-log-comment-form button:hover,
+.flight-log-friend-form button:hover,
+.flight-log-profile-card li button:hover,
+.flight-log-reaction-row button:hover {
+  background: #ffd58e;
+}
+.flight-log-data-panel button:disabled,
+.flight-log-mini-button:disabled,
+.flight-log-comment-form button:disabled,
+.flight-log-friend-form button:disabled,
+.flight-log-profile-card li button:disabled,
+.flight-log-reaction-row button:disabled {
+  background: #26394a;
+  border-color: rgba(184, 217, 236, .22);
+  color: #9fb5c1;
+}
+.flight-log-auth-message {
+  color: #9af0bf;
+}
+.flight-log-auth-message.is-error {
+  color: #ff9b8e;
+}
+.flight-log-community-shell .button-outline,
+.flight-log-auth-page .button-outline {
+  border-color: rgba(184, 217, 236, .55);
+  background: rgba(7, 24, 39, .72);
+  color: #f4f8fa;
+}
+.flight-log-community-shell .button-outline:hover,
+.flight-log-auth-page .button-outline:hover {
+  border-color: #efb45f;
+  background: rgba(239, 180, 95, .14);
+}
+.flight-log-community-shell a:focus-visible,
+.flight-log-community-shell button:focus-visible,
+.flight-log-community-shell input:focus-visible,
+.flight-log-community-shell select:focus-visible,
+.flight-log-community-shell textarea:focus-visible,
+.flight-log-auth-page a:focus-visible,
+.flight-log-auth-page button:focus-visible,
+.flight-log-auth-page input:focus-visible,
+.flight-log-auth-page textarea:focus-visible {
+  outline: 3px solid #f6c77e;
+  outline-offset: 3px;
+}

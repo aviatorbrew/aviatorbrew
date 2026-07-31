@@ -1,6 +1,10 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import path from "node:path";
+import { getAllBeers } from "@/lib/managed-beers";
+import { getAllBeyondBeer } from "@/lib/managed-beyond-beer";
+import { getAllLocations } from "@/lib/managed-locations";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 import { isMailConfigured, sendMail } from "@/lib/mail";
 
@@ -54,6 +58,11 @@ function publicBaseUrl(request?: Request) {
   if (request) return new URL(request.url).origin;
   return "http://localhost:4173";
 }
+function normalizeFlightLogAvatarUrl(value: string) {
+  if (value.startsWith("/media/flight-log-avatars/")) return "/api/flight-log-avatar-files/" + encodeURIComponent(path.basename(value));
+  return value;
+}
+
 function customerFromRow(row: Record<string, unknown>): FlightLogCustomer {
   return {
     id: Number(row.id),
@@ -63,7 +72,7 @@ function customerFromRow(row: Record<string, unknown>): FlightLogCustomer {
     callsign: String(row.handle || ""),
     displayName: String(row.display_name || row.handle || ""),
     emailVerified: Boolean(row.email_verified_at),
-    avatarUrl: String(row.avatar_url || "") || undefined,
+    avatarUrl: normalizeFlightLogAvatarUrl(String(row.avatar_url || "")) || undefined,
     bio: String(row.bio || "") || undefined,
     flightCrewJoinedAt: row.flight_crew_joined_at instanceof Date ? row.flight_crew_joined_at.toISOString() : row.flight_crew_joined_at ? String(row.flight_crew_joined_at) : undefined,
   };
@@ -286,13 +295,22 @@ export async function getFlightLogProfileSummary(profileId: number) {
     "SELECT id, checkin_type, target_label, target_slug, notes, checked_in_at FROM flight_log.check_ins WHERE profile_id=$1 ORDER BY checked_in_at DESC LIMIT 100",
     [profileId],
   ));
+  const [beers, beverages, locations] = await Promise.all([
+    getAllBeers().catch(() => []),
+    getAllBeyondBeer().catch(() => []),
+    getAllLocations().catch(() => []),
+  ]);
+  const beerLabels = new Map([...beers, ...beverages].map((item) => [item.slug, item.name]));
+  const locationLabels = new Map(locations.map((item) => [item.slug, item.name]));
   const groups: Record<string, FlightLogCheckIn[]> = { beer: [], locations: [], food: [], events: [] };
   for (const row of result.rows) {
     const item = checkInFromRow(row);
-    if (item.kind === "beer") groups.beer.push(item);
-    else if (item.kind === "location") groups.locations.push(item);
-    else if (item.kind === "food") groups.food.push(item);
-    else if (item.kind === "event") groups.events.push(item);
+    const fallback = item.kind === "beer" ? beerLabels.get(item.slug) : item.kind === "location" ? locationLabels.get(item.slug) : undefined;
+    const displayItem = fallback && (!item.label || item.label === item.slug) ? { ...item, label: fallback } : item;
+    if (displayItem.kind === "beer") groups.beer.push(displayItem);
+    else if (displayItem.kind === "location") groups.locations.push(displayItem);
+    else if (displayItem.kind === "food") groups.food.push(displayItem);
+    else if (displayItem.kind === "event") groups.events.push(displayItem);
   }
   return groups;
 }

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   await fs.mkdir(directory, { recursive: true });
   const filename = customer.id + "-" + Date.now().toString(36) + "-" + safeName(upload.name).replace(/\.[a-z0-9]+$/i, "") + extension;
   await fs.writeFile(path.join(directory, filename), bytes);
-  const avatarUrl = "/media/flight-log-avatars/" + filename;
+  const avatarUrl = "/api/flight-log-avatar-files/" + encodeURIComponent(filename);
   const profile = await updateFlightLogProfile(customer.id, { avatarUrl });
   return NextResponse.json({ ok: true, profile, avatarUrl });
 }
