@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "alerts": [
+    {
+      "id": "render-pumpkinbeast-king-of-pumpkins",
+      "enabled": true,
+      "beerName": "PumpkinBeast and King of Pumpkins!",
+      "releaseDate": "2026-08-07",
+      "releaseTime": "18:00",
+      "locations": "All locations!",
+      "specials": "Free Aviator Pint Glass from 6pm-8pm when you mention this!",
+      "sellSheetUrl": "/api/beer-release-alert-assets/beer-release-ms6d01j8-9fbwcv.png",
+      "updatedAt": "2026-07-30T15:53:20.908Z"
+    }
+  ]
+}

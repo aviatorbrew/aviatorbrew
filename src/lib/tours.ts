@@ -110,19 +110,13 @@ async function writeDatabaseStore(store: TourStore) {
   return true;
 }
 async function readStore(): Promise<TourStore> {
-  const fileStore = await readFileStore();
-  try {
-    const dbStore = await readDatabaseStore();
-    if (!dbStore) return fileStore;
-    const signups = new Map(fileStore.signups.map((signup) => [signup.id, signup]));
-    for (const signup of dbStore.signups) signups.set(signup.id, signup);
-    const notifications = new Map(fileStore.notifications.map((notification) => [notification.key, notification]));
-    for (const notification of dbStore.notifications) notifications.set(notification.key, notification);
-    return { signups: [...signups.values()], notifications: [...notifications.values()], minimum: dbStore.minimum, priceCents: dbStore.priceCents, cancelledTours: [...new Set([...fileStore.cancelledTours, ...dbStore.cancelledTours])] };
-  } catch { return fileStore; }
+  const dbStore = await readDatabaseStore();
+  if (dbStore) return dbStore;
+  if (databaseConfigured()) return emptyStore();
+  throw new Error("Tours require DATABASE_URL. Run the file-to-database import before using tours.");
 }
 async function writeStore(store: TourStore) {
-  if (!(await writeDatabaseStore(store))) await writeFileStore(store);
+  if (!(await writeDatabaseStore(store))) throw new Error("Tours require DATABASE_URL.");
 }
 
 function easternParts(value: Date) {

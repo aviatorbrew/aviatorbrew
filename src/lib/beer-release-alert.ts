@@ -143,16 +143,10 @@ async function deleteDatabaseAlert(id: string) {
 }
 
 async function readAlerts() {
-  const fileAlerts = await readFileAlerts();
-  try {
-    const databaseAlerts = await readDatabaseAlerts();
-    if (!databaseAlerts) return fileAlerts;
-    const byId = new Map(fileAlerts.map((alert) => [alert.id, alert]));
-    for (const alert of databaseAlerts) byId.set(alert.id, alert);
-    return [...byId.values()].sort(sortAlerts);
-  } catch {
-    return fileAlerts;
-  }
+  const databaseAlerts = await readDatabaseAlerts();
+  if (databaseAlerts) return databaseAlerts;
+  if (databaseConfigured()) return [];
+  throw new Error("New Release alerts require DATABASE_URL. Run the file-to-database import before using alerts.");
 }
 
 export async function getBeerReleaseAlerts(): Promise<BeerReleaseAlert[]> {
@@ -173,24 +167,13 @@ export async function saveBeerReleaseAlert(input: BeerReleaseAlertInput): Promis
   const index = id ? alerts.findIndex((alert) => alert.id === id) : alerts.length ? 0 : -1;
   const existing = index >= 0 ? alerts[index] : emptyAlert;
   const next = normalize(input, existing);
-  if (await upsertDatabaseAlert(next)) {
-    const fileAlerts = await readFileAlerts();
-    if (fileAlerts.some((alert) => alert.id === next.id)) await writeFileAlerts(fileAlerts.filter((alert) => alert.id !== next.id));
-  } else {
-    if (index >= 0) alerts[index] = next;
-    else alerts.push(next);
-    await writeFileAlerts(alerts);
-  }
+  if (!(await upsertDatabaseAlert(next))) throw new Error("New Release alerts require DATABASE_URL.");
   return next;
 }
 
 export async function createBeerReleaseAlert(input: BeerReleaseAlertInput): Promise<BeerReleaseAlert> {
   const next = normalize({ ...input, id: randomUUID() });
-  if (!(await upsertDatabaseAlert(next))) {
-    const alerts = await readFileAlerts();
-    alerts.push(next);
-    await writeFileAlerts(alerts);
-  }
+  if (!(await upsertDatabaseAlert(next))) throw new Error("New Release alerts require DATABASE_URL.");
   return next;
 }
 
@@ -199,7 +182,5 @@ export async function deleteBeerReleaseAlert(id: string) {
   const alerts = await readAlerts();
   const next = alerts.filter((alert) => alert.id !== cleanId);
   if (next.length === alerts.length) throw new Error("Release alert not found.");
-  await deleteDatabaseAlert(cleanId);
-  const fileAlerts = await readFileAlerts();
-  if (fileAlerts.some((alert) => alert.id === cleanId)) await writeFileAlerts(fileAlerts.filter((alert) => alert.id !== cleanId));
+  if (!(await deleteDatabaseAlert(cleanId))) throw new Error("New Release alerts require DATABASE_URL.");
 }

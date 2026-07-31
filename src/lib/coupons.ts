@@ -60,21 +60,13 @@ async function writeDatabaseStore(store: CouponStore) {
   return true;
 }
 async function readStore(): Promise<CouponStore> {
-  const fileStore = await readFileStore();
-  try {
-    const dbStore = await readDatabaseStore();
-    if (!dbStore) return fileStore;
-    const offers = new Map(fileStore.offers.map((offer) => [offer.id, offer]));
-    for (const offer of dbStore.offers) offers.set(offer.id, offer);
-    const claims = new Map(fileStore.claims.map((claim) => [claim.token, claim]));
-    for (const claim of dbStore.claims) claims.set(claim.token, claim);
-    const blackouts = new Map(fileStore.blackouts.map((blackout) => [blackout.date, blackout]));
-    for (const blackout of dbStore.blackouts) blackouts.set(blackout.date, blackout);
-    return { offers: [...offers.values()], claims: [...claims.values()], blackouts: [...blackouts.values()] };
-  } catch { return fileStore; }
+  const dbStore = await readDatabaseStore();
+  if (dbStore) return dbStore;
+  if (databaseConfigured()) return empty();
+  throw new Error("Coupons require DATABASE_URL. Run the file-to-database import before using coupons.");
 }
 async function writeStore(store: CouponStore) {
-  if (!(await writeDatabaseStore(store))) await writeFileStore(store);
+  if (!(await writeDatabaseStore(store))) throw new Error("Coupons require DATABASE_URL.");
 }
 
 function easternDate(now = new Date()) {
