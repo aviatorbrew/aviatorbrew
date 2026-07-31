@@ -251,7 +251,35 @@ export async function updateFlightLogProfile(profileId: number, input: { avatarU
   return customerFromRow(result.rows[0]);
 }
 
-export type FlightLogCheckIn = { id: number; kind: string; label: string; slug: string; notes: string; checkedInAt: string };
+export type FlightLogCheckInKind = "beer" | "location" | "food" | "event";
+export type FlightLogCheckIn = { id: number; kind: FlightLogCheckInKind; label: string; slug: string; notes: string; checkedInAt: string };
+
+function checkInFromRow(row: Record<string, unknown>): FlightLogCheckIn {
+  return {
+    id: Number(row.id),
+    kind: String(row.checkin_type || "") as FlightLogCheckInKind,
+    label: String(row.target_label || ""),
+    slug: String(row.target_slug || ""),
+    notes: String(row.notes || ""),
+    checkedInAt: row.checked_in_at instanceof Date ? row.checked_in_at.toISOString() : String(row.checked_in_at || ""),
+  };
+}
+
+export async function createFlightLogCheckIn(profileId: number, input: { kind: FlightLogCheckInKind; targetSlug?: string; targetLabel: string; notes?: string }) {
+  requireDatabaseForFlightLogAuth();
+  const allowed = new Set<FlightLogCheckInKind>(["beer", "location", "food", "event"]);
+  const kind = input.kind;
+  const targetSlug = clean(input.targetSlug, 180);
+  const targetLabel = clean(input.targetLabel, 180);
+  const notes = clean(input.notes, 500);
+  if (!allowed.has(kind) || !targetLabel) throw new Error("Choose a valid check-in.");
+  const result = await withDatabase(async (client) => client.query(
+    "INSERT INTO flight_log.check_ins (profile_id, checkin_type, target_slug, target_label, notes) VALUES ($1,$2,$3,$4,$5) RETURNING id, checkin_type, target_label, target_slug, notes, checked_in_at",
+    [profileId, kind, targetSlug, targetLabel, notes],
+  ));
+  return checkInFromRow(result.rows[0]);
+}
+
 export async function getFlightLogProfileSummary(profileId: number) {
   if (!databaseConfigured()) return { beer: [], locations: [], food: [], events: [] } as Record<string, FlightLogCheckIn[]>;
   const result = await withDatabase(async (client) => client.query(
@@ -260,7 +288,7 @@ export async function getFlightLogProfileSummary(profileId: number) {
   ));
   const groups: Record<string, FlightLogCheckIn[]> = { beer: [], locations: [], food: [], events: [] };
   for (const row of result.rows) {
-    const item = { id: Number(row.id), kind: String(row.checkin_type || ""), label: String(row.target_label || ""), slug: String(row.target_slug || ""), notes: String(row.notes || ""), checkedInAt: row.checked_in_at instanceof Date ? row.checked_in_at.toISOString() : String(row.checked_in_at || "") };
+    const item = checkInFromRow(row);
     if (item.kind === "beer") groups.beer.push(item);
     else if (item.kind === "location") groups.locations.push(item);
     else if (item.kind === "food") groups.food.push(item);

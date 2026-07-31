@@ -10,6 +10,7 @@ const sourceFiles = [
   "src/app/api/flight-log/auth/forgot-password/route.ts",
   "src/app/api/flight-log/auth/reset-password/route.ts",
   "src/app/flight-log/page.tsx",
+  "src/components/flight-log/post-composer.tsx",
 ];
 const combined = (await Promise.all(sourceFiles.map((file) => readFile(file, "utf8")))).join("\n");
 function assert(value, message) { if (!value) throw new Error(message); }
@@ -20,7 +21,7 @@ assert(/loginFlightLogCustomer/.test(combined) && /flightLogSessionCookie/.test(
 assert(/destroyFlightLogSession/.test(combined), "logout destroys sessions");
 assert(/reset_token_hash/.test(combined) && /resetFlightLogPassword/.test(combined), "password reset tokens are implemented");
 assert(/rateLimit\(/.test(combined), "auth endpoints use rate limiting");
-assert(/disabled=\{locked\}/.test(combined), "logged-out or unverified users cannot use composer");
+assert(/disabled=\{!canPost \|\| busy\}/.test(combined) && /Sign in to post, comment, and check in./.test(combined), "logged-out or unverified users cannot use composer");
 assert(/friendships/.test(await readFile("scripts/migrate-database.mjs", "utf8")), "friendship schema foundation exists");
 
 const baseUrl = process.env.FLIGHT_LOG_TEST_BASE_URL;

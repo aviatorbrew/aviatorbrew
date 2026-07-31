@@ -158,6 +158,36 @@ const schemaStatements = [
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (post_id, profile_id, reaction)
   )`,
+  `CREATE TABLE IF NOT EXISTS flight_log.post_reactions (
+    target_type text NOT NULL,
+    target_id text NOT NULL,
+    profile_id bigint NOT NULL REFERENCES flight_log.profiles(id) ON DELETE CASCADE,
+    reaction text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (target_type, target_id, profile_id),
+    CONSTRAINT flight_log_post_reactions_target_check CHECK (target_type IN ('official','customer')),
+    CONSTRAINT flight_log_post_reactions_reaction_check CHECK (reaction IN ('thumbs_up','heart','laugh','beer','airplane'))
+  )`,
+  `CREATE INDEX IF NOT EXISTS flight_log_post_reactions_target_idx ON flight_log.post_reactions (target_type, target_id)`,
+  `CREATE TABLE IF NOT EXISTS flight_log.post_comments (
+    id bigserial PRIMARY KEY,
+    target_type text NOT NULL,
+    target_id text NOT NULL,
+    profile_id bigint REFERENCES flight_log.profiles(id) ON DELETE SET NULL,
+    body text NOT NULL,
+    status text NOT NULL DEFAULT 'visible',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT flight_log_post_comments_target_check CHECK (target_type IN ('official','customer'))
+  )`,
+  `CREATE INDEX IF NOT EXISTS flight_log_post_comments_target_idx ON flight_log.post_comments (target_type, target_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS flight_log.post_tags (
+    post_id bigint NOT NULL REFERENCES flight_log.posts(id) ON DELETE CASCADE,
+    tagged_profile_id bigint NOT NULL REFERENCES flight_log.profiles(id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (post_id, tagged_profile_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS flight_log_post_tags_profile_idx ON flight_log.post_tags (tagged_profile_id)`,
 
   `CREATE TABLE IF NOT EXISTS website.locations (
     slug text PRIMARY KEY,

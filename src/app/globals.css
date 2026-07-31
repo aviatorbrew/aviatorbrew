@@ -941,6 +941,19 @@ body {
   background-position: 42% center;
 }
 .coupon-manager::after { opacity: .08; }
+.beer-page-hero::before {
+  background-image: linear-gradient(90deg, rgba(3, 15, 27, .94), rgba(3, 15, 27, .52) 46%, rgba(3, 15, 27, .24)), url("/images/atmosphere/b17-beer-background.png") !important;
+  background-position: center right;
+  opacity: .46;
+  mix-blend-mode: normal;
+}
+.content-page-contact-hero::before {
+  background-image: linear-gradient(90deg, rgba(3, 15, 27, .94), rgba(3, 15, 27, .55) 48%, rgba(3, 15, 27, .26)), url("/images/atmosphere/b25-contact-background.png") !important;
+  background-position: center right;
+  opacity: .48;
+  mix-blend-mode: normal;
+}
+
 .page-hero > *,
 .menu-page-hero > *,
 .about-story-hero > *,

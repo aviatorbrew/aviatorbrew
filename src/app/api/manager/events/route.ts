@@ -41,14 +41,14 @@ async function eventInputFromRequest(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  return NextResponse.json({ events: await getManagedEvents() });
+  return NextResponse.json({ events: await getManagedEvents({ eventType: "all" }) });
 }
 
 export async function POST(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const input = await eventInputFromRequest(request);
-    await createManagedEvent(input); return NextResponse.json({ ok: true, events: await getManagedEvents() });
+    await createManagedEvent(input); return NextResponse.json({ ok: true, events: await getManagedEvents({ eventType: "all" }) });
   }
   catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Could not create event." }, { status: 400 }); }
 }
@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest) {
     const body = await eventInputFromRequest(request) as Partial<ManagedEventInput> & { id?: string };
     if (!body.id || typeof body.id !== "string") return NextResponse.json({ error: "Event is required." }, { status: 400 });
     await updateManagedEvent(body.id, body);
-    return NextResponse.json({ ok: true, events: await getManagedEvents() });
+    return NextResponse.json({ ok: true, events: await getManagedEvents({ eventType: "all" }) });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update event." }, { status: 400 }); }
 }
 
@@ -67,6 +67,6 @@ export async function DELETE(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = request.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Event is required." }, { status: 400 });
-  try { await deleteManagedEvent(id); return NextResponse.json({ ok: true, events: await getManagedEvents() }); }
+  try { await deleteManagedEvent(id); return NextResponse.json({ ok: true, events: await getManagedEvents({ eventType: "all" }) }); }
   catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Could not delete event." }, { status: 404 }); }
 }

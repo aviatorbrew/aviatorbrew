@@ -995,3 +995,173 @@
   .flight-log-profile-head { grid-template-columns: 1fr; }
   .flight-log-profile-photo { width: 96px; height: 96px; }
 }
+
+.flight-log-check-in-action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.flight-log-check-in-action span,
+.flight-log-check-in-action a,
+.flight-log-action-note,
+.flight-log-tags {
+  color: #5b7280;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.flight-log-post-actions {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid #d5e2e8;
+  padding-top: 12px;
+}
+
+.flight-log-reaction-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flight-log-reaction-row button {
+  display: inline-flex;
+  min-width: 54px;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #b7cbd5;
+  background: #edf5f8;
+  color: #102d46;
+  cursor: pointer;
+  font: inherit;
+}
+
+.flight-log-reaction-row button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.flight-log-reaction-row small {
+  color: #536d7c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.flight-log-comments {
+  display: grid;
+  gap: 8px;
+}
+
+.flight-log-comments article {
+  border: 1px solid rgba(10, 45, 70, .12);
+  background: #eef6f9;
+  padding: 10px;
+}
+
+.flight-log-comments strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #102d46;
+}
+
+.flight-log-comments p {
+  margin: 0;
+}
+
+.flight-log-comment-form,
+.flight-log-post-composer form,
+.flight-log-friend-form {
+  display: grid;
+  gap: 10px;
+}
+
+.flight-log-comment-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.flight-log-comment-form input,
+.flight-log-post-composer textarea,
+.flight-log-post-composer input,
+.flight-log-friend-form input {
+  width: 100%;
+  border: 1px solid #b5cbd6;
+  background: #fff;
+  padding: 10px;
+  color: #102d46;
+  font: inherit;
+  text-transform: none;
+}
+
+.flight-log-comment-form button,
+.flight-log-friend-form button,
+.flight-log-profile-card li button {
+  border: 1px solid #9db6c4;
+  background: #e5eff4;
+  color: #496777;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.flight-log-post-composer {
+  align-items: start;
+}
+
+.flight-log-post-composer textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.flight-log-post-composer-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.flight-log-post-composer-tools input[type="file"] {
+  grid-column: 1 / span 2;
+}
+
+.flight-log-activity-card > video,
+.flight-log-activity-card > img + video,
+.flight-log-activity-card > video + img,
+.flight-log-activity-card > video + video {
+  display: block;
+  width: 100%;
+  max-height: 28rem;
+  object-fit: cover;
+  background: #102d46;
+}
+
+.flight-log-friends-card {
+  grid-column: 1 / -1;
+}
+
+.flight-log-friends-card h3 {
+  margin: 14px 0 8px;
+  color: #102d46;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.flight-log-friend-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 760px) {
+  .flight-log-comment-form,
+  .flight-log-friend-form,
+  .flight-log-post-composer-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .flight-log-post-composer-tools input[type="file"] {
+    grid-column: auto;
+  }
+}

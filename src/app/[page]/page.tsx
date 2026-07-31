@@ -56,7 +56,7 @@ export default async function ContentPage({
   const privateEventPhotos = page === "private-events" ? await getPrivateEventPhotos() : [];
 
   return <>
-    <section className="page-hero">
+    <section className={"page-hero content-page-hero content-page-" + page + "-hero"}>
       <div className="content-wrap">
         <p className="eyebrow">{content.eyebrow}</p>
         <h1>{content.title}</h1>
