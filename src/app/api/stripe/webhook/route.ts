@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { notifyPrivateEventPayment, type PrivateEventCheckoutSession } from "@/lib/private-event-payments";
 import { markTourPaid } from "@/lib/tours";
+import { markShopOrderPaid } from "@/lib/shop";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
   if (event.type === "checkout.session.completed" && session?.payment_status === "paid") {
     const signupId = session.metadata?.tourSignupId;
     if (signupId) await markTourPaid(signupId, session.id || "");
+    if (session.metadata?.item === "shop-new" && session.id) await markShopOrderPaid(session.id);
     if (session.metadata?.item === "private-event-room-booking") {
       if (!session.id) return NextResponse.json({ error: "Stripe Checkout session ID is missing." }, { status: 400 });
       const notified = await notifyPrivateEventPayment(session);

@@ -13,6 +13,7 @@ import { PaymentTestManager } from "@/components/payment-test-manager";
 import { WebsitePhotosLibrary } from "@/components/website-photos-library";
 import { BeerImageViewer } from "@/components/beer-image-viewer";
 import { FlightLogAdmin } from "@/components/flight-log-admin";
+import { ShopManager } from "@/components/shop-manager";
 
 type Signup = { id: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
 type ScheduledTour = { date: string; displayDate: string; time: "4:00 PM" | "6:00 PM"; guests: number; tickets: number; confirmed: boolean };
@@ -593,6 +594,7 @@ function ManagerSectionContent({ section }: { section: ManagerSection }) {
     case "locations": return <LocationManager />;
     case "coupons": return <div id="coupons"><CouponManager accessKey="manager-session" /></div>;
     case "beers": return <BeerManager />;
+    case "shop": return <ShopManager />;
     case "beer-release-alert": return <BeerReleaseAlertManager />;
     case "flight-log": return <FlightLogAdmin />;
     case "brewery-photos": return <BreweryPhotosManager />;

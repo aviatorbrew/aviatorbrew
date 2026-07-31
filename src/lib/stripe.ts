@@ -94,3 +94,52 @@ export async function createCheckoutSession(input: CheckoutInput) {
   if (!session.url) throw new Error("Stripe Checkout did not return a payment URL.");
   return session;
 }
+
+type DynamicCheckoutInput = {
+  name: string;
+  description: string;
+  unitAmount: number;
+  quantity: number;
+  customerEmail?: string;
+  referenceId?: string;
+  metadata?: Record<string, string>;
+  successPath: string;
+  cancelPath: string;
+  origin: string;
+};
+
+export async function createDynamicCheckoutSession(input: DynamicCheckoutInput) {
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (!secret || !Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 25 || !Number.isInteger(input.unitAmount) || input.unitAmount < 100) return null;
+  if (!/^sk_(test|live)_/.test(secret)) throw new Error("Stripe secret key is invalid. Use an sk_test_ or sk_live_ key for STRIPE_SECRET_KEY.");
+
+  const form = new URLSearchParams();
+  form.set("mode", "payment");
+  form.set("success_url", input.origin + input.successPath);
+  form.set("cancel_url", input.origin + input.cancelPath);
+  form.set("line_items[0][price_data][currency]", "usd");
+  form.set("line_items[0][price_data][product_data][name]", input.name);
+  form.set("line_items[0][price_data][product_data][description]", input.description.slice(0, 900));
+  form.set("line_items[0][price_data][unit_amount]", String(input.unitAmount));
+  form.set("line_items[0][quantity]", String(input.quantity));
+  if (input.referenceId) form.set("client_reference_id", input.referenceId);
+  if (input.customerEmail) form.set("customer_email", input.customerEmail);
+  for (const [key, value] of Object.entries(input.metadata || {})) form.set("metadata[" + key + "]", value);
+
+  const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: { authorization: "Bearer " + secret, "content-type": "application/x-www-form-urlencoded", "Stripe-Version": "2026-02-25.clover" },
+    body: form,
+  });
+  if (!response.ok) {
+    let detail = "Stripe Checkout could not be started.";
+    try {
+      const body = await response.json() as { error?: { message?: string } };
+      if (body.error?.message) detail = "Stripe rejected checkout: " + sanitizeStripeMessage(body.error.message);
+    } catch {}
+    throw new Error(detail);
+  }
+  const session = await response.json() as { id: string; url: string | null };
+  if (!session.url) throw new Error("Stripe Checkout did not return a payment URL.");
+  return session;
+}

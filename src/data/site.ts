@@ -30,6 +30,7 @@ export const primaryNav = [
   { label: "Beer", href: "/beer" },
   { label: "Brewery", href: "/brewery" },
   { label: "Shop", href: "https://aviatorbrew.myshopify.com/" },
+  { label: "ShopNew", href: "/shop-new" },
   { label: "Beverage Sales", href: "/kegs" },
   { label: "Locations", href: "/locations" },
   { label: "MORE", href: "/more", children: [{ label: "About", href: "/about" }, { label: "Tours", href: "/about#brewery-tours" }, { label: "Contact Us", href: "/contact" }] },

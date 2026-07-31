@@ -1380,3 +1380,62 @@
   outline: 3px solid #f6c77e;
   outline-offset: 3px;
 }
+
+/* ShopNew public catalog and manager controls */
+.shop-new-hero {
+  background-image: linear-gradient(100deg, rgba(3, 17, 31, .94), rgba(6, 32, 52, .72)), url("/images/atmosphere/aeronautical-cloud-chart-restored.png") !important;
+}
+.shop-new-status { padding: .9rem 0; background: #0c3452; color: #e7f4f8; border-top: 1px solid rgba(184,217,236,.25); border-bottom: 1px solid rgba(184,217,236,.25); }
+.shop-new-status.success { background: #143f31; }
+.shop-new-status .content-wrap { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; }
+.shop-new-status strong { color: #f4c46d; }
+.shop-new-section { background: #071d32; color: #e8f3f7; }
+.shop-new-categories { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.4rem; }
+.shop-new-categories a { border: 1px solid rgba(239,180,95,.75); color: #f4c46d; padding: .55rem .75rem; font: 900 .68rem/1 "Courier New", monospace; text-decoration: none; text-transform: uppercase; }
+.shop-new-categories a:hover { background: #efb45f; color: #071827; }
+.shop-new-catalog-group { scroll-margin-top: 7rem; margin-top: 2rem; }
+.shop-new-catalog-group > header { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: 1rem; border-bottom: 1px solid rgba(184,217,236,.22); padding-bottom: .8rem; }
+.shop-new-catalog-group h3 { margin: .25rem 0 0; color: #f4f9fb; font-size: clamp(1.4rem, 3vw, 2.4rem); }
+.shop-new-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.shop-new-card { display: grid; grid-template-rows: 18rem 1fr; border: 1px solid rgba(184,217,236,.24); background: #0e304b; box-shadow: 8px 8px 0 rgba(0,0,0,.18); }
+.shop-new-card.is-featured { border-color: rgba(239,180,95,.9); }
+.shop-new-image { position: relative; background: #d9e6eb; overflow: hidden; }
+.shop-new-image img { object-fit: contain; padding: 1rem; filter: drop-shadow(6px 8px 0 rgba(8,25,38,.22)); }
+.shop-new-image.is-empty { display: grid; place-items: center; color: #0b2c45; font: 900 1rem/1 "Courier New", monospace; letter-spacing: .1em; }
+.shop-new-copy { display: grid; gap: .75rem; padding: 1rem; }
+.shop-new-copy h4 { margin: 0; color: #f5fafc; font: 400 2rem/.9 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.shop-new-copy p { margin: 0; color: #bfd5df; line-height: 1.45; }
+.shop-new-copy strong { color: #f4c46d; font-size: 1.05rem; }
+.shop-new-buy-box { display: grid; gap: .55rem; margin-top: .2rem; }
+.shop-new-buy-box label { display: grid; gap: .28rem; color: #e8f3f7; font-size: .7rem; font-weight: 900; text-transform: uppercase; }
+.shop-new-buy-box select, .shop-new-buy-box input { min-height: 2.55rem; border: 1px solid #5f8aa1; background: #071d32; color: #f5fafc; padding: .55rem; }
+.shop-new-buy-box small { color: #a9c6d5; text-transform: none; }
+.shop-new-error, .shop-new-unavailable { margin: 0; color: #ffd2c7; }
+.manager-shop { background: #0a2942; }
+.manager-shop-layout { display: grid; grid-template-columns: minmax(16rem, .35fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.manager-shop-catalogs, .manager-shop-product-form, .manager-shop-products article { border: 1px solid rgba(184,217,236,.25); background: #102f48; padding: 1rem; }
+.manager-shop-catalogs h3, .manager-shop-form-heading h3, .manager-shop-products h4 { margin: .2rem 0 .8rem; color: #f3f8fa; font: 400 1.7rem/.9 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.manager-shop-filter { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+.manager-shop-filter button, .manager-shop-catalogs li button, .manager-shop-products footer button { border: 1px solid rgba(239,180,95,.8); background: transparent; color: #f6c77e; padding: .45rem .55rem; font: 900 .62rem/1 "Courier New", monospace; text-transform: uppercase; cursor: pointer; }
+.manager-shop-filter button.is-active, .manager-shop-filter button:hover, .manager-shop-catalogs li button:hover, .manager-shop-products footer button:hover { background: #efb45f; color: #082033; }
+.manager-shop-category-form, .manager-shop-product-form { display: grid; gap: .75rem; }
+.manager-shop-category-form label, .manager-shop-product-form label { display: grid; gap: .3rem; color: #dcecf3; font-size: .7rem; font-weight: 900; text-transform: uppercase; }
+.manager-shop-category-form input, .manager-shop-product-form input, .manager-shop-product-form select, .manager-shop-product-form textarea { min-height: 2.45rem; border: 1px solid #4f7b97; background: #071d30; color: #f4f9fb; padding: .55rem; }
+.manager-shop-product-form textarea { min-height: 6rem; resize: vertical; }
+.manager-shop-wide { grid-column: 1 / -1; }
+.manager-shop-main { display: grid; gap: 1rem; }
+.manager-shop-product-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.manager-shop-form-heading { display: flex; justify-content: space-between; gap: 1rem; grid-column: 1 / -1; }
+.manager-shop-product-form > button { justify-self: start; }
+.manager-shop-catalogs ul { display: grid; gap: .45rem; padding: 0; margin: 1rem 0 0; list-style: none; }
+.manager-shop-catalogs li { display: flex; justify-content: space-between; gap: .5rem; align-items: center; color: #e8f3f7; font-size: .82rem; }
+.manager-shop-catalogs li div { display: flex; gap: .35rem; }
+.manager-shop-products { display: grid; gap: .65rem; }
+.manager-shop-products article { display: grid; grid-template-columns: 5rem minmax(0, 1fr) auto; gap: .8rem; align-items: center; padding: .75rem; }
+.manager-shop-products article.is-hidden { opacity: .62; background: #26313c; }
+.manager-shop-products img, .manager-shop-placeholder { width: 5rem; height: 5rem; object-fit: contain; background: #d8e6ec; }
+.manager-shop-placeholder { display: grid; place-items: center; color: #12334a; font: 900 .7rem/1 "Courier New", monospace; text-transform: uppercase; }
+.manager-shop-products p, .manager-shop-products small { color: #b8d2de; }
+.manager-shop-products footer { display: flex; gap: .4rem; }
+@media (max-width: 1050px) { .shop-new-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .manager-shop-layout, .manager-shop-product-form { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .shop-new-grid { grid-template-columns: 1fr; } .shop-new-card { grid-template-rows: 15rem 1fr; } .manager-shop-products article { grid-template-columns: 1fr; } }

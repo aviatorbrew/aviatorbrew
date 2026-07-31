@@ -12,6 +12,12 @@ export const managerSections = [
     description: "Manage the beer master list, publishing, and product artwork.",
   },
   {
+    id: "shop",
+    href: "/manager/shop",
+    label: "Shop",
+    description: "Manage ShopNew catalogs, products, variants, prices, and inventory.",
+  },
+  {
     id: "beer-release-alert",
     href: "/manager/beer-release-alert",
     label: "New Release Alerts",
