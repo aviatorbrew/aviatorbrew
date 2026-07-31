@@ -13,9 +13,15 @@
     "pack:sites": "npm run build:sites && tar -czf /tmp/aviatorbrew-sites-opennext-final.tar.gz .openai/hosting.json wrangler.jsonc .open-next",
     "db:migrate": "node scripts/migrate-database.mjs",
     "render:migrate": "node scripts/migrate-database.mjs",
+    "render:predeploy": "npm run render:migrate",
+    "render:build": "npm run render:migrate && npm run build",
     "flight-log:seed": "node scripts/seed-flight-log.mjs",
     "test:flight-log": "node scripts/test-flight-log.mjs",
-    "test:flight-log-auth": "node scripts/test-flight-log-auth.mjs"
+    "test:flight-log-auth": "node scripts/test-flight-log-auth.mjs",
+    "shop:import-shopify": "node scripts/import-shopify-products.mjs",
+    "test:shop": "node scripts/test-shop.mjs",
+    "render:data:export": "node scripts/export-render-data.mjs",
+    "render:data:import": "node scripts/import-render-data.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

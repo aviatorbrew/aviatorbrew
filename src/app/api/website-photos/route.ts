@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { breweryPhotoManifest } from "@/data/brewery-photo-manifest";
 import { locationPhotoManifest } from "@/data/location-photo-manifest";
-import { canManageMedia } from "@/lib/manager-auth";
+import { canManageMedia, menuLibraryKey } from "@/lib/manager-auth";
+import { requestBodyExceeds } from "@/lib/server-file-response";
 import {
   getFeaturedPhotos,
   getHiddenPhotos,
@@ -32,7 +33,7 @@ const noStore = { "Cache-Control": "private, no-store, max-age=0, must-revalidat
 function authorized(request: NextRequest) { return canManageMedia(request); }
 
 function deny() {
-  if (!process.env.MENU_LIBRARY_KEY) return NextResponse.json({ error: "Media Library is not configured." }, { status: 503, headers: noStore });
+  if (!menuLibraryKey()) return NextResponse.json({ error: "Media Library is not configured." }, { status: 503, headers: noStore });
   return NextResponse.json({ error: "Access denied." }, { status: 401, headers: noStore });
 }
 
@@ -134,6 +135,7 @@ export async function POST(request: NextRequest) {
   const targetName = target(request);
   if (!targetName) return NextResponse.json({ error: "Invalid photo target." }, { status: 400, headers: noStore });
   try {
+    if (requestBodyExceeds(request, maxVideoBytes + 1024 * 1024)) return NextResponse.json({ error: "Upload must be 60 MB or smaller." }, { status: 413, headers: noStore });
     const formData = await request.formData();
     const upload = formData.get("file");
     if (!(upload instanceof File)) return NextResponse.json({ error: "Choose an image to upload." }, { status: 400, headers: noStore });

@@ -21,12 +21,18 @@ export function validPhotoTarget(target: string) {
   return target === "general" || target === "brewery" || target === "private-events" || target === "events" || locationSlugs.has(target);
 }
 
+function localMediaRoot() {
+  const cwd = process.cwd();
+  if (cwd.endsWith(path.join(".next", "standalone"))) return path.resolve(cwd, "..", "..", "public", "media");
+  return path.join(cwd, "public", "media");
+}
+
 export function websitePhotoRoot() {
   if (process.env.WEBSITE_PHOTOS_DIRECTORY) return process.env.WEBSITE_PHOTOS_DIRECTORY;
   if (process.env.BEER_OVERRIDES_DATA_FILE) {
     return path.join(path.dirname(process.env.BEER_OVERRIDES_DATA_FILE), "website-photos");
   }
-  return path.join(process.cwd(), "public", "media");
+  return localMediaRoot();
 }
 
 export function photoDirectory(target: string) {
@@ -39,7 +45,7 @@ export function photoDirectory(target: string) {
 }
 
 export function legacyPhotoDirectory(target: string) {
-  const root = path.join(process.cwd(), "public", "media");
+  const root = localMediaRoot();
   if (target === "general") return path.join(root, "website-photos");
   if (target === "brewery") return path.join(root, "brewery-photos");
   if (target === "private-events") return path.join(root, "private-event-photos");
@@ -192,6 +198,6 @@ export async function setFeaturedPhoto(target: string, selection?: FeaturedPhoto
   const file = featuredFile();
   await fs.mkdir(path.dirname(file), { recursive: true });
   const temporary = file + ".tmp";
-  await fs.writeFile(temporary, JSON.stringify(stored, null, 2) + "\\n", "utf8");
+  await fs.writeFile(temporary, JSON.stringify(stored, null, 2) + "\n", "utf8");
   await fs.rename(temporary, file);
 }

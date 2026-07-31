@@ -1,8 +1,11 @@
 import { randomBytes, createHash } from "node:crypto";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 import { isMailConfigured, sendMail } from "@/lib/mail";
+import { normalizeFlightLogPostMediaUrl } from "@/lib/flight-log-upload-storage";
+import type { FlightLogUserRole } from "@/lib/flight-log-user-types";
 
-export type FlightLogTargetType = "official" | "customer";
+export type FlightLogTargetType = "official" | "customer" | "comment";
+export type FlightLogPostTargetType = "official" | "customer";
 export type FlightLogReaction = "thumbs_up" | "heart" | "laugh" | "beer" | "airplane";
 export type FlightLogCustomerPost = {
   id: number;
@@ -12,11 +15,15 @@ export type FlightLogCustomerPost = {
   authorName: string;
   authorHandle: string;
   authorAvatarUrl: string;
+  authorProfileId: number;
+  authorRole: FlightLogUserRole;
   media: { url: string; mediaType: string }[];
   taggedHandles: string[];
+  status: string;
+  visibility: string;
   createdAt: string;
 };
-export type FlightLogComment = { id: number; authorName: string; authorHandle: string; body: string; createdAt: string };
+export type FlightLogComment = { id: number; authorName: string; authorHandle: string; authorProfileId: number; authorRole: FlightLogUserRole; body: string; reactions: Record<string, number>; createdAt: string };
 export type FlightLogFriend = { id: number; callsign: string; displayName: string; avatarUrl: string };
 export type FlightLogFriendRequest = FlightLogFriend & { requestedAt: string };
 export type FlightLogFriendInvite = { id: number; inviteEmail: string; invitePhone: string; status: string; createdAt: string };
@@ -27,12 +34,15 @@ const digest = (value: string) => createHash("sha256").update(value).digest("hex
 const emailPattern = /^\S+@\S+\.\S+$/;
 const phonePattern = /^\+?[0-9 .()-]{7,24}$/;
 const reactions = new Set<FlightLogReaction>(["thumbs_up", "heart", "laugh", "beer", "airplane"]);
-const targets = new Set<FlightLogTargetType>(["official", "customer"]);
+const targets = new Set<FlightLogTargetType>(["official", "customer", "comment"]);
+const commentTargets = new Set<FlightLogPostTargetType>(["official", "customer"]);
 
 function requireDb() { if (!databaseConfigured()) throw new Error("Flight Log social features require DATABASE_URL."); }
 function iso(value: unknown) { return value instanceof Date ? value.toISOString() : String(value || ""); }
 function postFromRow(row: Record<string, unknown>): FlightLogCustomerPost {
-  const media = Array.isArray(row.media) ? row.media as { url: string; mediaType: string }[] : [];
+  const media = Array.isArray(row.media)
+    ? (row.media as { url: string; mediaType: string }[]).map((item) => ({ ...item, url: normalizeFlightLogPostMediaUrl(item.url) }))
+    : [];
   return {
     id: Number(row.id),
     targetType: "customer",
@@ -41,8 +51,12 @@ function postFromRow(row: Record<string, unknown>): FlightLogCustomerPost {
     authorName: String(row.display_name || row.handle || "Flight Crew"),
     authorHandle: String(row.handle || ""),
     authorAvatarUrl: String(row.avatar_url || ""),
+    authorProfileId: Number(row.profile_id || 0),
+    authorRole: row.role === "moderator" || row.role === "admin" ? row.role : "user",
     media,
     taggedHandles: Array.isArray(row.tagged_handles) ? row.tagged_handles.map(String).filter(Boolean) : [],
+    status: String(row.status || "published"),
+    visibility: String(row.visibility || "public"),
     createdAt: iso(row.created_at),
   };
 }
@@ -51,7 +65,7 @@ export async function getPublishedCustomerFlightLogPosts(limit = 30) {
   if (!databaseConfigured()) return [] as FlightLogCustomerPost[];
   return withDatabase(async (client) => {
     const result = await client.query(
-      `SELECT p.id, p.title, p.body, p.created_at, profile.handle, profile.display_name, profile.avatar_url,
+      `SELECT p.id, p.profile_id, p.title, p.body, p.created_at, profile.handle, profile.display_name, profile.avatar_url, profile.role,
         COALESCE(jsonb_agg(DISTINCT jsonb_build_object('url', media.url, 'mediaType', media.media_type)) FILTER (WHERE media.url IS NOT NULL), '[]'::jsonb) AS media,
         COALESCE(array_agg(DISTINCT tagged.handle) FILTER (WHERE tagged.handle IS NOT NULL), '{}') AS tagged_handles
        FROM flight_log.posts p
@@ -59,11 +73,54 @@ export async function getPublishedCustomerFlightLogPosts(limit = 30) {
        LEFT JOIN flight_log.media_assets media ON media.post_id = p.id
        LEFT JOIN flight_log.post_tags tags ON tags.post_id = p.id
        LEFT JOIN flight_log.profiles tagged ON tagged.id = tags.tagged_profile_id
-       WHERE p.status = 'published' AND p.visibility = 'public'
-       GROUP BY p.id, profile.handle, profile.display_name, profile.avatar_url
+       WHERE p.status = 'published' AND p.visibility = 'public' AND (profile.status IS NULL OR profile.status <> 'banned')
+       GROUP BY p.id, profile.handle, profile.display_name, profile.avatar_url, profile.role
        ORDER BY p.created_at DESC
        LIMIT $1`,
       [limit],
+    );
+    return result.rows.map(postFromRow);
+  });
+}
+
+export async function getAllCustomerFlightLogPostsForManager(limit = 500) {
+  if (!databaseConfigured()) return [] as FlightLogCustomerPost[];
+  return withDatabase(async (client) => {
+    const result = await client.query(
+      `SELECT p.id, p.profile_id, p.title, p.body, p.created_at, p.status, p.visibility, profile.handle, profile.display_name, profile.avatar_url, profile.role,
+        COALESCE(jsonb_agg(DISTINCT jsonb_build_object('url', media.url, 'mediaType', media.media_type)) FILTER (WHERE media.url IS NOT NULL), '[]'::jsonb) AS media,
+        COALESCE(array_agg(DISTINCT tagged.handle) FILTER (WHERE tagged.handle IS NOT NULL), '{}') AS tagged_handles
+       FROM flight_log.posts p
+       LEFT JOIN flight_log.profiles profile ON profile.id = p.profile_id
+       LEFT JOIN flight_log.media_assets media ON media.post_id = p.id
+       LEFT JOIN flight_log.post_tags tags ON tags.post_id = p.id
+       LEFT JOIN flight_log.profiles tagged ON tagged.id = tags.tagged_profile_id
+       GROUP BY p.id, profile.handle, profile.display_name, profile.avatar_url, profile.role
+       ORDER BY p.created_at DESC
+       LIMIT $1`,
+      [limit],
+    );
+    return result.rows.map(postFromRow);
+  });
+}
+
+export async function getCustomerFlightLogPostsByProfile(profileId: number, limit = 20) {
+  if (!databaseConfigured()) return [] as FlightLogCustomerPost[];
+  return withDatabase(async (client) => {
+    const result = await client.query(
+      `SELECT p.id, p.profile_id, p.title, p.body, p.created_at, profile.handle, profile.display_name, profile.avatar_url, profile.role,
+        COALESCE(jsonb_agg(DISTINCT jsonb_build_object('url', media.url, 'mediaType', media.media_type)) FILTER (WHERE media.url IS NOT NULL), '[]'::jsonb) AS media,
+        COALESCE(array_agg(DISTINCT tagged.handle) FILTER (WHERE tagged.handle IS NOT NULL), '{}') AS tagged_handles
+       FROM flight_log.posts p
+       LEFT JOIN flight_log.profiles profile ON profile.id = p.profile_id
+       LEFT JOIN flight_log.media_assets media ON media.post_id = p.id
+       LEFT JOIN flight_log.post_tags tags ON tags.post_id = p.id
+       LEFT JOIN flight_log.profiles tagged ON tagged.id = tags.tagged_profile_id
+       WHERE p.profile_id = $1 AND p.status = 'published'
+       GROUP BY p.id, profile.handle, profile.display_name, profile.avatar_url, profile.role
+       ORDER BY p.created_at DESC
+       LIMIT $2`,
+      [profileId, limit],
     );
     return result.rows.map(postFromRow);
   });
@@ -103,6 +160,68 @@ export async function createCustomerFlightLogPost(profileId: number, input: { ti
   });
 }
 
+
+export async function deleteAnyCustomerFlightLogPostForManager(postId: number) {
+  requireDb();
+  if (!Number.isInteger(postId) || postId < 1) throw new Error("Choose a valid Flight Log post.");
+  return withDatabase(async (client) => {
+    await client.query("BEGIN");
+    try {
+      const result = await client.query(
+        `SELECT p.id, COALESCE(array_agg(media.url) FILTER (WHERE media.url IS NOT NULL), '{}') AS media_urls
+         FROM flight_log.posts p
+         LEFT JOIN flight_log.media_assets media ON media.post_id=p.id
+         WHERE p.id=$1
+         GROUP BY p.id`,
+        [postId],
+      );
+      const post = result.rows[0];
+      if (!post) throw new Error("Flight Log post not found.");
+      await client.query("DELETE FROM flight_log.post_comments WHERE target_type='customer' AND target_id=$1", [String(postId)]);
+      await client.query("DELETE FROM flight_log.post_reactions WHERE target_type='customer' AND target_id=$1", [String(postId)]);
+      await client.query("DELETE FROM flight_log.posts WHERE id=$1", [postId]);
+      await client.query("COMMIT");
+      return { mediaUrls: Array.isArray(post.media_urls) ? post.media_urls.map(String).filter(Boolean) : [] };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    }
+  });
+}
+
+export async function deleteCustomerFlightLogPost(actorProfileId: number, actorRole: FlightLogUserRole, postId: number) {
+  requireDb();
+  if (!Number.isInteger(postId) || postId < 1) throw new Error("Choose a valid Flight Log post.");
+  return withDatabase(async (client) => {
+    await client.query("BEGIN");
+    try {
+      const result = await client.query(
+        `SELECT p.profile_id, profile.role,
+          COALESCE(array_agg(media.url) FILTER (WHERE media.url IS NOT NULL), '{}') AS media_urls
+         FROM flight_log.posts p
+         LEFT JOIN flight_log.profiles profile ON profile.id=p.profile_id
+         LEFT JOIN flight_log.media_assets media ON media.post_id=p.id
+         WHERE p.id=$1
+         GROUP BY p.id, p.profile_id, profile.role`,
+        [postId],
+      );
+      const post = result.rows[0];
+      if (!post) throw new Error("Flight Log post not found.");
+      const ownsPost = Number(post.profile_id) === actorProfileId;
+      const canModerate = actorRole === "moderator" || actorRole === "admin";
+      if (!ownsPost && !canModerate) throw new Error("You do not have permission to delete this post.");
+      await client.query("DELETE FROM flight_log.post_comments WHERE target_type='customer' AND target_id=$1", [String(postId)]);
+      await client.query("DELETE FROM flight_log.post_reactions WHERE target_type='customer' AND target_id=$1", [String(postId)]);
+      await client.query("DELETE FROM flight_log.posts WHERE id=$1", [postId]);
+      await client.query("COMMIT");
+      return { mediaUrls: Array.isArray(post.media_urls) ? post.media_urls.map(String).filter(Boolean) : [] };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    }
+  });
+}
+
 export async function addFlightLogReaction(profileId: number, input: { targetType: FlightLogTargetType; targetId: string; reaction: FlightLogReaction }) {
   requireDb();
   const targetId = clean(input.targetId, 120);
@@ -113,11 +232,11 @@ export async function addFlightLogReaction(profileId: number, input: { targetTyp
   ));
 }
 
-export async function addFlightLogComment(profileId: number, input: { targetType: FlightLogTargetType; targetId: string; body: string }) {
+export async function addFlightLogComment(profileId: number, input: { targetType: FlightLogPostTargetType; targetId: string; body: string }) {
   requireDb();
   const targetId = clean(input.targetId, 120);
   const body = clean(input.body, 1000);
-  if (!targets.has(input.targetType) || !targetId || !body) throw new Error("Add a comment first.");
+  if (!commentTargets.has(input.targetType) || !targetId || !body) throw new Error("Add a comment first.");
   const result = await withDatabase(async (client) => client.query(
     `INSERT INTO flight_log.post_comments (target_type, target_id, profile_id, body) VALUES ($1,$2,$3,$4)
      RETURNING id, body, created_at`,
@@ -130,20 +249,75 @@ export async function getFlightLogInteractionSummary(targetType: FlightLogTarget
   if (!databaseConfigured()) return { reactions: {}, comments: [] as FlightLogComment[] };
   return withDatabase(async (client) => {
     const [reactionRows, commentRows] = await Promise.all([
-      client.query("SELECT reaction, count(*)::int AS count FROM flight_log.post_reactions WHERE target_type=$1 AND target_id=$2 GROUP BY reaction", [targetType, targetId]),
-      client.query(
-        `SELECT c.id, c.body, c.created_at, p.display_name, p.handle
+      client.query("SELECT r.reaction, count(*)::int AS count FROM flight_log.post_reactions r JOIN flight_log.profiles p ON p.id=r.profile_id WHERE r.target_type=$1 AND r.target_id=$2 AND p.status <> 'banned' GROUP BY r.reaction", [targetType, targetId]),
+      targetType === "comment" ? Promise.resolve({ rows: [] }) : client.query(
+        `SELECT c.id, c.profile_id, c.body, c.created_at, p.display_name, p.handle, p.role
          FROM flight_log.post_comments c
          LEFT JOIN flight_log.profiles p ON p.id = c.profile_id
-         WHERE c.target_type=$1 AND c.target_id=$2 AND c.status='visible'
+         WHERE c.target_type=$1 AND c.target_id=$2 AND c.status='visible' AND (p.status IS NULL OR p.status <> 'banned')
          ORDER BY c.created_at ASC LIMIT 100`,
         [targetType, targetId],
       ),
     ]);
     const summary: Record<string, number> = {};
     for (const row of reactionRows.rows) summary[String(row.reaction)] = Number(row.count || 0);
-    const comments = commentRows.rows.map((row): FlightLogComment => ({ id: Number(row.id), body: String(row.body || ""), authorName: String(row.display_name || row.handle || "Flight Crew"), authorHandle: String(row.handle || ""), createdAt: iso(row.created_at) }));
+    const commentIds = commentRows.rows.map((row) => String(row.id));
+    const commentReactionRows = commentIds.length ? await client.query(
+      "SELECT r.target_id, r.reaction, count(*)::int AS count FROM flight_log.post_reactions r JOIN flight_log.profiles p ON p.id=r.profile_id WHERE r.target_type='comment' AND r.target_id=ANY($1::text[]) AND p.status <> 'banned' GROUP BY r.target_id, r.reaction",
+      [commentIds],
+    ) : { rows: [] };
+    const commentReactions = new Map<string, Record<string, number>>();
+    for (const row of commentReactionRows.rows) {
+      const id = String(row.target_id);
+      const bucket = commentReactions.get(id) || {};
+      bucket[String(row.reaction)] = Number(row.count || 0);
+      commentReactions.set(id, bucket);
+    }
+    const comments = commentRows.rows.map((row): FlightLogComment => ({
+      id: Number(row.id),
+      body: String(row.body || ""),
+      authorName: String(row.display_name || row.handle || "Flight Crew"),
+      authorHandle: String(row.handle || ""),
+      authorProfileId: Number(row.profile_id || 0),
+      authorRole: row.role === "moderator" || row.role === "admin" ? row.role : "user",
+      reactions: commentReactions.get(String(row.id)) || {},
+      createdAt: iso(row.created_at),
+    }));
     return { reactions: summary, comments };
+  });
+}
+
+export async function deleteFlightLogComment(actorProfileId: number, actorRole: FlightLogUserRole, commentId: number) {
+  requireDb();
+  if (!Number.isInteger(commentId) || commentId < 1) throw new Error("Choose a valid Flight Log comment.");
+  return withDatabase(async (client) => {
+    await client.query("BEGIN");
+    try {
+      const result = await client.query("SELECT id, profile_id, target_type, target_id FROM flight_log.post_comments WHERE id=$1", [commentId]);
+      const comment = result.rows[0];
+      if (!comment) throw new Error("Flight Log comment not found.");
+      const ownsComment = Number(comment.profile_id) === actorProfileId;
+      const canModerate = actorRole === "moderator" || actorRole === "admin";
+      if (!ownsComment && !canModerate) throw new Error("You do not have permission to delete this comment.");
+      await client.query("DELETE FROM flight_log.post_reactions WHERE target_type='comment' AND target_id=$1", [String(commentId)]);
+      await client.query("DELETE FROM flight_log.post_comments WHERE id=$1", [commentId]);
+      await client.query("COMMIT");
+      return { targetType: String(comment.target_type) as FlightLogPostTargetType, targetId: String(comment.target_id) };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    }
+  });
+}
+
+export async function deleteFlightLogTargetInteractions(targetType: FlightLogPostTargetType, targetId: string) {
+  if (!databaseConfigured()) return;
+  await withDatabase(async (client) => {
+    const comments = await client.query("SELECT id FROM flight_log.post_comments WHERE target_type=$1 AND target_id=$2", [targetType, targetId]);
+    const commentIds = comments.rows.map((row) => String(row.id));
+    if (commentIds.length) await client.query("DELETE FROM flight_log.post_reactions WHERE target_type='comment' AND target_id=ANY($1::text[])", [commentIds]);
+    await client.query("DELETE FROM flight_log.post_comments WHERE target_type=$1 AND target_id=$2", [targetType, targetId]);
+    await client.query("DELETE FROM flight_log.post_reactions WHERE target_type=$1 AND target_id=$2", [targetType, targetId]);
   });
 }
 

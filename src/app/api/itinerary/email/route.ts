@@ -46,6 +46,14 @@ function scheduleStops(stops: ItineraryStop[], startTime: string) {
 function allow(request: NextRequest) {
   const key = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const cutoff = Date.now() - 60 * 60 * 1000;
+  for (const [attemptKey, timestamps] of attempts) {
+    if (!timestamps.length || timestamps[timestamps.length - 1] <= cutoff) attempts.delete(attemptKey);
+  }
+  while (attempts.size >= 5000) {
+    const oldestKey = attempts.keys().next().value as string | undefined;
+    if (!oldestKey) break;
+    attempts.delete(oldestKey);
+  }
   const recent = (attempts.get(key) || []).filter((timestamp) => timestamp > cutoff);
   if (recent.length >= 5) return false;
   recent.push(Date.now());

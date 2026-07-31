@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
+import { requestBodyExceeds } from "@/lib/server-file-response";
 import { createManagedEvent, deleteManagedEvent, getManagedEvents, updateManagedEvent, type ManagedEventInput } from "@/lib/managed-events";
 
 export const runtime = "nodejs";
@@ -22,6 +23,7 @@ async function saveEventImage(image: File) {
 async function eventInputFromRequest(request: NextRequest) {
   let input: Record<string, unknown>;
   if (request.headers.get("content-type")?.includes("multipart/form-data")) {
+    if (requestBodyExceeds(request, 50 * 1024 * 1024)) throw new Error("Event photo uploads must total 50 MB or less.");
     const form = await request.formData();
     input = Object.fromEntries(form.entries()) as Record<string, unknown>;
     input.published = form.get("published") === "true" || form.get("published") === "on";

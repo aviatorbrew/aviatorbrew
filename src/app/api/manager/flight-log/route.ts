@@ -6,8 +6,10 @@ import { isManager } from "@/lib/manager-auth";
 import { events as staticEvents, locations } from "@/data/site";
 import { getManagedEvents } from "@/lib/managed-events";
 import { getAllBeers } from "@/lib/managed-beers";
-import { archiveFlightLogPost, flightLogCategories, flightLogCategoryLabels, flightLogStatuses, getFlightLogPostById, getFlightLogPosts, saveFlightLogPost, type FlightLogInput } from "@/lib/flight-log";
+import { archiveFlightLogPost, deleteFlightLogPost, flightLogCategories, flightLogCategoryLabels, flightLogStatuses, getFlightLogPostById, getFlightLogPosts, saveFlightLogPost, type FlightLogInput } from "@/lib/flight-log";
 import { flightLogImageDirectory, flightLogImageUrl } from "@/lib/flight-log-images";
+import { deleteAnyCustomerFlightLogPostForManager, getAllCustomerFlightLogPostsForManager } from "@/lib/flight-log-social";
+import { flightLogPostMediaDirectory } from "@/lib/flight-log-upload-storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,7 +82,7 @@ export async function GET(request: NextRequest) {
   if (!isManager(request)) return unauthorized();
   const id = request.nextUrl.searchParams.get("id");
   const posts = id ? [await getFlightLogPostById(id)].filter(Boolean) : await getFlightLogPosts({ status: "all", includeArchived: true });
-  return NextResponse.json({ posts, options: await options() }, { headers: noStore });
+  return NextResponse.json({ posts, customerPosts: await getAllCustomerFlightLogPostsForManager(), options: await options() }, { headers: noStore });
 }
 
 export async function POST(request: NextRequest) {
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
   try {
     const post = await saveFlightLogPost(await inputFromRequest(request));
     refresh(post);
-    return NextResponse.json({ post, posts: await getFlightLogPosts({ status: "all", includeArchived: true }) }, { headers: noStore });
+    return NextResponse.json({ post, posts: await getFlightLogPosts({ status: "all", includeArchived: true }), customerPosts: await getAllCustomerFlightLogPostsForManager() }, { headers: noStore });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not save Flight Log post." }, { status: 400, headers: noStore });
   }
@@ -99,7 +101,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const post = await saveFlightLogPost(await inputFromRequest(request));
     refresh(post);
-    return NextResponse.json({ post, posts: await getFlightLogPosts({ status: "all", includeArchived: true }) }, { headers: noStore });
+    return NextResponse.json({ post, posts: await getFlightLogPosts({ status: "all", includeArchived: true }), customerPosts: await getAllCustomerFlightLogPostsForManager() }, { headers: noStore });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update Flight Log post." }, { status: 400, headers: noStore });
   }
@@ -107,12 +109,24 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   if (!isManager(request)) return unauthorized();
+  const customerPostId = Number(request.nextUrl.searchParams.get("customerPostId") || 0);
   const id = request.nextUrl.searchParams.get("id") || "";
+  const hardDelete = request.nextUrl.searchParams.get("delete") === "true";
   try {
-    const post = await archiveFlightLogPost(id);
+    if (customerPostId) {
+      const deleted = await deleteAnyCustomerFlightLogPostForManager(customerPostId);
+      const directory = flightLogPostMediaDirectory();
+      for (const url of deleted.mediaUrls) {
+        if (url.startsWith("/media/flight-log-posts/") || url.startsWith("/api/flight-log-post-files/")) await fs.unlink(path.join(directory, path.basename(url))).catch(() => undefined);
+      }
+      refresh();
+      return NextResponse.json({ ok: true, posts: await getFlightLogPosts({ status: "all", includeArchived: true }), customerPosts: await getAllCustomerFlightLogPostsForManager() }, { headers: noStore });
+    }
+    const post = hardDelete ? await deleteFlightLogPost(id) : await archiveFlightLogPost(id);
     refresh(post);
-    return NextResponse.json({ post, posts: await getFlightLogPosts({ status: "all", includeArchived: true }) }, { headers: noStore });
+    return NextResponse.json({ post, posts: await getFlightLogPosts({ status: "all", includeArchived: true }), customerPosts: await getAllCustomerFlightLogPostsForManager() }, { headers: noStore });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not archive Flight Log post." }, { status: 400, headers: noStore });
+    const fallback = customerPostId ? "Could not delete customer Flight Log post." : hardDelete ? "Could not delete Flight Log post." : "Could not archive Flight Log post.";
+    return NextResponse.json({ error: error instanceof Error ? error.message : fallback }, { status: 400, headers: noStore });
   }
 }

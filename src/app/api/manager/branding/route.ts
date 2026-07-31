@@ -1,6 +1,7 @@
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
+import { requestBodyExceeds } from "@/lib/server-file-response";
 import { brandLogoUrl, findCustomLogo, removeCustomLogo, saveCustomLogo } from "@/lib/site-branding";
 
 export const runtime = "nodejs";
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
   const denied = unauthorized(request);
   if (denied) return denied;
 
+  if (requestBodyExceeds(request, maxBytes + 1024 * 1024)) return NextResponse.json({ error: "Logos must be 10 MB or smaller." }, { status: 413 });
   const form = await request.formData();
   const upload = form.get("logo");
   if (!(upload instanceof File) || !upload.size) return NextResponse.json({ error: "Choose a logo to upload." }, { status: 400 });

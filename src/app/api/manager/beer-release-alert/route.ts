@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
+import { requestBodyExceeds } from "@/lib/server-file-response";
 import { beerReleaseAlertAssetDirectory, createBeerReleaseAlert, deleteBeerReleaseAlert, getBeerReleaseAlerts, saveBeerReleaseAlert } from "@/lib/beer-release-alert";
 
 export const runtime = "nodejs";
@@ -11,6 +12,7 @@ const allowedTypes = new Map([["image/jpeg", ".jpg"], ["image/png", ".png"], ["i
 
 async function inputFromRequest(request: NextRequest) {
   if (!request.headers.get("content-type")?.includes("multipart/form-data")) return request.json();
+  if (requestBodyExceeds(request, 26 * 1024 * 1024)) throw new Error("Sell sheet upload must be 25 MB or smaller.");
   const form = await request.formData();
   const input: Record<string, unknown> = Object.fromEntries(form.entries());
   input.enabled = form.get("enabled") === "true" || form.get("enabled") === "on";

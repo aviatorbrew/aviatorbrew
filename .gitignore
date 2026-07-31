@@ -9,3 +9,8 @@ cloudflare-env.d.ts
 .open-next
 data/tour-signups.json
 data/coupons.json
+.env.render.local
+.migration-exports/
+logs/*.log
+manager-shop-debug.png
+data/keg-imports/

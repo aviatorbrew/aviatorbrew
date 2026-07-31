@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-message="${1:-Update Aviator Live project}"
-remote="https://github.com/aviatorbrew/aviatorlive.git"
+message="${1:-Update AviatorBrew website}"
+remote="https://github.com/aviatorbrew/aviatorbrew.git"
 
 git remote remove origin >/dev/null 2>&1 || true
 git remote add origin "$remote"

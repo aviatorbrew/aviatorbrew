@@ -2,7 +2,9 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentFlightLogCustomer, rateLimit, rateLimitKey } from "@/lib/flight-log-auth";
-import { createCustomerFlightLogPost, getPublishedCustomerFlightLogPosts } from "@/lib/flight-log-social";
+import { createCustomerFlightLogPost, deleteCustomerFlightLogPost, getPublishedCustomerFlightLogPosts } from "@/lib/flight-log-social";
+import { flightLogPostMediaDirectory, flightLogPostMediaUrl } from "@/lib/flight-log-upload-storage";
+import { requestBodyExceeds } from "@/lib/server-file-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,15 +33,35 @@ export async function GET() {
   return NextResponse.json({ ok: true, posts: await getPublishedCustomerFlightLogPosts() }, { headers: noStore });
 }
 
+
+export async function DELETE(request: NextRequest) {
+  const customer = await getCurrentFlightLogCustomer();
+  if (!customer) return NextResponse.json({ error: "Sign in to delete a post." }, { status: 401, headers: noStore });
+  if (!customer.emailVerified) return NextResponse.json({ error: "Verify your email before managing posts." }, { status: 403, headers: noStore });
+  try {
+    rateLimit(rateLimitKey(request, "customer-post-delete", String(customer.id)), 30, 60 * 60 * 1000);
+    const postId = Number(request.nextUrl.searchParams.get("id"));
+    const deleted = await deleteCustomerFlightLogPost(customer.id, customer.role, postId);
+    const directory = flightLogPostMediaDirectory();
+    for (const url of deleted.mediaUrls) {
+      if (url.startsWith("/media/flight-log-posts/") || url.startsWith("/api/flight-log-post-files/")) await fs.unlink(path.join(directory, path.basename(url))).catch(() => undefined);
+    }
+    return NextResponse.json({ ok: true }, { headers: noStore });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not delete this post." }, { status: 400, headers: noStore });
+  }
+}
+
 export async function POST(request: NextRequest) {
   const customer = await getCurrentFlightLogCustomer();
   if (!customer) return NextResponse.json({ error: "Sign in to post." }, { status: 401, headers: noStore });
   if (!customer.emailVerified) return NextResponse.json({ error: "Verify your email before posting." }, { status: 403, headers: noStore });
   try {
     rateLimit(rateLimitKey(request, "customer-post", String(customer.id)), 20, 60 * 60 * 1000);
+    if (requestBodyExceeds(request, 50 * 1024 * 1024)) return NextResponse.json({ error: "Flight Log post uploads must total 50 MB or less." }, { status: 413, headers: noStore });
     const form = await request.formData();
     const uploads = form.getAll("media").filter((item): item is File => item instanceof File && item.size > 0).slice(0, 6);
-    const directory = path.join(process.cwd(), "public", "media", "flight-log-posts");
+    const directory = flightLogPostMediaDirectory();
     await fs.mkdir(directory, { recursive: true });
     const media: { url: string; mediaType: string }[] = [];
     for (const upload of uploads) {
@@ -50,7 +72,7 @@ export async function POST(request: NextRequest) {
       if (!validMedia(bytes, upload.type)) throw new Error("One uploaded file is not valid media.");
       const filename = customer.id + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7) + "-" + safeName(upload.name).replace(/\.[a-z0-9]+$/i, "") + extension;
       await fs.writeFile(path.join(directory, filename), bytes);
-      media.push({ url: "/media/flight-log-posts/" + filename, mediaType: upload.type });
+      media.push({ url: flightLogPostMediaUrl(filename), mediaType: upload.type });
     }
     const tagHandles = clean(form.get("tagHandles"), 300).split(/[\s,]+/).map((item) => item.replace(/^@/, "")).filter(Boolean);
     await createCustomerFlightLogPost(customer.id, { title: clean(form.get("title"), 120), body: clean(form.get("body"), 5000), media, tagHandles });

@@ -22,9 +22,9 @@ async function resolveTarget(kind: FlightLogCheckInKind, slug: string) {
     const location = (await getAllLocations()).find((item) => item.slug === slug);
     return location ? { slug: location.slug, label: location.name } : null;
   }
-  const events = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getPublishedLiveMusicEvents({ monthsAhead: 2 }), getPublishedLiveMusicCheckInEvents({ daysBack: 10 })]);
+  const events = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getPublishedLiveMusicEvents({ monthsAhead: 2 }), getPublishedLiveMusicCheckInEvents({ daysBack: 20 })]);
   const event = events.flat().find((item) => item.id === slug);
-  return event ? { slug: event.id, label: event.title } : null;
+  return event ? { slug: event.id, label: [event.title, event.location].filter(Boolean).join(" - ") } : null;
 }
 
 export async function GET() {

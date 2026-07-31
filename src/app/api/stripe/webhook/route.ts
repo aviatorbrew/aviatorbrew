@@ -33,7 +33,10 @@ export async function POST(request: NextRequest) {
   if (event.type === "checkout.session.completed" && session?.payment_status === "paid") {
     const signupId = session.metadata?.tourSignupId;
     if (signupId) await markTourPaid(signupId, session.id || "");
-    if (session.metadata?.item === "shop-new" && session.id) await markShopOrderPaid(session.id);
+    if (session.metadata?.item === "shop-new" && session.id) {
+      const notified = await markShopOrderPaid(session.id);
+      if (!notified) return NextResponse.json({ error: "Payment received, but the shop order notification email could not be sent." }, { status: 503 });
+    }
     if (session.metadata?.item === "private-event-room-booking") {
       if (!session.id) return NextResponse.json({ error: "Stripe Checkout session ID is missing." }, { status: 400 });
       const notified = await notifyPrivateEventPayment(session);

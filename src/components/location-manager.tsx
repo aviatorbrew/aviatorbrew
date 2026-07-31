@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import type { Location } from "@/data/site";
+import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
 
 type PortalLocation = Location & { id: string; updatedAt: string | null; heroImage?: string };
 
@@ -24,7 +25,7 @@ function valuesFromForm(form: HTMLFormElement) {
   };
 }
 
-export function LocationManager() {
+export function LocationManager({ editId, returnTo }: { editId?: string; returnTo?: string } = {}) {
   const [locations, setLocations] = useState<PortalLocation[]>([]);
   const [editing, setEditing] = useState<PortalLocation | null>(null);
   const [message, setMessage] = useState("");
@@ -34,10 +35,12 @@ export function LocationManager() {
     const response = await fetch("/api/manager/locations");
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
-    setLocations(body.locations || []);
+    const nextLocations = body.locations || [];
+    setLocations(nextLocations);
+    if (editId) { const match = nextLocations.find((location: PortalLocation) => location.slug === editId || location.id === editId); if (match) setEditing(match); }
   }
 
-  useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
+  useEffect(() => { load().catch((error) => setMessage(error.message)); }, [editId]);
 
   async function update(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,6 +50,7 @@ export function LocationManager() {
     setBusy(false);
     if (!response.ok) { setMessage(body.error); return; }
     setLocations(body.locations || []);
+    if (returnTo) returnFromManagerEdit(returnTo, "/manager/locations");
     setEditing(null);
     setMessage("Location details saved to the public site.");
   }
@@ -74,10 +78,10 @@ export function LocationManager() {
           <label className="manager-beer-inline-wide">Description<textarea name="description" required rows={3} maxLength={700} defaultValue={location.description} /></label>
           <label className="manager-beer-inline-wide">Parking<textarea name="parking" required rows={2} maxLength={400} defaultValue={location.parking} /></label>
           <label className="manager-beer-inline-wide">Accessibility<textarea name="accessibility" required rows={2} maxLength={400} defaultValue={location.accessibility} /></label>
-          <div className="manager-beer-inline-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save location"}</button><button className="button button-outline" type="button" onClick={() => setEditing(null)} disabled={busy}>Cancel</button></div>
+          <div className="manager-beer-inline-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save location"}</button><button className="button button-outline" type="button" onClick={() => returnTo ? returnFromManagerEdit(returnTo, "/manager/locations") : setEditing(null)} disabled={busy}>Cancel</button></div>
         </form> : <>
           <div><p className="eyebrow">{location.comingSoon ? "Coming soon" : location.updatedAt ? "Edited" : "Default content"}</p><h3>{location.name}</h3><p>{location.hours}</p><small>{location.description}</small><small>{location.address} - {location.phone}</small></div>
-          <footer><button type="button" onClick={() => { setEditing(location); setMessage("Editing " + location.shortName + "."); }} disabled={busy}>Edit</button></footer>
+          <footer><a className="button" href={managerEditHref("locations", location.slug)}>Edit</a></footer>
         </>}
       </article>;
     })}</div>

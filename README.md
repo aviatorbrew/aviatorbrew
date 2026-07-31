@@ -137,3 +137,19 @@ The uploaded source is validated and atomically saved to data/keg-inventory.json
 The protected media library includes **Coupons + blackouts**. Create a coupon there with the exact title, offer terms, and expiration date; it immediately appears at `/coupons`. Guests receive a unique downloadable coupon image with an embedded QR code. The bar validates it at `/coupon-validate`, which marks the code redeemed after a successful scan.
 
 Coupons are automatically unavailable and invalid on Fridays and Saturdays. Add each special-event date in the manager or set `COUPON_SPECIAL_EVENT_DATES` as a comma-separated list. Set `COUPON_VALIDATION_KEY` in production and provide it only to approved bar staff. Live coupon records are stored in `data/coupons.json` unless `COUPON_DATA_FILE` is set.
+
+
+### ShopNew cart and shipping
+
+ShopNew stores products, variants, bonus settings, orders, and fulfillment metadata in PostgreSQL. Import the current public Shopify catalog with:
+
+```bash
+npm run db:migrate
+npm run shop:import-shopify
+```
+
+The importer upserts Shopify products and variants, downloads product images into `public/media/shop-products/shopify`, and configures the Aviator Brewing sticker as the default bonus for merchandise totals over $20.
+
+USPS rates are calculated through EasyPost when `EASYPOST_API_KEY` is configured. Without that key, checkout uses a ZIP-code and package-weight estimate until live carrier pricing is connected. Set `EASYPOST_API_KEY` and a strong random `SHOP_CHECKOUT_SIGNING_SECRET`. `EASYPOST_USPS_CARRIER_ACCOUNT_ID` is optional and restricts rate requests to one connected USPS carrier account. Product weights, the ship-from address, default parcel dimensions, bonus threshold, and bonus item are managed under Manager > Shop.
+
+Stripe still handles payment. Configure `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`; the `checkout.session.completed` webhook marks ShopNew orders paid and decrements tracked inventory exactly once.

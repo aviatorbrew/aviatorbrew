@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { databaseConfigured, withDatabase } from "@/lib/database";
+import { easternLocalTimestamp } from "@/lib/eastern-time";
 
 export type RecurrenceFrequency = "none" | "daily" | "weekly" | "biweekly" | "monthly-date" | "monthly-weekday" | "yearly";
 
@@ -95,11 +96,11 @@ async function saveFileEvents(events: ManagedEvent[]) {
 }
 
 function eventStart(event: ManagedEvent) {
-  return event.date + "T" + event.startTime + ":00-05:00";
+  return easternLocalTimestamp(event.date, event.startTime);
 }
 
 function eventEnd(event: ManagedEvent) {
-  return event.endTime ? event.date + "T" + event.endTime + ":00-05:00" : null;
+  return event.endTime ? easternLocalTimestamp(event.date, event.endTime) : null;
 }
 
 async function readDatabaseEvents(eventType = "special"): Promise<ManagedEvent[] | null> {
@@ -170,9 +171,20 @@ async function deleteDatabaseEvent(id: string) {
 
 async function readAll(eventType = "special"): Promise<ManagedEvent[]> {
   const databaseEvents = await readDatabaseEvents(eventType);
-  if (databaseEvents) return databaseEvents;
+  if (databaseEvents) {
+    if (!databaseEvents.length) {
+      const legacyEvents = await readFileEvents();
+      const filteredLegacy = eventType === "all" ? legacyEvents : legacyEvents.filter((event) => (event.eventType || "special") === eventType);
+      if (filteredLegacy.length) {
+        for (const event of legacyEvents) await upsertDatabaseEvent(normalizeEventImages({ ...event, eventType: event.eventType || "special" }));
+        return await readDatabaseEvents(eventType) || filteredLegacy;
+      }
+    }
+    return databaseEvents;
+  }
   if (databaseConfigured()) return [];
-  throw new Error("Events require DATABASE_URL. Run the file-to-database import before using events.");
+  const legacyEvents = await readFileEvents();
+  return eventType === "all" ? legacyEvents : legacyEvents.filter((event) => (event.eventType || "special") === eventType);
 }
 
 function sorted(events: ManagedEvent[]) { return [...events].sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime)); }

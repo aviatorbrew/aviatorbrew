@@ -27,7 +27,7 @@ export const managerSections = [
     id: "flight-log",
     href: "/manager/flight-log",
     label: "Flight Log",
-    description: "Create, publish, pin, and archive official Aviator dispatches.",
+    description: "Manage Flight Log posts, users, roles, bans, and moderation.",
   },
   {
     id: "beverages",

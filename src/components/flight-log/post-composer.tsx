@@ -19,6 +19,7 @@ export function FlightLogPostComposer({ signedIn, canPost, callsign }: { signedI
       if (!response.ok) throw new Error(body.error || "Could not publish your post.");
       form.reset();
       setMessage("Post published.");
+      router.push("/flight-log?posted=" + Date.now());
       router.refresh();
     } catch (err) { setError(err instanceof Error ? err.message : "Could not publish your post."); }
     finally { setBusy(false); }

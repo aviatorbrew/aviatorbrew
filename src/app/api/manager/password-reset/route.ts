@@ -20,9 +20,16 @@ export async function POST(request: NextRequest) {
   const email = managerEmail();
   if (!email || !mailAvailable()) return NextResponse.json({ error: "Password reset email is not configured." }, { status: 503 });
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const now = Date.now();
+  for (const [key, timestamp] of attempts) if (now - timestamp >= 15 * 60 * 1000) attempts.delete(key);
+  while (attempts.size >= 1000) {
+    const oldestKey = attempts.keys().next().value as string | undefined;
+    if (!oldestKey) break;
+    attempts.delete(oldestKey);
+  }
   const lastAttempt = attempts.get(ip) || 0;
   if (Date.now() - lastAttempt < 15 * 60 * 1000) return NextResponse.json({ error: "A reset email was already requested. Try again in 15 minutes." }, { status: 429 });
-  attempts.set(ip, Date.now());
+  attempts.set(ip, now);
 
   try {
     const token = await createManagerPasswordReset();

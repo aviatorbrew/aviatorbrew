@@ -1,7 +1,7 @@
-import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { beverageImageDirectory, legacyBeverageImageDirectories } from "@/lib/beverage-images";
+import { streamFirstExistingFile } from "@/lib/server-file-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ const contentTypes: Record<string, string> = {
   ".webp": "image/webp",
 };
 
-export async function GET(_request: Request, { params }: { params: Promise<{ filename: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ filename: string }> }) {
   const requested = (await params).filename;
   const filename = path.basename(requested);
   const contentType = contentTypes[path.extname(filename).toLowerCase()];
@@ -22,21 +22,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
     return NextResponse.json({ error: "Beverage image not found." }, { status: 404 });
   }
 
-  const directories = [...new Set([beverageImageDirectory(), ...legacyBeverageImageDirectories()])];
-  for (const directory of directories) {
-    try {
-      const file = await fs.readFile(path.join(directory, filename));
-      return new NextResponse(new Uint8Array(file), {
-        headers: {
-          "Cache-Control": "public, max-age=31536000, immutable",
-          "Content-Type": contentType,
-          "X-Content-Type-Options": "nosniff",
-        },
-      });
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-  }
-
-  return NextResponse.json({ error: "Beverage image not found." }, { status: 404 });
+  const response = await streamFirstExistingFile(
+    request,
+    [...new Set([beverageImageDirectory(), ...legacyBeverageImageDirectories()])].map((directory) => path.join(directory, filename)),
+    { contentType },
+  );
+  return response || NextResponse.json({ error: "Beverage image not found." }, { status: 404 });
 }

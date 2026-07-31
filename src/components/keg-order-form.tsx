@@ -32,7 +32,9 @@ const packageChoices: PackageOption[] = [
 ];
 
 function money(cents?: number) {
-  return typeof cents === "number" ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100) : "-";
+  return typeof cents === "number" && cents > 0
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100)
+    : "";
 }
 
 function countForPackage(item: KegItem, packageSize: PackageSize) {
@@ -45,34 +47,22 @@ function countForPackage(item: KegItem, packageSize: PackageSize) {
 function priceForPackage(item: KegItem, packageSize: PackageSize) {
   if (packageSize === "1/6 bbl") return item.sixthBblPriceCents;
   if (packageSize === "50 L") return item.fiftyLPriceCents;
-  if (packageSize === "12 oz cases") return item.case12PriceCents ?? (/^12\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
-  return item.case16PriceCents ?? (/^16\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
+  if (packageSize === "12 oz cases") return item.case12PriceCents || (/^12\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
+  return item.case16PriceCents || (/^16\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
 }
 
 function canOrder(item: KegItem, packageSize: PackageSize) {
-  return countForPackage(item, packageSize) > 0 && typeof priceForPackage(item, packageSize) === "number";
-}
-
-function hasInventory(item: KegItem, packageSize: PackageSize) {
-  return countForPackage(item, packageSize) > 0;
+  return countForPackage(item, packageSize) > 0 && Number(priceForPackage(item, packageSize) || 0) > 0;
 }
 
 function packageOptions(item: KegItem) {
   return packageChoices.filter((option) => canOrder(item, option.value));
 }
 
-function caseCount(item: KegItem) { return (item.case12Count || 0) + (item.case16Count || 0) || (item.caseCount || 0); }
-type CaseLine = { label: string; count: number; price: number | undefined };
-function caseLines(item: KegItem): CaseLine[] {
-  const lines = [
-    (item.case12Count || item.case12PriceCents) ? { label: "12 oz cases", count: item.case12Count || 0, price: item.case12PriceCents } : null,
-    (item.case16Count || item.case16PriceCents) ? { label: "16 oz cases", count: item.case16Count || 0, price: item.case16PriceCents } : null,
-  ].filter((line): line is CaseLine => Boolean(line));
-  if (lines.length) return lines;
-  return (item.caseCount || item.casePriceCents) ? [{ label: item.caseSize || "Cases", count: item.caseCount || 0, price: item.casePriceCents }] : [];
-}
-function canShowCases(item: KegItem) {
-  return caseCount(item) > 0 || caseLines(item).length > 0;
+function StockCell({ count, price }: { count: number; price?: number }) {
+  if (count < 1) return <span className="keg-stock-empty">-</span>;
+  const formattedPrice = money(price);
+  return <span className="keg-stock-cell"><b>{count}<small>avail</small></b>{formattedPrice ? <strong>{formattedPrice}</strong> : <em>Price pending</em>}</span>;
 }
 
 export function KegOrderForm({ items }: { items: KegItem[] }) {
@@ -87,28 +77,34 @@ export function KegOrderForm({ items }: { items: KegItem[] }) {
     const firstOption = packageOptions(item)[0]?.value || "1/6 bbl";
     setSelected(item);
     setPackageSize(firstOption);
-    setState("idle"); setMessage("");
+    setState("idle");
+    setMessage("");
     document.getElementById("keg-order")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected) return;
-    setState("sending"); setMessage("");
+    setState("sending");
+    setMessage("");
     const form = new FormData(event.currentTarget);
     try {
       const response = await fetch("/api/keg-orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...Object.fromEntries(form.entries()), beerName: selected.beerName, packageSize }) });
       const body = await response.json() as { error?: string; message?: string };
       if (!response.ok) throw new Error(body.error || "We could not send your request.");
-      setState("success"); setMessage(body.message || "Your order request is on its way.");
+      setState("success");
+      setMessage(body.message || "Your order request is on its way.");
       event.currentTarget.reset();
-    } catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "Please try again."); }
+    } catch (error) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "Please try again.");
+    }
   }
 
-  return <><div className="keg-table-wrap"><table className="keg-table"><thead><tr><th scope="col">Beer</th><th scope="col">Package size</th><th scope="col">1/6 BBL</th><th scope="col">1/6 price</th><th scope="col">50 L</th><th scope="col">50 L price</th><th scope="col">Cases</th><th scope="col"><span className="sr-only">Order</span></th></tr></thead><tbody>{items.map((keg) => {
+  return <><div className="keg-table-wrap"><table className="keg-table keg-table-compact"><thead><tr><th scope="col">Beer</th><th scope="col">1/6 BBL</th><th scope="col">50 L</th><th scope="col">12 oz case</th><th scope="col">16 oz case</th><th scope="col"><span className="sr-only">Order</span></th></tr></thead><tbody>{items.map((keg) => {
     const isOrderable = orderable.includes(keg);
-    return <tr key={keg.beerName}><th scope="row"><span>{keg.beerName}</span><small>{keg.category}{keg.sixtelsAvailableViaBackfill ? " · " + keg.sixtelsAvailableViaBackfill + " sixtels available by backfill" : ""}</small></th><td>{keg.packaging}</td><td>{hasInventory(keg, "1/6 bbl") ? <small>{keg.sixthBblKegs} available now</small> : "-"}</td><td><strong>{money(keg.sixthBblPriceCents)}</strong></td><td>{hasInventory(keg, "50 L") ? <small>{keg.fiftyLKegs} available now</small> : "-"}</td><td><strong>{money(keg.fiftyLPriceCents)}</strong></td><td>{canShowCases(keg) ? <div className="keg-case-lines">{caseLines(keg).map((line) => <span key={line.label}><strong>{line.label}: {money(line.price)}</strong><small>{line.count} available</small></span>)}</div> : "-"}</td><td><button className="keg-order-button" type="button" onClick={() => choose(keg)} disabled={!isOrderable}>Order</button></td></tr>;
+    return <tr key={keg.beerName}><th scope="row"><span>{keg.beerName}</span><small>{keg.category} / {keg.packaging}{keg.sixtelsAvailableViaBackfill ? " / +" + keg.sixtelsAvailableViaBackfill + " backfill" : ""}</small></th><td><StockCell count={keg.sixthBblKegs} price={priceForPackage(keg, "1/6 bbl")} /></td><td><StockCell count={keg.fiftyLKegs} price={priceForPackage(keg, "50 L")} /></td><td><StockCell count={keg.case12Count || 0} price={priceForPackage(keg, "12 oz cases")} /></td><td><StockCell count={keg.case16Count || 0} price={priceForPackage(keg, "16 oz cases")} /></td><td><button className="keg-order-button" type="button" onClick={() => choose(keg)} disabled={!isOrderable}>Order</button></td></tr>;
   })}</tbody></table></div>
-    <section id="keg-order" className="keg-order-panel" aria-live="polite"><div><p className="eyebrow">Keg/package request</p><h2>{selected ? selected.beerName : "Select an item to order."}</h2><p>{selected ? "Choose a package and quantity, then send your request to the Aviator sales team." : "Click Order in the live inventory to begin."}</p></div>{selected ? <form className="inquiry-form" onSubmit={submit}><input name="website" className="honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" /><label>Package<select value={packageSize} onChange={(event) => setPackageSize(event.target.value as PackageSize)}>{packageOptions(selected).map((option) => <option value={option.value} key={option.value}>{option.label} ({countForPackage(selected, option.value)} available now · {money(priceForPackage(selected, option.value))})</option>)}</select></label><label>How many?<input name="quantity" type="number" min="1" max={available} defaultValue="1" key={selected.beerName + packageSize} required /><small>{available} currently available. Your request is confirmed by the sales team.</small></label><label>Name<input name="name" autoComplete="name" required /></label><label>Phone<input name="phone" type="tel" autoComplete="tel" required /></label><label>Email<input name="email" type="email" required /></label><label>Business or organization (optional)<input name="business" autoComplete="organization" /></label><label>Pickup notes (optional)<textarea name="notes" rows={3} /></label><p className="keg-newsletter-note">Submitting this request also sends an invitation to confirm your place in the Aviator Flight Crew for beer releases, events, and specials.</p><button className="button" disabled={state === "sending"}>{state === "sending" ? "Sending request..." : "Send order request"}</button>{state !== "idle" ? <p className={"keg-order-message " + state} role={state === "error" ? "alert" : "status"}>{message}</p> : null}</form> : null}</section>
+    <section id="keg-order" className="keg-order-panel" aria-live="polite"><div><p className="eyebrow">Keg/package request</p><h2>{selected ? selected.beerName : "Select an item to order."}</h2><p>{selected ? "Choose a package and quantity, then send your request to the Aviator sales team." : "Click Order in the live inventory to begin."}</p></div>{selected ? <form className="inquiry-form" onSubmit={submit}><input name="website" className="honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" /><label>Package<select value={packageSize} onChange={(event) => setPackageSize(event.target.value as PackageSize)}>{packageOptions(selected).map((option) => <option value={option.value} key={option.value}>{option.label} ({countForPackage(selected, option.value)} available now / {money(priceForPackage(selected, option.value))})</option>)}</select></label><label>How many?<input name="quantity" type="number" min="1" max={available} defaultValue="1" key={selected.beerName + packageSize} required /><small>{available} currently available. Your request is confirmed by the sales team.</small></label><label>Name<input name="name" autoComplete="name" required /></label><label>Phone<input name="phone" type="tel" autoComplete="tel" required /></label><label>Email<input name="email" type="email" required /></label><label>Business or organization (optional)<input name="business" autoComplete="organization" /></label><label>Pickup notes (optional)<textarea name="notes" rows={3} /></label><label className="captcha-check keg-human-check"><input name="human" type="checkbox" value="yes" required /><span>I&apos;m a real person</span></label><p className="keg-newsletter-note">Submitting this request also sends an invitation to confirm your place in the Aviator Flight Crew for beer releases, events, and specials.</p><button className="button" disabled={state === "sending"}>{state === "sending" ? "Sending request..." : "Send order request"}</button>{state !== "idle" ? <p className={"keg-order-message " + state} role={state === "error" ? "alert" : "status"}>{message}</p> : null}</form> : null}</section>
   </>;
 }

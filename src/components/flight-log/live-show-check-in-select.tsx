@@ -35,7 +35,7 @@ export function FlightLogLiveShowCheckInSelect({ options, signedIn, canCheckIn }
   }
 
   if (!signedIn) return <div className="flight-log-beverage-checkin"><p>Sign in to mark a live show as attended.</p><Link className="button" href="/flight-log/sign-in">Sign In</Link></div>;
-  if (!options.length) return <div className="flight-log-beverage-checkin"><p>No live shows are available for attendance check-in from the last 10 days through today.</p></div>;
+  if (!options.length) return <div className="flight-log-beverage-checkin"><p>No live shows are available for attendance check-in from the last 20 days through today.</p></div>;
   return <form className="flight-log-beverage-checkin" onSubmit={submit}>
     <label>Choose live show attended<select value={selected} onChange={(event) => { setSelected(event.currentTarget.value); setCheckedIn(false); setMessage(""); setError(""); }} disabled={!canCheckIn || busy}>{options.map((item) => <option value={item.id} key={item.id}>{item.title} - {item.meta}</option>)}</select></label>
     {current ? <p><strong>{current.title}</strong><span>{current.meta}</span></p> : null}

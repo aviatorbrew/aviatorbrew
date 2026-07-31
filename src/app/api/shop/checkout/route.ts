@@ -1,35 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getShopVariantForCheckout, recordShopCheckout } from "@/lib/shop";
-import { createDynamicCheckoutSession } from "@/lib/stripe";
+import { prepareShopCart, recordShopCheckout, type ShopCartRequestItem } from "@/lib/shop";
+import { normalizeShippingAddress, verifyShippingToken, type ShopShippingAddress } from "@/lib/shop-shipping";
+import { createShopCartCheckoutSession } from "@/lib/stripe";
 import { publicSiteUrl } from "@/lib/site-url";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as { variantId?: number; quantity?: number; email?: string };
-    const variantId = Number(body.variantId);
-    const quantity = Number(body.quantity);
-    if (!Number.isInteger(variantId) || variantId < 1 || !Number.isInteger(quantity) || quantity < 1 || quantity > 25) return NextResponse.json({ error: "Choose a valid shop item and quantity." }, { status: 400 });
-    const item = await getShopVariantForCheckout(variantId);
-    if (quantity > item.variant.inventoryCount) return NextResponse.json({ error: "Only " + item.variant.inventoryCount + " available right now." }, { status: 400 });
+    const body = await request.json() as {
+      items?: ShopCartRequestItem[];
+      email?: string;
+      phone?: string;
+      address?: Partial<ShopShippingAddress>;
+      shippingToken?: string;
+    };
+    const email = String(body.email || "").trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(email)) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    const cart = await prepareShopCart(body.items || []);
+    const address = normalizeShippingAddress({ ...(body.address || {}), phone: body.phone || body.address?.phone || "" });
+    if (!body.shippingToken) return NextResponse.json({ error: "Calculate and choose a shipping rate." }, { status: 400 });
+    const shipping = verifyShippingToken(body.shippingToken, cart, address);
     const origin = publicSiteUrl(request.nextUrl.origin);
-    const session = await createDynamicCheckoutSession({
-      name: item.productName + (item.variant.label === "Default" ? "" : " - " + item.variant.label),
-      description: item.productDescription || "Aviator Brewing Company shop item.",
-      unitAmount: item.variant.priceCents,
-      quantity,
-      customerEmail: body.email,
-      referenceId: "shop-variant-" + item.variant.id,
-      metadata: { item: "shop-new", variantId: String(item.variant.id), productId: String(item.variant.productId), productSlug: item.productSlug },
-      successPath: "/shop-new?checkout=success&session_id={CHECKOUT_SESSION_ID}",
-      cancelPath: "/shop-new?checkout=cancel",
+    const session = await createShopCartCheckoutSession({
+      items: cart.items.map((item) => ({ name: item.productName, description: item.variantLabel, unitAmount: item.unitPriceCents, quantity: item.quantity })),
+      customerEmail: email,
+      metadata: { item: "shop-new", cartItems: String(cart.merchandiseItems.length), bonusApplied: cart.bonusItem ? "true" : "false" },
+      shipping: { displayName: shipping.carrier + " " + shipping.service, amountCents: shipping.amountCents, address, phone: String(body.phone || "") },
+      successPath: "/shop-new/cart?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+      cancelPath: "/shop-new/cart?checkout=cancel",
       origin,
     });
     if (!session) return NextResponse.json({ error: "Online shop payments are not configured yet." }, { status: 503 });
-    await recordShopCheckout({ stripeSessionId: session.id, variantId: item.variant.id, quantity, customerEmail: body.email, amountCents: item.variant.priceCents * quantity });
+    await recordShopCheckout({
+      stripeSessionId: session.id,
+      cart,
+      customerEmail: email,
+      customerName: address.name,
+      customerPhone: String(body.phone || ""),
+      shippingCents: shipping.amountCents,
+      shippingAddress: address,
+      shippingProvider: shipping.carrier,
+      shippingService: shipping.service,
+      shippingRateId: shipping.rateId,
+    });
     return NextResponse.json({ url: session.url, id: session.id });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not start shop checkout." }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not start shop checkout." }, { status: 400 });
   }
 }

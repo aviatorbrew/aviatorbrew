@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { beerImageDirectory, beerImageUrl } from "@/lib/beer-images";
 import { addManagedBeer, deleteManagedBeer, getPortalBeer, getPortalBeers, updatePortalBeer } from "@/lib/managed-beers";
 import { isManager } from "@/lib/manager-auth";
+import { requestBodyExceeds } from "@/lib/server-file-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
+    if (requestBodyExceeds(request, maxBytes + 1024 * 1024)) return NextResponse.json({ error: "Beer graphics must be 25 MB or smaller." }, { status: 413, headers: noStore });
     const beer = await beerFromForm(await request.formData());
     await addManagedBeer(beer);
     refreshBeerPages(beer.slug);
@@ -76,6 +78,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
+    if (requestBodyExceeds(request, maxBytes + 1024 * 1024)) return NextResponse.json({ error: "Beer graphics must be 25 MB or smaller." }, { status: 413, headers: noStore });
     const form = await request.formData();
     const id = clean(form.get("id"), 150);
     if (!id) throw new Error("Choose a beer to update.");

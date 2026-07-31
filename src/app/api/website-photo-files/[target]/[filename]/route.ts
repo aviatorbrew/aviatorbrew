@@ -1,7 +1,7 @@
-import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { legacyPhotoDirectory, photoDirectory, validPhotoTarget } from "@/lib/website-photo-storage";
+import { streamFirstExistingFile } from "@/lib/server-file-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ const contentTypes: Record<string, string> = {
   ".m4v": "video/mp4",
 };
 
-export async function GET(_request: Request, { params }: { params: Promise<{ target: string; filename: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ target: string; filename: string }> }) {
   const { target, filename: requested } = await params;
   const filename = path.basename(requested);
   const contentType = contentTypes[path.extname(filename).toLowerCase()];
@@ -25,22 +25,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tar
     return NextResponse.json({ error: "Photo not found." }, { status: 404 });
   }
 
-  const directories = [...new Set([photoDirectory(target), legacyPhotoDirectory(target)])];
-  for (const directory of directories) {
-    try {
-      const file = await fs.readFile(path.join(directory, filename));
-      return new NextResponse(new Uint8Array(file), {
-        headers: {
-          "Accept-Ranges": "bytes",
-          "Cache-Control": "public, max-age=31536000, immutable",
-          "Content-Type": contentType,
-          "X-Content-Type-Options": "nosniff",
-        },
-      });
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-  }
-
-  return NextResponse.json({ error: "Photo not found." }, { status: 404 });
+  const response = await streamFirstExistingFile(
+    request,
+    [...new Set([photoDirectory(target), legacyPhotoDirectory(target)])].map((directory) => path.join(directory, filename)),
+    { contentType },
+  );
+  return response || NextResponse.json({ error: "Photo not found." }, { status: 404 });
 }

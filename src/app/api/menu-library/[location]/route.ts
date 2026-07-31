@@ -2,7 +2,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { isMenuLocation } from "@/data/menu-library";
-import { canManageMedia } from "@/lib/manager-auth";
+import { canManageMedia, menuLibraryKey } from "@/lib/manager-auth";
+import { requestBodyExceeds } from "@/lib/server-file-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ const uploadRoot = path.join(process.cwd(), "public", "media", "menus");
 function authorized(request: NextRequest) { return canManageMedia(request); }
 
 function deny() {
-  if (!process.env.MENU_LIBRARY_KEY) {
+  if (!menuLibraryKey()) {
     return NextResponse.json({ error: "Menu Library is not configured. Set MENU_LIBRARY_KEY on the server." }, { status: 503 });
   }
   return NextResponse.json({ error: "Access denied." }, { status: 401 });
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ lo
   const target = await resolve(request, context);
   if (!target) return NextResponse.json({ error: "Unknown location or menu type." }, { status: 404 });
 
+  if (requestBodyExceeds(request, maxBytes + 1024 * 1024)) return NextResponse.json({ error: "Files must be 25 MB or smaller." }, { status: 413 });
   const formData = await request.formData();
   const upload = formData.get("file");
   if (!(upload instanceof File)) return NextResponse.json({ error: "Choose a menu file to upload." }, { status: 400 });

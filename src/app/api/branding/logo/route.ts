@@ -1,26 +1,17 @@
-import { promises as fs } from "node:fs";
 import path from "node:path";
-import { NextResponse } from "next/server";
 import { findCustomLogo } from "@/lib/site-branding";
+import { streamFirstExistingFile } from "@/lib/server-file-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   const custom = await findCustomLogo();
   const file = custom?.file || path.join(process.cwd(), "public", "images", "aviator-logo.png");
   const contentType = custom?.contentType || "image/png";
-
-  try {
-    const bytes = await fs.readFile(file);
-    return new NextResponse(bytes, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
-  } catch {
-    return new NextResponse(null, { status: 404 });
-  }
+  const response = await streamFirstExistingFile(request, [file], {
+    contentType,
+    cacheControl: "no-cache, no-store, must-revalidate",
+  });
+  return response || new Response(null, { status: 404 });
 }

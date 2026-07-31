@@ -25,8 +25,8 @@ function priceForPackage(item: KegInventoryItem | undefined, selected: PackageSi
   if (!item) return undefined;
   if (selected === "1/6 bbl") return item.sixthBblPriceCents;
   if (selected === "50 L") return item.fiftyLPriceCents;
-  if (selected === "12 oz cases") return item.case12PriceCents ?? (/^12\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
-  return item.case16PriceCents ?? (/^16\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
+  if (selected === "12 oz cases") return item.case12PriceCents || (/^12\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
+  return item.case16PriceCents || (/^16\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
 }
 
 function orderLabel(selected: PackageSize) {
@@ -46,6 +46,9 @@ export async function POST(request: Request) {
     const business = typeof body.business === "string" ? body.business.trim() : "";
     const notes = typeof body.notes === "string" ? body.notes.trim() : "";
 
+    if (body.human !== "yes") {
+      return NextResponse.json({ error: "Please confirm that you are a real person." }, { status: 400 });
+    }
     if (body.website || !beerName || !selectedPackage || !Number.isInteger(quantity) || quantity < 1 || name.length < 2 || phone.length < 7 || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json({ error: "Please select an item and provide your name, phone number, and email." }, { status: 400 });
     }
@@ -54,8 +57,9 @@ export async function POST(request: Request) {
     const keg = inventory.items.find((item) => item.beerName === beerName);
     const available = countForPackage(keg, selectedPackage);
     const priceCents = priceForPackage(keg, selectedPackage);
+    const unitPriceCents = Number(priceCents || 0);
     const hasAnyInventory = Boolean(keg && (keg.sixthBblKegs > 0 || keg.fiftyLKegs > 0 || (keg.case12Count || 0) > 0 || (keg.case16Count || 0) > 0 || (keg.caseCount || 0) > 0));
-    if (!keg || keg.hidden === true || !hasAnyInventory || typeof priceCents !== "number" || available < 1 || quantity > available) return NextResponse.json({ error: "That quantity is no longer available. Please adjust your request and try again." }, { status: 409 });
+    if (!keg || keg.hidden === true || !hasAnyInventory || unitPriceCents <= 0 || available < 1 || quantity > available) return NextResponse.json({ error: "That quantity is no longer available. Please adjust your request and try again." }, { status: 409 });
     if (!isMailConfigured()) throw new Error("Mail delivery is not configured");
 
     const label = orderLabel(selectedPackage);
@@ -64,7 +68,7 @@ export async function POST(request: Request) {
       to: "orders@aviatorbrew.com",
       subject: "Keg/package order request - " + beerName + " (" + quantity + " x " + label + ")",
       replyTo: email,
-      text: ["New Aviator keg/package order request", "", "Beer: " + beerName, "Package: " + label, "Price each: $" + (priceCents / 100).toFixed(2), "Quantity requested: " + quantity, "Available at request: " + available, "", "Name: " + name, "Phone: " + phone, "Email: " + email, business ? "Business: " + business : "", notes ? "Notes: " + notes : "", "", "Flight Crew: confirmation requested from keg/package order"].filter(Boolean).join("\n"),
+      text: ["New Aviator keg/package order request", "", "Beer: " + beerName, "Package: " + label, "Price each: $" + (unitPriceCents / 100).toFixed(2), "Quantity requested: " + quantity, "Available at request: " + available, "", "Name: " + name, "Phone: " + phone, "Email: " + email, business ? "Business: " + business : "", notes ? "Notes: " + notes : "", "", "Flight Crew: confirmation requested from keg/package order"].filter(Boolean).join("\n"),
     });
     const confirmationMessage = signup.confirmationRequired
       ? buildFlightCrewConfirmationMessage(signup.subscriber.email, signup.subscriber.confirmationExpiresAt!)

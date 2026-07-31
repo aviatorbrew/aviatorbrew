@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { databaseConfigured, withDatabase } from "@/lib/database";
+import { easternLocalTimestamp } from "@/lib/eastern-time";
 
 export type BeerReleaseAlert = {
   id: string;
@@ -74,7 +75,7 @@ async function writeFileAlerts(alerts: BeerReleaseAlert[]) {
 
 function alertStart(alert: BeerReleaseAlert) {
   if (!alert.releaseDate) return null;
-  return alert.releaseDate + "T" + (alert.releaseTime || "00:00") + ":00-05:00";
+  return easternLocalTimestamp(alert.releaseDate, alert.releaseTime || "00:00");
 }
 
 async function readDatabaseAlerts() {
@@ -144,7 +145,16 @@ async function deleteDatabaseAlert(id: string) {
 
 async function readAlerts() {
   const databaseAlerts = await readDatabaseAlerts();
-  if (databaseAlerts) return databaseAlerts;
+  if (databaseAlerts) {
+    if (!databaseAlerts.length) {
+      const legacyAlerts = await readFileAlerts();
+      if (legacyAlerts.length) {
+        for (const alert of legacyAlerts) await upsertDatabaseAlert(alert);
+        return await readDatabaseAlerts() || legacyAlerts;
+      }
+    }
+    return databaseAlerts;
+  }
   if (databaseConfigured()) return [];
   throw new Error("New Release alerts require DATABASE_URL. Run the file-to-database import before using alerts.");
 }

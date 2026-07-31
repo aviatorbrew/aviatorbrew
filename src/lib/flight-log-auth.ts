@@ -7,6 +7,7 @@ import { getAllBeyondBeer } from "@/lib/managed-beyond-beer";
 import { getAllLocations } from "@/lib/managed-locations";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 import { isMailConfigured, sendMail } from "@/lib/mail";
+import type { FlightLogUserRole, FlightLogUserStatus } from "@/lib/flight-log-user-types";
 
 export type FlightLogCustomer = {
   id: number;
@@ -16,6 +17,8 @@ export type FlightLogCustomer = {
   callsign: string;
   displayName: string;
   emailVerified: boolean;
+  role: FlightLogUserRole;
+  status: FlightLogUserStatus;
   flightCrewJoinedAt?: string;
   avatarUrl?: string;
   bio?: string;
@@ -29,6 +32,8 @@ const resetMinutes = 30;
 const callsignPattern = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,30}$/;
 const emailPattern = /^\S+@\S+\.\S+$/;
 const rateBuckets = new Map<string, number[]>();
+const maxRateBuckets = 5000;
+let rateLimitChecks = 0;
 
 function clean(value: unknown, max: number) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 function email(value: unknown) {
@@ -72,6 +77,8 @@ function customerFromRow(row: Record<string, unknown>): FlightLogCustomer {
     callsign: String(row.handle || ""),
     displayName: String(row.display_name || row.handle || ""),
     emailVerified: Boolean(row.email_verified_at),
+    role: row.role === "moderator" || row.role === "admin" ? row.role : "user",
+    status: row.status === "pending_verification" || row.status === "banned" ? row.status : "active",
     avatarUrl: normalizeFlightLogAvatarUrl(String(row.avatar_url || "")) || undefined,
     bio: String(row.bio || "") || undefined,
     flightCrewJoinedAt: row.flight_crew_joined_at instanceof Date ? row.flight_crew_joined_at.toISOString() : row.flight_crew_joined_at ? String(row.flight_crew_joined_at) : undefined,
@@ -84,6 +91,18 @@ export function requireDatabaseForFlightLogAuth() {
 
 export function rateLimit(key: string, limit: number, windowMs: number) {
   const now = Date.now();
+  rateLimitChecks += 1;
+  if (rateLimitChecks % 128 === 0 || rateBuckets.size >= maxRateBuckets) {
+    const staleBefore = now - 60 * 60 * 1000;
+    for (const [bucketKey, stamps] of rateBuckets) {
+      if (!stamps.length || stamps[stamps.length - 1] < staleBefore) rateBuckets.delete(bucketKey);
+    }
+    while (rateBuckets.size >= maxRateBuckets) {
+      const oldestKey = rateBuckets.keys().next().value as string | undefined;
+      if (!oldestKey) break;
+      rateBuckets.delete(oldestKey);
+    }
+  }
   const recent = (rateBuckets.get(key) || []).filter((stamp) => now - stamp < windowMs);
   if (recent.length >= limit) throw new Error("Too many attempts. Try again shortly.");
   recent.push(now);
@@ -131,24 +150,24 @@ export async function registerFlightLogCustomer(input: Record<string, unknown>, 
   const now = new Date();
   const customer = await withDatabase(async (client) => {
     const duplicate = await client.query(
-      "SELECT id, email, handle, email_verified_at FROM flight_log.profiles WHERE lower(email) = lower($1) OR lower(handle) = lower($2)",
+      "SELECT id, email, handle, email_verified_at, status FROM flight_log.profiles WHERE lower(email) = lower($1) OR lower(handle) = lower($2)",
       [nextEmail, nextCallsign],
     );
     const duplicateEmail = duplicate.rows.find((row) => String(row.email || "").toLowerCase() === nextEmail);
     const duplicateCallsign = duplicate.rows.find((row) => String(row.handle || "").toLowerCase() === nextCallsign.toLowerCase());
     if (duplicateCallsign && (!duplicateEmail || Number(duplicateCallsign.id) !== Number(duplicateEmail.id))) throw new Error("That callsign is already taken. Try another one.");
-    if (duplicateEmail?.email_verified_at) throw new Error("An account already exists with that email. Sign in or reset your password.");
+    if (duplicateEmail?.email_verified_at || duplicateEmail?.status === "banned") throw new Error("An account already exists with that email. Sign in or reset your password.");
     const displayName = firstName + " " + lastName;
     const profileValues = [nextCallsign, displayName, nextEmail, digest(nextEmail), firstName, lastName, salt, passwordDigest(nextPassword, salt), digest(verificationToken), new Date(now.getTime() + verificationMinutes * 60 * 1000).toISOString(), JSON.stringify({ flightCrewSource: "flight-log-registration" })];
     const result = duplicateEmail ? await client.query(
       `UPDATE flight_log.profiles
-       SET handle=$1, display_name=$2, email=$3, email_hash=$4, first_name=$5, last_name=$6, password_salt=$7, password_hash=$8, verification_token_hash=$9, verification_expires_at=$10, role='member', status='pending_verification', flight_crew_joined_at=COALESCE(flight_crew_joined_at, now()), metadata=COALESCE(metadata, '{}'::jsonb) || $11::jsonb, updated_at=now()
+       SET handle=$1, display_name=$2, email=$3, email_hash=$4, first_name=$5, last_name=$6, password_salt=$7, password_hash=$8, verification_token_hash=$9, verification_expires_at=$10, role='user', status='pending_verification', flight_crew_joined_at=COALESCE(flight_crew_joined_at, now()), metadata=COALESCE(metadata, '{}'::jsonb) || $11::jsonb, updated_at=now()
        WHERE id=$12
        RETURNING *`,
       [...profileValues, duplicateEmail.id],
     ) : await client.query(
       `INSERT INTO flight_log.profiles (handle, display_name, email, email_hash, first_name, last_name, password_salt, password_hash, verification_token_hash, verification_expires_at, role, status, flight_crew_joined_at, metadata)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'member','pending_verification',now(),$11::jsonb)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'user','pending_verification',now(),$11::jsonb)
        RETURNING *`,
       profileValues,
     );
@@ -168,7 +187,7 @@ export async function verifyFlightLogEmail(token: string) {
   requireDatabaseForFlightLogAuth();
   const tokenHash = digest(clean(token, 200));
   return withDatabase(async (client) => {
-    const result = await client.query("SELECT * FROM flight_log.profiles WHERE verification_token_hash = $1 AND verification_expires_at > now() LIMIT 1", [tokenHash]);
+    const result = await client.query("SELECT * FROM flight_log.profiles WHERE verification_token_hash = $1 AND verification_expires_at > now() AND status <> 'banned' LIMIT 1", [tokenHash]);
     if (!result.rows[0]) return null;
     const profile = result.rows[0];
     const updated = await client.query("UPDATE flight_log.profiles SET email_verified_at = COALESCE(email_verified_at, now()), verification_token_hash = null, verification_expires_at = null, status = 'active', updated_at = now() WHERE id = $1 RETURNING *", [profile.id]);
@@ -181,7 +200,7 @@ export async function resendFlightLogVerification(inputEmail: string, request?: 
   requireDatabaseForFlightLogAuth();
   const nextEmail = email(inputEmail);
   const token = randomBytes(32).toString("base64url");
-  const result = await withDatabase(async (client) => client.query("UPDATE flight_log.profiles SET verification_token_hash=$1, verification_expires_at=$2, updated_at=now() WHERE lower(email)=lower($3) AND email_verified_at IS NULL RETURNING *", [digest(token), new Date(Date.now() + verificationMinutes * 60 * 1000).toISOString(), nextEmail]));
+  const result = await withDatabase(async (client) => client.query("UPDATE flight_log.profiles SET verification_token_hash=$1, verification_expires_at=$2, updated_at=now() WHERE lower(email)=lower($3) AND email_verified_at IS NULL AND status <> 'banned' RETURNING *", [digest(token), new Date(Date.now() + verificationMinutes * 60 * 1000).toISOString(), nextEmail]));
   if (result.rows[0]) await sendVerificationEmail(customerFromRow(result.rows[0]), token, request);
   return true;
 }
@@ -193,6 +212,7 @@ export async function loginFlightLogCustomer(input: Record<string, unknown>, rem
   const result = await withDatabase(async (client) => client.query("SELECT * FROM flight_log.profiles WHERE lower(email)=lower($1) OR lower(handle)=lower($1) LIMIT 1", [login]));
   const row = result.rows[0];
   if (!row?.password_salt || !row?.password_hash || !secureEqual(passwordDigest(nextPassword, row.password_salt), row.password_hash)) throw new Error("Invalid email/callsign or password.");
+  if (row.status === "banned") throw new Error("This Flight Log account has been banned.");
   const rawToken = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + (remember ? rememberDays : sessionDays) * 24 * 60 * 60 * 1000);
   await withDatabase(async (client) => {
@@ -206,7 +226,7 @@ export async function requestFlightLogPasswordReset(inputEmail: string, request?
   requireDatabaseForFlightLogAuth();
   const nextEmail = email(inputEmail);
   const token = randomBytes(32).toString("base64url");
-  const result = await withDatabase(async (client) => client.query("UPDATE flight_log.profiles SET reset_token_hash=$1, reset_expires_at=$2, updated_at=now() WHERE lower(email)=lower($3) RETURNING *", [digest(token), new Date(Date.now() + resetMinutes * 60 * 1000).toISOString(), nextEmail]));
+  const result = await withDatabase(async (client) => client.query("UPDATE flight_log.profiles SET reset_token_hash=$1, reset_expires_at=$2, updated_at=now() WHERE lower(email)=lower($3) AND status <> 'banned' RETURNING *", [digest(token), new Date(Date.now() + resetMinutes * 60 * 1000).toISOString(), nextEmail]));
   if (result.rows[0]) await sendResetEmail(customerFromRow(result.rows[0]), token, request);
   return true;
 }
@@ -225,7 +245,7 @@ export async function getFlightLogCustomerForToken(token?: string): Promise<Flig
   if (!token || !databaseConfigured()) return null;
   try {
     return await withDatabase(async (client) => {
-      const result = await client.query("SELECT p.* FROM flight_log.sessions s JOIN flight_log.profiles p ON p.id=s.profile_id WHERE s.token_hash=$1 AND s.expires_at > now() LIMIT 1", [digest(token)]);
+      const result = await client.query("SELECT p.* FROM flight_log.sessions s JOIN flight_log.profiles p ON p.id=s.profile_id WHERE s.token_hash=$1 AND s.expires_at > now() AND p.status <> 'banned' LIMIT 1", [digest(token)]);
       if (!result.rows[0]) return null;
       await client.query("UPDATE flight_log.sessions SET last_seen_at=now() WHERE token_hash=$1", [digest(token)]);
       return customerFromRow(result.rows[0]);
@@ -248,15 +268,31 @@ function secureFlightLogCookie() {
   return process.env.NODE_ENV === "production";
 }
 
-export async function updateFlightLogProfile(profileId: number, input: { avatarUrl?: string; bio?: string }) {
+export async function updateFlightLogProfile(profileId: number, input: { avatarUrl?: string; bio?: string; firstName?: string; lastName?: string; callsign?: string; displayName?: string }) {
   requireDatabaseForFlightLogAuth();
   const avatarUrl = clean(input.avatarUrl, 500);
-  const bio = clean(input.bio, 500);
+  const bio = input.bio === undefined ? undefined : clean(input.bio, 500);
+  const firstName = input.firstName === undefined ? undefined : clean(input.firstName, 80);
+  const lastName = input.lastName === undefined ? undefined : clean(input.lastName, 80);
+  const nextCallsign = input.callsign === undefined ? undefined : callsign(input.callsign);
+  const displayName = input.displayName === undefined ? undefined : clean(input.displayName, 160);
+  if (firstName !== undefined && !firstName) throw new Error("First name is required.");
+  if (lastName !== undefined && !lastName) throw new Error("Last name is required.");
   const result = await withDatabase(async (client) => client.query(
-    "UPDATE flight_log.profiles SET avatar_url=COALESCE(NULLIF($1,''), avatar_url), bio=CASE WHEN $2 = '' THEN bio ELSE $2 END, updated_at=now() WHERE id=$3 RETURNING *",
-    [avatarUrl, bio, profileId],
+    `UPDATE flight_log.profiles
+       SET avatar_url=COALESCE(NULLIF($1,''), avatar_url),
+           bio=COALESCE($2, bio),
+           first_name=COALESCE($3, first_name),
+           last_name=COALESCE($4, last_name),
+           handle=COALESCE($5, handle),
+           display_name=COALESCE(NULLIF($6,''), display_name),
+           updated_at=now()
+       WHERE id=$7
+         AND ($5::text IS NULL OR NOT EXISTS (SELECT 1 FROM flight_log.profiles other WHERE lower(other.handle)=lower($5) AND other.id <> $7))
+       RETURNING *`,
+    [avatarUrl, bio ?? null, firstName ?? null, lastName ?? null, nextCallsign ?? null, displayName ?? null, profileId],
   ));
-  if (!result.rows[0]) throw new Error("Profile not found.");
+  if (!result.rows[0]) throw new Error("Profile not found, or that callsign is already taken.");
   return customerFromRow(result.rows[0]);
 }
 
@@ -321,5 +357,5 @@ export function clearFlightLogSessionCookie(response: NextResponse) {
   response.cookies.set({ name: flightLogSessionCookie, value: "", httpOnly: true, sameSite: "lax", secure: secureFlightLogCookie(), path: "/", maxAge: 0 });
 }
 export function rateLimitKey(request: NextRequest, action: string, subject = "") {
-  return [action, request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local", subject.toLowerCase()].join(":");
+  return [action, request.headers.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 80) || "local", subject.toLowerCase().slice(0, 180)].join(":");
 }

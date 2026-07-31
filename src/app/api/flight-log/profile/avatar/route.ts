@@ -2,6 +2,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentFlightLogCustomer, updateFlightLogProfile } from "@/lib/flight-log-auth";
+import { flightLogAvatarDirectory } from "@/lib/flight-log-upload-storage";
+import { requestBodyExceeds } from "@/lib/server-file-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +28,7 @@ function matchesFileType(bytes: Buffer, extension: string) {
 export async function POST(request: NextRequest) {
   const customer = await getCurrentFlightLogCustomer();
   if (!customer) return NextResponse.json({ error: "Sign in to update your profile." }, { status: 401 });
+  if (requestBodyExceeds(request, maxBytes + 1024 * 1024)) return NextResponse.json({ error: "Profile images must be 5 MB or smaller." }, { status: 413 });
   const form = await request.formData();
   const upload = form.get("avatar");
   if (!(upload instanceof File) || !upload.size) return NextResponse.json({ error: "Choose a profile image." }, { status: 400 });
@@ -36,7 +39,7 @@ export async function POST(request: NextRequest) {
   const bytes = Buffer.from(await upload.arrayBuffer());
   if (!matchesFileType(bytes, extension)) return NextResponse.json({ error: "The uploaded file is not a valid profile image." }, { status: 415 });
 
-  const directory = path.join(process.cwd(), "public", "media", "flight-log-avatars");
+  const directory = flightLogAvatarDirectory();
   await fs.mkdir(directory, { recursive: true });
   const filename = customer.id + "-" + Date.now().toString(36) + "-" + safeName(upload.name).replace(/\.[a-z0-9]+$/i, "") + extension;
   await fs.writeFile(path.join(directory, filename), bytes);

@@ -291,6 +291,21 @@ export async function archiveFlightLogPost(id: string) {
   return saveFlightLogPost({ ...post, status: "archived", isPinned: false });
 }
 
+export async function deleteFlightLogPost(id: string) {
+  const post = await getFlightLogPostById(id);
+  if (!post) throw new Error("Flight Log post not found.");
+  if (databaseConfigured()) {
+    await ensureFlightLogSchema();
+    await withDatabase(async (client) => {
+      await client.query("DELETE FROM flight_log_posts WHERE id::text = $1", [id]);
+    }, { skipSchema: true });
+    return post;
+  }
+  const posts = (await readFilePosts()).filter((item) => item.id !== id);
+  await writeFilePosts(posts);
+  return post;
+}
+
 export const seedFlightLogPosts: FlightLogInput[] = [
   { seedKey: seedPrefix + "welcome", status: "published", isPinned: true, category: "brewery_news", title: "Welcome to Aviator Flight Log", excerpt: "Official dispatches from the Aviator crew now have a home.", body: "Welcome to Aviator Flight Log. This is the official feed for brewery news, live music updates, beer releases, event notes, campus reminders, and answers from the Aviator crew. Seeded content is included for local development and can be edited before production.", locationId: "hangar-bar", authorName: "Aviator Crew" },
   { seedKey: seedPrefix + "live-music", status: "published", category: "live_music", title: "Upcoming Live Music at the Hangar", excerpt: "Watch the schedule for confirmed artists, times, and stage updates.", body: "Live music is part of the Aviator campus rhythm. Check the live music schedule before heading over, and watch this feed for weather notes, time changes, and artist updates from the Aviator team.", locationId: "hangar-bar", authorName: "Aviator Live" },

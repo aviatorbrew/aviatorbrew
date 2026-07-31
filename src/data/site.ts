@@ -29,10 +29,10 @@ export const primaryNav = [
   { label: "Flight Log", href: "/flight-log", featured: true },
   { label: "Beer", href: "/beer" },
   { label: "Brewery", href: "/brewery" },
-  { label: "Shop", href: "https://aviatorbrew.myshopify.com/" },
-  { label: "ShopNew", href: "/shop-new" },
-  { label: "Beverage Sales", href: "/kegs" },
+  { label: "Shop", href: "/shop-new" },
+  { label: "Sales", href: "/kegs" },
   { label: "Locations", href: "/locations" },
+  { label: "EVENTS", href: "/events", children: [{ label: "Events", href: "/events" }, { label: "Live Music", href: "/events/live-music" }, { label: "Private Events", href: "/private-events" }] },
   { label: "MORE", href: "/more", children: [{ label: "About", href: "/about" }, { label: "Tours", href: "/about#brewery-tours" }, { label: "Contact Us", href: "/contact" }] },
 ];
 
