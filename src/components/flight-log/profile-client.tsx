@@ -1,13 +1,15 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import type { FlightLogCustomer, FlightLogCheckIn } from "@/lib/flight-log-auth";
 import type { FlightLogFriendSummary } from "@/lib/flight-log-social";
 
 type Groups = Record<string, FlightLogCheckIn[]>;
 
 function CheckInList({ title, items, empty }: { title: string; items: FlightLogCheckIn[]; empty: string }) {
-  return <article className="flight-log-profile-card"><h2>{title}</h2>{items.length ? <ul>{items.map((item) => <li key={item.id}><strong>{item.label}</strong><span>{new Date(item.checkedInAt).toLocaleDateString()}</span>{item.notes ? <p>{item.notes}</p> : null}</li>)}</ul> : <p>{empty}</p>}</article>;
+  const formatCheckedIn = (value: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).format(new Date(value));
+  return <article className="flight-log-profile-card"><h2>{title}</h2>{items.length ? <ul>{items.map((item) => <li key={item.id}><strong>{item.label}</strong><span>{formatCheckedIn(item.checkedInAt)}</span>{item.notes ? <p>{item.notes}</p> : null}</li>)}</ul> : <p>{empty}</p>}</article>;
 }
 
 function FriendsPanel({ initial, canManage }: { initial: FlightLogFriendSummary; canManage: boolean }) {
@@ -77,8 +79,8 @@ export function FlightLogProfileClient({ customer, checkIns, friends }: { custom
 
   return <div className="flight-log-profile-panel">
     <section className="flight-log-profile-head">
-      <div className="flight-log-profile-photo">{avatarUrl ? <img src={avatarUrl} alt="" /> : <span>{customer.callsign.slice(0, 2).toUpperCase()}</span>}</div>
-      <div><p className="eyebrow">Flight Log profile</p><h1>{customer.callsign}</h1><p>{customer.firstName} {customer.lastName} · {customer.email}</p><p>{customer.emailVerified ? "Verified Flight Crew member." : "Email verification is required before posting, commenting, or checking in."}</p></div>
+      <div className="flight-log-profile-photo">{avatarUrl ? <img src={avatarUrl} alt="" key={avatarUrl} /> : <span>{customer.callsign.slice(0, 2).toUpperCase()}</span>}</div>
+      <div><p className="eyebrow">Flight Log profile</p><h1>{customer.callsign}</h1><p>{customer.firstName} {customer.lastName} · {customer.email}</p><p>{customer.emailVerified ? "Verified Flight Crew member." : "Email verification is required before posting, commenting, or checking in."}</p><Link className="button button-outline flight-log-profile-back" href="/flight-log">Back to Flight Log</Link></div>
     </section>
     <form className="flight-log-avatar-form" onSubmit={uploadAvatar}><label>Profile photo<input name="avatar" type="file" accept="image/png,image/jpeg,image/webp" /></label><button className="button" disabled={busy}>{busy ? "Uploading..." : "Upload photo"}</button></form>
     {message ? <p className="flight-log-auth-message" role="status">{message}</p> : null}

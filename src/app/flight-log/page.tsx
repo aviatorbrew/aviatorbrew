@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllBeers } from "@/lib/managed-beers";
+import { getAllBeyondBeer } from "@/lib/managed-beyond-beer";
 import { getAllLocations } from "@/lib/managed-locations";
 import { getCurrentFlightLogCustomer } from "@/lib/flight-log-auth";
 import { flightLogCategoryLabels, getPublishedFlightLogPosts, type FlightLogPost } from "@/lib/flight-log";
 import { getPublishedCustomerFlightLogPosts, type FlightLogCustomerPost } from "@/lib/flight-log-social";
-import { getPublishedEvents, getPublishedLiveMusicEvents, type ManagedEvent } from "@/lib/managed-events";
+import { getPublishedEvents, getPublishedLiveMusicCheckInEvents, type ManagedEvent } from "@/lib/managed-events";
 import { FlightLogSignOutButton } from "@/components/flight-log-auth-forms";
 import { FlightLogCheckInButton } from "@/components/flight-log/check-in-button";
+import { FlightLogBeverageCheckInSelect } from "@/components/flight-log/beverage-check-in-select";
+import { FlightLogLiveShowCheckInSelect } from "@/components/flight-log/live-show-check-in-select";
 import { FlightLogPostComposer } from "@/components/flight-log/post-composer";
 import { FlightLogPostActions } from "@/components/flight-log/post-actions";
 
@@ -53,17 +56,20 @@ function EventsPanel({ events, customer }: { events: ManagedEvent[]; customer: C
   return <div className="flight-log-data-panel"><h2>Events inside Flight Log</h2><p>These are pulled from manager-published event rows in the database.</p><EventRows events={events} customer={customer} empty="No manager-published special events are listed for the next two months." /></div>;
 }
 function MusicPanel({ events, customer }: { events: ManagedEvent[]; customer: Customer }) {
-  return <div className="flight-log-data-panel"><h2>Live Music inside Flight Log</h2><p>These are pulled from manager-published live-music rows in the database.</p><EventRows events={events} customer={customer} empty="No manager-published live music is listed for the next two months." /></div>;
+  const options = events.map((event) => ({ id: event.id, title: event.title, meta: formatEventDate(event.date, event.startTime) + " · " + event.location }));
+  return <div className="flight-log-data-panel"><h2>Live Show Check-In</h2><p>Mark yourself as attended for manager-published live music from the last 10 days through today.</p><FlightLogLiveShowCheckInSelect options={options} signedIn={Boolean(customer)} canCheckIn={canInteract(customer)} /></div>;
 }
-function BeerPanel({ beers, customer }: { beers: Awaited<ReturnType<typeof getAllBeers>>; customer: Customer }) {
-  return <div className="flight-log-data-panel"><h2>Beer Check-In</h2><p>Beer cards are pulled from the website beer catalog.</p>{beers.slice(0, 12).map((beer) => <article key={beer.slug}><strong>{beer.name}</strong><span>{beer.style} · {beer.abv}</span><p>{beer.description}</p><FlightLogCheckInButton kind="beer" targetSlug={beer.slug} targetLabel={beer.name} signedIn={Boolean(customer)} canCheckIn={canInteract(customer)} /></article>)}</div>;
+function BeerPanel({ beers, beverages, customer }: { beers: Awaited<ReturnType<typeof getAllBeers>>; beverages: Awaited<ReturnType<typeof getAllBeyondBeer>>; customer: Customer }) {
+  const collator = new Intl.Collator("en-US", { sensitivity: "base", numeric: true });
+  const options = [...beers.map((beer) => ({ slug: beer.slug, name: beer.name, meta: [beer.style, beer.abv].filter(Boolean).join(" · ") })), ...beverages.map((item) => ({ slug: item.slug, name: item.name, meta: [item.category, item.note].filter(Boolean).join(" · ") }))].sort((a, b) => collator.compare(a.name, b.name));
+  return <div className="flight-log-data-panel"><h2>Beer & Beverage Check-In</h2><p>Choose from all published beers plus THC soda, soda, and seltzer.</p><FlightLogBeverageCheckInSelect options={options} signedIn={Boolean(customer)} canCheckIn={canInteract(customer)} /></div>;
 }
 function LocationPanel({ locations, customer }: { locations: Awaited<ReturnType<typeof getAllLocations>>; customer: Customer }) {
   return <div className="flight-log-data-panel"><h2>Location Check-In</h2><p>Locations are pulled from the existing website location data.</p>{locations.map((location) => <article key={location.slug}><strong>{location.name}</strong><span>{location.type} · {location.phone}</span><p>{location.description}</p><FlightLogCheckInButton kind="location" targetSlug={location.slug} targetLabel={location.name} signedIn={Boolean(customer)} canCheckIn={canInteract(customer)} /></article>)}</div>;
 }
 
 export default async function FlightLogPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
-  const [{ section }, customer, posts, customerPosts, events, liveMusicEvents, beers, locations] = await Promise.all([searchParams, getCurrentFlightLogCustomer(), getPublishedFlightLogPosts("all"), getPublishedCustomerFlightLogPosts(), getPublishedEvents({ monthsAhead: 2 }), getPublishedLiveMusicEvents({ monthsAhead: 2 }), getAllBeers(), getAllLocations()]);
+  const [{ section }, customer, posts, customerPosts, events, liveMusicEvents, beers, beverages, locations] = await Promise.all([searchParams, getCurrentFlightLogCustomer(), getPublishedFlightLogPosts("all"), getPublishedCustomerFlightLogPosts(), getPublishedEvents({ monthsAhead: 2 }), getPublishedLiveMusicCheckInEvents({ daysBack: 10 }), getAllBeers(), getAllBeyondBeer(), getAllLocations()]);
   const active = activeSection(section);
-  return <div className="flight-log-community-shell"><header className="flight-log-community-hero"><div><p className="eyebrow">Aviator community</p><h1>Aviator Flight Log</h1><p>Official dispatches, customer questions, check-ins, event chatter, beer reports, and Flight Crew updates inside aviatorbrew.com.</p></div><div className="flight-log-hero-actions">{customer ? <><Link className="button" href="/flight-log/profile">My Profile</Link><FlightLogSignOutButton /></> : <><Link className="button" href="/flight-log/join">Join Flight Crew</Link><Link className="button button-outline" href="/flight-log/sign-in">Sign In</Link></>}</div></header><div className="flight-log-community-grid"><LeftNav active={active} /><main className="flight-log-main-feed"><FlightLogPostComposer signedIn={Boolean(customer)} canPost={canInteract(customer)} callsign={customer?.callsign} />{active === "home" ? <Feed posts={posts} customerPosts={customerPosts} customer={customer} /> : null}{active === "events" ? <EventsPanel events={events} customer={customer} /> : null}{active === "live-music" ? <MusicPanel events={liveMusicEvents} customer={customer} /> : null}{active === "beer" ? <BeerPanel beers={beers} customer={customer} /> : null}{active === "locations" ? <LocationPanel locations={locations} customer={customer} /> : null}</main><aside className="flight-log-right"><AccountCard customer={customer} /><section><p className="eyebrow">Now online</p><ul><li>Customer posting</li><li>Comments and reactions</li><li>Beer, location, and event check-ins</li><li>Friend requests and invites</li></ul></section></aside></div></div>;
+  return <div className="flight-log-community-shell"><header className="flight-log-community-hero"><div><p className="eyebrow">Aviator community</p><h1>Aviator Flight Log</h1><p>Official dispatches, customer questions, check-ins, event chatter, beer reports, and Flight Crew updates inside aviatorbrew.com.</p></div><div className="flight-log-hero-actions">{customer ? <><Link className="button" href="/flight-log/profile">My Profile</Link><FlightLogSignOutButton /></> : <><Link className="button" href="/flight-log/join">Join Flight Crew</Link><Link className="button button-outline" href="/flight-log/sign-in">Sign In</Link></>}</div></header><div className="flight-log-community-grid"><LeftNav active={active} /><main className="flight-log-main-feed"><FlightLogPostComposer signedIn={Boolean(customer)} canPost={canInteract(customer)} callsign={customer?.callsign} />{active === "home" ? <Feed posts={posts} customerPosts={customerPosts} customer={customer} /> : null}{active === "events" ? <EventsPanel events={events} customer={customer} /> : null}{active === "live-music" ? <MusicPanel events={liveMusicEvents} customer={customer} /> : null}{active === "beer" ? <BeerPanel beers={beers} beverages={beverages} customer={customer} /> : null}{active === "locations" ? <LocationPanel locations={locations} customer={customer} /> : null}</main><aside className="flight-log-right"><AccountCard customer={customer} /><section><p className="eyebrow">Now online</p><ul><li>Customer posting</li><li>Comments and reactions</li><li>Beer, location, and event check-ins</li><li>Friend requests and invites</li></ul></section></aside></div></div>;
 }

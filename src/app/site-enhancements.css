@@ -1165,3 +1165,32 @@
     grid-column: auto;
   }
 }
+
+.flight-log-profile-back { margin-top: .75rem; width: fit-content; }
+.flight-log-beverage-checkin {
+  display: grid;
+  gap: .85rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(10, 45, 70, .14);
+  background: rgba(255, 255, 255, .76);
+}
+.flight-log-beverage-checkin label {
+  display: grid;
+  gap: .45rem;
+  color: #102d46;
+  font-weight: 900;
+}
+.flight-log-beverage-checkin select {
+  width: 100%;
+  min-height: 2.85rem;
+  border: 1px solid rgba(10, 45, 70, .2);
+  background: #fff;
+  color: #102d46;
+  padding: .65rem .75rem;
+  font: inherit;
+}
+.flight-log-beverage-checkin p { margin: 0; color: #36566a; line-height: 1.45; }
+.flight-log-beverage-checkin p strong, .flight-log-beverage-checkin p span { display: block; }
+.flight-log-beverage-checkin p strong { color: #102d46; }
+.flight-log-beverage-checkin > div { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; }

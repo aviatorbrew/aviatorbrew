@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllBeers } from "@/lib/managed-beers";
+import { getAllBeyondBeer } from "@/lib/managed-beyond-beer";
 import { getAllLocations } from "@/lib/managed-locations";
-import { getPublishedEvents, getPublishedLiveMusicEvents } from "@/lib/managed-events";
+import { getPublishedEvents, getPublishedLiveMusicCheckInEvents, getPublishedLiveMusicEvents } from "@/lib/managed-events";
 import { createFlightLogCheckIn, getCurrentFlightLogCustomer, getFlightLogProfileSummary, rateLimit, rateLimitKey, type FlightLogCheckInKind } from "@/lib/flight-log-auth";
 
 export const runtime = "nodejs";
@@ -13,14 +14,15 @@ const clean = (value: unknown, max: number) => typeof value === "string" ? value
 
 async function resolveTarget(kind: FlightLogCheckInKind, slug: string) {
   if (kind === "beer") {
-    const beer = (await getAllBeers()).find((item) => item.slug === slug);
-    return beer ? { slug: beer.slug, label: beer.name } : null;
+    const [beers, beverages] = await Promise.all([getAllBeers(), getAllBeyondBeer()]);
+    const item = [...beers, ...beverages].find((entry) => entry.slug === slug);
+    return item ? { slug: item.slug, label: item.name } : null;
   }
   if (kind === "location") {
     const location = (await getAllLocations()).find((item) => item.slug === slug);
     return location ? { slug: location.slug, label: location.name } : null;
   }
-  const events = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getPublishedLiveMusicEvents({ monthsAhead: 2 })]);
+  const events = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getPublishedLiveMusicEvents({ monthsAhead: 2 }), getPublishedLiveMusicCheckInEvents({ daysBack: 10 })]);
   const event = events.flat().find((item) => item.id === slug);
   return event ? { slug: event.id, label: event.title } : null;
 }

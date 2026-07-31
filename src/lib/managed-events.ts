@@ -200,6 +200,11 @@ function addMonths(date: string, months: number) {
   return value.toISOString().slice(0, 10);
 }
 
+function addDays(date: string, days: number) {
+  const value = new Date(Date.parse(date + "T00:00:00Z") + days * 86400000);
+  return value.toISOString().slice(0, 10);
+}
+
 function dayDiff(from: string, to: string) { return Math.round((Date.parse(to + "T00:00:00Z") - Date.parse(from + "T00:00:00Z")) / 86400000); }
 
 function monthDifference(from: string, to: string) { const [fy, fm] = from.split("-").map(Number); const [ty, tm] = to.split("-").map(Number); return (ty - fy) * 12 + tm - fm; }
@@ -229,16 +234,21 @@ function expandEvent(event: ManagedEvent, through: string) {
 }
 
 export async function getManagedEvents(options: { eventType?: string } = {}) { return sorted((await readAll(options.eventType || "special")).map(normalizeEventImages)); }
-export async function getPublishedEvents(options: { monthsAhead?: number; eventType?: string } = {}) {
+export async function getPublishedEvents(options: { monthsAhead?: number; eventType?: string; fromDate?: string; throughDate?: string } = {}) {
   const today = easternDate();
-  const through = addMonths(today, typeof options.monthsAhead === "number" ? options.monthsAhead : 12);
+  const fromDate = options.fromDate || today;
+  const through = options.throughDate || addMonths(today, typeof options.monthsAhead === "number" ? options.monthsAhead : 12);
   return sorted((await getManagedEvents({ eventType: options.eventType || "special" }))
     .filter((event) => event.published)
     .flatMap((event) => expandEvent(event, through))
-    .filter((event) => event.date >= today && event.date <= through));
+    .filter((event) => event.date >= fromDate && event.date <= through));
 }
-export async function getPublishedLiveMusicEvents(options: { monthsAhead?: number } = {}) {
+export async function getPublishedLiveMusicEvents(options: { monthsAhead?: number; fromDate?: string; throughDate?: string } = {}) {
   return getPublishedEvents({ ...options, eventType: "live_music" });
+}
+export async function getPublishedLiveMusicCheckInEvents(options: { daysBack?: number } = {}) {
+  const today = easternDate();
+  return getPublishedLiveMusicEvents({ fromDate: addDays(today, -(options.daysBack ?? 10)), throughDate: today });
 }
 
 export async function createManagedEvent(input: Partial<ManagedEventInput>) {
