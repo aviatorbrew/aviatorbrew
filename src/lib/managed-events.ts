@@ -269,7 +269,7 @@ export async function createManagedEvent(input: Partial<ManagedEventInput>) {
   const event = { ...validated, imageUrl: validated.imageUrl || galleryImages[0], ...(galleryImages.length ? { galleryImages } : {}), id: "event_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } satisfies ManagedEvent;
   const events = await readAll("all");
   events.push(event);
-  if (!(await upsertDatabaseEvent(event))) throw new Error("Events require DATABASE_URL.");
+  if (!(await upsertDatabaseEvent(event))) await saveFileEvents(events);
   return event;
 }
 
@@ -285,14 +285,14 @@ export async function updateManagedEvent(id: string, input: Partial<ManagedEvent
   const validated = validate({ ...existing, ...input, imageUrl: nextImageUrl, galleryImages: mergedGallery });
   const event = { ...existing, ...validated, imageUrl: validated.imageUrl, galleryImages: validated.galleryImages, updatedAt: new Date().toISOString() } satisfies ManagedEvent;
   events[index] = event;
-  if (!(await upsertDatabaseEvent(event))) throw new Error("Events require DATABASE_URL.");
+  if (!(await upsertDatabaseEvent(event))) await saveFileEvents(events);
   return event;
 }
 
 export async function deleteManagedEvent(id: string) {
   const events = await readAll("all");
   if (!events.some((event) => event.id === id)) throw new Error("Event not found.");
-  await deleteDatabaseEvent(id);
+  const deletedFromDatabase = await deleteDatabaseEvent(id);
   const fileEvents = await readFileEvents();
-  if (fileEvents.some((event) => event.id === id)) await saveFileEvents(fileEvents.filter((event) => event.id !== id));
+  if (!deletedFromDatabase || fileEvents.some((event) => event.id === id)) await saveFileEvents(fileEvents.filter((event) => event.id !== id));
 }

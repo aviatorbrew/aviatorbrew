@@ -103,7 +103,7 @@ export default async function EventsPage() {
     .filter((show) => show.performanceDate >= today && show.performanceDate <= through)
     .sort((a, b) => `${a.performanceDate} ${a.startsAt}`.localeCompare(`${b.performanceDate} ${b.startsAt}`));
   return <>
-    <section className="page-hero"><div className="content-wrap">
+    <section className="page-hero events-hero"><div className="content-wrap">
       <p className="eyebrow">Events + live music</p>
       <h1>What&apos;s <em>taking off?</em></h1>
       <p>Live bands, amphitheater shows, beer releases, watch parties, weekly specials, Cars + Coffee, and the kind of plans worth putting on the calendar.</p>

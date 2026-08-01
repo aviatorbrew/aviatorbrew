@@ -684,9 +684,15 @@
 
 .manager-events-list article.is-editing {
   grid-template-columns: 1fr;
+  border-color: rgba(239, 180, 95, .82);
+  background: #08243a;
+  box-shadow: 0 1rem 2.4rem rgba(0, 0, 0, .28), inset 0 0 0 1px rgba(239, 180, 95, .16);
 }
 .manager-event-edit-form {
   margin-top: 0;
+  padding: .95rem;
+  border: 1px solid rgba(184, 217, 236, .22);
+  background: #0b2b45;
 }
 .manager-event-edit-actions {
   display: flex;
