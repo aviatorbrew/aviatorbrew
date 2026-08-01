@@ -568,11 +568,11 @@ function DatabaseManager() {
 
 
 function EmailTestManager() {
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"email" | "sms" | "">("");
   const [message, setMessage] = useState("");
 
   async function sendTestEmail() {
-    setBusy(true);
+    setBusy("email");
     setMessage("Sending test email to mark@aviatorbrew.com...");
     try {
       const response = await fetch("/api/manager/test-email", { method: "POST" });
@@ -582,11 +582,26 @@ function EmailTestManager() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not send test email.");
     } finally {
-      setBusy(false);
+      setBusy("");
     }
   }
 
-  return <section id="email-test" className="coupon-manager manager-email-test"><p className="eyebrow">Email diagnostics</p><h2>Send test email</h2><p>Send a live diagnostics email to <strong>mark@aviatorbrew.com</strong> using the website mail configuration.</p><p className="media-message" role="status">{message}</p><button className="button" type="button" onClick={sendTestEmail} disabled={busy}>{busy ? "Sending..." : "Send test email"}</button></section>;
+  async function sendTestSms() {
+    setBusy("sms");
+    setMessage("Sending test SMS to 919-601-5497...");
+    try {
+      const response = await fetch("/api/manager/test-sms", { method: "POST" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Could not send test SMS.");
+      setMessage(body.message || "Test SMS queued to 919-601-5497.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not send test SMS.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  return <section id="email-test" className="coupon-manager manager-email-test"><p className="eyebrow">Communications diagnostics</p><h2>Send test messages</h2><p>Send live diagnostics messages using the website mail and Twilio configuration.</p><div className="manager-test-actions"><article><h3>Email</h3><p>Recipient: <strong>mark@aviatorbrew.com</strong></p><button className="button" type="button" onClick={sendTestEmail} disabled={Boolean(busy)}>{busy === "email" ? "Sending..." : "Send test email"}</button></article><article><h3>SMS</h3><p>Recipient: <strong>919-601-5497</strong></p><button className="button" type="button" onClick={sendTestSms} disabled={Boolean(busy)}>{busy === "sms" ? "Sending..." : "Send test SMS"}</button></article></div><p className="media-message" role="status">{message}</p></section>;
 }
 
 function ManagerOverview() {

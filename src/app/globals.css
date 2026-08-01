@@ -2034,3 +2034,9 @@ body {
   .content-page-private-events-hero::before,
   .about-story-hero::before { background-position: 62% center; opacity: .44; }
 }
+
+.manager-test-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+.manager-test-actions article { padding: 1rem; border: 1px solid rgba(184, 217, 236, .24); background: rgba(9, 35, 55, .72); }
+.manager-test-actions h3 { margin: 0 0 .45rem; color: #f2f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.5rem; font-weight: 400; text-transform: uppercase; }
+.manager-test-actions p { color: #cfe0e8; }
+@media (max-width: 720px) { .manager-test-actions { grid-template-columns: 1fr; } }

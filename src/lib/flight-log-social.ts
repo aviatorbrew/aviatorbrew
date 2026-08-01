@@ -2,6 +2,7 @@ import { randomBytes, createHash } from "node:crypto";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 import { isMailConfigured, sendMail } from "@/lib/mail";
 import { normalizeFlightLogPostMediaUrl } from "@/lib/flight-log-upload-storage";
+import { lookupTwilioPhoneNumber, sendTwilioSms, twilioSmsConfigured, twilioStatusCallbackUrl } from "@/lib/twilio";
 import type { FlightLogUserRole } from "@/lib/flight-log-user-types";
 
 export type FlightLogTargetType = "official" | "customer" | "comment";
@@ -365,14 +366,31 @@ export async function requestFlightLogFriend(profileId: number, input: { identif
     const inviteEmail = emailPattern.test(identifier) ? identifier.toLowerCase() : "";
     const invitePhone = !inviteEmail && phonePattern.test(identifier) ? identifier : "";
     if (!inviteEmail && !invitePhone) throw new Error("No Flight Log user found. Enter an email or phone number to invite them.");
-    await client.query(
-      "INSERT INTO flight_log.friend_invites (inviter_profile_id, invite_email, invite_phone, token_hash, status, invite_channel, carrier_lookup_status, expires_at, message) VALUES ($1,$2,$3,$4,$5,$6,$7,now()+interval '30 days',$8)",
-      [profileId, inviteEmail || null, invitePhone || null, digest(token), inviteEmail ? "sent" : "pending_lookup", inviteEmail ? "email" : "sms", invitePhone ? "twilio_required" : "not_requested", `${mine?.display_name || mine?.handle || "A friend"} invited you to join Aviator Flight Log.`],
+    const base = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || process.env.APP_URL || (input.request ? new URL(input.request.url).origin : "http://localhost:4173");
+    const url = base.replace(/\/$/, "") + "/flight-log/join?invite=" + encodeURIComponent(token);
+    const message = `${mine?.display_name || mine?.handle || "A friend"} invited you to join Aviator Flight Log.`;
+    const invite = await client.query(
+      "INSERT INTO flight_log.friend_invites (inviter_profile_id, invite_email, invite_phone, token_hash, status, invite_channel, carrier_lookup_status, expires_at, message, delivery_address) VALUES ($1,$2,$3,$4,$5,$6,$7,now()+interval '30 days',$8,$9) RETURNING id",
+      [profileId, inviteEmail || null, invitePhone || null, digest(token), inviteEmail ? "sent" : "pending_lookup", inviteEmail ? "email" : "sms", invitePhone ? "twilio_required" : "not_requested", message, inviteEmail || invitePhone || null],
     );
+    const inviteId = Number(invite.rows[0]?.id || 0);
     if (inviteEmail && (isMailConfigured() || process.env.MAIL_MODE === "record")) {
-      const base = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || process.env.APP_URL || (input.request ? new URL(input.request.url).origin : "http://localhost:4173");
-      const url = base.replace(/\/$/, "") + "/flight-log/join?invite=" + encodeURIComponent(token);
-      await sendMail({ to: inviteEmail, subject: "Join Aviator Flight Log", text: `${mine?.display_name || mine?.handle || "A friend"} invited you to join Aviator Flight Log. ${url}`, html: `<p>${mine?.display_name || mine?.handle || "A friend"} invited you to join Aviator Flight Log.</p><p><a href="${url}">Create your account</a></p>` });
+      await sendMail({ to: inviteEmail, subject: "Join Aviator Flight Log", text: `${message} ${url}`, html: `<p>${message}</p><p><a href="${url}">Create your account</a></p>` });
+    }
+    if (invitePhone) {
+      const lookup = await lookupTwilioPhoneNumber(invitePhone).catch((error: Error) => ({ ok: false, phoneNumber: invitePhone, carrierName: "", status: error.message || "lookup_failed" }));
+      const to = lookup.phoneNumber || invitePhone;
+      if (twilioSmsConfigured()) {
+        try {
+          const sms = await sendTwilioSms({ to, body: `${message} ${url}`, statusCallbackUrl: twilioStatusCallbackUrl(input.request) });
+          await client.query("UPDATE flight_log.friend_invites SET status='sent', carrier_lookup_status=$2, carrier_name=NULLIF($3,''), delivery_address=$4, twilio_message_sid=NULLIF($5,''), twilio_message_status=$6, twilio_status_updated_at=now() WHERE id=$1", [inviteId, lookup.status || "lookup_skipped", lookup.carrierName || "", to, sms.sid, sms.status]);
+          return { type: "phone_invite" };
+        } catch (error) {
+          await client.query("UPDATE flight_log.friend_invites SET carrier_lookup_status='twilio_error', carrier_name=NULLIF($2,''), delivery_address=$3, twilio_message_status=$4, twilio_status_updated_at=now() WHERE id=$1", [inviteId, lookup.carrierName || "", to, error instanceof Error ? error.message.slice(0, 180) : "send_failed"]);
+        }
+      } else {
+        await client.query("UPDATE flight_log.friend_invites SET carrier_lookup_status=$2, carrier_name=NULLIF($3,''), delivery_address=$4 WHERE id=$1", [inviteId, lookup.status || "twilio_sender_required", lookup.carrierName || "", to]);
+      }
     }
     return { type: inviteEmail ? "email_invite" : "phone_pending" };
   });

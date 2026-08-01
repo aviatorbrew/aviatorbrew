@@ -34,7 +34,7 @@ function FriendsPanel({ initial, canManage }: { initial: FlightLogFriendSummary;
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Could not add friend.");
       setFriends(body.friends); form.reset();
-      setMessage(body.result?.type === "phone_pending" ? "Phone invite saved. Twilio SMS lookup is required before it can send." : body.result?.type === "email_invite" ? "Email invite sent." : "Friend request sent.");
+      setMessage(body.result?.type === "phone_invite" ? "Text invite sent." : body.result?.type === "phone_pending" ? "Phone invite saved. Add a Twilio sender number or Messaging Service SID to send texts." : body.result?.type === "email_invite" ? "Email invite sent." : "Friend request sent.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not add friend."); }
     finally { setBusy(false); }
   }

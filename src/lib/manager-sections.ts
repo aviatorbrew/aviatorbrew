@@ -104,8 +104,8 @@ export const managerSections = [
   {
     id: "email-test",
     href: "/manager/email-test",
-    label: "Email Test",
-    description: "Send a diagnostics email to mark@aviatorbrew.com.",
+    label: "Message Tests",
+    description: "Send diagnostics email and Twilio SMS messages.",
   },
   {
     id: "database",
