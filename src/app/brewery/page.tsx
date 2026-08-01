@@ -31,7 +31,7 @@ export default async function BreweryPage() {
   const [hero, photos] = await Promise.all([getBreweryHero(), getBreweryPhotos()]);
   return <>
     <section className="brewery-hero">
-      <Image src="/images/p51-strafing-hero-restored.png" alt="P-51 Mustang flying over Aviator Brewery" fill priority unoptimized sizes="100vw" />
+      <Image src="/images/atmosphere/brewery-battleship-afterburner.webp" alt="Battleships firing at sea with F-18s overhead in full afterburner" fill priority unoptimized sizes="100vw" />
       <div className="content-wrap brewery-hero-content">
         <p className="eyebrow">Fuquay-Varina, North Carolina - brewing since 2008</p>
         <h1>Aviator Brewery</h1>
