@@ -4,7 +4,14 @@ import { type FormEvent, useEffect, useState } from "react";
 import type { ShopCatalog, ShopCategory, ShopProduct, ShopVariant } from "@/lib/shop";
 import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
 
-function shopVariantAvailable(variant: ShopVariant) { return variant.published && variant.availableForSale && (!variant.trackInventory || variant.inventoryCount > 0); }
+function truthy(value: unknown) { return value === true || value === "true" || value === "1" || value === 1; }
+function falsy(value: unknown) { return value === false || value === "false" || value === "0" || value === 0; }
+function shopVariantAvailable(variant: ShopVariant) {
+  const published = !falsy(variant.published) && truthy(variant.published);
+  const availableForSale = !falsy(variant.availableForSale) && truthy(variant.availableForSale);
+  const trackInventory = !falsy(variant.trackInventory) && truthy(variant.trackInventory);
+  return published && availableForSale && (!trackInventory || Number(variant.inventoryCount) > 0);
+}
 function money(cents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100); }
 function publicVariantCount(product: ShopProduct) { return product.variants.filter(shopVariantAvailable).length; }
 function dateTime(value: string) {

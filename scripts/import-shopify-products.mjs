@@ -25,13 +25,17 @@ const text = (html = "") => html
 function categoryName(product) {
   const type = String(product.product_type || "").toLowerCase();
   const title = String(product.title || "").toLowerCase();
+  if (type.includes("glass") || title.includes("glass") || title.includes("pint")) return "Glassware";
   if (type.includes("t-shirt") || title.includes("shirt") || title.includes("beanie") || title.includes("hat")) return "Apparel";
   if (type.includes("gift")) return "Gift Cards";
   if (type.includes("sign")) return "Signs";
-  if (type.includes("glass")) return "Glassware";
   if (type.includes("rootbeer") || title.includes("rootbeer")) return "Beverages";
   if (type.includes("event")) return "Event Payments";
   return "Other";
+}
+
+function isGlasswareProduct(product) {
+  return categoryName(product) === "Glassware";
 }
 
 function imageExtension(url) {
@@ -90,17 +94,25 @@ try {
     if (existing.rows[0]) {
       productId = Number(existing.rows[0].id);
       await client.query("UPDATE website.shop_products SET slug=$2,category_id=$3,name=$4,description=$5,image_url=$6,additional_image_urls=$7::jsonb,published=true,sort_order=$8,source='shopify',source_id=$9,metadata=$10::jsonb,updated_at=now() WHERE id=$1", [productId, productSlug, category.rows[0]?.id || null, product.title, text(product.body_html), images[0] || "", JSON.stringify(images.slice(1)), productIndex * 10, String(product.id), JSON.stringify({ shopifyHandle: product.handle, shopifyProductType: product.product_type, shopifyTags: product.tags || [] })]);
-      await client.query("DELETE FROM website.shop_product_variants WHERE product_id=$1", [productId]);
     } else {
       const inserted = await client.query("INSERT INTO website.shop_products (slug,category_id,name,description,image_url,additional_image_urls,published,featured,sort_order,source,source_id,metadata) VALUES ($1,$2,$3,$4,$5,$6::jsonb,true,false,$7,'shopify',$8,$9::jsonb) RETURNING id", [productSlug, category.rows[0]?.id || null, product.title, text(product.body_html), images[0] || "", JSON.stringify(images.slice(1)), productIndex * 10, String(product.id), JSON.stringify({ shopifyHandle: product.handle, shopifyProductType: product.product_type, shopifyTags: product.tags || [] })]);
       productId = Number(inserted.rows[0].id);
     }
+    const existingVariants = await client.query("SELECT * FROM website.shop_product_variants WHERE product_id=$1", [productId]);
+    const existingByShopifyId = new Map(existingVariants.rows.map((row) => [String(row.metadata?.shopifyVariantId || ""), row]));
+    const existingByLabel = new Map(existingVariants.rows.map((row) => [String(row.label || "").toLowerCase(), row]));
+    await client.query("DELETE FROM website.shop_product_variants WHERE product_id=$1", [productId]);
     for (let variantIndex = 0; variantIndex < (product.variants || []).length; variantIndex++) {
       const variant = product.variants[variantIndex];
+      const existingVariant = existingByShopifyId.get(String(variant.id)) || existingByLabel.get(String(variant.title || "Default").toLowerCase());
       const priceCents = Math.round(Number(variant.price || 0) * 100);
       const compareAtPriceCents = variant.compare_at_price ? Math.round(Number(variant.compare_at_price) * 100) : null;
-      const weightOunces = Math.max(.1, Number(variant.grams || 0) / 28.349523125 || (variant.requires_shipping ? 8 : .1));
-      await client.query("INSERT INTO website.shop_product_variants (product_id,label,sku,price_cents,compare_at_price_cents,inventory_count,published,sort_order,weight_ounces,requires_shipping,track_inventory,available_for_sale,metadata) VALUES ($1,$2,$3,$4,$5,0,true,$6,$7,$8,false,$9,$10::jsonb)", [productId, variant.title || "Default", variant.sku || "", priceCents, compareAtPriceCents, variantIndex * 10, weightOunces, variant.requires_shipping !== false, variant.available !== false, JSON.stringify({ shopifyVariantId: String(variant.id) })]);
+      const weightOunces = existingVariant?.weight_ounces ?? Math.max(.1, Number(variant.grams || 0) / 28.349523125 || (variant.requires_shipping ? 8 : .1));
+      const glassware = isGlasswareProduct(product);
+      const trackInventory = existingVariant?.track_inventory ?? false;
+      const inventoryCount = glassware && trackInventory ? Math.max(1, Number(existingVariant?.inventory_count || 0)) : Number(existingVariant?.inventory_count || 0);
+      const availableForSale = glassware ? true : (existingVariant?.available_for_sale ?? variant.available !== false);
+      await client.query("INSERT INTO website.shop_product_variants (product_id,label,sku,price_cents,compare_at_price_cents,inventory_count,published,sort_order,weight_ounces,requires_shipping,track_inventory,available_for_sale,metadata) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb)", [productId, variant.title || "Default", variant.sku || "", priceCents, compareAtPriceCents, inventoryCount, existingVariant?.published ?? true, variantIndex * 10, weightOunces, existingVariant?.requires_shipping ?? variant.requires_shipping !== false, trackInventory, availableForSale, JSON.stringify({ shopifyVariantId: String(variant.id) })]);
       variantCount++;
     }
   }
