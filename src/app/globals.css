@@ -1981,3 +1981,56 @@ body {
     background-position: 62% center;
   }
 }
+
+.live-music-hero {
+  min-height: clamp(29rem, 50vw, 40rem);
+  background-image: linear-gradient(90deg, rgba(2, 10, 20, .96) 0%, rgba(3, 17, 31, .84) 39%, rgba(3, 17, 31, .34) 72%, rgba(3, 17, 31, .16) 100%), url("/images/atmosphere/live-music-carrier-band.webp") !important;
+  background-position: center right !important;
+  background-size: cover !important;
+}
+.live-music-hero::before {
+  background-image: linear-gradient(90deg, rgba(2, 10, 20, .95), rgba(2, 10, 20, .54) 46%, rgba(2, 10, 20, .14)), url("/images/atmosphere/live-music-carrier-band.webp") !important;
+  background-position: center right;
+  opacity: .55;
+  mix-blend-mode: normal;
+}
+.live-music-hero::after { opacity: 0; }
+
+.content-page-private-events-hero {
+  min-height: clamp(27rem, 50vw, 39rem);
+  display: grid;
+  align-items: end;
+  background-image: linear-gradient(90deg, rgba(2, 10, 18, .97) 0%, rgba(4, 18, 31, .83) 38%, rgba(4, 18, 31, .34) 70%, rgba(4, 18, 31, .16) 100%), url("/images/atmosphere/private-events-general-briefing.webp") !important;
+  background-position: center right !important;
+  background-size: cover !important;
+}
+.content-page-private-events-hero::before {
+  background-image: linear-gradient(90deg, rgba(2, 10, 18, .96), rgba(2, 10, 18, .55) 45%, rgba(2, 10, 18, .12)), url("/images/atmosphere/private-events-general-briefing.webp") !important;
+  background-position: center right;
+  opacity: .52;
+  mix-blend-mode: normal;
+}
+
+.about-story-hero {
+  min-height: clamp(27rem, 48vw, 38rem);
+  display: grid;
+  align-items: end;
+  background-image: linear-gradient(90deg, rgba(2, 10, 22, .96) 0%, rgba(4, 18, 34, .82) 39%, rgba(4, 18, 34, .35) 70%, rgba(4, 18, 34, .16) 100%), url("/images/atmosphere/about-f22-afterburner.webp") !important;
+  background-position: center right !important;
+  background-size: cover !important;
+}
+.about-story-hero::before {
+  background-image: linear-gradient(90deg, rgba(2, 10, 22, .95), rgba(2, 10, 22, .54) 45%, rgba(2, 10, 22, .12)), url("/images/atmosphere/about-f22-afterburner.webp") !important;
+  background-position: center right;
+  opacity: .54;
+  mix-blend-mode: normal;
+}
+
+@media (max-width: 700px) {
+  .live-music-hero,
+  .content-page-private-events-hero,
+  .about-story-hero { min-height: 32rem; background-position: 62% center !important; }
+  .live-music-hero::before,
+  .content-page-private-events-hero::before,
+  .about-story-hero::before { background-position: 62% center; opacity: .44; }
+}
