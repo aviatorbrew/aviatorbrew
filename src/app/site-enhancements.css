@@ -128,13 +128,13 @@
   z-index: -2;
   object-fit: cover;
   object-position: center;
-  filter: brightness(.46) saturate(.9) contrast(1.08);
+  filter: brightness(.6) saturate(.96) contrast(1.06);
 }
 .brewery-hero::after {
   position: absolute;
   z-index: -1;
   inset: 0;
-  background: rgba(5, 20, 32, .38);
+  background: rgba(5, 20, 32, .28);
   content: "";
 }
 .brewery-hero-content {
