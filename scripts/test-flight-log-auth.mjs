@@ -12,11 +12,13 @@ const sourceFiles = [
   "src/app/flight-log/page.tsx",
   "src/components/flight-log/post-composer.tsx",
 ];
-const combined = (await Promise.all(sourceFiles.map((file) => readFile(file, "utf8")))).join("\n");
+const sources = Object.fromEntries(await Promise.all(sourceFiles.map(async (file) => [file, await readFile(file, "utf8")])));
+const combined = Object.values(sources).join("\n");
 function assert(value, message) { if (!value) throw new Error(message); }
 assert(/registerFlightLogCustomer/.test(combined), "registration helper is wired");
 assert(/website\.newsletter_subscribers/.test(combined), "registration enrolls Flight Crew newsletter membership");
 assert(/verification_token_hash/.test(combined) && /verifyFlightLogEmail/.test(combined), "email verification tokens are implemented");
+assert(/function publicBaseUrl\(request\?: Request\) \{\s*return publicSiteUrl/.test(sources["src/lib/flight-log-auth.ts"]), "Flight Log auth emails use sanitized public URLs");
 assert(/loginFlightLogCustomer/.test(combined) && /flightLogSessionCookie/.test(combined), "login and secure session cookie are implemented");
 assert(/destroyFlightLogSession/.test(combined), "logout destroys sessions");
 assert(/reset_token_hash/.test(combined) && /resetFlightLogPassword/.test(combined), "password reset tokens are implemented");

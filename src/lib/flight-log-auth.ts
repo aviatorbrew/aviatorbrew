@@ -6,6 +6,7 @@ import { getAllBeers } from "@/lib/managed-beers";
 import { getAllBeyondBeer } from "@/lib/managed-beyond-beer";
 import { getAllLocations } from "@/lib/managed-locations";
 import { databaseConfigured, withDatabase } from "@/lib/database";
+import { publicSiteUrl } from "@/lib/site-url";
 import { isMailConfigured, sendMail } from "@/lib/mail";
 import type { FlightLogUserRole, FlightLogUserStatus } from "@/lib/flight-log-user-types";
 
@@ -58,10 +59,7 @@ function secureEqual(left: string, right: string) {
   return timingSafeEqual(Buffer.from(left), Buffer.from(right));
 }
 function publicBaseUrl(request?: Request) {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || process.env.APP_URL;
-  if (configured) return configured.replace(/\/$/, "");
-  if (request) return new URL(request.url).origin;
-  return "http://localhost:4173";
+  return publicSiteUrl(request ? new URL(request.url).origin : null);
 }
 function normalizeFlightLogAvatarUrl(value: string) {
   if (value.startsWith("/media/flight-log-avatars/")) return "/api/flight-log-avatar-files/" + encodeURIComponent(path.basename(value));
