@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && node scripts/prepare-standalone.mjs",
-    "start": "HOSTNAME=0.0.0.0 node .next/standalone/server.js",
+    "start": "HOSTNAME=0.0.0.0 PORT=${PORT:-10000} node .next/standalone/server.js",
     "start:public": "next start -H 0.0.0.0 -p ${PORT:-4173}",
     "build:cloudflare": "opennextjs-cloudflare build",
     "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
