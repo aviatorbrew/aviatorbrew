@@ -1930,3 +1930,20 @@ body {
   .keg-table-compact th:first-child { width: 29%; }
   .keg-stock-cell { grid-template-columns: 1fr; gap: .08rem; }
 }
+
+/* Keep location detail contact cards compact. */
+.info-card a[href^="tel:"] {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  width: fit-content;
+  color: #f3ead6;
+  font-weight: 900;
+  line-height: 1.1;
+  text-decoration: none;
+}
+.info-card a[href^="tel:"] svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
