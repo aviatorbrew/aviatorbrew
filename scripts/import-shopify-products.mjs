@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Pool } from "pg";
 
@@ -7,7 +7,7 @@ const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 if (!connectionString) throw new Error("DATABASE_URL or POSTGRES_URL is required.");
 
 const pool = new Pool({ connectionString, max: 1, ...(process.env.POSTGRES_SSL === "true" || /sslmode=require/i.test(connectionString) ? { ssl: { rejectUnauthorized: false } } : {}) });
-const imageRoot = process.env.SHOP_PRODUCT_IMAGES_DIRECTORY || path.join(process.cwd(), "public", "media", "shop-products");
+const imageRoot = process.env.SHOP_PRODUCT_IMAGES_DIRECTORY || path.join(process.cwd(), "public", "media", "shop-products", "shopify");
 await mkdir(imageRoot, { recursive: true });
 
 const slug = (value) => value.toLowerCase().trim().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 90);
@@ -47,9 +47,16 @@ async function localImages(product) {
     if (!source) continue;
     const filename = slug(product.handle || product.title) + "-" + (index + 1) + imageExtension(source);
     const destination = path.join(imageRoot, filename);
-    const response = await fetch(source);
-    if (!response.ok) throw new Error("Could not download " + source + ": " + response.status);
-    await writeFile(destination, Buffer.from(await response.arrayBuffer()));
+    let exists = false;
+    try {
+      await access(destination);
+      exists = true;
+    } catch {}
+    if (!exists) {
+      const response = await fetch(source);
+      if (!response.ok) throw new Error("Could not download " + source + ": " + response.status);
+      await writeFile(destination, Buffer.from(await response.arrayBuffer()));
+    }
     results.push("/api/shop-product-images/" + filename);
   }
   return results;

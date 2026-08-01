@@ -8,12 +8,13 @@ export const dynamic = "force-dynamic";
 const contentTypes: Record<string, string> = { ".jpeg": "image/jpeg", ".jpg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" };
 
 function directories() {
-  return [
+  const roots = [
     process.env.SHOP_PRODUCT_IMAGES_DIRECTORY,
     path.join(process.cwd(), "public", "media", "shop-products"),
     path.join(process.cwd(), ".next", "standalone", "public", "media", "shop-products"),
     path.join(process.cwd(), "..", "..", "public", "media", "shop-products"),
   ].filter((directory): directory is string => Boolean(directory));
+  return roots.flatMap((directory) => [directory, path.join(directory, "shopify")]);
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ filename: string }> }) {
