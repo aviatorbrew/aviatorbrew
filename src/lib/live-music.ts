@@ -74,3 +74,51 @@ export function getLocationLiveShows(locationSlug: string, schedule: LiveMusicSc
   const stageIds = new Set(schedule.venues.filter((venue) => stageNames.includes(venue.name)).map((venue) => venue.id));
   return schedule.shows.filter((show) => stageIds.has(show.venueId) || stageNames.includes(show.venueName));
 }
+
+function easternDate(value = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value);
+  const year = parts.find((part) => part.type === "year")?.value || "0000";
+  const month = parts.find((part) => part.type === "month")?.value || "01";
+  const day = parts.find((part) => part.type === "day")?.value || "01";
+  return year + "-" + month + "-" + day;
+}
+
+function addDays(date: string, days: number) {
+  const value = new Date(Date.parse(date + "T00:00:00Z") + days * 86400000);
+  return value.toISOString().slice(0, 10);
+}
+
+function displayShowDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" }).format(new Date(value + "T12:00:00Z"));
+}
+
+function displayShowTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Time TBA" : new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).format(date);
+}
+
+export type LiveMusicCheckInTarget = { id: string; title: string; meta: string; label: string };
+
+export function liveMusicCheckInId(show: LiveMusicShow) {
+  return "aviator-live-" + show.id;
+}
+
+export function liveMusicCheckInTarget(show: LiveMusicShow): LiveMusicCheckInTarget {
+  const title = show.band.name || show.title || "Aviator Live show";
+  return {
+    id: liveMusicCheckInId(show),
+    title,
+    meta: [displayShowDate(show.performanceDate), displayShowTime(show.startsAt), show.venueName].filter(Boolean).join(" · "),
+    label: [title, show.venueName].filter(Boolean).join(" - "),
+  };
+}
+
+export async function getAviatorLiveCheckInTargets(options: { daysBack?: number } = {}) {
+  const today = easternDate();
+  const fromDate = addDays(today, -(options.daysBack ?? 20));
+  const { schedule } = await getLiveMusicSchedule();
+  const shows = (schedule?.shows || [])
+    .filter((show) => show.performanceDate >= fromDate && show.performanceDate <= today)
+    .sort((a, b) => (b.performanceDate + b.startsAt).localeCompare(a.performanceDate + a.startsAt));
+  return shows.map(liveMusicCheckInTarget);
+}

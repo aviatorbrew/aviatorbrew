@@ -7,6 +7,7 @@ import { getCurrentFlightLogCustomer } from "@/lib/flight-log-auth";
 import { flightLogCategoryLabels, getPublishedFlightLogPosts, type FlightLogPost } from "@/lib/flight-log";
 import { getCustomerFlightLogPostsByProfile, getPublishedCustomerFlightLogPosts, type FlightLogCustomerPost } from "@/lib/flight-log-social";
 import { getPublishedEvents, getPublishedLiveMusicCheckInEvents, type ManagedEvent } from "@/lib/managed-events";
+import { getAviatorLiveCheckInTargets, type LiveMusicCheckInTarget } from "@/lib/live-music";
 import { FlightLogSignOutButton } from "@/components/flight-log-auth-forms";
 import { FlightLogCheckInButton } from "@/components/flight-log/check-in-button";
 import { FlightLogBeverageCheckInSelect } from "@/components/flight-log/beverage-check-in-select";
@@ -32,6 +33,18 @@ function activeSection(value?: string): Section { return sections.some((section)
 function postDate(post: FlightLogPost | FlightLogCustomerPost) { return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }).format(new Date("publishedAt" in post ? post.publishedAt || post.updatedAt : post.createdAt)); }
 function formatEventDate(date: string, time?: string) { return [date, time].filter(Boolean).join(" · "); }
 function canInteract(customer: Customer) { return Boolean(customer?.emailVerified); }
+function eventIdentity(event: ManagedEvent) {
+  return [event.title, event.location, event.description].map((value) => value.toLowerCase().replace(/\s+/g, " ").trim()).join("|");
+}
+function uniqueEventRows(events: ManagedEvent[]) {
+  const seen = new Set<string>();
+  return events.filter((event) => {
+    const key = eventIdentity(event);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 function AccountCard({ customer }: { customer: Customer }) {
   if (!customer) return <section className="flight-log-account-card"><p className="eyebrow">Flight Crew</p><h2>Join the conversation</h2><p>View the public feed now. Sign in to post, comment, and check in.</p><div><Link className="button" href="/flight-log/join">Join Flight Crew</Link><Link className="button button-outline" href="/flight-log/sign-in">Sign In</Link></div></section>;
@@ -63,14 +76,15 @@ function MyPostsPanel({ posts, customer }: { posts: FlightLogCustomerPost[]; cus
   return <div className="flight-log-activity-feed"><section className="flight-log-data-panel"><h2>My latest posts</h2><p>Your most recent published Flight Log posts are listed here.</p></section>{posts.length ? posts.map((post) => <CustomerCard key={`mine-${post.id}`} post={post} customer={customer} />) : <section className="flight-log-data-panel"><p>You have not published a Flight Log post yet.</p></section>}</div>;
 }
 function EventRows({ events, customer, empty }: { events: ManagedEvent[]; customer: Customer; empty: string }) {
-  return <>{events.length ? events.slice(0, 12).map((event) => <article key={event.id}><strong>{event.title}</strong><span>{formatEventDate(event.date, event.startTime)} · {event.location}</span><p>{event.description}</p><FlightLogCheckInButton kind="event" targetSlug={event.id} targetLabel={event.title} signedIn={Boolean(customer)} canCheckIn={canInteract(customer)} /></article>) : <p>{empty}</p>}</>;
+  const rows = uniqueEventRows(events);
+  return <>{rows.length ? rows.slice(0, 12).map((event) => <article key={event.id}><strong>{event.title}</strong><span>{formatEventDate(event.date, event.startTime)} · {event.location}</span><p>{event.description}</p><FlightLogCheckInButton kind="event" targetSlug={event.id} targetLabel={event.title} signedIn={Boolean(customer)} canCheckIn={canInteract(customer)} /></article>) : <p>{empty}</p>}</>;
 }
 function EventsPanel({ events, customer }: { events: ManagedEvent[]; customer: Customer }) {
-  return <div className="flight-log-data-panel"><h2>Events inside Flight Log</h2><p>These are pulled from manager-published event rows in the database.</p><EventRows events={events} customer={customer} empty="No manager-published special events are listed for the next two months." /></div>;
+  return <div className="flight-log-data-panel"><h2>Events inside Flight Log</h2><EventRows events={events} customer={customer} empty="No manager-published special events are listed for the next two months." /></div>;
 }
-function MusicPanel({ events, customer }: { events: ManagedEvent[]; customer: Customer }) {
-  const options = events.map((event) => ({ id: event.id, title: event.title, meta: formatEventDate(event.date, event.startTime) + " · " + event.location }));
-  return <div className="flight-log-data-panel"><h2>Live Show Check-In</h2><p>Mark yourself as attended for manager-published live music from the last 20 days through today.</p><FlightLogLiveShowCheckInSelect options={options} signedIn={Boolean(customer)} canCheckIn={canInteract(customer)} /></div>;
+function MusicPanel({ events, liveShows, customer }: { events: ManagedEvent[]; liveShows: LiveMusicCheckInTarget[]; customer: Customer }) {
+  const options = [...liveShows, ...events.map((event) => ({ id: event.id, title: event.title, meta: formatEventDate(event.date, event.startTime) + " · " + event.location }))];
+  return <div className="flight-log-data-panel"><h2>Live Show Check-In</h2><p>Mark yourself as attended for Aviator Live shows and manager live-music rows from the last 20 days through today.</p><FlightLogLiveShowCheckInSelect options={options} signedIn={Boolean(customer)} canCheckIn={canInteract(customer)} /></div>;
 }
 function BeerPanel({ beers, beverages, customer }: { beers: Awaited<ReturnType<typeof getAllBeers>>; beverages: Awaited<ReturnType<typeof getAllBeyondBeer>>; customer: Customer }) {
   const collator = new Intl.Collator("en-US", { sensitivity: "base", numeric: true });
@@ -82,8 +96,8 @@ function LocationPanel({ locations, customer }: { locations: Awaited<ReturnType<
 }
 
 export default async function FlightLogPage({ searchParams }: { searchParams: Promise<{ section?: string; posted?: string }> }) {
-  const [{ section }, customer, posts, customerPosts, events, liveMusicEvents, beers, beverages, locations] = await Promise.all([searchParams, getCurrentFlightLogCustomer(), getPublishedFlightLogPosts("all"), getPublishedCustomerFlightLogPosts(), getPublishedEvents({ monthsAhead: 2 }), getPublishedLiveMusicCheckInEvents({ daysBack: 20 }), getAllBeers(), getAllBeyondBeer(), getAllLocations()]);
+  const [{ section }, customer, posts, customerPosts, events, liveMusicEvents, aviatorLiveCheckIns, beers, beverages, locations] = await Promise.all([searchParams, getCurrentFlightLogCustomer(), getPublishedFlightLogPosts("all"), getPublishedCustomerFlightLogPosts(), getPublishedEvents({ monthsAhead: 2 }), getPublishedLiveMusicCheckInEvents({ daysBack: 20 }), getAviatorLiveCheckInTargets({ daysBack: 20 }), getAllBeers(), getAllBeyondBeer(), getAllLocations()]);
   const active = activeSection(section);
   const myPosts = customer ? await getCustomerFlightLogPostsByProfile(customer.id, 20) : [];
-  return <div className="flight-log-community-shell"><header className="flight-log-community-hero"><div><p className="eyebrow">Aviator community</p><div className="flight-log-title-lockup"><h1>Aviator Flight Log</h1><img src="/images/atmosphere/flight-log-corsair.png" alt="" aria-hidden="true" /></div><p>Official dispatches, customer questions, check-ins, event chatter, beer reports, and Flight Crew updates inside aviatorbrew.com.</p></div><div className="flight-log-hero-actions">{customer ? <><Link className="button" href="/flight-log/profile">My Profile</Link><FlightLogSignOutButton /></> : <><Link className="button" href="/flight-log/join">Join Flight Crew</Link><Link className="button button-outline" href="/flight-log/sign-in">Sign In</Link></>}</div></header><div className="flight-log-community-grid"><LeftNav active={active} /><section className="flight-log-main-feed"><FlightLogPostComposer signedIn={Boolean(customer)} canPost={canInteract(customer)} callsign={customer?.callsign} />{active === "home" ? <Feed posts={posts} customerPosts={customerPosts} customer={customer} /> : null}{active === "my-posts" ? <MyPostsPanel posts={myPosts} customer={customer} /> : null}{active === "events" ? <EventsPanel events={events} customer={customer} /> : null}{active === "live-music" ? <MusicPanel events={liveMusicEvents} customer={customer} /> : null}{active === "beer" ? <BeerPanel beers={beers} beverages={beverages} customer={customer} /> : null}{active === "locations" ? <LocationPanel locations={locations} customer={customer} /> : null}</section><aside className="flight-log-right"><AccountCard customer={customer} /><section><p className="eyebrow">Your Flight Log</p><h2>Latest posts</h2><p>{customer ? "Jump straight to the most recent posts you published." : "Sign in to see your own latest Flight Log posts."}</p><Link className="button button-outline" href={customer ? "/flight-log?section=my-posts" : "/flight-log/sign-in"}>{customer ? "View my latest posts" : "Sign in to view posts"}</Link></section></aside></div></div>;
+  return <div className="flight-log-community-shell"><header className="flight-log-community-hero"><div><p className="eyebrow">Aviator community</p><div className="flight-log-title-lockup"><h1>Aviator Flight Log</h1><img src="/images/atmosphere/flight-log-corsair.png" alt="" aria-hidden="true" /></div><p>Official dispatches, customer questions, check-ins, event chatter, beer reports, and Flight Crew updates inside aviatorbrew.com.</p></div><div className="flight-log-hero-actions">{customer ? <><Link className="button" href="/flight-log/profile">My Profile</Link><FlightLogSignOutButton /></> : <><Link className="button" href="/flight-log/join">Join Flight Crew</Link><Link className="button button-outline" href="/flight-log/sign-in">Sign In</Link></>}</div></header><div className="flight-log-community-grid"><LeftNav active={active} /><section className="flight-log-main-feed"><FlightLogPostComposer signedIn={Boolean(customer)} canPost={canInteract(customer)} callsign={customer?.callsign} />{active === "home" ? <Feed posts={posts} customerPosts={customerPosts} customer={customer} /> : null}{active === "my-posts" ? <MyPostsPanel posts={myPosts} customer={customer} /> : null}{active === "events" ? <EventsPanel events={events} customer={customer} /> : null}{active === "live-music" ? <MusicPanel events={liveMusicEvents} liveShows={aviatorLiveCheckIns} customer={customer} /> : null}{active === "beer" ? <BeerPanel beers={beers} beverages={beverages} customer={customer} /> : null}{active === "locations" ? <LocationPanel locations={locations} customer={customer} /> : null}</section><aside className="flight-log-right"><AccountCard customer={customer} /><section><p className="eyebrow">Your Flight Log</p><h2>Latest posts</h2><p>{customer ? "Jump straight to the most recent posts you published." : "Sign in to see your own latest Flight Log posts."}</p><Link className="button button-outline" href={customer ? "/flight-log?section=my-posts" : "/flight-log/sign-in"}>{customer ? "View my latest posts" : "Sign in to view posts"}</Link></section></aside></div></div>;
 }
