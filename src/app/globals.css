@@ -2116,3 +2116,20 @@ body {
 .catering-request-grid a:not(.button) { color: #efb45f; }
 .catering-form-card .inquiry-form { margin: 0; }
 @media (max-width: 850px) { .catering-hero-inner, .catering-command-grid, .catering-request-grid, .catering-steps { grid-template-columns: 1fr; } .catering-hero aside { max-width: 24rem; } }
+
+.catering-order-form { grid-template-columns: 1fr 1fr; }
+.catering-order-form > label:has(textarea), .catering-order-toggle, .catering-order-builder, .catering-order-form .captcha-check, .catering-order-form > .button, .catering-order-form > .form-message { grid-column: 1 / -1; }
+.catering-order-toggle { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: .9rem; border: 1px dashed #4e7893; background: #0a2941; }
+.catering-order-toggle span { color: #b9cfda; font-size: .78rem; font-weight: 900; text-transform: uppercase; }
+.catering-order-builder { display: grid; gap: 1rem; max-height: 40rem; overflow: auto; padding: .9rem; border: 1px solid #315a78; background: #071e31; }
+.catering-scan-note { margin: 0; color: #b9cfda; font-size: .78rem; line-height: 1.45; }
+.catering-order-builder section { display: grid; gap: .45rem; }
+.catering-order-builder h3 { margin: 0; color: #efb45f; font: 400 1.35rem/.95 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.catering-order-builder section > div { display: grid; gap: 1px; border: 1px solid #315a78; background: #315a78; }
+.catering-order-builder article { display: grid; grid-template-columns: minmax(0, 1fr) 5rem minmax(8rem, .45fr); gap: .65rem; align-items: center; padding: .65rem; background: #0d304b; }
+.catering-order-builder article > div { display: grid; gap: .2rem; min-width: 0; }
+.catering-order-builder strong { color: #f2f8fa; font-size: .82rem; line-height: 1.25; }
+.catering-order-builder small { color: #a8c0cc; font-size: .68rem; }
+.catering-order-builder label { gap: .25rem; margin: 0; color: #d9e8ef; font-size: .62rem; font-weight: 900; text-transform: uppercase; }
+.catering-order-builder input, .catering-order-builder select { min-height: 2.25rem; padding: .45rem; }
+@media (max-width: 760px) { .catering-order-form, .catering-order-builder article { grid-template-columns: 1fr; } .catering-order-form > label:has(textarea), .catering-order-toggle, .catering-order-builder, .catering-order-form .captcha-check, .catering-order-form > .button, .catering-order-form > .form-message { grid-column: 1; } }

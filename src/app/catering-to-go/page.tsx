@@ -3,7 +3,8 @@ import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, MapPin, Phone } from "@/components/icons";
-import { InquiryForm } from "@/components/inquiry-form";
+import { CateringOrderForm } from "@/components/catering-order-form";
+import { getCateringMenuScan } from "@/lib/catering-menu-scanner";
 import { getLocation } from "@/lib/managed-locations";
 
 export const dynamic = "force-dynamic";
@@ -31,8 +32,8 @@ function cleanMenuName(name: string) {
 }
 
 export default async function CateringToGoPage() {
-  const [menu, backupMenu, hangar] = await Promise.all([latestMenu("catering-events", "drinks"), latestMenu("catering-events", "food"), getLocation("hangar-bar")]);
-  const menuFile = menu || backupMenu;
+  const [menu, backupMenu, hangar, menuScan] = await Promise.all([latestMenu("catering-events", "drinks"), latestMenu("catering-events", "food"), getLocation("hangar-bar"), getCateringMenuScan()]);
+  const menuFile = menu || backupMenu || (menuScan.menuUrl ? { name: menuScan.menuName, url: menuScan.menuUrl } : null);
   const pickupAddress = hangar?.address || "688 Brewing Drive, Fuquay-Varina, NC 27526";
   const pickupPhone = hangar?.phone || "919-567-2337";
   const pickupHours = hangar?.hours || "Open daily at the brewery campus";
@@ -44,7 +45,7 @@ export default async function CateringToGoPage() {
 
     <section className="section section-dark catering-steps-section"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">How it works</p><h2>File the flight plan.</h2></div><p>The form does not lock in an order by itself. The Aviator events team will review your request and confirm menu availability, pickup time, and any payment details.</p></div><div className="catering-steps"><article><span>01</span><h3>Open the menu</h3><p>Pick the items, quantities, and any notes for your group.</p></article><article><span>02</span><h3>Send the request</h3><p>Tell us the pickup date, preferred pickup time, guest count, and order details.</p></article><article><span>03</span><h3>Wait for confirmation</h3><p>We will confirm availability and pickup instructions before the order is final.</p></article></div></div></section>
 
-    <section id="catering-request" className="section catering-request-section"><div className="content-wrap catering-request-grid"><div><p className="eyebrow">Contact events</p><h2>Request Catering To Go.</h2><p>Send this form to the Aviator events team at <a href="mailto:events@aviatorbrew.com">events@aviatorbrew.com</a>. Include your pickup date, time, guest count, and the menu items you are considering.</p><dl><div><dt>Pickup</dt><dd>Aviator Hangar Bar</dd></div><div><dt>Address</dt><dd>{pickupAddress}</dd></div><div><dt>Best for</dt><dd>Office lunches, parties, meetings, birthdays, tailgates, and casual group orders.</dd></div></dl></div><div className="catering-form-card"><InquiryForm kind="catering" /></div></div></section>
+    <section id="catering-request" className="section catering-request-section"><div className="content-wrap catering-request-grid"><div><p className="eyebrow">Contact events</p><h2>Request Catering To Go.</h2><p>Send this form to the Aviator events team at <a href="mailto:events@aviatorbrew.com">events@aviatorbrew.com</a>. Include your pickup date, time, guest count, and the menu items you are considering.</p><dl><div><dt>Pickup</dt><dd>Aviator Hangar Bar</dd></div><div><dt>Address</dt><dd>{pickupAddress}</dd></div><div><dt>Best for</dt><dd>Office lunches, parties, meetings, birthdays, tailgates, and casual group orders.</dd></div></dl></div><div className="catering-form-card"><CateringOrderForm items={menuScan.items} menuUrl={menuFile?.url} scanSource={menuScan.source} /></div></div></section>
   </main>;
 }
 
