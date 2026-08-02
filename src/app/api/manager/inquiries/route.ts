@@ -15,13 +15,17 @@ function payloadText(value: unknown, key: string) {
   const current = (value as Record<string, unknown>)[key];
   return typeof current === "string" ? current : current === null || current === undefined ? "" : String(current);
 }
+function inquiryKind(request: NextRequest) {
+  const kind = request.nextUrl.searchParams.get("kind") || "catering";
+  return allowedKinds.has(kind) ? kind : "";
+}
 
 export async function GET(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStore });
   if (!databaseConfigured()) return NextResponse.json({ error: "DATABASE_URL is not configured." }, { status: 503, headers: noStore });
 
-  const kind = request.nextUrl.searchParams.get("kind") || "catering";
-  if (!allowedKinds.has(kind)) return NextResponse.json({ error: "Unknown inquiry type." }, { status: 400, headers: noStore });
+  const kind = inquiryKind(request);
+  if (!kind) return NextResponse.json({ error: "Unknown inquiry type." }, { status: 400, headers: noStore });
   const search = (request.nextUrl.searchParams.get("q") || "").trim();
   const start = isoDate(request.nextUrl.searchParams.get("start"));
   const end = isoDate(request.nextUrl.searchParams.get("end"));
@@ -34,8 +38,8 @@ export async function GET(request: NextRequest) {
     FROM website.form_inquiries
     WHERE kind = $1
       AND ($2::text = '' OR name ILIKE $5 OR email ILIKE $5 OR payload->>'phone' ILIKE $5 OR payload->>'orderSummary' ILIKE $5 OR payload->>'message' ILIKE $5 OR payload->>'eventType' ILIKE $5 OR payload->>'location' ILIKE $5)
-      AND ($3::date IS NULL OR created_at >= $3::date)
-      AND ($4::date IS NULL OR created_at < ($4::date + interval '1 day'))
+      AND ($3::date IS NULL OR created_at >= $3::date OR NULLIF(payload->>'eventDate', '') >= $3::text OR NULLIF(payload->>'pickupDate', '') >= $3::text)
+      AND ($4::date IS NULL OR created_at < ($4::date + interval '1 day') OR NULLIF(payload->>'eventDate', '') <= $4::text OR NULLIF(payload->>'pickupDate', '') <= $4::text)
     ORDER BY created_at DESC
     LIMIT $6
   `, [kind, search, start || null, end || null, searchPattern, rowLimit]));
@@ -53,4 +57,17 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ inquiries, total: result.rows[0]?.total_count || 0, limit: rowLimit, filtered }, { headers: noStore });
+}
+
+export async function DELETE(request: NextRequest) {
+  if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStore });
+  if (!databaseConfigured()) return NextResponse.json({ error: "DATABASE_URL is not configured." }, { status: 503, headers: noStore });
+  const kind = inquiryKind(request);
+  if (!kind) return NextResponse.json({ error: "Unknown inquiry type." }, { status: 400, headers: noStore });
+  const id = Number(request.nextUrl.searchParams.get("id") || 0);
+  if (!Number.isFinite(id) || id < 1) return NextResponse.json({ error: "Choose a valid inquiry." }, { status: 400, headers: noStore });
+
+  const result = await withDatabase(async (client) => client.query("DELETE FROM website.form_inquiries WHERE id = $1 AND kind = $2 RETURNING id", [id, kind]));
+  if (!result.rowCount) return NextResponse.json({ error: "Inquiry not found." }, { status: 404, headers: noStore });
+  return NextResponse.json({ ok: true, id: String(id) }, { headers: noStore });
 }

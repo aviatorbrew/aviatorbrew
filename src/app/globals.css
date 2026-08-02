@@ -2199,3 +2199,12 @@ body {
 .manager-catering-details p { color: #d9e8ef; line-height: 1.5; }
 .manager-catering-details a { color: #efb45f; }
 @media (max-width: 900px) { .manager-catering-query, .manager-catering-details, .manager-catering-list dl, .manager-catering-stats { grid-template-columns: 1fr; } .manager-catering-list header { flex-direction: column; } }
+.manager-catering-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.manager-catering-actions button { border: 1px solid #4b7894; background: #10334e; color: #f0b45e; padding: .55rem .75rem; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 900; text-transform: uppercase; }
+.manager-catering-actions button.is-danger { border-color: #8f3f3f; background: #3b1116; color: #ffb7a8; }
+.manager-catering-actions button:disabled { opacity: .55; cursor: not-allowed; }
+.manager-inquiry-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 0 0 .9rem; border: 1px solid #315a78; background: #315a78; }
+.manager-inquiry-fields div { padding: .65rem; background: #102f49; }
+.manager-inquiry-fields dt { color: #efb45f; font-family: "Courier New", monospace; font-size: .62rem; font-weight: 900; letter-spacing: .08em; text-transform: none; }
+.manager-inquiry-fields dd { margin: .22rem 0 0; color: #f2f8fa; font-size: .85rem; overflow-wrap: anywhere; }
+@media (max-width: 900px) { .manager-inquiry-fields { grid-template-columns: 1fr; } }
