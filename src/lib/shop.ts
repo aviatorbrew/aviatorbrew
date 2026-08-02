@@ -393,6 +393,16 @@ function normalizeProductInput(input: ShopProductInput) {
   return { ...input, name, variants };
 }
 
+function productImagesForSave(input: ShopProductInput, current?: Record<string, unknown>) {
+  const currentAdditional = Array.isArray(current?.additional_image_urls) ? current.additional_image_urls : [];
+  const submitted = normalizeShopImageUrls([...(input.imageUrls || []), input.imageUrl || ""]);
+  const fallback = normalizeShopImageUrls([current?.image_url || "", ...currentAdditional]);
+  const images = input.imageUrls ? submitted : submitted.length ? submitted : fallback;
+  const primary = normalizeShopImageUrl(input.imageUrl) || images[0] || "";
+  const ordered = normalizeShopImageUrls([primary, ...images]);
+  return { primary: ordered[0] || "", additional: ordered.slice(1) };
+}
+
 export async function saveShopProduct(input: ShopProductInput) {
   const normalized = normalizeProductInput(input);
   await ensureDefaultCategories();
@@ -404,10 +414,12 @@ export async function saveShopProduct(input: ShopProductInput) {
       if (productId) {
         const current = await client.query("SELECT image_url,additional_image_urls,source,source_id FROM website.shop_products WHERE id=$1", [productId]);
         if (!current.rows[0]) throw new Error("Product not found.");
-        await client.query("UPDATE website.shop_products SET category_id=$2, name=$3, description=$4, image_url=$5, additional_image_urls=$6::jsonb, published=$7, featured=$8, sort_order=$9, source=$10, source_id=$11, updated_at=now() WHERE id=$1", [productId, categoryId, normalized.name, normalized.description || "", normalized.imageUrl || current.rows[0].image_url || "", JSON.stringify(normalized.imageUrls || current.rows[0].additional_image_urls || []), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || current.rows[0].source || "manager", normalized.sourceId || current.rows[0].source_id || null]);
+        const images = productImagesForSave(normalized, current.rows[0]);
+        await client.query("UPDATE website.shop_products SET category_id=$2, name=$3, description=$4, image_url=$5, additional_image_urls=$6::jsonb, published=$7, featured=$8, sort_order=$9, source=$10, source_id=$11, updated_at=now() WHERE id=$1", [productId, categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || current.rows[0].source || "manager", normalized.sourceId || current.rows[0].source_id || null]);
         await client.query("DELETE FROM website.shop_product_variants WHERE product_id=$1", [productId]);
       } else {
-        const inserted = await client.query("INSERT INTO website.shop_products (slug,category_id,name,description,image_url,additional_image_urls,published,featured,sort_order,source,source_id) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11) RETURNING id", [shopSlug(normalized.name), categoryId, normalized.name, normalized.description || "", normalized.imageUrl || "", JSON.stringify(normalized.imageUrls || []), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || "manager", normalized.sourceId || null]);
+        const images = productImagesForSave(normalized);
+        const inserted = await client.query("INSERT INTO website.shop_products (slug,category_id,name,description,image_url,additional_image_urls,published,featured,sort_order,source,source_id) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11) RETURNING id", [shopSlug(normalized.name), categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || "manager", normalized.sourceId || null]);
         productId = Number(inserted.rows[0].id);
       }
       for (const variant of normalized.variants) await client.query("INSERT INTO website.shop_product_variants (product_id,label,sku,price_cents,compare_at_price_cents,inventory_count,published,sort_order,weight_ounces,requires_shipping,track_inventory,available_for_sale) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)", [productId, variant.label, variant.sku, variant.priceCents, variant.compareAtPriceCents, variant.inventoryCount, variant.published, variant.sortOrder, variant.weightOunces, variant.requiresShipping, variant.trackInventory, variant.availableForSale]);

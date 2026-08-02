@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const maxImageBytes = 10 * 1024 * 1024;
+const maxProductImages = 8;
 const allowedImageTypes = new Map([["image/jpeg", ".jpg"], ["image/png", ".png"], ["image/webp", ".webp"]]);
 const imageDirectory = () => process.env.SHOP_PRODUCT_IMAGES_DIRECTORY || path.join(process.cwd(), "public", "media", "shop-products");
 const noStore = { "Cache-Control": "private, no-store, max-age=0, must-revalidate" };
@@ -16,6 +17,7 @@ const noStore = { "Cache-Control": "private, no-store, max-age=0, must-revalidat
 function text(value: FormDataEntryValue | null) { return typeof value === "string" ? value.trim() : ""; }
 function number(value: FormDataEntryValue | null) { const parsed = Number(text(value)); return Number.isFinite(parsed) ? parsed : 0; }
 function bool(value: FormDataEntryValue | null, fallback = false) { const raw = text(value).toLowerCase(); return raw ? ["true", "on", "1", "yes"].includes(raw) : fallback; }
+function unique(values: string[]) { return values.filter((value, index, all) => value && all.indexOf(value) === index); }
 
 function parseVariantLines(raw: string): ShopVariantInput[] {
   return raw.split(/\r?\n/).map((line, index) => {
@@ -70,15 +72,29 @@ async function saveProductImage(file: File) {
   return "/api/shop-product-images/" + filename;
 }
 
+async function saveProductImages(files: File[]) {
+  if (files.length > maxProductImages) throw new Error("Upload no more than " + maxProductImages + " product photos at a time.");
+  const urls: string[] = [];
+  for (const file of files) urls.push(await saveProductImage(file));
+  return urls;
+}
+
 async function productInput(form: FormData) {
-  const image = form.get("image");
-  const imageUrl = image instanceof File && image.size > 0 ? await saveProductImage(image) : text(form.get("imageUrl"));
+  const uploads = [...form.getAll("images"), ...form.getAll("image")].filter((value): value is File => value instanceof File && value.size > 0);
+  const removed = new Set(form.getAll("removeImages").map((value) => text(value)).filter(Boolean));
+  const existing = form.getAll("existingImages").map((value) => text(value)).filter((value) => value && !removed.has(value));
+  const fallbackImage = text(form.get("imageUrl"));
+  const hasManagedImages = form.has("existingImages") || form.has("removeImages");
+  const uploadedImages = await saveProductImages(uploads);
+  const imageUrls = unique([...existing, ...uploadedImages, ...(hasManagedImages ? [] : [fallbackImage])]);
+  const imageUrl = imageUrls[0] || (hasManagedImages ? "" : fallbackImage);
   return {
     id: number(form.get("id")) || undefined,
     categoryId: number(form.get("categoryId")) || undefined,
     name: text(form.get("name")),
     description: text(form.get("description")),
     imageUrl,
+    imageUrls,
     published: bool(form.get("published"), false),
     featured: bool(form.get("featured"), false),
     sortOrder: number(form.get("sortOrder")),
@@ -122,7 +138,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStore });
   try {
-    if (requestBodyExceeds(request, maxImageBytes + 1024 * 1024)) return NextResponse.json({ error: "Shop product images must be 10 MB or smaller." }, { status: 413, headers: noStore });
+    if (requestBodyExceeds(request, maxImageBytes * maxProductImages + 1024 * 1024)) return NextResponse.json({ error: "Shop product images must be 10 MB or smaller each." }, { status: 413, headers: noStore });
     const catalog = await saveFromForm(await request.formData(), false);
     return NextResponse.json({ ok: true, ...catalog }, { headers: noStore });
   } catch (error) {
@@ -133,7 +149,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStore });
   try {
-    if (requestBodyExceeds(request, maxImageBytes + 1024 * 1024)) return NextResponse.json({ error: "Shop product images must be 10 MB or smaller." }, { status: 413, headers: noStore });
+    if (requestBodyExceeds(request, maxImageBytes * maxProductImages + 1024 * 1024)) return NextResponse.json({ error: "Shop product images must be 10 MB or smaller each." }, { status: 413, headers: noStore });
     const catalog = await saveFromForm(await request.formData(), true);
     return NextResponse.json({ ok: true, ...catalog }, { headers: noStore });
   } catch (error) {
