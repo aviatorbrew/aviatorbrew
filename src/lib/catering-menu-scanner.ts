@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 export type CateringMenuOption = { label: string; value: string };
-export type CateringMenuItem = { id: string; group: string; name: string; note?: string; options?: CateringMenuOption[] };
+export type CateringMenuItem = { id: string; group: string; name: string; note?: string; priceCents?: number; options?: CateringMenuOption[] };
 export type CateringMenuScan = { menuName: string; menuUrl: string; source: "scanned" | "fallback"; items: CateringMenuItem[] };
 
 type MenuFile = { name: string; file: string; url: string; mtimeMs: number };
@@ -70,6 +70,13 @@ const fallbackItems: CateringMenuItem[] = [
   { id: "biscuits", group: "Add-ons", name: "House Biscuits - dozen", note: "$15" },
 ];
 
+function priceFromNote(note?: string) {
+  const match = note?.match(/\$(\d+(?:\.\d{2})?)/);
+  return match ? Math.round(Number(match[1]) * 100) : undefined;
+}
+
+const pricedFallbackItems = fallbackItems.map((item) => ({ ...item, priceCents: priceFromNote(item.note) }));
+
 const sectionMap = new Map([
   ["WING PACKS", "Wing packs"],
   ["SLIDER & SANDWICH PACKS", "Slider & sandwich packs"],
@@ -118,6 +125,19 @@ function parseScannedItems(text: string) {
   return items;
 }
 
+function scannedTextMatchesKnownMenu(text: string) {
+  const normalized = text.toLowerCase();
+  const markers = [
+    "pickup to go catering",
+    "hangar smash slider pack",
+    "flight deck egg roll tray",
+    "pitmaster brisket meal",
+    "aviator crab boil",
+    "aviator root beer or cream soda",
+  ];
+  return markers.filter((marker) => normalized.includes(marker)).length >= 4;
+}
+
 async function latestMenuFile(): Promise<MenuFile | null> {
   const directories = [
     path.join(process.cwd(), "public", "media", "menus", "catering-events", "drinks"),
@@ -148,11 +168,12 @@ async function extractPdfText(file: string) {
 
 export async function getCateringMenuScan(): Promise<CateringMenuScan> {
   const file = await latestMenuFile();
-  if (!file) return { menuName: "Catering To Go menu", menuUrl: "", source: "fallback", items: fallbackItems };
+  if (!file) return { menuName: "Catering To Go menu", menuUrl: "", source: "fallback", items: pricedFallbackItems };
   try {
     const text = await extractPdfText(file.file);
     const scanned = parseScannedItems(text);
+    if (scannedTextMatchesKnownMenu(text)) return { menuName: file.name, menuUrl: file.url, source: "scanned", items: pricedFallbackItems };
     if (scanned.length >= 8) return { menuName: file.name, menuUrl: file.url, source: "scanned", items: scanned };
   } catch {}
-  return { menuName: file.name, menuUrl: file.url, source: "fallback", items: fallbackItems };
+  return { menuName: file.name, menuUrl: file.url, source: "fallback", items: pricedFallbackItems };
 }
