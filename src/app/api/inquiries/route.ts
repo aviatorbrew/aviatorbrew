@@ -51,6 +51,23 @@ function detailRow(label: string, value?: string) {
   return `<tr><th style="padding:10px 12px;text-align:left;border-bottom:1px solid #d8e2e7;color:#59707d;font-size:11px;letter-spacing:.08em;text-transform:uppercase;width:34%">${escapeHtml(label)}</th><td style="padding:10px 12px;border-bottom:1px solid #d8e2e7;color:#172b3b;font-size:15px;line-height:1.45">${escapeHtml(value || "Not provided")}</td></tr>`;
 }
 
+function cateringOrderSummaryHtml(value: string) {
+  const lines = value.split(/\r?\n/);
+  const blocks: string[] = [];
+  let current: string[] = [];
+  for (const line of lines) {
+    if (!line.trim()) {
+      if (current.length) { blocks.push(current.join("\n")); current = []; }
+    } else current.push(line);
+  }
+  if (current.length) blocks.push(current.join("\n"));
+  if (!blocks.length) return `<div style="margin:0 0 22px;background:#f5f8fa;border:1px solid #d8e2e7;padding:14px;color:#172b3b;font-size:14px;line-height:1.55">No structured food-order items entered.</div>`;
+  return `<div style="display:grid;gap:10px;margin:0 0 22px">${blocks.map((block) => {
+    const isTotal = /^(Subtotal|Estimated tax|Estimated total|Unpriced scanned items):/i.test(block.trim());
+    return `<div style="white-space:pre-wrap;background:${isTotal ? "#fff6e9" : "#f5f8fa"};border:1px solid ${isTotal ? "#efb45f" : "#d8e2e7"};padding:12px 14px;color:#172b3b;font:14px/1.55 Arial,sans-serif">${escapeHtml(block)}</div>`;
+  }).join("")}</div>`;
+}
+
 function cateringEmailHtml(body: Record<string, string>, audience: "internal" | "customer") {
   const orderSummary = body.orderSummary || "No structured food-order items entered.";
   const isCustomer = audience === "customer";
@@ -74,7 +91,7 @@ function cateringEmailHtml(body: Record<string, string>, audience: "internal" | 
     detailRow("Food order confirmed", body.foodOrderConfirmed),
   ].join("");
 
-  return `<!doctype html><html><body style="margin:0;background:#eef2f3;padding:32px 16px;font-family:Arial,sans-serif;color:#172b3b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border:1px solid #d5dfe3"><tr><td style="padding:30px 34px;background:#102b3e;color:#ffffff"><div style="color:#efb45f;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Aviator Catering To Go</div><h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;font-weight:700">${escapeHtml(title)}</h1></td></tr><tr><td style="padding:28px 34px"><p style="margin:0 0 22px;color:#263f50;font-size:16px;line-height:1.6">${escapeHtml(intro)}</p><div style="margin:0 0 22px;padding:14px 16px;background:#fff6e9;border-left:4px solid #efb45f;color:#4a3721;font-size:14px;line-height:1.5"><strong>Pickup hours:</strong> Catering To Go pickup is available from 10:00 AM to 7:00 PM at Aviator Hangar Bar.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 22px;border:1px solid #d8e2e7;border-bottom:0;border-collapse:collapse">${rows}</table><h2 style="margin:0 0 10px;color:#102b3e;font-size:18px">Food order</h2><pre style="margin:0 0 22px;white-space:pre-wrap;background:#f5f8fa;border:1px solid #d8e2e7;padding:14px;color:#172b3b;font:13px/1.55 Consolas,Monaco,monospace">${escapeHtml(orderSummary)}</pre><h2 style="margin:0 0 10px;color:#102b3e;font-size:18px">Notes</h2><div style="margin:0 0 22px;white-space:pre-wrap;background:#f8fafb;border:1px solid #d8e2e7;padding:14px;color:#172b3b;font-size:14px;line-height:1.55">${escapeHtml(body.message || "No notes provided.")}</div><p style="margin:0;color:#637783;font-size:13px;line-height:1.6">${footer}</p></td></tr></table></td></tr></table></body></html>`;
+  return `<!doctype html><html><body style="margin:0;background:#eef2f3;padding:32px 16px;font-family:Arial,sans-serif;color:#172b3b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border:1px solid #d5dfe3"><tr><td style="padding:30px 34px;background:#102b3e;color:#ffffff"><div style="color:#efb45f;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Aviator Catering To Go</div><h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;font-weight:700">${escapeHtml(title)}</h1></td></tr><tr><td style="padding:28px 34px"><p style="margin:0 0 22px;color:#263f50;font-size:16px;line-height:1.6">${escapeHtml(intro)}</p><div style="margin:0 0 22px;padding:14px 16px;background:#fff6e9;border-left:4px solid #efb45f;color:#4a3721;font-size:14px;line-height:1.5"><strong>Pickup hours:</strong> Catering To Go pickup is available from 10:00 AM to 7:00 PM at Aviator Hangar Bar.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 22px;border:1px solid #d8e2e7;border-bottom:0;border-collapse:collapse">${rows}</table><h2 style="margin:0 0 10px;color:#102b3e;font-size:18px">Food order</h2>${cateringOrderSummaryHtml(orderSummary)}<h2 style="margin:0 0 10px;color:#102b3e;font-size:18px">Notes</h2><div style="margin:0 0 22px;white-space:pre-wrap;background:#f8fafb;border:1px solid #d8e2e7;padding:14px;color:#172b3b;font-size:14px;line-height:1.55">${escapeHtml(body.message || "No notes provided.")}</div><p style="margin:0;color:#637783;font-size:13px;line-height:1.6">${footer}</p></td></tr></table></td></tr></table></body></html>`;
 }
 
 function cateringCustomerText(body: Record<string, string>) {

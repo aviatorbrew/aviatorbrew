@@ -72,16 +72,24 @@ export function CateringOrderForm({ items, menuUrl, scanSource }: { items: Cater
   }
 
   function orderSummary() {
-    const lines = selectedRows.map((row) => {
+    const lines = selectedRows.flatMap((row, index) => {
       const unitCents = (row.priceCents || 0) + row.optionPriceCents;
       const lineCents = lineTotal(row);
-      return row.group + " - " + row.name + ": qty " + row.quantity + (row.option ? "; option: " + row.option : "") + (row.note ? "; menu note: " + row.note : "") + "; unit " + (row.priceCents ? money(unitCents) : "price to confirm") + "; line " + (row.priceCents ? money(lineCents) : "price to confirm");
+      return [
+        (index + 1) + ". " + row.quantity + " x " + row.name,
+        "   Category: " + row.group,
+        ...(row.option ? ["   Option: " + row.option] : []),
+        ...(row.note ? ["   Menu note: " + row.note] : []),
+        "   Unit: " + (row.priceCents ? money(unitCents) : "price to confirm"),
+        "   Line total: " + (row.priceCents ? money(lineCents) : "price to confirm"),
+        "",
+      ];
     });
     if (lines.length) {
-      lines.push("", "Subtotal: " + money(subtotalCents), "Estimated tax: " + money(taxCents), "Estimated total: " + money(totalCents));
+      lines.push("Subtotal: " + money(subtotalCents), "Estimated tax: " + money(taxCents), "Estimated total: " + money(totalCents));
       if (unpricedCount) lines.push("Unpriced scanned items: " + unpricedCount + " item(s) require final pricing confirmation.");
     }
-    return lines.join("\n");
+    return lines.join("\n").trim();
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
