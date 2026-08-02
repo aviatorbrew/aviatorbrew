@@ -78,6 +78,18 @@ export const managerSections = [
     description: "Publish and manage special events.",
   },
   {
+    id: "private-events",
+    href: "/manager/private-events",
+    label: "Private Events",
+    description: "Review archived private event inquiries and export marketing lists.",
+  },
+  {
+    id: "catering",
+    href: "/manager/catering",
+    label: "Catering",
+    description: "Review Catering To Go orders and export customer follow-up lists.",
+  },
+  {
     id: "tours",
     href: "/manager/tours",
     label: "Tours",

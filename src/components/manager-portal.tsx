@@ -15,6 +15,7 @@ import { BeerImageViewer } from "@/components/beer-image-viewer";
 import { BeyondBeerImageViewer } from "@/components/beyond-beer-image-viewer";
 import { FlightLogAdmin } from "@/components/flight-log-admin";
 import { ShopManager } from "@/components/shop-manager";
+import { CateringManager, PrivateEventsInquiryManager } from "@/components/catering-manager";
 import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
 
 type Signup = { id: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
@@ -627,6 +628,8 @@ function ManagerSectionContent({ section, editId, editType, returnTo }: { sectio
     case "beverages": return <BeverageManager editId={editId} returnTo={returnTo} />;
     case "kegs": return <KegInventoryManager editId={editId} returnTo={returnTo} />;
     case "events": return <EventManager editId={editId} returnTo={returnTo} />;
+    case "private-events": return <PrivateEventsInquiryManager />;
+    case "catering": return <CateringManager />;
     case "database": return <DatabaseManager />;
     case "email-test": return <EmailTestManager />;
     case "media": return <div className="manager-media-route"><BrandingManager /><MenuLibraryClient managerMode /></div>;
