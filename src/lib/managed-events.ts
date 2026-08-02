@@ -63,18 +63,19 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime) || !location || !description) throw new Error("Add an event title, date, start time, location, and description.");
   if (endTime && !/^\d{2}:\d{2}$/.test(endTime)) throw new Error("Use a valid end time.");
   if (ticketUrl && !/^https?:\/\//i.test(ticketUrl)) throw new Error("Ticket link must begin with http:// or https://.");
-  const rawFrequency = input.recurrence?.frequency || clean(input.recurrenceFrequency, 30) || "none";
+  const submittedFrequency = clean(input.recurrenceFrequency, 30);
+  const rawFrequency = submittedFrequency || input.recurrence?.frequency || "none";
   const allowedFrequencies: RecurrenceFrequency[] = ["none", "daily", "weekly", "biweekly", "monthly-date", "monthly-weekday", "yearly"];
   if (!allowedFrequencies.includes(rawFrequency as RecurrenceFrequency)) throw new Error("Choose a valid recurrence pattern.");
   const frequency = rawFrequency as RecurrenceFrequency;
-  const interval = Math.max(1, Math.min(12, Number(input.recurrence?.interval ?? input.recurrenceInterval ?? 1) || 1));
-  const weekday = Number(input.recurrence?.weekday ?? input.recurrenceWeekday);
-  const ordinal = Number(input.recurrence?.ordinal ?? input.recurrenceOrdinal);
-  const endDate = clean(input.recurrence?.endDate ?? input.recurrenceEndDate, 10);
+  const interval = Math.max(1, Math.min(12, Number(input.recurrenceInterval ?? input.recurrence?.interval ?? 1) || 1));
+  const weekday = Number(input.recurrenceWeekday ?? input.recurrence?.weekday);
+  const ordinal = Number(input.recurrenceOrdinal ?? input.recurrence?.ordinal);
+  const endDate = clean(input.recurrenceEndDate ?? input.recurrence?.endDate, 10);
   if (endDate && endDate.length !== 10) throw new Error("Use a valid recurrence end date.");
   if (frequency === "monthly-weekday" && (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 || ![1, 2, 3, 4, 5, -1].includes(ordinal))) throw new Error("Choose a weekday and occurrence for monthly recurrence.");
   const recurrence = frequency === "none" ? undefined : { frequency, interval, ...(frequency === "monthly-weekday" ? { weekday, ordinal } : {}), ...(endDate ? { endDate } : {}) };
-  return { eventType, title, date, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), ...(galleryImages.length ? { galleryImages } : {}), published: input.published === true, ...(recurrence ? { recurrence } : {}) };
+  return { eventType, title, date, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), ...(galleryImages.length ? { galleryImages } : {}), published: input.published === true, recurrence };
 }
 
 async function readFileEvents(): Promise<ManagedEvent[]> {
