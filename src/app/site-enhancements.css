@@ -2507,3 +2507,13 @@ body:has(.shop-new-shell) .site-footer .footer-top .button-light {
 .shop-ticket-meta strong { color: #ffd38c; }
 .shop-ticket-meta span { color: #e8f1f5; font-size: .78rem; }
 @media (max-width: 760px) { .manager-shop-ticket-fields { grid-template-columns: 1fr; } .manager-shop-ticket-roster > header { align-items: stretch; flex-direction: column; } }
+
+.manager-shop-ticket-prominence { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: .55rem; padding: .75rem; border: 1px solid rgba(239,180,95,.35); }
+.manager-shop-ticket-prominence input { width: auto; min-height: 0; margin-top: .2rem; }
+.manager-shop-ticket-prominence span { display: grid; gap: .15rem; }
+.manager-shop-ticket-prominence strong { color: #fff; }
+.shop-new-shell .shop-new-card.is-ticket.is-full-width { grid-column: 1 / -1; grid-template-columns: minmax(0, 1.15fr) minmax(20rem, .85fr); grid-template-rows: minmax(28rem, auto); border: 2px solid rgba(246,199,126,.9); background: linear-gradient(110deg, rgba(14,48,75,.98), rgba(8,30,49,.98)); }
+.shop-new-shell .shop-new-card.is-ticket.is-full-width .shop-product-image-wrap { min-height: 28rem; border-right: 1px solid rgba(246,199,126,.3); }
+.shop-new-shell .shop-new-card.is-ticket.is-full-width .shop-new-copy { align-content: center; padding: 1.5rem; }
+.shop-new-shell .shop-new-card.is-ticket.is-full-width .shop-new-copy h4 { font-size: clamp(2rem, 4vw, 3.7rem); }
+@media (max-width: 850px) { .shop-new-shell .shop-new-card.is-ticket.is-full-width { grid-template-columns: 1fr; grid-template-rows: 20rem auto; } .shop-new-shell .shop-new-card.is-ticket.is-full-width .shop-product-image-wrap { min-height: 20rem; border-right: 0; border-bottom: 1px solid rgba(246,199,126,.3); } }

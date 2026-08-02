@@ -344,6 +344,8 @@ const schemaStatements = [
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_sales_end_at timestamptz`,
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_capacity integer NOT NULL DEFAULT 0`,
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_max_per_order integer NOT NULL DEFAULT 20`,
+  `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_full_width boolean NOT NULL DEFAULT false`,
+  `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_publish_as_event boolean NOT NULL DEFAULT false`,
   `ALTER TABLE IF EXISTS website.shop_product_variants ADD COLUMN IF NOT EXISTS compare_at_price_cents integer`,
   `ALTER TABLE IF EXISTS website.shop_product_variants ADD COLUMN IF NOT EXISTS weight_ounces numeric(9,2) NOT NULL DEFAULT 8`,
   `ALTER TABLE IF EXISTS website.shop_product_variants ADD COLUMN IF NOT EXISTS requires_shipping boolean NOT NULL DEFAULT true`,

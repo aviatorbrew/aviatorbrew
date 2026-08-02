@@ -8,6 +8,7 @@ import { getLiveMusicSchedule, liveMusicPageUrl, type LiveMusicShow } from "@/li
 import { EventImageViewer } from "@/components/event-image-viewer";
 import { BeerReleaseAlertBand } from "@/components/beer-release-alert";
 import { listUploadedPhotos, type StoredWebsitePhoto } from "@/lib/website-photo-storage";
+import { getPublishedShopTicketEvents, type ShopProduct } from "@/lib/shop";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Events + Live Music", description: "Find live music, beer releases, brunch, cars and coffee, and special events at Aviator Brewing Company." };
@@ -95,8 +96,19 @@ function LiveMusicDispatchShow({ show }: { show: LiveMusicShow }) {
   </article>;
 }
 
+function TicketProductEventCard({ product }: { product: ShopProduct }) {
+  const startsAt = new Date(product.ticketEventStartsAt);
+  const dateParts = {
+    weekday: new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "America/New_York" }).format(startsAt),
+    month: new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "America/New_York" }).format(startsAt),
+    day: new Intl.DateTimeFormat("en-US", { day: "numeric", timeZone: "America/New_York" }).format(startsAt),
+  };
+  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).format(startsAt);
+  return <article className="event-card managed-event-card ticket-product-event-card"><div className="managed-event-media">{product.imageUrls.length ? <div className={"managed-event-gallery" + (product.imageUrls.length > 1 ? " has-multiple" : "")}>{product.imageUrls.slice(0, 6).map((image, index) => <EventImageViewer src={image} alt={product.name + " event photo " + (index + 1)} title={product.name} description={product.description} key={image} />)}</div> : <div className="managed-event-image-placeholder">Aviator ticketed event</div>}</div><div className="managed-event-info"><div className="managed-event-summary"><p className="card-kicker">{product.ticketLocationName}</p><div className="managed-event-title-row"><h3>{product.name}</h3><span>Tickets on sale</span></div><div className="managed-event-schedule"><div className="managed-event-date-block"><span>{dateParts.weekday}</span><strong>{dateParts.month}</strong><b>{dateParts.day}</b></div><div className="managed-event-time-block"><span>Event time</span><strong>{time}</strong></div></div></div><div className="managed-event-description"><p>{product.description}</p><Link href={"/shop-new#product-" + product.slug} data-analytics="ticket_product_event">Details + tickets</Link></div></div></article>;
+}
+
 export default async function EventsPage() {
-  const [managedEvents, releaseAlerts, live, eventMedia] = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getPublishedBeerReleaseAlerts(), getLiveMusicSchedule(), listUploadedPhotos("events")]);
+  const [managedEvents, releaseAlerts, live, eventMedia, ticketEvents] = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getPublishedBeerReleaseAlerts(), getLiveMusicSchedule(), listUploadedPhotos("events"), getPublishedShopTicketEvents(2)]);
   const today = todayInEastern();
   const through = addDays(today, 14);
   const liveShows = (live.schedule?.shows || [])
@@ -111,9 +123,9 @@ export default async function EventsPage() {
 
     <BeerReleaseAlertBand alerts={releaseAlerts} />
 
-    {managedEvents.length ? <section className="section special-events-section"><div className="content-wrap">
+    {ticketEvents.length || managedEvents.length ? <section className="section special-events-section"><div className="content-wrap">
       <div className="section-heading"><div><p className="eyebrow">Special event dispatch</p><h2>Worth putting on the <em>calendar.</em></h2></div><p>Limited releases, campus gatherings, watch parties, tastings, and more—fresh from Aviator operations.</p></div>
-      <div className="event-layout managed-event-layout">{managedEvents.map((event) => <article className="event-card managed-event-card" key={event.id}><div className="managed-event-media"><ManagedEventGallery event={event} /></div><div className="managed-event-info"><div className="managed-event-summary"><p className="card-kicker">{event.location}</p><div className="managed-event-title-row"><h3>{event.title}</h3>{formatRecurrenceLabel(event) ? <span>{formatRecurrenceLabel(event)}</span> : null}</div><div className="managed-event-schedule"><div className="managed-event-date-block"><span>{formatManagedDateParts(event.date).weekday}</span><strong>{formatManagedDateParts(event.date).month}</strong><b>{formatManagedDateParts(event.date).day}</b></div><div className="managed-event-time-block"><span>Event time</span><strong>{formatManagedTime(event.startTime)}{event.endTime ? <> <i>to</i> {formatManagedTime(event.endTime)}</> : null}</strong></div></div></div><div className="managed-event-description"><p>{event.description}</p>{event.ticketUrl ? <a href={event.ticketUrl} target="_blank" rel="noreferrer" data-analytics="managed_event_tickets">Details + tickets</a> : <a href="https://maps.google.com/?q=688+Brewing+Drive+Fuquay-Varina+NC+27526" target="_blank" rel="noreferrer" data-analytics="managed_event_directions">Get directions</a>}</div></div></article>)}</div>
+      <div className="event-layout managed-event-layout">{ticketEvents.map((product) => <TicketProductEventCard product={product} key={"ticket-" + product.id} />)}{managedEvents.map((event) => <article className="event-card managed-event-card" key={event.id}><div className="managed-event-media"><ManagedEventGallery event={event} /></div><div className="managed-event-info"><div className="managed-event-summary"><p className="card-kicker">{event.location}</p><div className="managed-event-title-row"><h3>{event.title}</h3>{formatRecurrenceLabel(event) ? <span>{formatRecurrenceLabel(event)}</span> : null}</div><div className="managed-event-schedule"><div className="managed-event-date-block"><span>{formatManagedDateParts(event.date).weekday}</span><strong>{formatManagedDateParts(event.date).month}</strong><b>{formatManagedDateParts(event.date).day}</b></div><div className="managed-event-time-block"><span>Event time</span><strong>{formatManagedTime(event.startTime)}{event.endTime ? <> <i>to</i> {formatManagedTime(event.endTime)}</> : null}</strong></div></div></div><div className="managed-event-description"><p>{event.description}</p>{event.ticketUrl ? <a href={event.ticketUrl} target="_blank" rel="noreferrer" data-analytics="managed_event_tickets">Details + tickets</a> : <a href="https://maps.google.com/?q=688+Brewing+Drive+Fuquay-Varina+NC+27526" target="_blank" rel="noreferrer" data-analytics="managed_event_directions">Get directions</a>}</div></div></article>)}</div>
     </div></section> : null}
 
     <section className="section live-music-dispatch"><div className="content-wrap live-music-dispatch-wrap"><div className="live-music-dispatch-copy"><p className="eyebrow">Aviator Live</p><h2>Your next great night has a <em>stage.</em></h2><p>See confirmed artists, times, ticket links, and the Aviator stage they&apos;re taking over. The schedule updates directly from Aviator Live.</p><a href={liveMusicPageUrl} className="button button-outline" target="_blank" rel="noreferrer" data-analytics="events_live_music_dispatch">Show full live music schedule <ArrowUpRight /></a></div><div className="live-music-dispatch-schedule" aria-label="Live music for the next two weeks">{liveShows.length ? liveShows.slice(0, 8).map((show) => <LiveMusicDispatchShow key={show.id} show={show} />) : <div className="live-music-dispatch-empty"><strong>{live.error ? "Schedule checking in" : "Next shows coming soon"}</strong><p>{live.error ? "Aviator Live could not be reached just now." : "No live music is published for the next two weeks yet."}</p></div>}</div></div></section>

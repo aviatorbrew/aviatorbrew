@@ -196,6 +196,8 @@ async function productInput(form: FormData) {
       ticketSalesEndAt: text(form.get("ticketSalesEndAt")),
       ticketCapacity: Math.max(0, Math.floor(number(form.get("ticketCapacity")))),
       ticketMaxPerOrder: Math.max(1, Math.floor(number(form.get("ticketMaxPerOrder")) || 20)),
+      ticketFullWidth: bool(form.get("ticketFullWidth"), false),
+      ticketPublishAsEvent: bool(form.get("ticketPublishAsEvent"), false),
       variants: parseVariants(form),
     },
     uploadedImages,
