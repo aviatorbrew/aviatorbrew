@@ -1550,7 +1550,18 @@
 .manager-shop-product-thumbs { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .12rem; width: 5rem; height: 5rem; padding: .18rem; border: 1px solid rgba(184,217,236,.28); background: #d8e6ec; }
 .manager-shop-product-thumbs img { min-width: 0; width: 100%; height: 100%; object-fit: contain; background: rgba(255,255,255,.45); }
 .manager-shop-product-thumbs > .shop-product-gallery { min-width: 0; min-height: 0; overflow: hidden; background: rgba(255,255,255,.45); }
+.manager-shop-product-thumbs .shop-image-trigger { position: relative; }
 .manager-shop-product-thumbs .shop-image-trigger img { padding: .05rem; }
+.manager-shop-product-thumbs .beer-image-expand {
+  top: auto;
+  right: .12rem;
+  bottom: .12rem;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  font-size: .55rem !important;
+}
+.manager-shop-product-thumbs .beer-image-expand::after { display: none; }
 .manager-shop-product-thumbs span { position: absolute; right: .18rem; bottom: .18rem; padding: .16rem .24rem; background: #102f48; color: #f6c77e; font: 900 .6rem/1 "Courier New", monospace; }
 .manager-shop-placeholder { display: grid; place-items: center; color: #12334a; font: 900 .7rem/1 "Courier New", monospace; text-transform: uppercase; }
 .manager-shop-products > article > div:not(.manager-shop-inline-edit) > p, .manager-shop-products > article > div:not(.manager-shop-inline-edit) > small { color: #b8d2de; }
