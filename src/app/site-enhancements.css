@@ -1488,6 +1488,8 @@
 .manager-shop-current-images { display: flex; flex-wrap: wrap; gap: .65rem; align-items: flex-start; }
 .manager-shop-current-image { display: grid; gap: .3rem; align-content: start; justify-items: start; min-height: 0; padding: .55rem; border: 1px solid rgba(184,217,236,.2); background: rgba(7,29,48,.45); color: #bad1dc; font: 900 .68rem/1.2 "Courier New", monospace; text-transform: uppercase; }
 .manager-shop-current-image img { width: 6rem; height: 6rem; object-fit: contain; background: #d8e6ec; }
+.manager-shop-current-image > .shop-product-gallery { width: 6rem; height: 6rem; background: #d8e6ec; }
+.manager-shop-current-image .shop-image-trigger img { padding: .15rem; }
 .manager-shop-current-image label { display: grid; grid-template-columns: auto auto; align-items: center; gap: .35rem; min-height: 0; color: #ffd0c4; font-size: .62rem; cursor: pointer; }
 .manager-shop-current-image label input { width: auto; min-height: 1rem; padding: 0; accent-color: #ef6f5c; }
 .manager-shop-variant-editor { display: grid; gap: 1rem; min-width: 0; padding: 1rem; border: 1px solid rgba(184,217,236,.24); background: rgba(7,29,48,.55); }
@@ -1547,6 +1549,8 @@
 .manager-shop-products > article > .manager-shop-placeholder { width: 5rem; height: 5rem; object-fit: contain; background: #d8e6ec; }
 .manager-shop-product-thumbs { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .12rem; width: 5rem; height: 5rem; padding: .18rem; border: 1px solid rgba(184,217,236,.28); background: #d8e6ec; }
 .manager-shop-product-thumbs img { min-width: 0; width: 100%; height: 100%; object-fit: contain; background: rgba(255,255,255,.45); }
+.manager-shop-product-thumbs > .shop-product-gallery { min-width: 0; min-height: 0; overflow: hidden; background: rgba(255,255,255,.45); }
+.manager-shop-product-thumbs .shop-image-trigger img { padding: .05rem; }
 .manager-shop-product-thumbs span { position: absolute; right: .18rem; bottom: .18rem; padding: .16rem .24rem; background: #102f48; color: #f6c77e; font: 900 .6rem/1 "Courier New", monospace; }
 .manager-shop-placeholder { display: grid; place-items: center; color: #12334a; font: 900 .7rem/1 "Courier New", monospace; text-transform: uppercase; }
 .manager-shop-products > article > div:not(.manager-shop-inline-edit) > p, .manager-shop-products > article > div:not(.manager-shop-inline-edit) > small { color: #b8d2de; }
