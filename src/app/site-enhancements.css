@@ -1453,9 +1453,9 @@
 .shop-new-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .shop-new-card { display: grid; grid-template-rows: 18rem 1fr; border: 1px solid rgba(184,217,236,.24); background: #0e304b; box-shadow: 8px 8px 0 rgba(0,0,0,.18); }
 .shop-new-card.is-featured { border-color: rgba(239,180,95,.9); }
-.shop-new-image { position: relative; background: #d9e6eb; overflow: hidden; }
+.shop-new-image { position: relative; background: transparent; overflow: hidden; }
 .shop-new-image img { object-fit: contain; padding: 1rem; filter: drop-shadow(6px 8px 0 rgba(8,25,38,.22)); }
-.shop-new-image.is-empty { display: grid; place-items: center; color: #0b2c45; font: 900 1rem/1 "Courier New", monospace; letter-spacing: .1em; }
+.shop-new-image.is-empty { display: grid; place-items: center; color: #f6c77e; font: 900 1rem/1 "Courier New", monospace; letter-spacing: .1em; }
 .shop-new-copy { display: grid; gap: .75rem; padding: 1rem; }
 .shop-new-copy h4 { margin: 0; color: #f5fafc; font: 400 2rem/.9 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
 .shop-new-copy p { margin: 0; color: #bfd5df; line-height: 1.45; }
@@ -1601,12 +1601,12 @@
 .shop-bonus-banner strong { color: #fff; text-transform: uppercase; }
 .shop-bonus-banner p { margin: 0; color: #bfd5df; text-align: right; }
 .shop-new-catalog-group > header > span { color: #86a9ba; font: 900 .7rem/1 "Courier New", monospace; }
-.shop-product-gallery { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; background: #d9e6eb; }
+.shop-product-gallery { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; background: transparent; }
 .shop-product-gallery .shop-new-image { min-height: 0; }
 .shop-new-image > img { display: block; width: 100%; height: 100%; object-fit: contain; padding: 1rem; }
-.shop-product-thumbs { display: flex; gap: .3rem; min-height: 3.3rem; padding: .35rem; border-top: 1px solid #a9c0cb; background: #c8d8df; }
-.shop-product-thumbs button { width: 3rem; height: 2.7rem; padding: .15rem; border: 1px solid transparent; background: #edf4f7; cursor: pointer; }
-.shop-product-thumbs button.is-active { border-color: #b96e21; }
+.shop-product-thumbs { display: flex; gap: .3rem; min-height: 3.3rem; padding: .35rem; border-top: 1px solid rgba(184, 217, 236, .18); background: rgba(7, 24, 39, .72); }
+.shop-product-thumbs button { width: 3rem; height: 2.7rem; padding: .15rem; border: 1px solid transparent; background: rgba(255,255,255,.05); cursor: pointer; }
+.shop-product-thumbs button.is-active { border-color: #f6c77e; background: rgba(246, 199, 126, .12); }
 .shop-product-thumbs img { width: 100%; height: 100%; object-fit: contain; }
 .shop-product-price { display: flex; gap: .55rem; align-items: baseline; }
 .shop-product-price del { color: #93acb8; }
@@ -2404,9 +2404,10 @@
   box-shadow: 0 14px 28px rgba(0,0,0,.26);
 }
 .shop-new-shell .shop-new-card:hover { border-color: rgba(246, 199, 126, .8); transform: translateY(-2px); transition: transform .18s ease, border-color .18s ease; }
-.shop-new-shell .shop-product-gallery { background: linear-gradient(145deg, #dfeaf0, #b8cfdb); }
+.shop-new-shell .shop-product-gallery { background: transparent; }
 .shop-new-shell .shop-new-image > img { padding: .65rem; filter: drop-shadow(0 10px 14px rgba(8,25,38,.28)); }
 
+.shop-new-shell .shop-image-trigger { background: transparent; }
 .shop-image-trigger {
   display: block;
   width: 100%;
@@ -2419,7 +2420,7 @@
 .shop-image-trigger:focus-visible { outline: 3px solid #efb45f; outline-offset: -3px; }
 .shop-image-trigger:hover .beer-image-expand,
 .shop-image-trigger:focus-visible .beer-image-expand { background: #174f74; opacity: 1; }
-.shop-image-lightbox .beer-lightbox-stage img { background: #e8f1f5; }
+.shop-image-lightbox .beer-lightbox-stage img { background: transparent; }
 .shop-new-shell .shop-product-thumbs { min-height: 2.7rem; padding: .25rem; }
 .shop-new-shell .shop-product-thumbs button { width: 2.4rem; height: 2.15rem; }
 .shop-new-shell .shop-new-copy { gap: .55rem; padding: .8rem; }
