@@ -1,10 +1,10 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
+import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
 import { requestBodyExceeds } from "@/lib/server-file-response";
 import { deleteShopCategory, deleteShopProduct, dollarsToCents, getShopCatalog, saveShopCategory, saveShopCategoryOrder, saveShopProduct, saveShopSettings, type ShopSettings, type ShopVariantInput } from "@/lib/shop";
+import { deleteShopProductImages, ensureShopProductImageStorage, managedShopProductImageFilename, rollbackShopProductImages, writeShopProductImage } from "@/lib/shop-image-storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +12,6 @@ export const dynamic = "force-dynamic";
 const maxImageBytes = 10 * 1024 * 1024;
 const maxProductImages = 8;
 const allowedImageTypes = new Map([["image/jpeg", ".jpg"], ["image/png", ".png"], ["image/webp", ".webp"]]);
-const imageDirectory = () => process.env.SHOP_PRODUCT_IMAGES_DIRECTORY || path.join(process.cwd(), "public", "media", "shop-products");
 const noStore = { "Cache-Control": "private, no-store, max-age=0, must-revalidate" };
 
 function text(value: FormDataEntryValue | null) { return typeof value === "string" ? value.trim() : ""; }
@@ -150,16 +149,21 @@ async function saveProductImage(file: File) {
   if (!extension) throw new Error("Shop product images must be JPG, PNG, or WEBP.");
   if (file.size > maxImageBytes) throw new Error("Shop product images must be 10 MB or smaller.");
   const processed = await transparentShopImage(Buffer.from(await file.arrayBuffer()), extension);
-  const filename = "shop-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + processed.extension;
-  await fs.mkdir(imageDirectory(), { recursive: true });
-  await fs.writeFile(path.join(imageDirectory(), filename), processed.buffer);
-  return "/api/shop-product-images/" + filename;
+  const metadata = await sharp(processed.buffer, { failOn: "error" }).metadata();
+  if (!metadata.width || !metadata.height || !metadata.format) throw new Error("The uploaded shop image is incomplete or corrupt.");
+  const filename = "shop-" + Date.now().toString(36) + "-" + randomUUID().slice(0, 12) + processed.extension;
+  return writeShopProductImage(filename, processed.buffer);
 }
 
 async function saveProductImages(files: File[]) {
   if (files.length > maxProductImages) throw new Error("Upload no more than " + maxProductImages + " product photos at a time.");
   const urls: string[] = [];
-  for (const file of files) urls.push(await saveProductImage(file));
+  try {
+    for (const file of files) urls.push(await saveProductImage(file));
+  } catch (error) {
+    await rollbackShopProductImages(urls).catch(() => undefined);
+    throw error;
+  }
   return urls;
 }
 
@@ -173,16 +177,20 @@ async function productInput(form: FormData) {
   const imageUrls = unique([...existing, ...uploadedImages, ...(hasManagedImages ? [] : [fallbackImage])]);
   const imageUrl = imageUrls[0] || (hasManagedImages ? "" : fallbackImage);
   return {
-    id: number(form.get("id")) || undefined,
-    categoryId: number(form.get("categoryId")) || undefined,
-    name: text(form.get("name")),
-    description: text(form.get("description")),
-    imageUrl,
-    imageUrls,
-    published: bool(form.get("published"), false),
-    featured: bool(form.get("featured"), false),
-    sortOrder: number(form.get("sortOrder")),
-    variants: parseVariants(form),
+    input: {
+      id: number(form.get("id")) || undefined,
+      categoryId: number(form.get("categoryId")) || undefined,
+      name: text(form.get("name")),
+      description: text(form.get("description")),
+      imageUrl,
+      imageUrls,
+      published: bool(form.get("published"), false),
+      featured: bool(form.get("featured"), false),
+      sortOrder: number(form.get("sortOrder")),
+      variants: parseVariants(form),
+    },
+    uploadedImages,
+    removedImages: [...removed],
   };
 }
 
@@ -212,7 +220,17 @@ async function saveFromForm(form: FormData, update: boolean) {
   if (action === "settings") return saveShopSettings(settingsInput(form));
   if (action === "category") return saveShopCategory({ id: update ? number(form.get("id")) : undefined, name: text(form.get("name")), description: text(form.get("description")), sortOrder: number(form.get("sortOrder")), published: bool(form.get("published"), true) });
   if (action === "category-order") return saveShopCategoryOrder(text(form.get("categoryIds")).split(",").map((id) => Number(id)));
-  return saveShopProduct(await productInput(form));
+  const product = await productInput(form);
+  if (product.removedImages.some(managedShopProductImageFilename)) await ensureShopProductImageStorage();
+  let catalog: Awaited<ReturnType<typeof saveShopProduct>>;
+  try {
+    catalog = await saveShopProduct(product.input);
+  } catch (error) {
+    await rollbackShopProductImages(product.uploadedImages).catch(() => undefined);
+    throw error;
+  }
+  await deleteShopProductImages(product.removedImages, catalog.products.flatMap((item) => item.imageUrls));
+  return catalog;
 }
 
 export async function GET(request: NextRequest) {
@@ -248,7 +266,14 @@ export async function DELETE(request: NextRequest) {
     const id = Number(request.nextUrl.searchParams.get("id"));
     const type = request.nextUrl.searchParams.get("type") || "product";
     if (!Number.isFinite(id) || id < 1) throw new Error("Choose a valid shop record.");
+    let removedImages: string[] = [];
+    if (type !== "category") {
+      const before = await getShopCatalog({ manager: true });
+      removedImages = before.products.find((product) => product.id === id)?.imageUrls || [];
+      if (removedImages.some(managedShopProductImageFilename)) await ensureShopProductImageStorage();
+    }
     const catalog = type === "category" ? await deleteShopCategory(id) : await deleteShopProduct(id);
+    if (removedImages.length) await deleteShopProductImages(removedImages, catalog.products.flatMap((product) => product.imageUrls));
     return NextResponse.json({ ok: true, ...catalog }, { headers: noStore });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not delete shop record." }, { status: 400, headers: noStore });
