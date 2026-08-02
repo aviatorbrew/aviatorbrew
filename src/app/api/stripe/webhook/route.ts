@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { notifyPrivateEventPayment, type PrivateEventCheckoutSession } from "@/lib/private-event-payments";
 import { markTourPaid } from "@/lib/tours";
-import { markShopOrderPaid } from "@/lib/shop";
+import { expireShopCheckout, markShopOrderPaid } from "@/lib/shop";
 
 export const runtime = "nodejs";
 
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
   if (!signedPayload(secret, request.headers.get("stripe-signature") || "", raw)) return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
   const event = JSON.parse(raw) as StripeCheckoutEvent;
   const session = event.data?.object;
+  if (event.type === "checkout.session.expired" && session?.metadata?.item === "shop-new" && session.id) await expireShopCheckout(session.id);
   if (event.type === "checkout.session.completed" && session?.payment_status === "paid") {
     const signupId = session.metadata?.tourSignupId;
     if (signupId) await markTourPaid(signupId, session.id || "");

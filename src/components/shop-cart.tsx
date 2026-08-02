@@ -35,7 +35,7 @@ function validStoredItems(value: unknown): StoredCartItem[] {
     const variantId = Number(item.variantId);
     const quantity = Number(item.quantity);
     if (!Number.isInteger(variantId) || variantId < 1 || !Number.isInteger(quantity) || quantity < 1) return [];
-    return [{ variantId, quantity: Math.min(25, quantity), productName: String(item.productName || "Aviator item"), variantLabel: String(item.variantLabel || "Default"), imageUrl: String(item.imageUrl || ""), unitPriceCents: Number(item.unitPriceCents || 0), maxQuantity: Math.max(1, Math.min(25, Number(item.maxQuantity || 25))) }];
+    return [{ variantId, quantity: Math.min(1000, quantity), productName: String(item.productName || "Aviator item"), variantLabel: String(item.variantLabel || "Default"), imageUrl: String(item.imageUrl || ""), unitPriceCents: Number(item.unitPriceCents || 0), maxQuantity: Math.max(1, Math.min(1000, Number(item.maxQuantity || 25))) }];
   });
 }
 

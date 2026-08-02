@@ -90,7 +90,7 @@ export async function createCheckoutSession(input: CheckoutInput) {
     } catch {}
     throw new Error(detail);
   }
-  const session = await response.json() as { id: string; url: string | null };
+  const session = await response.json() as { id: string; url: string | null; expires_at?: number };
   if (!session.url) throw new Error("Stripe Checkout did not return a payment URL.");
   return session;
 }
@@ -139,7 +139,7 @@ export async function createDynamicCheckoutSession(input: DynamicCheckoutInput) 
     } catch {}
     throw new Error(detail);
   }
-  const session = await response.json() as { id: string; url: string | null };
+  const session = await response.json() as { id: string; url: string | null; expires_at?: number };
   if (!session.url) throw new Error("Stripe Checkout did not return a payment URL.");
   return session;
 }
@@ -149,7 +149,7 @@ type ShopCartCheckoutInput = {
   items: Array<{ name: string; description: string; unitAmount: number; quantity: number }>;
   customerEmail: string;
   metadata: Record<string, string>;
-  shipping: {
+  shipping?: {
     displayName: string;
     amountCents: number;
     address: { name: string; street1: string; street2: string; city: string; state: string; zip: string; country: string };
@@ -172,14 +172,17 @@ export async function createShopCartCheckoutSession(input: ShopCartCheckoutInput
   form.set("customer_email", input.customerEmail);
   form.set("billing_address_collection", "auto");
   form.set("customer_creation", "always");
-  form.set("payment_intent_data[shipping][name]", input.shipping.address.name);
-  form.set("payment_intent_data[shipping][phone]", input.shipping.phone);
-  form.set("payment_intent_data[shipping][address][line1]", input.shipping.address.street1);
-  if (input.shipping.address.street2) form.set("payment_intent_data[shipping][address][line2]", input.shipping.address.street2);
-  form.set("payment_intent_data[shipping][address][city]", input.shipping.address.city);
-  form.set("payment_intent_data[shipping][address][state]", input.shipping.address.state);
-  form.set("payment_intent_data[shipping][address][postal_code]", input.shipping.address.zip);
-  form.set("payment_intent_data[shipping][address][country]", input.shipping.address.country);
+  form.set("expires_at", String(Math.floor(Date.now() / 1000) + 31 * 60));
+  if (input.shipping) {
+    form.set("payment_intent_data[shipping][name]", input.shipping.address.name);
+    form.set("payment_intent_data[shipping][phone]", input.shipping.phone);
+    form.set("payment_intent_data[shipping][address][line1]", input.shipping.address.street1);
+    if (input.shipping.address.street2) form.set("payment_intent_data[shipping][address][line2]", input.shipping.address.street2);
+    form.set("payment_intent_data[shipping][address][city]", input.shipping.address.city);
+    form.set("payment_intent_data[shipping][address][state]", input.shipping.address.state);
+    form.set("payment_intent_data[shipping][address][postal_code]", input.shipping.address.zip);
+    form.set("payment_intent_data[shipping][address][country]", input.shipping.address.country);
+  }
   input.items.forEach((item, index) => {
     form.set(`line_items[${index}][price_data][currency]`, "usd");
     form.set(`line_items[${index}][price_data][product_data][name]`, item.name.slice(0, 120));
@@ -187,7 +190,7 @@ export async function createShopCartCheckoutSession(input: ShopCartCheckoutInput
     form.set(`line_items[${index}][price_data][unit_amount]`, String(item.unitAmount));
     form.set(`line_items[${index}][quantity]`, String(item.quantity));
   });
-  if (input.shipping.amountCents > 0) {
+  if (input.shipping && input.shipping.amountCents > 0) {
     form.set("shipping_options[0][shipping_rate_data][type]", "fixed_amount");
     form.set("shipping_options[0][shipping_rate_data][fixed_amount][amount]", String(input.shipping.amountCents));
     form.set("shipping_options[0][shipping_rate_data][fixed_amount][currency]", "usd");
@@ -208,7 +211,7 @@ export async function createShopCartCheckoutSession(input: ShopCartCheckoutInput
     } catch {}
     throw new Error(detail);
   }
-  const session = await response.json() as { id: string; url: string | null };
+  const session = await response.json() as { id: string; url: string | null; expires_at?: number };
   if (!session.url) throw new Error("Stripe Checkout did not return a payment URL.");
   return session;
 }

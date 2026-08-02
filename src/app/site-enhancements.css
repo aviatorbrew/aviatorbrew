@@ -2475,3 +2475,31 @@ body:has(.shop-new-shell) .site-footer .footer-top .button-light {
 @media (max-width: 1150px) { .shop-new-shell .shop-new-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 850px) { .shop-new-shell .shop-new-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .shop-trust-strip .content-wrap { grid-template-columns: 1fr; } .shop-trust-strip span { border-right: 0; border-bottom: 1px solid rgba(184, 217, 236, .18); } .shop-trust-strip span:last-child { border-bottom: 0; } }
 @media (max-width: 520px) { .shop-new-shell .shop-new-grid { grid-template-columns: 1fr; } .shop-new-shell .shop-new-card { grid-template-rows: 15rem minmax(0, 1fr); } }
+
+
+.manager-shop-product-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
+
+/* Limited event tickets */
+.manager-shop-ticket-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; padding: 1rem; border: 1px solid rgba(239,180,95,.48); background: rgba(239,180,95,.08); }
+.manager-shop-ticket-fields > div { grid-column: 1 / -1; }
+.manager-shop-ticket-fields h4 { margin: .2rem 0; color: #fff; font-size: 1rem; text-transform: uppercase; }
+.manager-shop-ticket-fields p { margin: 0; color: #bdd2dc; }
+.manager-shop-ticket-rosters { display: grid; gap: .75rem; margin-top: 1rem; padding: 1rem; border: 1px solid rgba(184,217,236,.25); background: #102f48; }
+.manager-shop-ticket-roster { border: 1px solid rgba(184,217,236,.22); background: #071d30; }
+.manager-shop-ticket-roster > header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .85rem; }
+.manager-shop-ticket-roster h4 { margin: .2rem 0; color: #fff; font-size: 1.15rem; }
+.manager-shop-ticket-roster p { margin: 0; color: #b8d2de; }
+.manager-shop-ticket-table { overflow-x: auto; border-top: 1px solid rgba(184,217,236,.18); }
+.manager-shop-ticket-table table { width: 100%; border-collapse: collapse; color: #e6f1f5; font-size: .75rem; }
+.manager-shop-ticket-table th, .manager-shop-ticket-table td { padding: .55rem .7rem; border-bottom: 1px solid rgba(184,217,236,.12); text-align: left; white-space: nowrap; }
+.manager-shop-ticket-table th { color: #f6c77e; font: 900 .65rem/1 "Courier New", monospace; text-transform: uppercase; }
+.manager-shop-ticket-table a { color: #fff; }
+.shop-product-image-wrap { position: relative; min-height: 0; }
+.shop-product-image-wrap > .shop-product-gallery { height: 100%; }
+.shop-sold-out-stamp { position: absolute; z-index: 3; top: 42%; left: -4%; width: 108%; padding: .6rem; transform: rotate(-8deg); border-block: 3px solid #fff; background: rgba(171,32,32,.92); color: #fff; font: 900 1.4rem/1 Impact, Haettenschweiler, sans-serif; letter-spacing: 0; text-align: center; text-transform: uppercase; pointer-events: none; }
+.shop-new-card.is-sold-out .shop-product-image-wrap img { filter: grayscale(.65) brightness(.68); }
+.shop-sold-out-copy { padding: .55rem .65rem; border-left: 4px solid #d64a3b; background: rgba(214,74,59,.12); color: #ffd6d0 !important; font-weight: 800; }
+.shop-ticket-meta { display: grid; gap: .15rem; padding: .55rem .65rem; border: 1px solid rgba(239,180,95,.4); background: rgba(239,180,95,.09); }
+.shop-ticket-meta strong { color: #ffd38c; }
+.shop-ticket-meta span { color: #e8f1f5; font-size: .78rem; }
+@media (max-width: 760px) { .manager-shop-ticket-fields { grid-template-columns: 1fr; } .manager-shop-ticket-roster > header { align-items: stretch; flex-direction: column; } }

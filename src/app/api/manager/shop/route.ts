@@ -47,6 +47,7 @@ function parseVariants(form: FormData): ShopVariantInput[] {
     const label = text(form.get("variantLabel_" + index));
     if (!label) continue;
     variants.push({
+      id: number(form.get("variantId_" + index)) || undefined,
       label,
       priceCents: dollarsToCents(form.get("variantPrice_" + index)),
       compareAtPriceCents: text(form.get("variantCompareAtPrice_" + index)) ? dollarsToCents(form.get("variantCompareAtPrice_" + index)) : null,
@@ -187,6 +188,12 @@ async function productInput(form: FormData) {
       published: bool(form.get("published"), false),
       featured: bool(form.get("featured"), false),
       sortOrder: number(form.get("sortOrder")),
+      productType: text(form.get("productType")) === "ticket" ? "ticket" as const : "merchandise" as const,
+      ticketLocationSlug: text(form.get("ticketLocationSlug")),
+      ticketEventStartsAt: text(form.get("ticketEventStartsAt")),
+      ticketSalesEndAt: text(form.get("ticketSalesEndAt")),
+      ticketCapacity: Math.max(0, Math.floor(number(form.get("ticketCapacity")))),
+      ticketMaxPerOrder: Math.max(1, Math.floor(number(form.get("ticketMaxPerOrder")) || 20)),
       variants: parseVariants(form),
     },
     uploadedImages,
