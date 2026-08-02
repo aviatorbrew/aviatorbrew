@@ -9,11 +9,12 @@ export const metadata: Metadata = {
 
 const actions = [
   { number: "01", title: "Contact us", copy: "Questions, feedback, or a note for the Aviator crew.", href: "/contact", action: "Send a message" },
-  { number: "02", title: "Gift card balance", copy: "Check the remaining balance on an Aviator gift card.", href: "/gift-card-balance", action: "Check balance" },
-  { number: "03", title: "Keg/package sale", copy: "Live availability straight from the Aviator BrewOps system.", href: "/kegs", action: "Browse kegs" },
-  { number: "04", title: "Book a band", copy: "Bring a set to one of our stages, patios, or campus events.", href: "/book-a-band", action: "Submit your band" },
-  { number: "05", title: "Donation requests", copy: "Tell us about the cause, event, and community impact.", href: "/donation-requests", action: "Request support" },
-  { number: "06", title: "Apply for a job", copy: "Join the crew behind the beer, food, hospitality, and good times.", href: "/apply-for-a-job", action: "See openings" },
+  { number: "02", title: "Catering To Go", copy: "Browse pickup catering menus and send the events team a group order request.", href: "/catering-to-go", action: "Plan pickup catering" },
+  { number: "03", title: "Gift card balance", copy: "Check the remaining balance on an Aviator gift card.", href: "/gift-card-balance", action: "Check balance" },
+  { number: "04", title: "Keg/package sale", copy: "Live availability straight from the Aviator BrewOps system.", href: "/kegs", action: "Browse kegs" },
+  { number: "05", title: "Book a band", copy: "Bring a set to one of our stages, patios, or campus events.", href: "/book-a-band", action: "Submit your band" },
+  { number: "06", title: "Donation requests", copy: "Tell us about the cause, event, and community impact.", href: "/donation-requests", action: "Request support" },
+  { number: "07", title: "Apply for a job", copy: "Join the crew behind the beer, food, hospitality, and good times.", href: "/apply-for-a-job", action: "See openings" },
 ];
 
 export default function MorePage() {

@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
 
-type FormKind = "newsletter" | "contact" | "event" | "career" | "tour" | "band" | "donation" | "job";
-const labels: Record<FormKind, string> = { newsletter: "Join the Flight Crew", contact: "Send your message", event: "Plan your event", career: "Tell us about yourself", tour: "Continue to secure payment", band: "Submit your band", donation: "Send donation request", job: "Apply now" };
+type FormKind = "newsletter" | "contact" | "event" | "catering" | "career" | "tour" | "band" | "donation" | "job";
+const labels: Record<FormKind, string> = { newsletter: "Join the Flight Crew", contact: "Send your message", event: "Plan your event", catering: "Request catering to go", career: "Tell us about yourself", tour: "Continue to secure payment", band: "Submit your band", donation: "Send donation request", job: "Apply now" };
 
 export function InquiryForm({ kind, tourMinimum = DEFAULT_TOUR_MINIMUM, tourPriceCents = DEFAULT_TOUR_PRICE_CENTS }: { kind: FormKind; tourMinimum?: number; tourPriceCents?: number }) {
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const needsCaptcha = kind === "event" || kind === "newsletter";
+  const needsCaptcha = kind === "event" || kind === "catering" || kind === "newsletter";
   async function submit(formData: FormData) {
     setState("submitting"); setMessage(""); setPaymentUrl(null);
     const payload = Object.fromEntries(formData.entries());
@@ -30,12 +30,13 @@ export function InquiryForm({ kind, tourMinimum = DEFAULT_TOUR_MINIMUM, tourPric
     {kind !== "newsletter" && <label>Name<input name="name" required autoComplete="name" /></label>}
     <label>Email<input type="email" name="email" required autoComplete="email" /></label>
     {kind === "event" && <><label>Event type<select name="eventType" defaultValue=""><option value="" disabled>Select an event type</option><option>Wedding or rehearsal dinner</option><option>Corporate event</option><option>Birthday or celebration</option><option>Concert or fundraiser</option><option>Other</option></select></label><label>Estimated guest count<input name="guestCount" inputMode="numeric" /></label></>}
+    {kind === "catering" && <><input type="hidden" name="eventType" value="Catering To Go" /><label>Phone<input name="phone" type="tel" autoComplete="tel" /></label><label>Pickup date<input name="pickupDate" type="date" /></label><label>Preferred pickup time<input name="pickupTime" type="time" /></label><label>Estimated guest count<input name="guestCount" inputMode="numeric" /></label></>}
     {kind === "career" && <label>Role or area of interest<input name="interest" required /></label>}
     {kind === "job" && <><label>Role or area of interest<input name="interest" required /></label><label>Resume or portfolio link (optional)<input name="resumeUrl" type="url" inputMode="url" /></label></>}
     {kind === "band" && <><label>Band or artist name<input name="bandName" required /></label><label>Website or music link<input name="musicUrl" type="url" inputMode="url" required /></label></>}
     {kind === "donation" && <><label>Organization name<input name="organization" required /></label><label>Event or needed-by date<input name="eventDate" type="date" /></label></>}
     {kind === "tour" && <><label>How many tickets?<input name="tickets" type="number" min="1" max="6" defaultValue="1" required /><small>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(tourPriceCents / 100)} per guest. Each ticket includes a pint glass, one beer pour, and one flight of four pours.</small></label><p className="tour-signup-note">Tours are approximately 30 minutes and launch on Saturdays at 4:00 PM once {tourMinimum} guests are signed up. Each flight can hold up to {TOUR_CAPACITY} guests; if that flight fills, the next guests are assigned to a 6:00 PM tour. Signups inside 24 hours roll to the following Saturday.</p></>}
-    {kind !== "newsletter" && kind !== "tour" && <label>{kind === "band" ? "Tell us about your sound, dates, and draw" : kind === "donation" ? "Tell us about your request and community impact" : kind === "job" ? "Tell us about your experience and availability" : "How can we help?"}<textarea name="message" required rows={4} /></label>}
+    {kind !== "newsletter" && kind !== "tour" && <label>{kind === "band" ? "Tell us about your sound, dates, and draw" : kind === "donation" ? "Tell us about your request and community impact" : kind === "job" ? "Tell us about your experience and availability" : kind === "catering" ? "What would you like to order?" : "How can we help?"}<textarea name="message" required rows={kind === "catering" ? 6 : 4} placeholder={kind === "catering" ? "Menu items, quantities, pickup notes, special requests, or questions." : undefined} /></label>}
     {kind === "tour" && <label>Questions or notes?<textarea name="message" rows={3} /></label>}
     {needsCaptcha && <label className="captcha-check"><input type="checkbox" name="humanCheck" value="yes" required /><span>I am a real person submitting this form.</span></label>}
     <button className="button" disabled={state === "submitting"}>{state === "submitting" ? "Saving..." : labels[kind]}</button>

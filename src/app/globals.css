@@ -2080,3 +2080,39 @@ body {
   background: rgba(6, 26, 43, .9) !important;
   backdrop-filter: blur(2px);
 }
+
+
+/* Catering To Go */
+.catering-hero { position: relative; min-height: clamp(30rem, 58vw, 44rem); display: grid; align-items: end; overflow: hidden; background: #061827; color: #f2f8fa; }
+.catering-hero::before { position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(2, 10, 18, .96) 0%, rgba(4, 18, 31, .82) 42%, rgba(4, 18, 31, .34) 73%, rgba(4, 18, 31, .18) 100%), url("/images/atmosphere/private-events-general-briefing.webp"); background-position: center; background-size: cover; content: ""; }
+.catering-hero::after { position: absolute; inset: auto 0 0; height: 45%; background: linear-gradient(0deg, #071f35, transparent); content: ""; }
+.catering-hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem); gap: clamp(1.5rem, 4vw, 4rem); align-items: end; padding-top: clamp(5rem, 10vw, 9rem); padding-bottom: clamp(3rem, 6vw, 5rem); }
+.catering-hero h1 { max-width: 54rem; margin: .45rem 0 1rem; color: #f7fbfd; font: 400 clamp(4rem, 9vw, 8rem)/.82 Impact, Haettenschweiler, sans-serif; letter-spacing: 0; text-transform: uppercase; }
+.catering-hero p:not(.eyebrow) { max-width: 48rem; color: #d3e2ea; font-size: 1.03rem; line-height: 1.65; }
+.catering-hero aside { display: grid; gap: .55rem; padding: 1.1rem; border: 1px solid rgba(240, 180, 95, .72); background: rgba(6, 25, 41, .86); box-shadow: 8px 8px 0 rgba(0,0,0,.22); }
+.catering-hero aside span, .catering-steps span { color: #efb45f; font-family: "Courier New", monospace; font-size: .7rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.catering-hero aside strong { color: #f7fbfd; font: 400 2rem/.95 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.catering-hero aside p { margin: 0; color: #c7d9e2; line-height: 1.45; }
+.catering-command-section, .catering-request-section { background: #071f35; }
+.catering-command-grid, .catering-request-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(20rem, .75fr); gap: 1.25rem; align-items: start; }
+.catering-menu-panel, .catering-pickup-panel, .catering-form-card { padding: 1.35rem; border: 1px solid rgba(184,217,236,.26); background: #102f49; }
+.catering-menu-panel h2, .catering-pickup-panel h2, .catering-request-grid h2 { margin: .35rem 0 .75rem; color: #f4f9fb; font: 400 clamp(2.25rem, 4vw, 4rem)/.9 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.catering-menu-panel p, .catering-pickup-panel p, .catering-request-grid p, .catering-request-grid dd { color: #c6dbe5; line-height: 1.58; }
+.catering-pickup-panel p { display: flex; gap: .55rem; align-items: flex-start; margin: .7rem 0; }
+.catering-pickup-panel svg { flex: 0 0 1rem; width: 1rem; height: 1rem; margin-top: .18rem; color: #efb45f; }
+.catering-menu-download { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem 1rem; align-items: center; margin-top: 1rem; padding: 1rem; border: 1px solid #efb45f; background: #08263d; color: #f4f8fa; text-decoration: none; }
+.catering-menu-download strong { color: #efb45f; font-family: "Courier New", monospace; font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; }
+.catering-menu-download span { grid-column: 1; color: #d4e4ec; overflow-wrap: anywhere; }
+.catering-menu-download svg { grid-column: 2; grid-row: 1 / span 2; width: 1.1rem; color: #efb45f; }
+.catering-menu-download.is-pending { border-style: dashed; }
+.catering-steps-section { background-color: #0c2b45; }
+.catering-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; border: 1px solid rgba(184,217,236,.28); background: rgba(184,217,236,.28); }
+.catering-steps article { min-height: 12rem; padding: 1.2rem; background: #113650; }
+.catering-steps h3 { margin: .85rem 0 .55rem; color: #f4f9fb; font: 400 1.7rem/.92 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.catering-steps p { margin: 0; color: #c6dbe5; line-height: 1.52; }
+.catering-request-grid dl { display: grid; gap: .7rem; margin: 1.2rem 0 0; }
+.catering-request-grid dt { color: #efb45f; font-family: "Courier New", monospace; font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.catering-request-grid dd { margin: .2rem 0 0; }
+.catering-request-grid a:not(.button) { color: #efb45f; }
+.catering-form-card .inquiry-form { margin: 0; }
+@media (max-width: 850px) { .catering-hero-inner, .catering-command-grid, .catering-request-grid, .catering-steps { grid-template-columns: 1fr; } .catering-hero aside { max-width: 24rem; } }
