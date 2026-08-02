@@ -2084,7 +2084,7 @@ body {
 
 /* Catering To Go */
 .catering-hero { position: relative; min-height: clamp(30rem, 58vw, 44rem); display: grid; align-items: end; overflow: hidden; background: #061827; color: #f2f8fa; }
-.catering-hero::before { position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(2, 10, 18, .96) 0%, rgba(4, 18, 31, .82) 42%, rgba(4, 18, 31, .34) 73%, rgba(4, 18, 31, .18) 100%), url("/images/atmosphere/private-events-general-briefing.webp"); background-position: center; background-size: cover; content: ""; }
+.catering-hero::before { position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(2, 10, 18, .96) 0%, rgba(4, 18, 31, .82) 42%, rgba(4, 18, 31, .34) 73%, rgba(4, 18, 31, .18) 100%), url("/images/atmosphere/catering-mess-hall-feast-hero.png"); background-position: center; background-size: cover; content: ""; }
 .catering-hero::after { position: absolute; inset: auto 0 0; height: 45%; background: linear-gradient(0deg, #071f35, transparent); content: ""; }
 .catering-hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem); gap: clamp(1.5rem, 4vw, 4rem); align-items: end; padding-top: clamp(5rem, 10vw, 9rem); padding-bottom: clamp(3rem, 6vw, 5rem); }
 .catering-hero h1 { max-width: 54rem; margin: .45rem 0 1rem; color: #f7fbfd; font: 400 clamp(4rem, 9vw, 8rem)/.82 Impact, Haettenschweiler, sans-serif; letter-spacing: 0; text-transform: uppercase; }
