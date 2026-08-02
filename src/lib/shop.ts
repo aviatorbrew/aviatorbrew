@@ -254,8 +254,10 @@ function settingsFromRow(row: Record<string, unknown> | undefined): ShopSettings
 }
 
 async function ensureDefaultCategories() {
-  if (!databaseConfigured()) return;
+  if (!databaseConfigured() || process.env.SHOP_SEED_DEFAULT_CATEGORIES !== "true") return;
   await withDatabase(async (client) => {
+    const existing = await client.query("SELECT COUNT(*) AS count FROM website.shop_categories");
+    if (Number(existing.rows[0]?.count || 0) > 0) return;
     for (let index = 0; index < defaultCategories.length; index++) {
       const name = defaultCategories[index];
       await client.query("INSERT INTO website.shop_categories (slug,name,description,sort_order,published) VALUES ($1,$2,$3,$4,true) ON CONFLICT (slug) DO NOTHING", [shopSlug(name), name, "", index * 10]);
@@ -352,6 +354,24 @@ export async function saveShopCategory(input: { id?: number; name: string; descr
     else await client.query("INSERT INTO website.shop_categories (slug,name,description,sort_order,published) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (slug) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, sort_order=EXCLUDED.sort_order, published=EXCLUDED.published, updated_at=now()", [shopSlug(name), name, input.description || "", intValue(input.sortOrder), toBoolean(input.published, true)]);
     return getShopCatalog({ manager: true });
   });
+}
+
+export async function saveShopCategoryOrder(ids: number[]) {
+  const orderedIds = ids.filter((id, index, all) => Number.isInteger(id) && id > 0 && all.indexOf(id) === index);
+  if (!orderedIds.length) throw new Error("Choose at least one catalog to order.");
+  return withDatabase(async (client) => {
+    await client.query("BEGIN");
+    try {
+      for (let index = 0; index < orderedIds.length; index += 1) {
+        await client.query("UPDATE website.shop_categories SET sort_order=$2, updated_at=now() WHERE id=$1", [orderedIds[index], index * 10]);
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    }
+    return getShopCatalog({ manager: true });
+  }, { skipSchema: true });
 }
 
 export async function deleteShopCategory(id: number) {

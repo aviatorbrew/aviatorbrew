@@ -3,7 +3,7 @@ import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
 import { requestBodyExceeds } from "@/lib/server-file-response";
-import { deleteShopCategory, deleteShopProduct, dollarsToCents, getShopCatalog, saveShopCategory, saveShopProduct, saveShopSettings, type ShopSettings, type ShopVariantInput } from "@/lib/shop";
+import { deleteShopCategory, deleteShopProduct, dollarsToCents, getShopCatalog, saveShopCategory, saveShopCategoryOrder, saveShopProduct, saveShopSettings, type ShopSettings, type ShopVariantInput } from "@/lib/shop";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -127,6 +127,7 @@ async function saveFromForm(form: FormData, update: boolean) {
   const action = text(form.get("action"));
   if (action === "settings") return saveShopSettings(settingsInput(form));
   if (action === "category") return saveShopCategory({ id: update ? number(form.get("id")) : undefined, name: text(form.get("name")), description: text(form.get("description")), sortOrder: number(form.get("sortOrder")), published: bool(form.get("published"), true) });
+  if (action === "category-order") return saveShopCategoryOrder(text(form.get("categoryIds")).split(",").map((id) => Number(id)));
   return saveShopProduct(await productInput(form));
 }
 

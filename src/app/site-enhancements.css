@@ -1527,7 +1527,11 @@
 .manager-shop-inline-edit .manager-shop-product-form { margin: 0; }
 .manager-shop-catalogs ul { display: grid; gap: .45rem; padding: 0; margin: 1rem 0 0; list-style: none; }
 .manager-shop-catalogs li { display: flex; justify-content: space-between; gap: .5rem; align-items: center; color: #e8f3f7; font-size: .82rem; }
-.manager-shop-catalogs li div { display: flex; gap: .35rem; }
+.manager-shop-catalogs li > span { display: grid; gap: .18rem; min-width: 0; }
+.manager-shop-catalogs li > span strong { overflow-wrap: anywhere; color: #f3f8fa; font-size: .82rem; }
+.manager-shop-catalogs li > span small { color: #9dbdcd; font: 900 .58rem/1 "Courier New", monospace; text-transform: uppercase; }
+.manager-shop-catalogs li div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem; }
+.manager-shop-catalogs li button:disabled { opacity: .42; cursor: not-allowed; }
 .manager-shop-products { display: grid; gap: .65rem; }
 .manager-shop-products > article { display: grid; grid-template-columns: 5rem minmax(0, 1fr) auto; gap: .8rem; align-items: center; padding: .75rem; }
 .manager-shop-products > article.is-hidden { opacity: .62; background: #26313c; }
