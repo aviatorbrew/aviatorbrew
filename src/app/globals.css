@@ -2048,3 +2048,20 @@ body {
 .legal-content a { color: #efb45f; font-weight: 800; }
 .legal-updated { margin-bottom: 1.5rem; padding: .85rem 1rem; border: 1px solid rgba(184, 217, 236, .24); background: rgba(7, 24, 39, .72); }
 .legal-hero .content-wrap { max-width: 980px; }
+
+.brewery-tour-section {
+  background-color: #071827 !important;
+  background-image: linear-gradient(90deg, rgba(3, 15, 27, .96) 0%, rgba(3, 15, 27, .9) 34%, rgba(3, 15, 27, .58) 58%, rgba(3, 15, 27, .28) 100%), url("/images/atmosphere/tours-drill-sergeant-background.png") !important;
+  background-position: center right !important;
+  background-size: cover !important;
+}
+.brewery-tour-section::after {
+  background-image: linear-gradient(90deg, rgba(184, 217, 236, .08) 1px, transparent 1px), linear-gradient(rgba(184, 217, 236, .08) 1px, transparent 1px) !important;
+  background-size: 34px 34px !important;
+  opacity: .28 !important;
+  mix-blend-mode: screen !important;
+}
+.brewery-tour-section .tour-form-wrap {
+  background: rgba(6, 26, 43, .9) !important;
+  backdrop-filter: blur(2px);
+}

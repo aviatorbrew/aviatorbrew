@@ -87,7 +87,7 @@ export default async function ContentPage({
           <p>From the food and drinks to the music, lighting, and service, our team helps bring everything together so you can enjoy the event instead of managing it.</p>
           <p>That&apos;s the Aviator way: great beer, great food, genuine hospitality, and a memorable place to gather.</p>
           <Link className="section-link" href="/locations/ready-room">Explore the Ready Room <ArrowUpRight /></Link>
-        </div> : <div><p>Every Aviator page is designed to answer the important questions quickly: where to go, what&apos;s happening, what to eat, and how to plan a visit. The content system keeps operational details centralized so teams can update them without hunting across a dozen pages.</p><p>As the final photography, menus, event feed, ordering tools, and booking integrations are connected, this page will become a focused conversion path for the people who need it.</p><Link className="section-link" href="/locations">Explore the locations <ArrowUpRight /></Link></div>}
+        </div> : <div><p>Need the right Aviator landing spot? Start with the location, crew, or event room that matches what you are planning. Each stop has its own hours, phone number, menus, photos, and directions so you can make a clean plan before you head out.</p><p>Whether you are asking a question, planning a gathering, checking out career opportunities, or just looking for the next place to grab a beer, the location pages are the fastest way to get oriented.</p><Link className="section-link" href="/locations">Explore the locations <ArrowUpRight /></Link></div>}
       </div>
     </section>
 
