@@ -215,6 +215,22 @@ function variantFromRow(row: Record<string, unknown>): ShopVariant {
   };
 }
 
+function normalizeShopImageUrl(value: unknown) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("/api/shop-product-images/")) return raw;
+  if (raw.startsWith("/media/shop-products/") || raw.startsWith("/public/media/shop-products/")) return "/api/shop-product-images/" + encodeURIComponent(raw.split("/").filter(Boolean).pop() || "");
+  try {
+    const url = new URL(raw);
+    if (url.pathname.includes("/media/shop-products/") || url.pathname.includes("/shop-product-images/")) return "/api/shop-product-images/" + encodeURIComponent(url.pathname.split("/").filter(Boolean).pop() || "");
+  } catch {}
+  return raw;
+}
+
+function normalizeShopImageUrls(values: unknown[]) {
+  return values.map(normalizeShopImageUrl).filter((value, index, all) => value && all.indexOf(value) === index);
+}
+
 function settingsFromRow(row: Record<string, unknown> | undefined): ShopSettings {
   return {
     bonusEnabled: row?.bonus_enabled !== false,
@@ -267,7 +283,8 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
     }
     const products = productResult.rows.map((row) => {
       const additional = Array.isArray(row.additional_image_urls) ? row.additional_image_urls.map(String) : [];
-      const imageUrl = String(row.image_url || "");
+      const imageUrl = normalizeShopImageUrl(row.image_url);
+      const imageUrls = normalizeShopImageUrls([imageUrl, ...additional]);
       return {
         id: Number(row.id),
         slug: String(row.slug || ""),
@@ -277,7 +294,7 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
         name: String(row.name || ""),
         description: String(row.description || ""),
         imageUrl,
-        imageUrls: [imageUrl, ...additional].filter((value, index, all) => value && all.indexOf(value) === index),
+        imageUrls,
         published: row.published !== false,
         featured: row.featured === true,
         sortOrder: Number(row.sort_order || 0),
@@ -453,7 +470,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
         productId: variant.productId,
         productName: String(row.product_name || ""),
         variantLabel: variant.label,
-        imageUrl: String(row.image_url || ""),
+        imageUrl: normalizeShopImageUrl(row.image_url),
         unitPriceCents: variant.priceCents,
         quantity: request.quantity,
         weightOunces: variant.weightOunces,
@@ -474,7 +491,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
           productId: variant.productId,
           productName: settings.bonusLabel,
           variantLabel: variant.label,
-          imageUrl: String(row.image_url || ""),
+          imageUrl: normalizeShopImageUrl(row.image_url),
           unitPriceCents: 0,
           quantity: 1,
           weightOunces: variant.weightOunces,
