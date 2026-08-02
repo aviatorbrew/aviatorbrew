@@ -661,7 +661,7 @@ async function sendShopCustomerOrderAcknowledgement(job: Exclude<ShopOrderNotifi
   if (!validShopEmail(job.customerEmail)) return true;
   const itemLines = shopOrderItemLines(job.items);
   const text = [
-    job.isTestOrder ? "Aviator Shop test order received" : "Aviator Shop order received",
+    job.isTestOrder ? "Aviator Supply test order received" : "Aviator Supply order received",
     "",
     "Order: #" + job.orderId,
     "",
@@ -676,8 +676,8 @@ async function sendShopCustomerOrderAcknowledgement(job: Exclude<ShopOrderNotifi
     "",
     job.isTestOrder ? "This is a manager test order. No payment was collected." : "We will send another email when your order ships.",
   ].join("\n");
-  const html = "<!doctype html><html><body style=\"margin:0;background:#eef2f3;padding:28px 14px;font-family:Arial,sans-serif;color:#10243a\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:640px;background:#fff;border:1px solid #d5dfe3\"><tr><td style=\"padding:28px 32px;background:#102b3e;color:#fff\"><div style=\"color:#efb45f;font-size:12px;font-weight:800;text-transform:uppercase\">Aviator Shop</div><h1 style=\"margin:10px 0 0;font-size:28px\">" + (job.isTestOrder ? "Test order received" : "Order received") + "</h1></td></tr><tr><td style=\"padding:28px 32px\"><p style=\"font-size:16px;line-height:1.6\">Thanks" + (job.customerName ? ", " + job.customerName : "") + ". We received order #" + job.orderId + " and the Aviator team has it in the fulfillment queue.</p><ul style=\"line-height:1.8\">" + shopOrderHtmlList(job.items) + "</ul><p><strong>Merchandise:</strong> " + shopOrderMoney(job.subtotalCents) + "<br><strong>Shipping:</strong> " + shopOrderMoney(job.shippingCents) + "<br><strong>Total:</strong> " + shopOrderMoney(job.totalCents) + "</p><p style=\"color:#637783\">" + (job.isTestOrder ? "This is a manager test order. No payment was collected." : "We will send another email when your order ships.") + "</p></td></tr></table></td></tr></table></body></html>";
-  const sent = await sendMail({ to: job.customerEmail, subject: (job.isTestOrder ? "TEST - " : "") + "Aviator Shop order #" + job.orderId + " received", text, html });
+  const html = "<!doctype html><html><body style=\"margin:0;background:#eef2f3;padding:28px 14px;font-family:Arial,sans-serif;color:#10243a\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:640px;background:#fff;border:1px solid #d5dfe3\"><tr><td style=\"padding:28px 32px;background:#102b3e;color:#fff\"><div style=\"color:#efb45f;font-size:12px;font-weight:800;text-transform:uppercase\">Aviator Supply</div><h1 style=\"margin:10px 0 0;font-size:28px\">" + (job.isTestOrder ? "Test order received" : "Order received") + "</h1></td></tr><tr><td style=\"padding:28px 32px\"><p style=\"font-size:16px;line-height:1.6\">Thanks" + (job.customerName ? ", " + job.customerName : "") + ". We received order #" + job.orderId + " and the Aviator team has it in the fulfillment queue.</p><ul style=\"line-height:1.8\">" + shopOrderHtmlList(job.items) + "</ul><p><strong>Merchandise:</strong> " + shopOrderMoney(job.subtotalCents) + "<br><strong>Shipping:</strong> " + shopOrderMoney(job.shippingCents) + "<br><strong>Total:</strong> " + shopOrderMoney(job.totalCents) + "</p><p style=\"color:#637783\">" + (job.isTestOrder ? "This is a manager test order. No payment was collected." : "We will send another email when your order ships.") + "</p></td></tr></table></td></tr></table></body></html>";
+  const sent = await sendMail({ to: job.customerEmail, subject: (job.isTestOrder ? "TEST - " : "") + "Aviator Supply order #" + job.orderId + " received", text, html });
   if (!sent) return false;
   await withDatabase(async (client) => client.query("UPDATE website.shop_orders SET customer_acknowledgement_sent_at=COALESCE(customer_acknowledgement_sent_at,now()),updated_at=now() WHERE id=$1", [job.orderId]), { skipSchema: true });
   return true;
@@ -719,7 +719,7 @@ async function sendShopOrderBackendNotification(job: Exclude<ShopOrderNotificati
   const itemLines = shopOrderItemLines(job.items);
   const address = shopOrderAddress(job.shippingAddress);
   const text = [
-    job.isTestOrder ? "TEST ShopNew order" : "New paid ShopNew order",
+    job.isTestOrder ? "TEST Aviator Supply order" : "New paid Aviator Supply order",
     "",
     "Order: #" + job.orderId,
     "Stripe session: " + (job.stripeSessionId || "No Stripe session"),
@@ -743,7 +743,7 @@ async function sendShopOrderBackendNotification(job: Exclude<ShopOrderNotificati
   ].filter((line, index, all) => line || all[index - 1] !== "").join("\n");
   const sent = await sendMail({
     to: job.recipient,
-    subject: (job.isTestOrder ? "TEST ShopNew order #" : "Paid ShopNew order #") + job.orderId + " - " + shopOrderMoney(job.totalCents),
+    subject: (job.isTestOrder ? "TEST Aviator Supply order #" : "Paid Aviator Supply order #") + job.orderId + " - " + shopOrderMoney(job.totalCents),
     text,
     replyTo: validShopEmail(job.customerEmail) ? job.customerEmail : undefined,
   });
@@ -814,7 +814,7 @@ export async function markShopOrderPaid(sessionId: string): Promise<boolean> {
   const itemLines = job.items.map((item) => "- " + item.quantity + " x " + item.productName + " / " + item.variantLabel + " - " + (item.isBonus ? "FREE BONUS" : shopOrderMoney(item.unitPriceCents * item.quantity)));
   const address = shopOrderAddress(job.shippingAddress);
   const text = [
-    "New paid ShopNew order",
+    "New paid Aviator Supply order",
     "",
     "Order: #" + job.orderId,
     "Stripe session: " + job.stripeSessionId,
@@ -838,7 +838,7 @@ export async function markShopOrderPaid(sessionId: string): Promise<boolean> {
   try {
     const sent = await sendMail({
       to: job.recipient,
-      subject: "Paid ShopNew order #" + job.orderId + " - " + shopOrderMoney(job.totalCents),
+      subject: "Paid Aviator Supply order #" + job.orderId + " - " + shopOrderMoney(job.totalCents),
       text,
       replyTo: /^\S+@\S+\.\S+$/.test(job.customerEmail) ? job.customerEmail : undefined,
     });
@@ -932,7 +932,7 @@ export async function sendShopOrderShipmentEmail(input: { id: number; trackingUr
   if (!job) throw new Error("Order not found.");
   if (!validShopEmail(job.customerEmail)) throw new Error("This order does not have a customer email address.");
   const text = [
-    "Your Aviator Shop order has shipped",
+    "Your Aviator Supply order has shipped",
     "",
     "Order: #" + id,
     "Tracking / shipment link: " + trackingUrl,
@@ -941,8 +941,8 @@ export async function sendShopOrderShipmentEmail(input: { id: number; trackingUr
     "",
     "Thanks for ordering from Aviator Brewing Company.",
   ].filter((line, index, all) => line || all[index - 1] !== "").join("\n");
-  const html = "<!doctype html><html><body style=\"margin:0;background:#eef2f3;padding:28px 14px;font-family:Arial,sans-serif;color:#10243a\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:640px;background:#fff;border:1px solid #d5dfe3\"><tr><td style=\"padding:28px 32px;background:#102b3e;color:#fff\"><div style=\"color:#efb45f;font-size:12px;font-weight:800;text-transform:uppercase\">Aviator Shop</div><h1 style=\"margin:10px 0 0;font-size:28px\">Your order has shipped</h1></td></tr><tr><td style=\"padding:28px 32px\"><p>Order #" + id + " is on the way.</p><p><a href=\"" + trackingUrl + "\" style=\"color:#a76125;font-weight:700\">View shipment / tracking</a></p>" + (note ? "<p style=\"white-space:pre-wrap\">" + note + "</p>" : "") + "<p style=\"color:#637783\">Thanks for ordering from Aviator Brewing Company.</p></td></tr></table></td></tr></table></body></html>";
-  const sent = await sendMail({ to: job.customerEmail, subject: "Aviator Shop order #" + id + " shipped", text, html });
+  const html = "<!doctype html><html><body style=\"margin:0;background:#eef2f3;padding:28px 14px;font-family:Arial,sans-serif;color:#10243a\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:640px;background:#fff;border:1px solid #d5dfe3\"><tr><td style=\"padding:28px 32px;background:#102b3e;color:#fff\"><div style=\"color:#efb45f;font-size:12px;font-weight:800;text-transform:uppercase\">Aviator Supply</div><h1 style=\"margin:10px 0 0;font-size:28px\">Your order has shipped</h1></td></tr><tr><td style=\"padding:28px 32px\"><p>Order #" + id + " is on the way.</p><p><a href=\"" + trackingUrl + "\" style=\"color:#a76125;font-weight:700\">View shipment / tracking</a></p>" + (note ? "<p style=\"white-space:pre-wrap\">" + note + "</p>" : "") + "<p style=\"color:#637783\">Thanks for ordering from Aviator Brewing Company.</p></td></tr></table></td></tr></table></body></html>";
+  const sent = await sendMail({ to: job.customerEmail, subject: "Aviator Supply order #" + id + " shipped", text, html });
   if (!sent) throw new Error("Shop shipment email is not configured.");
   await withDatabase(async (client) => client.query("UPDATE website.shop_orders SET status='shipped', shipment_tracking_url=$2, shipment_note=$3, shipped_at=COALESCE(shipped_at,now()), shipment_email_sent_at=now(), updated_at=now() WHERE id=$1", [id, trackingUrl, note]), { skipSchema: true });
   return getShopCatalog({ manager: true });

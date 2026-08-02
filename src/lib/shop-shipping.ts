@@ -55,7 +55,7 @@ export function normalizeShippingAddress(input: Partial<ShopShippingAddress>) {
     phone: String(input.phone || "").trim().slice(0, 30),
   };
   if (!address.name || !address.street1 || !address.city || !address.state || !address.zip) throw new Error("Enter a complete shipping address.");
-  if (address.country !== "US") throw new Error("ShopNew currently ships to United States addresses only.");
+  if (address.country !== "US") throw new Error("Aviator Supply currently ships to United States addresses only.");
   return address;
 }
 

@@ -107,5 +107,5 @@ export function useShopCart() {
 
 export function ShopCartBar() {
   const { count, notice } = useShopCart();
-  return <><div className="shop-cart-bar"><div className="content-wrap"><span className="shop-cart-brand">AVIATOR SUPPLY DEPOT</span><nav aria-label="Shop navigation"><Link href="/shop-new">Catalog</Link><Link className="shop-cart-primary" href="/shop-new/cart" aria-label={"View cart with " + count + " items"}><span>View cart</span><strong>{count}</strong></Link></nav></div></div>{notice ? <div className="shop-cart-toast" role="status" aria-live="polite"><div><b>Added to cart</b><span>{notice}</span></div><Link href="/shop-new/cart">Review cart ({count})</Link></div> : null}</>;
+  return <><div className="shop-cart-bar"><div className="content-wrap"><span className="shop-cart-brand">AVIATOR SUPPLY</span><nav aria-label="Shop navigation"><Link href="/shop-new">Catalog</Link><Link className="shop-cart-primary" href="/shop-new/cart" aria-label={"View cart with " + count + " items"}><span>View cart</span><strong>{count}</strong></Link></nav></div></div>{notice ? <div className="shop-cart-toast" role="status" aria-live="polite"><div><b>Added to cart</b><span>{notice}</span></div><Link href="/shop-new/cart">Review cart ({count})</Link></div> : null}</>;
 }

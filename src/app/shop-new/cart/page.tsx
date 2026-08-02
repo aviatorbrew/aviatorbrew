@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ShopCartCheckout } from "@/components/shop-cart-checkout";
 
-export const metadata: Metadata = { title: "Cart | Aviator ShopNew", description: "Review your Aviator cart, calculate USPS shipping, and check out securely." };
+export const metadata: Metadata = { title: "Cart | Aviator Supply", description: "Review your Aviator cart, calculate USPS shipping, and check out securely." };
 export const dynamic = "force-dynamic";
 
 export default async function ShopCartPage({ searchParams }: { searchParams?: Promise<{ checkout?: string }> }) {

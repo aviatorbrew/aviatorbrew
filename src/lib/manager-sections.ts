@@ -15,7 +15,7 @@ export const managerSections = [
     id: "shop",
     href: "/manager/shop",
     label: "Shop",
-    description: "Manage ShopNew catalogs, products, variants, prices, and inventory.",
+    description: "Manage Aviator Supply catalogs, products, variants, prices, and inventory.",
   },
   {
     id: "beer-release-alert",
