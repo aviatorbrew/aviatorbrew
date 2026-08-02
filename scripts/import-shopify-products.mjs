@@ -34,6 +34,11 @@ function categoryName(product) {
   return "Other";
 }
 
+function wholeOunces(value, fallback = 8) {
+  const number = Number(value);
+  return Math.max(1, Math.round(Number.isFinite(number) && number > 0 ? number : fallback));
+}
+
 function isGlasswareProduct(product) {
   return categoryName(product) === "Glassware";
 }
@@ -118,7 +123,7 @@ try {
       const existingVariant = existingByShopifyId.get(String(variant.id)) || existingByLabel.get(String(variant.title || "Default").toLowerCase());
       const priceCents = Math.round(Number(variant.price || 0) * 100);
       const compareAtPriceCents = variant.compare_at_price ? Math.round(Number(variant.compare_at_price) * 100) : null;
-      const weightOunces = existingVariant?.weight_ounces ?? Math.max(.1, Number(variant.grams || 0) / 28.349523125 || (variant.requires_shipping ? 8 : .1));
+      const weightOunces = wholeOunces(existingVariant?.weight_ounces ?? (Number(variant.grams || 0) / 28.349523125 || (variant.requires_shipping ? 8 : 1)));
       const glassware = isGlasswareProduct(product);
       const trackInventory = existingVariant?.track_inventory ?? false;
       const inventoryCount = glassware && trackInventory ? Math.max(1, Number(existingVariant?.inventory_count || 0)) : Number(existingVariant?.inventory_count || 0);

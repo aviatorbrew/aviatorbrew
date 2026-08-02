@@ -193,6 +193,11 @@ function decimalValue(value: unknown, fallback = 0) {
   return Number.isFinite(number) ? Math.max(0, number) : fallback;
 }
 
+function wholeOunces(value: unknown, fallback = 8) {
+  const number = Number(value);
+  return Math.max(1, Math.round(Number.isFinite(number) && number > 0 ? number : fallback));
+}
+
 function categoryFromRow(row: Record<string, unknown>): ShopCategory {
   return { id: Number(row.id), slug: String(row.slug || ""), name: String(row.name || ""), description: String(row.description || ""), sortOrder: Number(row.sort_order || 0), published: row.published !== false };
 }
@@ -208,7 +213,7 @@ function variantFromRow(row: Record<string, unknown>): ShopVariant {
     inventoryCount: Number(row.inventory_count || 0),
     published: row.published !== false,
     sortOrder: Number(row.sort_order || 0),
-    weightOunces: Number(row.weight_ounces || 0),
+    weightOunces: wholeOunces(row.weight_ounces),
     requiresShipping: row.requires_shipping !== false,
     trackInventory: row.track_inventory !== false,
     availableForSale: row.available_for_sale !== false,
@@ -403,7 +408,7 @@ function normalizeProductInput(input: ShopProductInput) {
     inventoryCount: Math.max(0, Math.floor(variant.inventoryCount)),
     published: variant.published !== false,
     sortOrder: variant.sortOrder ?? index * 10,
-    weightOunces: Math.max(.1, decimalValue(variant.weightOunces, 8)),
+    weightOunces: wholeOunces(variant.weightOunces),
     requiresShipping: variant.requiresShipping !== false,
     trackInventory: variant.trackInventory !== false,
     availableForSale: variant.availableForSale !== false,

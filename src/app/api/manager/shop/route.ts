@@ -18,6 +18,7 @@ function text(value: FormDataEntryValue | null) { return typeof value === "strin
 function number(value: FormDataEntryValue | null) { const parsed = Number(text(value)); return Number.isFinite(parsed) ? parsed : 0; }
 function bool(value: FormDataEntryValue | null, fallback = false) { const raw = text(value).toLowerCase(); return raw ? ["true", "on", "1", "yes"].includes(raw) : fallback; }
 function unique(values: string[]) { return values.filter((value, index, all) => value && all.indexOf(value) === index); }
+function wholeOunces(value: unknown, fallback = 8) { const parsed = Number(value); return Math.max(1, Math.round(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback)); }
 
 function parseVariantLines(raw: string): ShopVariantInput[] {
   return raw.split(/\r?\n/).map((line, index) => {
@@ -30,7 +31,7 @@ function parseVariantLines(raw: string): ShopVariantInput[] {
       sku,
       published: published.toLowerCase() !== "false",
       sortOrder: index * 10,
-      weightOunces: Math.max(.1, Number(weightOunces) || 8),
+      weightOunces: wholeOunces(weightOunces),
       requiresShipping: requiresShipping.toLowerCase() !== "false",
       trackInventory: trackInventory.toLowerCase() !== "false",
       availableForSale: availableForSale.toLowerCase() !== "false",
@@ -53,7 +54,7 @@ function parseVariants(form: FormData): ShopVariantInput[] {
       sku: text(form.get("variantSku_" + index)),
       published: bool(form.get("variantPublished_" + index), false),
       sortOrder: index * 10,
-      weightOunces: bool(form.get("variantRequiresShipping_" + index), false) ? Math.max(.1, number(form.get("variantWeightOunces_" + index)) || 8) : 0,
+      weightOunces: bool(form.get("variantRequiresShipping_" + index), false) ? wholeOunces(form.get("variantWeightOunces_" + index)) : 0,
       requiresShipping: bool(form.get("variantRequiresShipping_" + index), false),
       trackInventory: bool(form.get("variantTrackInventory_" + index), false),
       availableForSale: bool(form.get("variantAvailable_" + index), false),

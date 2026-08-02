@@ -335,6 +335,7 @@ const schemaStatements = [
   `ALTER TABLE IF EXISTS website.shop_product_variants ADD COLUMN IF NOT EXISTS requires_shipping boolean NOT NULL DEFAULT true`,
   `ALTER TABLE IF EXISTS website.shop_product_variants ADD COLUMN IF NOT EXISTS track_inventory boolean NOT NULL DEFAULT true`,
   `ALTER TABLE IF EXISTS website.shop_product_variants ADD COLUMN IF NOT EXISTS available_for_sale boolean NOT NULL DEFAULT true`,
+  `UPDATE website.shop_product_variants SET weight_ounces=GREATEST(1, ROUND(weight_ounces)) WHERE weight_ounces IS DISTINCT FROM GREATEST(1, ROUND(weight_ounces))`,
   `CREATE UNIQUE INDEX IF NOT EXISTS website_shop_products_source_unique_idx ON website.shop_products (source, source_id) WHERE source_id IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS website.shop_settings (
     id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),

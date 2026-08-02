@@ -21,6 +21,7 @@ function dateTime(value: string) {
   return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 function imageWithVersion(src: string, version: number) { return src ? src + (src.includes("?") ? "&" : "?") + "v=" + version : src; }
+function wholeOunces(value: unknown, fallback = 8) { const parsed = Number(value); return String(Math.max(1, Math.round(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback))); }
 function productImageUrls(product?: ShopProduct | null) { return product?.imageUrls?.length ? product.imageUrls : product?.imageUrl ? [product.imageUrl] : []; }
 
 type ManagedVariant = {
@@ -44,7 +45,7 @@ function variantFromProduct(variant: ShopVariant): ManagedVariant {
     compareAtPrice: variant.compareAtPriceCents ? (variant.compareAtPriceCents / 100).toFixed(2) : "",
     inventoryCount: String(variant.inventoryCount),
     published: variant.published,
-    weightOunces: String(variant.weightOunces || 8),
+    weightOunces: wholeOunces(variant.weightOunces),
     requiresShipping: variant.requiresShipping,
     trackInventory: variant.trackInventory,
     availableForSale: variant.availableForSale,
@@ -134,7 +135,7 @@ function ProductForm({ product, categories, busy, onSubmit, onCancel, imageVersi
               <label><input name={"variantRequiresShipping_" + index} type="checkbox" checked={variant.requiresShipping} onChange={(event) => updateVariant(index, { requiresShipping: event.currentTarget.checked })} /><span><strong>Requires shipping</strong><small>Turn this off for pickup-only or digital items.</small></span></label>
             </div>
             <div className="manager-shop-variant-fields manager-shop-variant-fields-shipping">
-              <label>Weight (ounces)<input name={"variantWeightOunces_" + index} type="number" min="0.1" step="0.1" value={variant.weightOunces} required={variant.requiresShipping} disabled={!variant.requiresShipping} onChange={(event) => updateVariant(index, { weightOunces: event.currentTarget.value })} /></label>
+              <label>Weight (ounces)<input name={"variantWeightOunces_" + index} type="number" min="1" step="1" value={variant.weightOunces} required={variant.requiresShipping} disabled={!variant.requiresShipping} onChange={(event) => updateVariant(index, { weightOunces: event.currentTarget.value })} /></label>
               <small className="manager-shop-variant-help">{variant.requiresShipping ? "Enter the packed product weight used to estimate shipping." : "Weight is not required because shipping is turned off."}</small>
             </div>
           </div>
