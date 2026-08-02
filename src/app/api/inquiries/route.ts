@@ -18,6 +18,10 @@ function escapeHtml(value: string) {
 export const runtime = "nodejs";
 verifySmtpOnStart();
 
+function pickupTimeIsAvailable(value: string) {
+  return !value || (value >= "10:00" && value <= "19:00");
+}
+
 function cateringOrderText(body: Record<string, string>) {
   return [
     "AVIATOR CATERING TO GO REQUEST",
@@ -52,6 +56,7 @@ export async function POST(request: Request) {
     if (!allowedKinds.has(body.kind) || body.website || !body.email || !/^\S+@\S+\.\S+$/.test(body.email)) return NextResponse.json({ error: "Please provide a valid email address." }, { status: 400 });
     if (captchaKinds.has(body.kind) && body.humanCheck !== "yes") return NextResponse.json({ error: "Please confirm you are a real person." }, { status: 400 });
     if (body.kind !== "newsletter" && (!body.name || (!body.message && body.kind !== "career"))) return NextResponse.json({ error: "Please complete the required fields." }, { status: 400 });
+    if (body.kind === "catering" && !pickupTimeIsAvailable(body.pickupTime || "")) return NextResponse.json({ error: "Catering pickup is available from 10:00 AM to 7:00 PM. Please choose a pickup time in that window." }, { status: 400 });
     const webhook = process.env.FORM_WEBHOOK_URL;
     if (webhook) {
       const response = await fetch(webhook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, source: "aviatorbrew.com" }) });

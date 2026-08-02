@@ -7,6 +7,8 @@ type SubmitState = "idle" | "submitting" | "success" | "error";
 type SelectedOrderRow = { id: string; group: string; name: string; quantity: number; option: string; note: string; priceCents?: number; optionPriceCents: number };
 
 const CATERING_TAX_RATE = 0.0725;
+const PICKUP_START_TIME = "10:00";
+const PICKUP_END_TIME = "19:00";
 
 function money(cents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
@@ -15,6 +17,10 @@ function money(cents: number) {
 function optionPriceCents(option: string) {
   const matches = Array.from(option.matchAll(/\+\$(\d+(?:\.\d{2})?)/g));
   return matches.reduce((sum, match) => sum + Math.round(Number(match[1]) * 100), 0);
+}
+
+function pickupTimeIsAvailable(value: string) {
+  return !value || (value >= PICKUP_START_TIME && value <= PICKUP_END_TIME);
 }
 
 export function CateringOrderForm({ items, menuUrl, scanSource }: { items: CateringMenuItem[]; menuUrl?: string; scanSource: "scanned" | "fallback" }) {
@@ -79,6 +85,7 @@ export function CateringOrderForm({ items, menuUrl, scanSource }: { items: Cater
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!pickupTimeIsAvailable(pickupTime)) { setState("error"); setMessage("Catering pickup is available from 10:00 AM to 7:00 PM. Please choose a pickup time in that window."); return; }
     if (!confirmed) { setState("error"); setMessage("Please confirm the food order before sending the catering request."); return; }
     setState("submitting");
     setMessage("");
@@ -114,7 +121,7 @@ export function CateringOrderForm({ items, menuUrl, scanSource }: { items: Cater
     <label>Email<input type="email" name="email" required autoComplete="email" /></label>
     <label>Phone<input name="phone" type="tel" autoComplete="tel" /></label>
     <label>Pickup date<input name="pickupDate" type="date" value={pickupDate} onChange={(event) => setPickupDate(event.currentTarget.value)} /></label>
-    <label>Preferred pickup time<input name="pickupTime" type="time" value={pickupTime} onChange={(event) => setPickupTime(event.currentTarget.value)} /></label>
+    <label>Preferred pickup time<input name="pickupTime" type="time" min={PICKUP_START_TIME} max={PICKUP_END_TIME} value={pickupTime} onChange={(event) => setPickupTime(event.currentTarget.value)} /><small>Pickup available 10:00 AM to 7:00 PM.</small></label>
     <label>Estimated guest count<input name="guestCount" inputMode="numeric" /></label>
     <div className="catering-order-toggle"><button className="button button-outline" type="button" onClick={() => setShowOrder(true)}>Enter food order</button><span>{selectedRows.length ? selectedRows.length + " menu item" + (selectedRows.length === 1 ? "" : "s") + " selected - " + money(totalCents) + " est. total" : "Food order not entered yet"}</span></div>
     <div className="catering-order-summary" aria-live="polite">
