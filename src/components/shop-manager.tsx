@@ -60,13 +60,14 @@ function ProductForm({ product, categories, busy, onSubmit, onCancel, imageVersi
   const isEdit = Boolean(product);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [variants, setVariants] = useState<ManagedVariant[]>(() => product?.variants.length ? product.variants.map(variantFromProduct) : [blankVariant()]);
+  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
   const currentImages = productImageUrls(product);
   const displayedImages = [...currentImages.map((image) => imageWithVersion(image, imageVersion)), ...previewUrls];
-  useEffect(() => { setVariants(product?.variants.length ? product.variants.map(variantFromProduct) : [blankVariant()]); setPreviewUrls([]); }, [product?.id]);
+  useEffect(() => { setVariants(product?.variants.length ? product.variants.map(variantFromProduct) : [blankVariant()]); setPreviewUrls([]); setEditingVariantIndex(null); }, [product?.id]);
   useEffect(() => () => { previewUrls.forEach((url) => URL.revokeObjectURL(url)); }, [previewUrls]);
   function updateVariant(index: number, patch: Partial<ManagedVariant>) { setVariants((current) => current.map((variant, itemIndex) => itemIndex === index ? { ...variant, ...patch } : variant)); }
-  function addVariant() { setVariants((current) => [...current, { ...blankVariant(), label: "Option " + (current.length + 1) }]); }
-  function removeVariant(index: number) { setVariants((current) => current.length > 1 ? current.filter((_, itemIndex) => itemIndex !== index) : current); }
+  function addVariant() { const index = variants.length; setVariants((current) => [...current, { ...blankVariant(), label: "Option " + (current.length + 1) }]); setEditingVariantIndex(index); }
+  function removeVariant(index: number) { setVariants((current) => current.length > 1 ? current.filter((_, itemIndex) => itemIndex !== index) : current); setEditingVariantIndex(null); }
   return <form className="manager-shop-product-form" onSubmit={onSubmit}>
     {product ? <input type="hidden" name="id" value={product.id} /> : null}
     <div className="manager-shop-form-heading"><div><p className="eyebrow">{isEdit ? "Edit product" : "Add product"}</p><h3>{product?.name || "New shop item"}</h3></div><button className="button button-outline" type="button" onClick={onCancel} disabled={busy}>Cancel</button></div>
@@ -85,12 +86,13 @@ function ProductForm({ product, categories, busy, onSubmit, onCancel, imageVersi
       </div>
       <p className="manager-shop-variant-intro">Use one option for a standard item. Add options for sizes, colors, or other versions that need their own price or inventory.</p>
       <input type="hidden" name="variantCount" value={variants.length} />
-      {variants.map((variant, index) => <article className="manager-shop-variant-row" key={index}>
+      {variants.map((variant, index) => <article className={editingVariantIndex === index ? "manager-shop-variant-row is-expanded" : "manager-shop-variant-row"} key={index}>
         <header>
           <div><span>Option {index + 1}</span><strong>{variant.label || "Untitled option"}</strong></div>
-          <div className="manager-shop-variant-status"><span className={variant.published && variant.availableForSale ? "is-ready" : ""}>{variant.published && variant.availableForSale ? "For sale" : "Not for sale"}</span>{variants.length > 1 ? <button type="button" onClick={() => removeVariant(index)} disabled={busy}>Remove</button> : null}</div>
+          <div className="manager-shop-variant-status"><span>{money(Math.round((Number(variant.price) || 0) * 100))}</span><span>{variant.trackInventory ? variant.inventoryCount + " in stock" : "Inventory not tracked"}</span><span className={variant.published && variant.availableForSale ? "is-ready" : ""}>{variant.published && variant.availableForSale ? "For sale" : "Not for sale"}</span><button className="manager-shop-option-edit" type="button" aria-expanded={editingVariantIndex === index} aria-controls={"shop-option-details-" + index} onClick={() => setEditingVariantIndex((current) => current === index ? null : index)} disabled={busy}>{editingVariantIndex === index ? "Close" : "Edit"}</button>{variants.length > 1 ? <button className="manager-shop-option-remove" type="button" onClick={() => removeVariant(index)} disabled={busy}>Remove</button> : null}</div>
         </header>
 
+        <div id={"shop-option-details-" + index} className="manager-shop-variant-details" hidden={editingVariantIndex !== index}>
         <section className="manager-shop-variant-section">
           <div className="manager-shop-variant-section-title"><span>1</span><div><h4>Option</h4><p>Name this size or version and give it a SKU.</p></div></div>
           <div className="manager-shop-variant-section-body">
@@ -140,6 +142,7 @@ function ProductForm({ product, categories, busy, onSubmit, onCancel, imageVersi
             </div>
           </div>
         </section>
+        </div>
       </article>)}
     </section>
     <label className="manager-event-publish"><input name="published" type="checkbox" defaultChecked={product ? product.published : true} /> Publish product</label>

@@ -1494,6 +1494,9 @@
 .manager-shop-variant-intro { max-width: 54rem; margin: -.35rem 0 0; color: #b8d2de; font-size: .82rem; line-height: 1.45; }
 .manager-shop-variant-row { display: grid; min-width: 0; border: 1px solid rgba(184,217,236,.32); background: #0b263d; }
 .manager-shop-variant-row > header { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .8rem 1rem; border-bottom: 1px solid rgba(184,217,236,.25); background: #12354f; }
+.manager-shop-variant-row:not(.is-expanded) > header { border-bottom: 0; }
+.manager-shop-variant-details { display: grid; min-width: 0; }
+.manager-shop-variant-details[hidden] { display: none; }
 .manager-shop-variant-row > header > div:first-child { display: grid; gap: .22rem; min-width: 0; }
 .manager-shop-variant-row > header > div:first-child > span { color: #9dbdcd; font: 900 .58rem/1 "Courier New", monospace; text-transform: uppercase; }
 .manager-shop-variant-row > header strong { overflow-wrap: anywhere; color: #f4c46d; font: 900 .86rem/1.15 "Courier New", monospace; text-transform: uppercase; }
@@ -1501,6 +1504,9 @@
 .manager-shop-variant-status > span { padding: .35rem .48rem; border: 1px solid rgba(184,217,236,.35); color: #b8d2de; font: 900 .58rem/1 "Courier New", monospace; text-transform: uppercase; }
 .manager-shop-variant-status > span.is-ready { border-color: rgba(110,210,153,.55); background: rgba(34,112,72,.22); color: #b8f0ce; }
 .manager-shop-variant-status button { border: 1px solid rgba(255,112,112,.55); background: rgba(148,25,25,.2); color: #ffb1a9; padding: .4rem .55rem; font: 900 .62rem/1 "Courier New", monospace; text-transform: uppercase; cursor: pointer; }
+.manager-shop-variant-status .manager-shop-option-edit { border-color: rgba(239,180,95,.8); background: rgba(239,180,95,.08); color: #f6c77e; }
+.manager-shop-variant-status .manager-shop-option-edit:hover { background: #efb45f; color: #082033; }
+.manager-shop-variant-status .manager-shop-option-remove { border-color: rgba(255,112,112,.55); background: rgba(148,25,25,.2); color: #ffb1a9; }
 .manager-shop-variant-section { display: grid; grid-template-columns: minmax(10rem, .34fr) minmax(0, 1fr); gap: 1rem; padding: 1rem; border-bottom: 1px solid rgba(184,217,236,.18); }
 .manager-shop-variant-section:last-child { border-bottom: 0; }
 .manager-shop-variant-section-title { display: grid; grid-template-columns: 1.7rem minmax(0, 1fr); gap: .55rem; align-content: start; }
@@ -1533,6 +1539,7 @@
 .manager-shop-catalogs li > span strong { overflow-wrap: anywhere; color: #f3f8fa; font-size: .82rem; }
 .manager-shop-catalogs li > span small { color: #9dbdcd; font: 900 .58rem/1 "Courier New", monospace; text-transform: uppercase; }
 .manager-shop-catalogs li div { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .35rem; }
+.manager-shop-catalogs li div > button, .manager-shop-catalogs li div > a.button { min-height: 1.65rem; height: 1.65rem; padding: .2rem .42rem; font-size: .56rem; line-height: 1; }
 .manager-shop-catalogs li button:disabled { opacity: .42; cursor: not-allowed; }
 .manager-shop-products { display: grid; gap: .65rem; }
 .manager-shop-products > article { display: grid; grid-template-columns: 5rem minmax(0, 1fr) auto; gap: .8rem; align-items: center; padding: .75rem; }
@@ -2416,6 +2423,7 @@
   box-shadow: 0 14px 28px rgba(0,0,0,.26);
 }
 .shop-new-shell .shop-new-card:hover { border-color: rgba(246, 199, 126, .8); transform: translateY(-2px); transition: transform .18s ease, border-color .18s ease; }
+.shop-new-shell .shop-new-card:has(.shop-product-gallery.has-thumbnails) { grid-template-rows: 19rem minmax(0, 1fr); }
 .shop-new-shell .shop-product-gallery { background: transparent; }
 .shop-new-shell .shop-new-image > img { padding: .3rem; filter: drop-shadow(0 10px 14px rgba(8,25,38,.28)); }
 
@@ -2433,9 +2441,10 @@
 .shop-image-trigger:hover .beer-image-expand,
 .shop-image-trigger:focus-visible .beer-image-expand { background: #174f74; opacity: 1; }
 .shop-image-lightbox .beer-lightbox-stage img { background: transparent; }
-.shop-new-shell .shop-product-thumbs { min-height: 4rem; padding: .4rem; overflow-x: auto; border-top-color: #d3dde2; background: #fff; }
-.shop-new-shell .shop-product-thumbs button { flex: 0 0 auto; width: 3.35rem; height: 3rem; border-color: #c5d0d6; background: #fff; }
-.shop-new-shell .shop-product-thumbs button.is-active { border-color: #b46d18; background: #fff8e8; box-shadow: inset 0 0 0 1px #b46d18; }
+.shop-new-shell .shop-product-thumbs { display: flex; justify-content: center; gap: .45rem; min-height: 4rem; padding: .45rem; overflow-x: auto; border-top: 2px solid #d3dde2; background: #fff; }
+.shop-new-shell .shop-product-thumbs button { flex: 0 0 auto; width: 3.35rem; height: 3rem; padding: .15rem; border: 2px solid #c5d0d6; background: #fff; cursor: pointer; }
+.shop-new-shell .shop-product-thumbs button.is-active { border-color: #ef9f32; background: #fff8e8; box-shadow: 0 0 0 2px #ef9f32; }
+.shop-new-shell .shop-product-thumbs img { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
 .shop-new-shell .shop-new-copy { gap: .55rem; padding: .8rem; }
 .shop-new-shell .shop-new-copy h4 { font-size: clamp(1.15rem, 1.45vw, 1.58rem); line-height: .96; }
 .shop-new-shell .shop-new-copy > p:not(.eyebrow) { min-height: 2.8rem; color: #c8dce6; font-size: .78rem; line-height: 1.35; }
