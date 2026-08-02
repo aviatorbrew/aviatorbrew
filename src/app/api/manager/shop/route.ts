@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
 import { requestBodyExceeds } from "@/lib/server-file-response";
@@ -63,13 +64,95 @@ function parseVariants(form: FormData): ShopVariantInput[] {
   return variants;
 }
 
+function colorDistance(data: Buffer, offset: number, color: { r: number; g: number; b: number }) {
+  const dr = Number(data[offset]) - color.r;
+  const dg = Number(data[offset + 1]) - color.g;
+  const db = Number(data[offset + 2]) - color.b;
+  return Math.sqrt(dr * dr + dg * dg + db * db);
+}
+
+function hasTransparentPixels(data: Buffer, totalPixels: number) {
+  for (let index = 0; index < totalPixels; index += 1) if (data[index * 4 + 3] < 250) return true;
+  return false;
+}
+
+function backgroundColorFromCorners(data: Buffer, width: number, height: number) {
+  const sample = Math.max(4, Math.min(24, Math.floor(Math.min(width, height) * .08)));
+  const corners = [[0, 0], [Math.max(0, width - sample), 0], [0, Math.max(0, height - sample)], [Math.max(0, width - sample), Math.max(0, height - sample)]];
+  let r = 0, g = 0, b = 0, count = 0;
+  for (const [startX, startY] of corners) {
+    for (let y = startY; y < Math.min(height, startY + sample); y += 1) {
+      for (let x = startX; x < Math.min(width, startX + sample); x += 1) {
+        const offset = (y * width + x) * 4;
+        r += Number(data[offset]); g += Number(data[offset + 1]); b += Number(data[offset + 2]); count += 1;
+      }
+    }
+  }
+  return count ? { r: r / count, g: g / count, b: b / count } : { r: 255, g: 255, b: 255 };
+}
+
+function removeConnectedBackground(data: Buffer, width: number, height: number) {
+  const totalPixels = width * height;
+  const background = backgroundColorFromCorners(data, width, height);
+  const visited = new Uint8Array(totalPixels);
+  const queue = new Int32Array(totalPixels);
+  let head = 0, tail = 0;
+  const enqueue = (index: number) => { if (!visited[index]) { visited[index] = 1; queue[tail] = index; tail += 1; } };
+  const isBackground = (index: number) => colorDistance(data, index * 4, background) <= 76;
+  for (let x = 0; x < width; x += 1) {
+    if (isBackground(x)) enqueue(x);
+    const bottom = (height - 1) * width + x;
+    if (isBackground(bottom)) enqueue(bottom);
+  }
+  for (let y = 0; y < height; y += 1) {
+    const left = y * width;
+    const right = left + width - 1;
+    if (isBackground(left)) enqueue(left);
+    if (isBackground(right)) enqueue(right);
+  }
+  while (head < tail) {
+    const index = queue[head]; head += 1;
+    const x = index % width;
+    const y = Math.floor(index / width);
+    const neighbors = [x > 0 ? index - 1 : -1, x < width - 1 ? index + 1 : -1, y > 0 ? index - width : -1, y < height - 1 ? index + width : -1];
+    for (const next of neighbors) if (next >= 0 && !visited[next] && isBackground(next)) enqueue(next);
+  }
+  let transparentPixels = 0;
+  for (let index = 0; index < totalPixels; index += 1) {
+    if (!visited[index]) continue;
+    const offset = index * 4;
+    const distance = colorDistance(data, offset, background);
+    const alpha = distance <= 28 ? 0 : distance >= 76 ? 255 : Math.round(((distance - 28) / 48) * 255);
+    if (alpha < data[offset + 3]) data[offset + 3] = alpha;
+    if (data[offset + 3] < 250) transparentPixels += 1;
+  }
+  return transparentPixels > 0;
+}
+
+async function transparentShopImage(buffer: Buffer, extension: string) {
+  try {
+    const decoded = await sharp(buffer, { failOn: "none" }).rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const width = decoded.info.width;
+    const height = decoded.info.height;
+    if (!width || !height || decoded.info.channels !== 4) return { buffer, extension };
+    if (hasTransparentPixels(decoded.data, width * height)) return { buffer, extension };
+    const changed = removeConnectedBackground(decoded.data, width, height);
+    if (!changed) return { buffer, extension };
+    return { buffer: await sharp(decoded.data, { raw: { width, height, channels: 4 } }).png().toBuffer(), extension: ".png" };
+  } catch (error) {
+    console.warn("shop_product_background_transparency_failed", error instanceof Error ? error.message : error);
+    return { buffer, extension };
+  }
+}
+
 async function saveProductImage(file: File) {
   const extension = allowedImageTypes.get(file.type);
   if (!extension) throw new Error("Shop product images must be JPG, PNG, or WEBP.");
   if (file.size > maxImageBytes) throw new Error("Shop product images must be 10 MB or smaller.");
-  const filename = "shop-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + extension;
+  const processed = await transparentShopImage(Buffer.from(await file.arrayBuffer()), extension);
+  const filename = "shop-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + processed.extension;
   await fs.mkdir(imageDirectory(), { recursive: true });
-  await fs.writeFile(path.join(imageDirectory(), filename), Buffer.from(await file.arrayBuffer()));
+  await fs.writeFile(path.join(imageDirectory(), filename), processed.buffer);
   return "/api/shop-product-images/" + filename;
 }
 

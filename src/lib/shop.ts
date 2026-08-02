@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 import { sendMail } from "@/lib/mail";
 
@@ -236,6 +238,38 @@ function normalizeShopImageUrls(values: unknown[]) {
   return values.map(normalizeShopImageUrl).filter((value, index, all) => value && all.indexOf(value) === index);
 }
 
+function shopImageDirectories() {
+  const roots = [
+    process.env.SHOP_PRODUCT_IMAGES_DIRECTORY,
+    path.join(process.cwd(), "public", "media", "shop-products"),
+    path.join(process.cwd(), ".next", "standalone", "public", "media", "shop-products"),
+    path.join(process.cwd(), "..", "..", "public", "media", "shop-products"),
+  ].filter((directory): directory is string => Boolean(directory));
+  return [...new Set(roots.flatMap((directory) => [directory, path.join(directory, "shopify")]))];
+}
+
+function shopImageFilename(value: string) {
+  try { return path.basename(new URL(value, "https://aviatorbrew.com").pathname); }
+  catch { return path.basename(value); }
+}
+
+function shopImageExists(value: string) {
+  const filename = shopImageFilename(value);
+  return Boolean(filename && shopImageDirectories().some((directory) => existsSync(path.join(directory, filename))));
+}
+
+function fallbackShopImageUrl(productSlug: string) {
+  const candidates = ["-1-transparent.png", "-1.png", "-1.jpg", "-1.jpeg", "-1.webp"].map((suffix) => productSlug + suffix);
+  const found = candidates.find((filename) => shopImageDirectories().some((directory) => existsSync(path.join(directory, filename))));
+  return found ? "/api/shop-product-images/" + encodeURIComponent(found) : "";
+}
+
+function resolveShopImageUrl(value: unknown, productSlug: string) {
+  const normalized = normalizeShopImageUrl(value);
+  if (!normalized || shopImageExists(normalized)) return normalized;
+  return fallbackShopImageUrl(productSlug) || normalized;
+}
+
 function settingsFromRow(row: Record<string, unknown> | undefined): ShopSettings {
   return {
     bonusEnabled: row?.bonus_enabled !== false,
@@ -289,12 +323,13 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
       variantsByProduct.set(variant.productId, [...(variantsByProduct.get(variant.productId) || []), variant]);
     }
     const products = productResult.rows.map((row) => {
-      const additional = Array.isArray(row.additional_image_urls) ? row.additional_image_urls.map(String) : [];
-      const imageUrl = normalizeShopImageUrl(row.image_url);
+      const slug = String(row.slug || "");
+      const additional = Array.isArray(row.additional_image_urls) ? row.additional_image_urls.map((url: unknown) => resolveShopImageUrl(url, slug)) : [];
+      const imageUrl = resolveShopImageUrl(row.image_url, slug);
       const imageUrls = normalizeShopImageUrls([imageUrl, ...additional]);
       return {
         id: Number(row.id),
-        slug: String(row.slug || ""),
+        slug,
         categoryId: row.category_id === null ? null : Number(row.category_id),
         categorySlug: String(row.category_slug || "uncategorized"),
         categoryName: String(row.category_name || "Uncategorized"),

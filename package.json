@@ -21,7 +21,8 @@
     "shop:import-shopify": "node scripts/import-shopify-products.mjs",
     "test:shop": "node scripts/test-shop.mjs",
     "render:data:export": "node scripts/export-render-data.mjs",
-    "render:data:import": "node scripts/import-render-data.mjs"
+    "render:data:import": "node scripts/import-render-data.mjs",
+    "shop:transparent-images": "node scripts/transparent-shop-images.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",
@@ -37,6 +38,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.8.0"
   },
