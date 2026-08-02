@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import type { Location } from "@/data/site";
-import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
+import { returnFromManagerEdit } from "@/lib/manager-edit";
 
 type PortalLocation = Location & { id: string; updatedAt: string | null; heroImage?: string };
 
@@ -22,6 +22,7 @@ function valuesFromForm(form: HTMLFormElement) {
     comingSoon: values.comingSoon === "on",
     parking: String(values.parking || ""),
     accessibility: String(values.accessibility || ""),
+    history: String(values.history || ""),
   };
 }
 
@@ -58,7 +59,7 @@ export function LocationManager({ editId, returnTo }: { editId?: string; returnT
   return <section id="locations" className="coupon-manager manager-locations">
     <p className="eyebrow">Location operations</p>
     <h2>Location details</h2>
-    <p>Edit the public location names, descriptions, hours, contact details, menu links, parking, and accessibility notes without changing code.</p>
+    <p>Edit the public location names, descriptions, history, hours, contact details, menu links, parking, and accessibility notes without changing code.</p>
     <p className="media-message" role="status">{message}</p>
     <div className="manager-beer-list">{locations.map((location) => {
       const isEditing = editing?.slug === location.slug;
@@ -76,12 +77,13 @@ export function LocationManager({ editId, returnTo }: { editId?: string; returnT
           <label className="manager-event-publish"><input name="comingSoon" type="checkbox" defaultChecked={location.comingSoon === true} /> List this location as coming soon</label>
           <label className="manager-event-publish"><input name="events" type="checkbox" defaultChecked={location.events === true} /> Show live event schedule on this location</label>
           <label className="manager-beer-inline-wide">Description<textarea name="description" required rows={3} maxLength={700} defaultValue={location.description} /></label>
+          <label className="manager-beer-inline-wide">Location history<textarea name="history" required rows={5} maxLength={1800} defaultValue={location.history} /></label>
           <label className="manager-beer-inline-wide">Parking<textarea name="parking" required rows={2} maxLength={400} defaultValue={location.parking} /></label>
           <label className="manager-beer-inline-wide">Accessibility<textarea name="accessibility" required rows={2} maxLength={400} defaultValue={location.accessibility} /></label>
           <div className="manager-beer-inline-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save location"}</button><button className="button button-outline" type="button" onClick={() => returnTo ? returnFromManagerEdit(returnTo, "/manager/locations") : setEditing(null)} disabled={busy}>Cancel</button></div>
         </form> : <>
-          <div><p className="eyebrow">{location.comingSoon ? "Coming soon" : location.updatedAt ? "Edited" : "Default content"}</p><h3>{location.name}</h3><p>{location.hours}</p><small>{location.description}</small><small>{location.address} - {location.phone}</small></div>
-          <footer><a className="button" href={managerEditHref("locations", location.slug)}>Edit</a></footer>
+          <div><p className="eyebrow">{location.comingSoon ? "Coming soon" : location.updatedAt ? "Edited" : "Default content"}</p><h3>{location.name}</h3><p>{location.hours}</p><small>{location.description}</small><small>{location.history}</small><small>{location.address} - {location.phone}</small></div>
+          <footer><button className="button" type="button" onClick={() => setEditing(location)} disabled={busy}>Edit</button></footer>
         </>}
       </article>;
     })}</div>

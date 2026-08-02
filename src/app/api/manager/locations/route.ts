@@ -18,11 +18,12 @@ function locationInput(body: Record<string, unknown>) {
   const menu = clean(body.menu, 300);
   const accessibility = clean(body.accessibility, 400);
   const parking = clean(body.parking, 400);
-  if (!slug || !name || !shortName || !type || !description || !address || !phone || !hours || !accessibility || !parking) {
-    throw new Error("Complete the location name, short name, type, description, address, phone, hours, parking, and accessibility details.");
+  const history = clean(body.history, 1800);
+  if (!slug || !name || !shortName || !type || !description || !address || !phone || !hours || !history || !accessibility || !parking) {
+    throw new Error("Complete the location name, short name, type, description, address, phone, hours, history, parking, and accessibility details.");
   }
   if (menu && !menu.startsWith("/") && !/^https?:\/\//i.test(menu)) throw new Error("Menu link must begin with /, http://, or https://.");
-  return { slug, value: { name, shortName, type, description, address, phone, hours, menu: menu || undefined, events: body.events === true, comingSoon: body.comingSoon === true, accessibility, parking } };
+  return { slug, value: { name, shortName, type, description, address, phone, hours, menu: menu || undefined, events: body.events === true, comingSoon: body.comingSoon === true, accessibility, parking, history } };
 }
 
 export async function GET(request: NextRequest) {

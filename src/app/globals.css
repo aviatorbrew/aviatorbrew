@@ -643,10 +643,10 @@ body {
 @media (max-width: 800px) { .events-page-media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .events-page-media-grid figure:first-child { grid-column: span 2; grid-row: span 1; } }
 .manager-events { display: grid; background: #0c2b45; }
 .manager-events-saved-panel { order: 2; margin-top: 1rem; }
-.manager-events-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
-.manager-events-heading h2 { margin-bottom: .45rem; }
-.manager-events-heading p { max-width: 48rem; margin: 0; color: #c5d8e2; line-height: 1.55; }
-.manager-events-heading > .button { flex: 0 0 auto; }
+.manager-events-heading, .manager-beverage-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.manager-events-heading h2, .manager-beverage-heading h2 { margin-bottom: .45rem; }
+.manager-events-heading p, .manager-beverage-heading p { max-width: 48rem; margin: 0; color: #c5d8e2; line-height: 1.55; }
+.manager-events-heading > .button, .manager-beverage-heading > .button { flex: 0 0 auto; }
 .manager-events-media-panel { order: 3; }
 .manager-events-media-panel .website-photo-library { margin-top: 1.4rem; }
 .manager-event-form { display: grid; grid-template-columns: 2fr repeat(3, minmax(7rem, 1fr)); gap: .85rem; margin-top: 1.4rem; padding: 1.25rem; border: 1px solid rgba(184, 217, 236, .28); background: #113650; }
@@ -667,7 +667,7 @@ body {
 .manager-events-list footer { display: flex; align-items: center; gap: .75rem; }
 .manager-events-list button { border: 1px solid #4b7894; background: #0b263d; color: #f0b45e; padding: .55rem .7rem; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 900; }
 .manager-events-list button:last-child { color: #f0c2b5; }
-@media (max-width: 850px) { .manager-events-heading { align-items: start; flex-direction: column; } .manager-event-form { grid-template-columns: 1fr 1fr; } .manager-event-form .manager-event-publish { grid-column: 1 / -1; } }
+@media (max-width: 850px) { .manager-events-heading, .manager-beverage-heading { align-items: start; flex-direction: column; } .manager-event-form { grid-template-columns: 1fr 1fr; } .manager-event-form .manager-event-publish { grid-column: 1 / -1; } }
 @media (max-width: 600px) { .manager-event-form { grid-template-columns: 1fr; } .manager-event-form .manager-event-publish { grid-column: 1; } .manager-events-list article { grid-template-columns: 1fr; }.manager-event-content { grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); } .manager-event-current-photos { grid-template-columns: repeat(2, minmax(0, 1fr)); } .manager-events-list footer { width: 100%; } }
 
 /* Manager portal navigation and beer catalog */
@@ -687,6 +687,9 @@ body {
 .manager-beer-list article { display: grid; grid-template-columns: 6rem minmax(0, 1fr) auto; align-items: center; gap: 1rem; min-height: 7.7rem; padding: .85rem; background: #10344f; }
 .manager-beer-list article:nth-child(2n) { background: #123b58; }
 .manager-beer-list img { width: 5.25rem; height: 5.8rem; object-fit: contain; background: #d2e3ea; }
+.manager-beverage-thumb { position: relative; width: 5.25rem; height: 5.8rem; overflow: hidden; background: #d2e3ea; }
+.manager-beverage-thumb .beyond-beer-image-trigger { position: absolute; inset: 0; width: 100%; height: 100%; }
+.manager-beverage-thumb .beyond-beer-image-trigger img { padding: .2rem; filter: none; }
 .manager-beer-list article > div { display: grid; gap: .3rem; }
 .manager-beer-list .eyebrow { margin: 0; font-size: .57rem; }
 .manager-beer-list h3 { margin: 0; color: #f2f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.45rem; font-weight: 400; letter-spacing: .02em; line-height: .9; text-transform: uppercase; }
@@ -696,7 +699,7 @@ body {
 .location-live-schedule { background: #071f35 !important; }
 .location-live-empty { display: grid; justify-items: start; gap: 1.2rem; max-width: 46rem; padding: 1.4rem; border: 1px dashed #4e7893; background: rgba(16, 57, 84, .58); }
 .location-live-empty p { margin: 0; color: #c6dbe5; line-height: 1.6; }
-@media (max-width: 760px) { .manager-beer-form { grid-template-columns: 1fr; } .manager-beer-form .manager-beer-graphic { grid-column: 1; } .manager-beer-list article { grid-template-columns: 4.8rem minmax(0, 1fr); } .manager-beer-list img { width: 4rem; height: 5rem; } .manager-beer-list button, .manager-beer-locked { grid-column: 1 / -1; justify-self: start; } }
+@media (max-width: 760px) { .manager-beer-form { grid-template-columns: 1fr; } .manager-beer-form .manager-beer-graphic { grid-column: 1; } .manager-beer-list article { grid-template-columns: 4.8rem minmax(0, 1fr); } .manager-beer-list img, .manager-beverage-thumb { width: 4rem; height: 5rem; } .manager-beer-list button, .manager-beer-locked { grid-column: 1 / -1; justify-self: start; } }
 
 /* Editable beer catalog */
 .manager-beer-edit { margin-top: 1.25rem; border-color: #6b9bb8; background: #0d304b; }
@@ -1934,6 +1937,14 @@ body {
   .keg-table-compact th:first-child { width: 29%; }
   .keg-stock-cell { grid-template-columns: 1fr; gap: .08rem; }
 }
+
+.location-detail-stack { display: grid; gap: 2rem; }
+.location-history-card { grid-column: 1 / -1; }
+.location-history-card h2 { max-width: 42rem; }
+.location-history-card p:not(.eyebrow) { max-width: 74rem; white-space: pre-wrap; }
+.location-inline-gallery { display: grid; gap: .35rem; margin-top: .25rem; }
+.location-inline-gallery h2 { margin: .25rem 0 0; color: #f3ead6; font: 400 clamp(2.2rem, 4vw, 4rem)/.9 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.location-inline-gallery h2 em { color: #efb45f; font-family: Georgia, serif; font-style: italic; font-weight: 400; text-transform: none; }
 
 /* Keep location detail contact cards compact. */
 .info-card a[href^="tel:"] {
