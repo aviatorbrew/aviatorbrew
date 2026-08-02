@@ -2149,14 +2149,19 @@ body {
 .catering-price-note, .catering-order-live-summary p:not(.eyebrow) { margin: 0; color: #d6e7ef; font-size: .76rem; line-height: 1.4; }
 .catering-confirm-check { margin-top: .15rem; }
 .catering-order-modal { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: clamp(.75rem, 2vw, 1.5rem); background: rgba(2, 12, 22, .82); }
-.catering-order-modal-card { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(1320px, calc(100vw - 2rem)); max-height: min(92vh, 58rem); border: 1px solid #5b8dae; background: #08243b; box-shadow: 0 28px 80px rgba(0,0,0,.45); }
+.catering-order-modal-card { display: grid; width: min(1320px, calc(100vw - 2rem)); max-height: min(92vh, 58rem); border: 1px solid #5b8dae; background: #08243b; box-shadow: 0 28px 80px rgba(0,0,0,.45); overflow: hidden; }
 .catering-order-modal-body { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(18rem, .85fr); min-height: 0; overflow: hidden; }
+.catering-order-menu-pane { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; overflow: hidden; }
+.catering-order-modal-intro { padding: 1rem 1.1rem; border-bottom: 1px solid #315a78; background: #10344f; }
+.catering-order-modal-intro h2 { margin: .2rem 0 .35rem; color: #f4f9fb; font: 400 clamp(2rem, 4vw, 3.4rem)/.88 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
+.catering-order-modal-intro p:not(.eyebrow) { max-width: 52rem; margin: 0; color: #c3d7e1; font-size: .82rem; line-height: 1.45; }
 .catering-order-modal-card > header { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem 1.1rem; border-bottom: 1px solid #315a78; background: #10344f; }
 .catering-order-modal-card > header h2 { margin: .2rem 0 .35rem; color: #f4f9fb; font: 400 clamp(2rem, 4vw, 3.4rem)/.88 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
 .catering-order-modal-card > header p:not(.eyebrow) { max-width: 52rem; margin: 0; color: #c3d7e1; font-size: .82rem; line-height: 1.45; }
 .catering-order-modal-card > header button { align-self: start; border: 1px solid #6f9ab4; background: #071e31; color: #f2f8fa; padding: .55rem .75rem; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 900; text-transform: uppercase; }
 .catering-order-modal-card .catering-order-builder { max-height: none; overflow: auto; border: 0; }
 .catering-order-live-summary { display: grid; align-content: start; gap: .85rem; padding: 1rem; border-left: 1px solid #315a78; background: #061e31; overflow: auto; }
+.catering-order-close { justify-self: end; border: 1px solid #6f9ab4; background: #071e31; color: #f2f8fa; padding: .55rem .75rem; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 900; text-transform: uppercase; }
 .catering-order-live-summary h3 { margin: 0; color: #f4f9fb; font: 400 1.8rem/.92 Impact, Haettenschweiler, sans-serif; text-transform: uppercase; }
 .catering-order-live-summary dl { display: grid; gap: .45rem; margin: 0; }
 .catering-live-selected-items { display: grid; gap: 1px; max-height: 17rem; overflow: auto; border: 1px solid #315a78; background: #315a78; }
@@ -2168,4 +2173,4 @@ body {
 .catering-live-selected-items p { margin: 0; padding: .7rem; background: #0d304b; color: #d6e7ef; font-size: .78rem; }
 .catering-order-modal-card > footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .85rem 1.1rem; border-top: 1px solid #315a78; background: #10344f; }
 .catering-order-modal-card > footer span { color: #d4e5ed; font-family: "Courier New", monospace; font-size: .75rem; font-weight: 900; text-transform: uppercase; }
-@media (max-width: 640px) { .catering-order-modal { padding: .5rem; } .catering-order-modal-card { max-height: 94vh; width: calc(100vw - 1rem); } .catering-order-modal-card > header { flex-direction: column; } .catering-order-modal-body { grid-template-columns: 1fr; overflow: auto; } .catering-order-modal-card .catering-order-builder { overflow: visible; } .catering-order-live-summary { border-left: 0; border-top: 1px solid #315a78; } .catering-order-modal-card > footer { align-items: stretch; flex-direction: column; } }
+@media (max-width: 640px) { .catering-order-modal { padding: .5rem; } .catering-order-modal-card { max-height: 94vh; width: calc(100vw - 1rem); } .catering-order-modal-body { grid-template-columns: 1fr; overflow: auto; } .catering-order-menu-pane { overflow: visible; } .catering-order-modal-card .catering-order-builder { overflow: visible; } .catering-order-live-summary { border-left: 0; border-top: 1px solid #315a78; } }
