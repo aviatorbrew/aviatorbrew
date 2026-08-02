@@ -2479,6 +2479,10 @@ body:has(.shop-new-shell) .site-footer .footer-top .button-light {
 
 .manager-shop-product-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
 
+.manager-shop-image-actions { display: flex; align-items: center; justify-content: center; gap: .65rem; }
+.manager-shop-image-actions label { display: inline-flex; align-items: center; gap: .25rem; margin: 0; font-size: .68rem; }
+.manager-shop-image-actions input { width: auto; min-height: 0; margin: 0; }
+
 /* Limited event tickets */
 .manager-shop-ticket-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; padding: 1rem; border: 1px solid rgba(239,180,95,.48); background: rgba(239,180,95,.08); }
 .manager-shop-ticket-fields > div { grid-column: 1 / -1; }

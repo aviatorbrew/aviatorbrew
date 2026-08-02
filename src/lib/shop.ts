@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { databaseConfigured, withDatabase } from "@/lib/database";
+import { databaseConfigured, ensureDatabaseSchema, withDatabase } from "@/lib/database";
 import { sendMail } from "@/lib/mail";
 import { shopProductImageExists } from "@/lib/shop-image-storage";
 import { getAllLocations } from "@/lib/managed-locations";
@@ -523,6 +523,7 @@ function productImagesForSave(input: ShopProductInput, current?: Record<string, 
 }
 
 export async function saveShopProduct(input: ShopProductInput) {
+  await ensureDatabaseSchema();
   const normalized = normalizeProductInput(input);
   const locations = await getAllLocations();
   if (normalized.productType === "ticket" && !locations.some((location) => location.slug === normalized.ticketLocationSlug)) throw new Error("Choose a valid Aviator event location.");

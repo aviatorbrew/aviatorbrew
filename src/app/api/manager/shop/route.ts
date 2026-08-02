@@ -172,10 +172,12 @@ async function productInput(form: FormData) {
   const uploads = [...form.getAll("images"), ...form.getAll("image")].filter((value): value is File => value instanceof File && value.size > 0);
   const removed = new Set(form.getAll("removeImages").map((value) => text(value)).filter(Boolean));
   const existing = form.getAll("existingImages").map((value) => text(value)).filter((value) => value && !removed.has(value));
+  const selectedMain = text(form.get("mainImageUrl"));
+  const orderedExisting = selectedMain && existing.includes(selectedMain) ? [selectedMain, ...existing.filter((value) => value !== selectedMain)] : existing;
   const fallbackImage = text(form.get("imageUrl"));
   const hasManagedImages = form.has("existingImages") || form.has("removeImages");
   const uploadedImages = await saveProductImages(uploads);
-  const imageUrls = unique([...existing, ...uploadedImages, ...(hasManagedImages ? [] : [fallbackImage])]);
+  const imageUrls = unique([...uploadedImages, ...orderedExisting, ...(hasManagedImages ? [] : [fallbackImage])]);
   const imageUrl = imageUrls[0] || (hasManagedImages ? "" : fallbackImage);
   return {
     input: {
