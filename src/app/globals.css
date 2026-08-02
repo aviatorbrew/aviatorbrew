@@ -2040,3 +2040,11 @@ body {
 .manager-test-actions h3 { margin: 0 0 .45rem; color: #f2f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.5rem; font-weight: 400; text-transform: uppercase; }
 .manager-test-actions p { color: #cfe0e8; }
 @media (max-width: 720px) { .manager-test-actions { grid-template-columns: 1fr; } }
+
+.legal-section { background: #0d263e; }
+.legal-content { max-width: 900px; }
+.legal-content h2 { margin: 2rem 0 .7rem; color: #f2f8fa; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 400; letter-spacing: 0; line-height: .95; text-transform: uppercase; }
+.legal-content p { color: #c9dce6; font-size: 1rem; line-height: 1.75; }
+.legal-content a { color: #efb45f; font-weight: 800; }
+.legal-updated { margin-bottom: 1.5rem; padding: .85rem 1rem; border: 1px solid rgba(184, 217, 236, .24); background: rgba(7, 24, 39, .72); }
+.legal-hero .content-wrap { max-width: 980px; }

@@ -13,6 +13,6 @@ export function SiteFooterClient({ locations }: { locations: Location[] }) {
       <div><p className="footer-title">Locations</p>{locations.slice(0, 5).map((location) => <Link key={location.slug} href={"/locations/" + location.slug}>{location.shortName}</Link>)}</div>
       <div><p className="footer-title">Flight Crew</p><p className="footer-copy">Fresh beer, live music, and the next reason to get out of the house.</p><Link className="footer-newsletter" href="/#updates" data-analytics="footer_newsletter">Join the Flight Crew -&gt;</Link></div>
     </div>
-    <div className="footer-bottom"><span>© {new Date().getFullYear()} Aviator Brewing Company</span><span><Link href="/faq">FAQ</Link><Link href="/contact">Contact</Link><a href="#">Privacy</a><a href="#">Accessibility</a></span></div>
+    <div className="footer-bottom"><span>© {new Date().getFullYear()} Aviator Brewing Company</span><span><Link href="/faq">FAQ</Link><Link href="/contact">Contact</Link><Link href="/privacy-policy">Privacy</Link><Link href="/terms-and-conditions">Terms</Link><a href="#">Accessibility</a></span></div>
   </footer>;
 }
