@@ -38,6 +38,19 @@ function isGlasswareProduct(product) {
   return categoryName(product) === "Glassware";
 }
 
+async function fileExists(filePath) {
+  try { await access(filePath); return true; }
+  catch { return false; }
+}
+
+async function bestLocalImagePath(destination) {
+  const extension = path.extname(destination);
+  const transparent = destination.replace(new RegExp(extension.replace(".", "\\.") + "$"), "-transparent.png");
+  if (await fileExists(transparent)) return transparent;
+  if (await fileExists(destination)) return destination;
+  return destination;
+}
+
 function imageExtension(url) {
   const pathname = new URL(url).pathname;
   const extension = path.extname(pathname).toLowerCase();
@@ -51,17 +64,13 @@ async function localImages(product) {
     if (!source) continue;
     const filename = slug(product.handle || product.title) + "-" + (index + 1) + imageExtension(source);
     const destination = path.join(imageRoot, filename);
-    let exists = false;
-    try {
-      await access(destination);
-      exists = true;
-    } catch {}
-    if (!exists) {
+    const preferred = await bestLocalImagePath(destination);
+    if (preferred === destination && !(await fileExists(destination))) {
       const response = await fetch(source);
       if (!response.ok) throw new Error("Could not download " + source + ": " + response.status);
       await writeFile(destination, Buffer.from(await response.arrayBuffer()));
     }
-    results.push("/api/shop-product-images/" + filename);
+    results.push("/api/shop-product-images/" + path.basename(await bestLocalImagePath(destination)));
   }
   return results;
 }
@@ -93,7 +102,9 @@ try {
     let productId;
     if (existing.rows[0]) {
       productId = Number(existing.rows[0].id);
-      await client.query("UPDATE website.shop_products SET slug=$2,category_id=$3,name=$4,description=$5,image_url=$6,additional_image_urls=$7::jsonb,published=true,sort_order=$8,source='shopify',source_id=$9,metadata=$10::jsonb,updated_at=now() WHERE id=$1", [productId, productSlug, category.rows[0]?.id || null, product.title, text(product.body_html), images[0] || "", JSON.stringify(images.slice(1)), productIndex * 10, String(product.id), JSON.stringify({ shopifyHandle: product.handle, shopifyProductType: product.product_type, shopifyTags: product.tags || [] })]);
+      const currentProduct = await client.query("SELECT image_url, additional_image_urls FROM website.shop_products WHERE id=$1", [productId]);
+      const currentImages = currentProduct.rows[0] || {};
+      await client.query("UPDATE website.shop_products SET slug=$2,category_id=$3,name=$4,description=$5,image_url=$6,additional_image_urls=$7::jsonb,published=true,sort_order=$8,source='shopify',source_id=$9,metadata=$10::jsonb,updated_at=now() WHERE id=$1", [productId, productSlug, category.rows[0]?.id || null, product.title, text(product.body_html), images[0] || currentImages.image_url || "", JSON.stringify(images.length ? images.slice(1) : currentImages.additional_image_urls || []), productIndex * 10, String(product.id), JSON.stringify({ shopifyHandle: product.handle, shopifyProductType: product.product_type, shopifyTags: product.tags || [] })]);
     } else {
       const inserted = await client.query("INSERT INTO website.shop_products (slug,category_id,name,description,image_url,additional_image_urls,published,featured,sort_order,source,source_id,metadata) VALUES ($1,$2,$3,$4,$5,$6::jsonb,true,false,$7,'shopify',$8,$9::jsonb) RETURNING id", [productSlug, category.rows[0]?.id || null, product.title, text(product.body_html), images[0] || "", JSON.stringify(images.slice(1)), productIndex * 10, String(product.id), JSON.stringify({ shopifyHandle: product.handle, shopifyProductType: product.product_type, shopifyTags: product.tags || [] })]);
       productId = Number(inserted.rows[0].id);
@@ -118,7 +129,7 @@ try {
   }
 
   const bonus = await client.query("SELECT v.id FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id WHERE p.source='shopify' AND lower(p.name)='sticker - aviator brewing' ORDER BY v.id LIMIT 1");
-  await client.query("UPDATE website.shop_settings SET bonus_enabled=true,bonus_threshold_cents=2000,bonus_variant_id=$1,bonus_label='Free Aviator Brewing sticker',updated_at=now() WHERE id=1", [bonus.rows[0]?.id || null]);
+  await client.query("UPDATE website.shop_settings SET bonus_enabled=true,bonus_threshold_cents=7500,bonus_variant_id=$1,bonus_label='Free Aviator Brewing sticker',updated_at=now() WHERE id=1", [bonus.rows[0]?.id || null]);
   await client.query("COMMIT");
   console.log("shopify.imported", { products: products.length, variants: variantCount, images: imageCount, bonusConfigured: Boolean(bonus.rows[0]) });
 } catch (error) {

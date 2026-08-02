@@ -22,12 +22,12 @@ async function cart(quantity) {
   return body;
 }
 
-const thresholdCart = await cart(1);
-assert(thresholdCart.subtotalCents === 2000, "Expected the test shirt to total $20.");
-assert(thresholdCart.bonusItem === null, "The bonus must require more than $20.");
+const thresholdCart = await cart(3);
+assert(thresholdCart.subtotalCents === 6000, "Expected three test shirts to total $60.");
+assert(thresholdCart.bonusItem === null, "The bonus must require more than $75.");
 
-const bonusCart = await cart(2);
-assert(bonusCart.subtotalCents === 4000, "Multi-quantity cart total is wrong.");
+const bonusCart = await cart(4);
+assert(bonusCart.subtotalCents === 8000, "Multi-quantity cart total is wrong.");
 assert(bonusCart.bonusItem?.unitPriceCents === 0, "The free bonus was not applied.");
 assert(bonusCart.items.length === 2, "The merchandise and bonus lines were not returned.");
 assert(!("orderNotificationEmail" in bonusCart.settings), "Internal shop settings must not be exposed by the cart API.");
@@ -39,4 +39,4 @@ const invalid = await fetch(baseUrl + "/api/shop/cart", {
 });
 assert(invalid.status === 400, "Invalid cart quantities must be rejected.");
 
-console.log("shop.tests_passed", { baseUrl, thresholdCents: 2000, bonus: bonusCart.bonusItem.productName });
+console.log("shop.tests_passed", { baseUrl, thresholdCents: 7500, bonus: bonusCart.bonusItem.productName });

@@ -43,6 +43,55 @@ function cateringOrderText(body: Record<string, string>) {
   ].join("\n");
 }
 
+function labelFor(key: string) {
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, (value) => value.toUpperCase());
+}
+
+function detailRow(label: string, value?: string) {
+  return `<tr><th style="padding:10px 12px;text-align:left;border-bottom:1px solid #d8e2e7;color:#59707d;font-size:11px;letter-spacing:.08em;text-transform:uppercase;width:34%">${escapeHtml(label)}</th><td style="padding:10px 12px;border-bottom:1px solid #d8e2e7;color:#172b3b;font-size:15px;line-height:1.45">${escapeHtml(value || "Not provided")}</td></tr>`;
+}
+
+function cateringEmailHtml(body: Record<string, string>, audience: "internal" | "customer") {
+  const orderSummary = body.orderSummary || "No structured food-order items entered.";
+  const isCustomer = audience === "customer";
+  const title = isCustomer ? "We received your Catering To Go request" : "New Catering To Go request";
+  const intro = isCustomer
+    ? "Thank you for the business. Your request has been sent to the Aviator events team. This is not a final confirmed order yet; we will confirm availability, pickup timing, and final details."
+    : "A new Catering To Go request was submitted from aviatorbrew.com. Reply directly to the customer to confirm availability, pickup timing, and final totals.";
+  const footer = isCustomer
+    ? "Questions? Reply to this email or contact events@aviatorbrew.com."
+    : `Reply directly to ${escapeHtml(body.email || "the customer")} to follow up.`;
+  const rows = [
+    detailRow("Name", body.name),
+    detailRow("Email", body.email),
+    detailRow("Phone", body.phone),
+    detailRow("Pickup date", body.pickupDate),
+    detailRow("Pickup time", body.pickupTime),
+    detailRow("Guest count", body.guestCount),
+    detailRow("Estimated subtotal", body.estimatedSubtotal),
+    detailRow("Estimated tax", body.estimatedTax),
+    detailRow("Estimated total", body.estimatedTotal),
+    detailRow("Food order confirmed", body.foodOrderConfirmed),
+  ].join("");
+
+  return `<!doctype html><html><body style="margin:0;background:#eef2f3;padding:32px 16px;font-family:Arial,sans-serif;color:#172b3b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border:1px solid #d5dfe3"><tr><td style="padding:30px 34px;background:#102b3e;color:#ffffff"><div style="color:#efb45f;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Aviator Catering To Go</div><h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;font-weight:700">${escapeHtml(title)}</h1></td></tr><tr><td style="padding:28px 34px"><p style="margin:0 0 22px;color:#263f50;font-size:16px;line-height:1.6">${escapeHtml(intro)}</p><div style="margin:0 0 22px;padding:14px 16px;background:#fff6e9;border-left:4px solid #efb45f;color:#4a3721;font-size:14px;line-height:1.5"><strong>Pickup hours:</strong> Catering To Go pickup is available from 10:00 AM to 7:00 PM at Aviator Hangar Bar.</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 22px;border:1px solid #d8e2e7;border-bottom:0;border-collapse:collapse">${rows}</table><h2 style="margin:0 0 10px;color:#102b3e;font-size:18px">Food order</h2><pre style="margin:0 0 22px;white-space:pre-wrap;background:#f5f8fa;border:1px solid #d8e2e7;padding:14px;color:#172b3b;font:13px/1.55 Consolas,Monaco,monospace">${escapeHtml(orderSummary)}</pre><h2 style="margin:0 0 10px;color:#102b3e;font-size:18px">Notes</h2><div style="margin:0 0 22px;white-space:pre-wrap;background:#f8fafb;border:1px solid #d8e2e7;padding:14px;color:#172b3b;font-size:14px;line-height:1.55">${escapeHtml(body.message || "No notes provided.")}</div><p style="margin:0;color:#637783;font-size:13px;line-height:1.6">${footer}</p></td></tr></table></td></tr></table></body></html>`;
+}
+
+function cateringCustomerText(body: Record<string, string>) {
+  return [
+    "Aviator Catering To Go",
+    "",
+    "Thank you for the business. We received your Catering To Go request.",
+    "This is not a final confirmed order yet. The Aviator events team will confirm availability, pickup timing, and final details.",
+    "",
+    "Pickup hours: 10:00 AM to 7:00 PM at Aviator Hangar Bar.",
+    "",
+    cateringOrderText(body),
+    "",
+    "Questions? Reply to this email or contact events@aviatorbrew.com.",
+  ].join("\n");
+}
+
 async function recordInquiry(body: Record<string, string>) {
   if (!databaseConfigured() || body.kind === "newsletter") return;
   await withDatabase(async (client) => {
@@ -77,18 +126,35 @@ export async function POST(request: Request) {
     }
 
     if (isMailConfigured()) {
-      const text = Object.entries(body).filter(([key]) => key !== "website" && key !== "humanCheck").map(([key, value]) => key + ": " + value).join("\n");
-      let attachmentPath = "";
-      if (body.kind === "catering") {
-        attachmentPath = path.join(os.tmpdir(), "aviator-catering-order-" + Date.now() + ".txt");
-        await fs.writeFile(attachmentPath, cateringOrderText(body), "utf8");
-      }
+      const text = Object.entries(body).filter(([key]) => key !== "website" && key !== "humanCheck").map(([key, value]) => labelFor(key) + ": " + value).join("\n");
       const recipient = body.kind === "event" || body.kind === "contact" || body.kind === "catering" ? process.env.PRIVATE_EVENT_INQUIRY_RECIPIENT_EMAIL || "events@aviatorbrew.com" : process.env.FORM_RECIPIENT_EMAIL || process.env.MAIL_FROM_EMAIL!;
       const subject = labels[body.kind] || "Aviator website inquiry";
-      const html = body.kind === "event" || body.kind === "catering" ? `<!doctype html><html><body style="margin:0;background:#eef2f3;padding:32px 16px;font-family:Arial,sans-serif;color:#172b3b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:650px;background:#ffffff;border:1px solid #d5dfe3"><tr><td style="padding:32px 36px;background:#102b3e;color:#ffffff"><div style="color:#efb45f;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${body.kind === "catering" ? "Aviator Catering To Go" : "Aviator Private Events"}</div><h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;font-weight:700">${body.kind === "catering" ? "New catering to go request" : "New event inquiry"}</h1></td></tr><tr><td style="padding:30px 36px">${Object.entries(body).filter(([key]) => key !== "website" && key !== "humanCheck").map(([key, value]) => `<div style="padding:0 0 20px;margin:0 0 20px;border-bottom:1px solid #e0e7ea"><div style="margin:0 0 7px;color:#637783;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">${escapeHtml(key.replace(/([A-Z])/g, " $1"))}</div><div style="color:#172b3b;font-size:16px;line-height:1.6;white-space:pre-wrap">${escapeHtml(value)}</div></div>`).join("")}<p style="margin:28px 0 0;color:#637783;font-size:13px;line-height:1.6">Reply directly to <a href="mailto:${escapeHtml(body.email)}" style="color:#a76125">${escapeHtml(body.email)}</a> to follow up.</p></td></tr></table></td></tr></table></body></html>` : undefined;
-      const sent = await sendMail({ to: recipient, subject, text: subject + "\n\n" + text, html, replyTo: body.email, attachments: attachmentPath ? [{ filename: "catering-order.txt", path: attachmentPath, contentType: "text/plain" }] : undefined });
-      if (attachmentPath) await fs.unlink(attachmentPath).catch(() => undefined);
-      if (!sent) throw new Error("Email delivery is not configured");
+      if (body.kind === "catering") {
+        const attachmentPath = path.join(os.tmpdir(), "aviator-catering-order-" + Date.now() + ".txt");
+        await fs.writeFile(attachmentPath, cateringOrderText(body), "utf8");
+        const internalSent = await sendMail({
+          to: recipient,
+          subject: "New Catering To Go request",
+          text: "New Catering To Go request\n\n" + cateringOrderText(body),
+          html: cateringEmailHtml(body, "internal"),
+          replyTo: body.email,
+          attachments: [{ filename: "catering-order.txt", path: attachmentPath, contentType: "text/plain" }],
+        });
+        await fs.unlink(attachmentPath).catch(() => undefined);
+        if (!internalSent) throw new Error("Email delivery is not configured");
+        const customerSent = await sendMail({
+          to: body.email,
+          subject: "We received your Aviator Catering To Go request",
+          text: cateringCustomerText(body),
+          html: cateringEmailHtml(body, "customer"),
+          replyTo: process.env.PRIVATE_EVENT_INQUIRY_RECIPIENT_EMAIL || "events@aviatorbrew.com",
+        });
+        if (!customerSent) throw new Error("Email delivery is not configured");
+      } else {
+        const html = body.kind === "event" ? `<!doctype html><html><body style="margin:0;background:#eef2f3;padding:32px 16px;font-family:Arial,sans-serif;color:#172b3b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:650px;background:#ffffff;border:1px solid #d5dfe3"><tr><td style="padding:32px 36px;background:#102b3e;color:#ffffff"><div style="color:#efb45f;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Aviator Private Events</div><h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;font-weight:700">New event inquiry</h1></td></tr><tr><td style="padding:30px 36px">${Object.entries(body).filter(([key]) => key !== "website" && key !== "humanCheck").map(([key, value]) => `<div style="padding:0 0 20px;margin:0 0 20px;border-bottom:1px solid #e0e7ea"><div style="margin:0 0 7px;color:#637783;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">${escapeHtml(labelFor(key))}</div><div style="color:#172b3b;font-size:16px;line-height:1.6;white-space:pre-wrap">${escapeHtml(value)}</div></div>`).join("")}<p style="margin:28px 0 0;color:#637783;font-size:13px;line-height:1.6">Reply directly to <a href="mailto:${escapeHtml(body.email)}" style="color:#a76125">${escapeHtml(body.email)}</a> to follow up.</p></td></tr></table></td></tr></table></body></html>` : undefined;
+        const sent = await sendMail({ to: recipient, subject, text: subject + "\n\n" + text, html, replyTo: body.email });
+        if (!sent) throw new Error("Email delivery is not configured");
+      }
     }
     return NextResponse.json({ ok: true });
   } catch {

@@ -97,6 +97,7 @@ export function ShopCartCheckout({ checkoutStatus }: { checkoutStatus?: string }
   const total = (cart?.subtotalCents || 0) + (shipping?.amountCents || 0);
   const threshold = cart?.settings.bonusThresholdCents || 2000;
   const bonusRemaining = Math.max(0, threshold + 1 - (cart?.subtotalCents || 0));
+  const freeShippingRemaining = Math.max(0, 7500 - (cart?.subtotalCents || 0));
 
   return <section className="section shop-cart-page"><div className="content-wrap">
     <header className="shop-cart-heading"><div><p className="eyebrow">Cargo manifest</p><h1>Your Aviator cart.</h1></div><Link href="/shop-new">Continue shopping</Link></header>
@@ -114,7 +115,7 @@ export function ShopCartCheckout({ checkoutStatus }: { checkoutStatus?: string }
       {cart?.bonusItem ? <article className="shop-cart-bonus-line">{cart.bonusItem.imageUrl ? <img src={cart.bonusItem.imageUrl} alt="" /> : null}<div><h2>{cart.bonusItem.productName}</h2><p>{cart.bonusItem.variantLabel}</p></div><strong>FREE</strong></article> : null}
     </div>
     <form className="shop-shipping-form" onSubmit={calculateShipping}>
-      <p className="eyebrow">Delivery coordinates</p><h2>USPS shipping</h2>
+      <p className="eyebrow">Delivery coordinates</p><h2>USPS shipping</h2><p className="shop-free-shipping-note">{freeShippingRemaining ? "Add " + money(freeShippingRemaining) + " more for free shipping." : "Free shipping unlocked for this order."}</p>
       <label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.currentTarget.value)} autoComplete="email" /></label>
       <label>Full name<input required value={address.name} onChange={(event) => addressField("name", event.currentTarget.value)} autoComplete="name" /></label>
       <label>Street address<input required value={address.street1} onChange={(event) => addressField("street1", event.currentTarget.value)} autoComplete="shipping address-line1" /></label>

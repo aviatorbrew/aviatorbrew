@@ -5,7 +5,7 @@ import { ShopBuyBox } from "@/components/shop-buy-button";
 import { ShopProductGallery } from "@/components/shop-product-gallery";
 import { getShopCatalog, shopVariantAvailable } from "@/lib/shop";
 
-export const metadata: Metadata = { title: "ShopNew | Aviator Brewing Company", description: "Shop Aviator Brewing Company apparel, glassware, signs, gifts, and brewery gear with secure checkout." };
+export const metadata: Metadata = { title: "Shop | Aviator Brewing Company", description: "Shop Aviator Brewing Company apparel, glassware, signs, gifts, and brewery gear with secure checkout." };
 export const dynamic = "force-dynamic";
 
 function money(cents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100); }
@@ -14,9 +14,10 @@ export default async function ShopNewPage() {
   const { categories, products, settings } = await getShopCatalog();
   const featured = products.find((product) => product.featured) || products.find((product) => product.variants.some(shopVariantAvailable));
   return <div className="shop-new-shell">
-    <section className="page-hero shop-new-hero"><div className="content-wrap"><p className="eyebrow">Aviator Supply Depot</p><h1>Gear for the <em>next mission.</em></h1><p>Aviator shirts, tap handles, signs, glassware, gifts, and brewery goods. Build a cart, compare USPS shipping, and check out securely.</p><div className="hero-actions"><a className="button" href="#shop-new-catalog">Open catalog <ArrowUpRight /></a><Link className="button button-outline" href="/shop-new/cart">View cart</Link></div></div></section>
+    <section className="page-hero shop-new-hero"><div className="content-wrap"><p className="eyebrow">Aviator Supply Depot</p><h1>Gear for the <em>next mission.</em></h1><p>Aviator shirts, signs, glassware, gifts, and brewery goods. Fast cart, secure Stripe checkout, and free shipping on orders over $75.</p><div className="hero-actions"><a className="button" href="#shop-new-catalog">Open catalog <ArrowUpRight /></a><Link className="button button-outline" href="/shop-new/cart">View cart</Link></div></div></section>
+    <section className="shop-trust-strip"><div className="content-wrap"><span>SECURE STRIPE CHECKOUT</span><span>USPS SHIPPING</span><span>FREE SHIPPING OVER $75</span></div></section>
     {settings?.bonusEnabled ? <section className="shop-bonus-banner"><div className="content-wrap"><span>FLIGHT CREW BONUS</span><strong>{settings.bonusLabel}</strong><p>Automatically added when merchandise is more than {money(settings.bonusThresholdCents)}.</p></div></section> : null}
-    <section id="shop-new-catalog" className="section shop-new-section"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Current inventory</p><h2>{products.length ? "Aviator goods, ready to ship." : "The depot is being stocked."}</h2></div><p>{products.length ? "Choose options and quantities on each product, then check out everything together." : "Add products in Manager > Shop to publish items here."}</p></div>
+    <section id="shop-new-catalog" className="section shop-new-section"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Current inventory</p><h2>{products.length ? "Aviator goods, ready to ship." : "The depot is being stocked."}</h2></div><p>{products.length ? "Pick the gear, choose sizes, and launch a secure checkout. Compact cards make it easier to scan what is ready to ship." : "Add products in Manager > Shop to publish items here."}</p></div>
       {categories.length ? <nav className="shop-new-categories" aria-label="Shop catalogs"><a href="#shop-new-catalog">All</a>{categories.map((category) => <a href={"#catalog-" + category.slug} key={category.id}>{category.name}</a>)}</nav> : null}
       {products.length ? categories.map((category) => {
         const categoryProducts = products.filter((product) => product.categorySlug === category.slug);

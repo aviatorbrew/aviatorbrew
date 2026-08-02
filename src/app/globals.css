@@ -2147,6 +2147,7 @@ body {
 .catering-order-totals span, .catering-order-total-list span, .catering-order-live-summary dt { color: #a8c0cc; font-family: "Courier New", monospace; font-size: .68rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .catering-order-totals strong, .catering-order-total-list strong, .catering-order-live-summary dd { margin: 0; color: #f4f9fb; font-weight: 900; }
 .catering-price-note, .catering-order-live-summary p:not(.eyebrow) { margin: 0; color: #d6e7ef; font-size: .76rem; line-height: 1.4; }
+.catering-time-warning { color: #ffb7a8; font-weight: 900; }
 .catering-confirm-check { margin-top: .15rem; }
 .catering-order-modal { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: clamp(.75rem, 2vw, 1.5rem); background: rgba(2, 12, 22, .82); }
 .catering-order-modal-card { display: grid; width: min(1320px, calc(100vw - 2rem)); height: min(92vh, 58rem); max-height: min(92vh, 58rem); border: 1px solid #5b8dae; background: #08243b; box-shadow: 0 28px 80px rgba(0,0,0,.45); overflow: hidden; }

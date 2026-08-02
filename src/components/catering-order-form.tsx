@@ -46,6 +46,7 @@ export function CateringOrderForm({ items, menuUrl, scanSource }: { items: Cater
   const taxCents = Math.round(subtotalCents * CATERING_TAX_RATE);
   const totalCents = subtotalCents + taxCents;
   const unpricedCount = selectedRows.filter((row) => !row.priceCents).length;
+  const pickupTimeError = pickupTime && !pickupTimeIsAvailable(pickupTime) ? "Pickup time needs to be changed. Catering pickup is available from 10:00 AM to 7:00 PM." : "";
 
   useEffect(() => {
     if (!showOrder) return;
@@ -85,7 +86,7 @@ export function CateringOrderForm({ items, menuUrl, scanSource }: { items: Cater
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!pickupTimeIsAvailable(pickupTime)) { setState("error"); setMessage("Catering pickup is available from 10:00 AM to 7:00 PM. Please choose a pickup time in that window."); return; }
+    if (pickupTimeError) { setState("error"); setMessage(pickupTimeError); return; }
     if (!confirmed) { setState("error"); setMessage("Please confirm the food order before sending the catering request."); return; }
     setState("submitting");
     setMessage("");
@@ -121,7 +122,7 @@ export function CateringOrderForm({ items, menuUrl, scanSource }: { items: Cater
     <label>Email<input type="email" name="email" required autoComplete="email" /></label>
     <label>Phone<input name="phone" type="tel" autoComplete="tel" /></label>
     <label>Pickup date<input name="pickupDate" type="date" value={pickupDate} onChange={(event) => setPickupDate(event.currentTarget.value)} /></label>
-    <label>Preferred pickup time<input name="pickupTime" type="time" min={PICKUP_START_TIME} max={PICKUP_END_TIME} value={pickupTime} onChange={(event) => setPickupTime(event.currentTarget.value)} /><small>Pickup available 10:00 AM to 7:00 PM.</small></label>
+    <label>Preferred pickup time<input name="pickupTime" type="time" min={PICKUP_START_TIME} max={PICKUP_END_TIME} value={pickupTime} onChange={(event) => setPickupTime(event.currentTarget.value)} aria-invalid={pickupTimeError ? "true" : undefined} /><small className={pickupTimeError ? "catering-time-warning" : ""}>{pickupTimeError || "Pickup available 10:00 AM to 7:00 PM."}</small></label>
     <label>Estimated guest count<input name="guestCount" inputMode="numeric" /></label>
     <div className="catering-order-toggle"><button className="button button-outline" type="button" onClick={() => setShowOrder(true)}>Enter food order</button><span>{selectedRows.length ? selectedRows.length + " menu item" + (selectedRows.length === 1 ? "" : "s") + " selected - " + money(totalCents) + " est. total" : "Food order not entered yet"}</span></div>
     <div className="catering-order-summary" aria-live="polite">

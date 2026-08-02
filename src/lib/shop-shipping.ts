@@ -1,6 +1,8 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { PreparedShopCart } from "@/lib/shop";
 
+const FREE_SHIPPING_THRESHOLD_CENTS = 7500;
+
 export type ShopShippingAddress = {
   name: string;
   street1: string;
@@ -124,6 +126,10 @@ export async function calculateUspsRates(cart: PreparedShopCart, addressInput: P
   const address = normalizeShippingAddress(addressInput);
   if (!cart.requiresShipping) {
     const payload: ShippingTokenPayload = { v: 1, exp: Date.now() + 15 * 60_000, cart: shopCartFingerprint(cart), address, rateId: "no-shipping", carrier: "Aviator", service: "No shipping required", amountCents: 0 };
+    return [{ id: payload.rateId, carrier: payload.carrier, service: payload.service, amountCents: 0, deliveryDays: null, token: encodeToken(payload) }];
+  }
+  if (cart.subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS) {
+    const payload: ShippingTokenPayload = { v: 1, exp: Date.now() + 15 * 60_000, cart: shopCartFingerprint(cart), address, rateId: "free-shipping-75", carrier: "Aviator", service: "Free shipping over $75", amountCents: 0 };
     return [{ id: payload.rateId, carrier: payload.carrier, service: payload.service, amountCents: 0, deliveryDays: null, token: encodeToken(payload) }];
   }
   const apiKey = process.env.EASYPOST_API_KEY;
