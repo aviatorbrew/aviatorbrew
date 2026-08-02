@@ -643,6 +643,10 @@ body {
 @media (max-width: 800px) { .events-page-media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .events-page-media-grid figure:first-child { grid-column: span 2; grid-row: span 1; } }
 .manager-events { display: grid; background: #0c2b45; }
 .manager-events-saved-panel { order: 2; margin-top: 1rem; }
+.manager-events-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.manager-events-heading h2 { margin-bottom: .45rem; }
+.manager-events-heading p { max-width: 48rem; margin: 0; color: #c5d8e2; line-height: 1.55; }
+.manager-events-heading > .button { flex: 0 0 auto; }
 .manager-events-media-panel { order: 3; }
 .manager-events-media-panel .website-photo-library { margin-top: 1.4rem; }
 .manager-event-form { display: grid; grid-template-columns: 2fr repeat(3, minmax(7rem, 1fr)); gap: .85rem; margin-top: 1.4rem; padding: 1.25rem; border: 1px solid rgba(184, 217, 236, .28); background: #113650; }
@@ -663,7 +667,7 @@ body {
 .manager-events-list footer { display: flex; align-items: center; gap: .75rem; }
 .manager-events-list button { border: 1px solid #4b7894; background: #0b263d; color: #f0b45e; padding: .55rem .7rem; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 900; }
 .manager-events-list button:last-child { color: #f0c2b5; }
-@media (max-width: 850px) { .manager-event-form { grid-template-columns: 1fr 1fr; } .manager-event-form .manager-event-publish { grid-column: 1 / -1; } }
+@media (max-width: 850px) { .manager-events-heading { align-items: start; flex-direction: column; } .manager-event-form { grid-template-columns: 1fr 1fr; } .manager-event-form .manager-event-publish { grid-column: 1 / -1; } }
 @media (max-width: 600px) { .manager-event-form { grid-template-columns: 1fr; } .manager-event-form .manager-event-publish { grid-column: 1; } .manager-events-list article { grid-template-columns: 1fr; }.manager-event-content { grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); } .manager-event-current-photos { grid-template-columns: repeat(2, minmax(0, 1fr)); } .manager-events-list footer { width: 100%; } }
 
 /* Manager portal navigation and beer catalog */

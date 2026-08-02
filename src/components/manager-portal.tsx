@@ -119,25 +119,18 @@ function EventManager({ editId, returnTo }: { editId?: string; returnTo?: string
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<ManagedEvent | null>(null);
+  const [adding, setAdding] = useState(false);
   const eventRefs = useRef<Record<string, HTMLElement | null>>({});
   async function load() { const response = await fetch("/api/manager/events"); const body = await readEventManagerResponse(response); const nextEvents = body.events || []; setEvents(nextEvents); if (editId) { const match = nextEvents.find((event) => event.id === editId); if (match) setEditing(match); } }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, [editId]);
-  useEffect(() => {
-    if (!editing?.id) return;
-    window.requestAnimationFrame(() => {
-      const node = eventRefs.current[editing.id];
-      node?.scrollIntoView({ behavior: "smooth", block: "center" });
-      node?.querySelector<HTMLElement>("input, select, textarea, button")?.focus({ preventScroll: true });
-    });
-  }, [editing?.id]);
-  function beginEdit(item: ManagedEvent) { setEditing(item); setMessage("Editing " + item.title + "."); }
+  function beginEdit(item: ManagedEvent) { setEditing(item); setAdding(false); setMessage("Editing " + item.title + "."); }
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setMessage("Saving event...");
     const form = event.currentTarget; const values = new FormData(form); values.set("published", values.get("published") === "on" ? "true" : "false");
     try {
       const response = await fetch("/api/manager/events", { method: "POST", body: values });
       const body = await readEventManagerResponse(response);
-      setEvents(body.events || []); form.reset(); setMessage("Special event saved.");
+      setEvents(body.events || []); form.reset(); setAdding(false); setMessage("Special event saved.");
     } catch (error) { setMessage(eventErrorMessage(error)); }
     finally { setBusy(false); }
   }
@@ -170,8 +163,8 @@ function EventManager({ editId, returnTo }: { editId?: string; returnTo?: string
     } catch (error) { setMessage(eventErrorMessage(error)); }
     finally { setBusy(false); }
   }
-  return <section id="events" className="coupon-manager manager-events"><p className="eyebrow">Event operations</p><h2>Add an event</h2><p>Publish special events or live music to the database. Flight Log reads special events and live music from these manager-published rows.</p><p className="media-message" role="status">{message}</p>
-    <form className="manager-event-form" onSubmit={create}><EventFormFields /><button className="button" disabled={busy}>{busy ? "Saving..." : "Publish special event"}</button></form>
+  return <section id="events" className="coupon-manager manager-events"><p className="eyebrow">Event operations</p><div className="manager-events-heading"><div><h2>Events</h2><p>Publish special events or live music to the database. Flight Log reads special events and live music from these manager-published rows.</p></div><button className="button" type="button" onClick={() => { setAdding((value) => !value); if (editing) setEditing(null); }} disabled={busy}>{adding ? "Close event form" : "Add an event"}</button></div><p className="media-message" role="status">{message}</p>
+    {adding ? <form className="manager-event-form manager-event-add-form" onSubmit={create}><EventFormFields /><div className="manager-event-edit-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Publish special event"}</button><button className="button button-outline" type="button" onClick={() => setAdding(false)} disabled={busy}>Cancel</button></div></form> : null}
     <div className="manager-events-saved-panel"><h3 className="tour-signups-heading">Managed special events</h3><div className="manager-events-list">{events.length ? events.map((item) => {
       const isEditing = editing?.id === item.id;
       return <article className={isEditing ? "is-editing" : ""} key={item.id} ref={(node) => { eventRefs.current[item.id] = node; }}>{isEditing ? <form className="manager-event-form manager-event-edit-form" onSubmit={update}><EventFormFields event={item} /><div className="manager-event-edit-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Save event changes"}</button><button className="button button-outline" type="button" onClick={() => returnTo ? returnFromManagerEdit(returnTo, "/manager/events") : setEditing(null)} disabled={busy}>Cancel</button></div></form> : <><div className="manager-event-content">{eventGalleryImages(item).length ? <div className="manager-event-thumb-strip">{eventGalleryImages(item).slice(0, 4).map((image, index) => <img src={image} alt="" loading="lazy" key={image} className={index === 0 ? "is-lead" : ""} />)}{eventGalleryImages(item).length > 4 ? <span>+{eventGalleryImages(item).length - 4}</span> : null}</div> : <div className="manager-event-image-placeholder">Event</div>}<div className="manager-event-meta"><p className="eyebrow">{item.published ? "Published" : "Draft"} · {item.eventType === "live_music" ? "Live music" : "Special event"}</p><h3>{item.title}</h3><p>{item.date} · {item.startTime}{item.endTime ? `–${item.endTime}` : ""} · {item.location}</p>{item.recurrence && item.recurrence.frequency !== "none" ? <small>Repeats: {item.recurrence.frequency.replace("-", " ")} every {item.recurrence.interval}{item.recurrence.endDate ? ` until ${item.recurrence.endDate}` : ""}</small> : null}{item.ticketUrl ? <small>Link: {item.ticketUrl}</small> : null}</div><p className="manager-event-description">{item.description}</p></div><footer><button className="button" type="button" onClick={() => beginEdit(item)} disabled={busy}>Edit</button><button type="button" onClick={() => toggle(item)} disabled={busy}>{item.published ? "Unpublish" : "Publish"}</button><button type="button" onClick={() => remove(item.id)} disabled={busy}>Delete</button></footer></>} </article>;
