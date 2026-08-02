@@ -39,6 +39,12 @@ function publicUrl(location: string, type: string, fileName: string) {
   return "/media/menus/" + location + "/" + type + "/" + encodeURIComponent(fileName);
 }
 
+async function deleteExistingMenuFiles(directory: string) {
+  await fs.mkdir(directory, { recursive: true });
+  const entries = await fs.readdir(directory, { withFileTypes: true });
+  await Promise.all(entries.filter((entry) => entry.isFile()).map((entry) => fs.unlink(path.join(directory, entry.name))));
+}
+
 async function resolve(request: NextRequest, context: { params: Promise<{ location: string }> }) {
   const { location } = await context.params;
   const type = menuType(request);
@@ -79,7 +85,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ lo
   }
 
   const directory = directoryFor(target.location, target.type);
-  await fs.mkdir(directory, { recursive: true });
+  await deleteExistingMenuFiles(directory);
   const savedName = Date.now() + "-" + fileName;
   await fs.writeFile(path.join(directory, savedName), Buffer.from(await upload.arrayBuffer()));
   return NextResponse.json({ name: savedName, size: upload.size, url: publicUrl(target.location, target.type, savedName) }, { status: 201 });
