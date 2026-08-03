@@ -6,15 +6,13 @@ const apiPrefix = "/api/shop-product-images/";
 
 function configuredDirectory() {
   const configured = String(process.env.SHOP_PRODUCT_IMAGES_DIRECTORY || "").trim();
-  return configured ? path.resolve(configured) : "";
+  if (configured) return path.resolve(configured);
+  return process.env.RENDER ? "/var/data/aviatorbrew/shop-products" : "";
 }
 
 export function shopProductImageWriteDirectory() {
   const configured = configuredDirectory();
   if (configured) return configured;
-  if (process.env.NODE_ENV === "production" && process.env.RENDER) {
-    throw new Error("Shop image storage is not configured. Set SHOP_PRODUCT_IMAGES_DIRECTORY to the Render persistent disk path before uploading images.");
-  }
   return path.join(process.cwd(), "public", "media", "shop-products");
 }
 
