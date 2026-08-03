@@ -210,6 +210,7 @@ export type PreparedShopCart = {
 };
 
 const defaultCategories = ["Apparel", "Signs", "Glassware", "Tickets", "Gift Cards", "Beverages", "Event Payments", "Other"];
+const hiddenPublicShopProductSlugs = new Set(["e-gift-card"]);
 
 export function shopSlug(value: string) {
   return value.toLowerCase().trim().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 90) || randomUUID().slice(0, 8);
@@ -394,7 +395,7 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
         ticketAvailableCount: Math.max(0, Number(row.ticket_capacity || 0) - Number(row.ticket_sold_count || 0) - Number(row.ticket_reserved_count || 0)),
         variants: variantsByProduct.get(Number(row.id)) || [],
       };
-    }).filter((product) => options.manager || product.variants.length > 0);
+    }).filter((product) => options.manager || (product.variants.length > 0 && !hiddenPublicShopProductSlugs.has(product.slug)));
     const settings = await getShopSettingsWithClient(client);
     let orders: ShopOrder[] | undefined;
     let ticketPurchases: ShopTicketPurchase[] | undefined;
@@ -665,7 +666,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
     const ticketProductQuantities = new Map<number, number>();
     const merchandiseItems = requests.map((request) => {
       const row = rows.get(request.variantId);
-      if (!row || row.product_published !== true) throw new ShopCartAvailabilityError("A product in your cart is no longer available.", [request.variantId]);
+      if (!row || row.product_published !== true || hiddenPublicShopProductSlugs.has(String(row.product_slug || ""))) throw new ShopCartAvailabilityError("A product in your cart is no longer available.", [request.variantId]);
       const variant = variantFromRow(row);
       const productType = row.product_type === "ticket" ? "ticket" as const : "merchandise" as const;
       if (productType === "ticket") {
