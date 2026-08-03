@@ -598,7 +598,8 @@ body {
 /* Manager-managed, non-music events */
 .special-events-section { background: #0b2942; }
 .special-events-section .section-heading { margin-bottom: 1.15rem; }
-.managed-event-layout { display: grid; grid-template-columns: 1fr; gap: 1px; border: 1px solid rgba(181, 216, 235, .33); background: rgba(181, 216, 235, .33); }
+.managed-event-layout { display: grid; grid-template-columns: 1fr; gap: 0; border: 1px solid rgba(181, 216, 235, .33); background: rgba(181, 216, 235, .33); }
+.managed-event-layout > .managed-event-card + .managed-event-card { border-top: 3px solid rgba(240, 189, 98, .9); }
 .special-events-section .managed-event-card { display: grid; grid-template-columns: clamp(10rem, 28vw, 15rem) minmax(0, 1fr); gap: 0; padding: 0; border-bottom: 0; background: #0f304b; }
 .special-events-section .managed-event-card:nth-child(2n) { background: #123650; }
 .special-events-section .managed-event-media { width: 100%; min-height: 0; overflow: hidden; background: #08243a; border: 0; border-right: 1px solid rgba(181,216,235,.24); }
