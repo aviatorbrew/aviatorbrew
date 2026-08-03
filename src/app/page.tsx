@@ -35,7 +35,7 @@ function TicketProductHomeCard({ product }: { product: ShopProduct }) {
   const startsAt = new Date(product.ticketEventStartsAt);
   const date = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" }).format(startsAt);
   const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).format(startsAt);
-  return <article className="event-card managed-event-card ticket-product-home-card"><div className="event-date"><span>{date}</span><strong>{time}</strong></div><div className="event-content"><p className="card-kicker">{product.ticketLocationName} · Tickets on sale</p><h3>{product.name}</h3><p className="managed-event-copy">{product.description}</p><Link href={"/shop-new#product-" + product.slug} data-analytics="home_ticket_product_event">Details + tickets <ArrowUpRight /></Link></div></article>;
+  return <article className="event-card managed-event-card ticket-product-home-card"><div className="event-date"><span>{date}</span><strong>{time}</strong></div><div className="event-content"><p className="card-kicker">{product.ticketLocationName} · Tickets on sale</p><h3>{product.name}</h3><p className="managed-event-copy ticket-product-description">{product.description}</p><Link href={"/shop-new#product-" + product.slug} data-analytics="home_ticket_product_event">Details + tickets <ArrowUpRight /></Link></div></article>;
 }
 
 function LatestFlightLog({ posts }: { posts: FlightLogPost[] }) {

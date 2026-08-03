@@ -2519,6 +2519,7 @@ body:has(.shop-new-shell) .site-footer .footer-top .button-light {
 .shop-ticket-meta span { color: #e8f1f5; font-size: .78rem; }
 @media (max-width: 760px) { .manager-shop-ticket-fields { grid-template-columns: 1fr; } .manager-shop-ticket-roster > header { align-items: stretch; flex-direction: column; } }
 
+.shop-product-description, .ticket-product-description { white-space: pre-wrap; overflow-wrap: anywhere; }
 .manager-shop-ticket-prominence { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: .55rem; padding: .75rem; border: 1px solid rgba(239,180,95,.35); }
 .manager-shop-ticket-prominence input { width: auto; min-height: 0; margin-top: .2rem; }
 .manager-shop-ticket-prominence span { display: grid; gap: .15rem; }
