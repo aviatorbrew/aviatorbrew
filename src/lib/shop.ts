@@ -431,13 +431,12 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
   });
 }
 
-export async function getPublishedShopTicketEvents(monthsAhead = 2) {
+export async function getPublishedShopTicketEvents() {
   const { products } = await getShopCatalog();
   const now = Date.now();
-  const through = now + Math.max(1, monthsAhead) * 31 * 24 * 60 * 60 * 1000;
   return products.filter((product) => {
     const eventTime = new Date(product.ticketEventStartsAt).getTime();
-    return product.productType === "ticket" && product.ticketPublishAsEvent && Number.isFinite(eventTime) && eventTime >= now && eventTime <= through;
+    return product.productType === "ticket" && product.ticketPublishAsEvent && Number.isFinite(eventTime) && eventTime >= now;
   }).sort((left, right) => new Date(left.ticketEventStartsAt).getTime() - new Date(right.ticketEventStartsAt).getTime());
 }
 
@@ -527,7 +526,7 @@ function normalizeProductInput(input: ShopProductInput) {
   }));
   if (!variants.length) throw new Error("Add at least one product option or ticket type.");
   if (variants.some((variant) => variant.priceCents < 100)) throw new Error("Every product option needs a price of at least $1.00.");
-  return { ...input, name, productType, ticketLocationSlug: productType === "ticket" ? ticketLocationSlug : "", ticketEventStartsAt: productType === "ticket" ? ticketEventStartsAt : "", ticketSalesEndAt: productType === "ticket" ? ticketSalesEndAt : "", ticketCapacity: productType === "ticket" ? ticketCapacity : 0, ticketMaxPerOrder: productType === "ticket" ? ticketMaxPerOrder : 20, ticketFullWidth, ticketPublishAsEvent, variants };
+  return { ...input, name, published: ticketPublishAsEvent ? true : input.published, productType, ticketLocationSlug: productType === "ticket" ? ticketLocationSlug : "", ticketEventStartsAt: productType === "ticket" ? ticketEventStartsAt : "", ticketSalesEndAt: productType === "ticket" ? ticketSalesEndAt : "", ticketCapacity: productType === "ticket" ? ticketCapacity : 0, ticketMaxPerOrder: productType === "ticket" ? ticketMaxPerOrder : 20, ticketFullWidth, ticketPublishAsEvent, variants };
 }
 
 function productImagesForSave(input: ShopProductInput, current?: Record<string, unknown>) {

@@ -108,7 +108,7 @@ function TicketProductEventCard({ product }: { product: ShopProduct }) {
 }
 
 export default async function EventsPage() {
-  const [managedEvents, releaseAlerts, live, eventMedia, ticketEvents] = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getPublishedBeerReleaseAlerts(), getLiveMusicSchedule(), listUploadedPhotos("events"), getPublishedShopTicketEvents(2)]);
+  const [managedEvents, releaseAlerts, live, eventMedia, ticketEvents] = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getPublishedBeerReleaseAlerts(), getLiveMusicSchedule(), listUploadedPhotos("events"), getPublishedShopTicketEvents()]);
   const today = todayInEastern();
   const through = addDays(today, 14);
   const liveShows = (live.schedule?.shows || [])
