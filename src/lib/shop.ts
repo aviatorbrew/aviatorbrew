@@ -534,7 +534,8 @@ function normalizeProductInput(input: ShopProductInput) {
     availableForSale: variant.availableForSale !== false,
   }));
   if (!variants.length) throw new Error("Add at least one product option or ticket type.");
-  if (variants.some((variant) => variant.priceCents < 100)) throw new Error("Every product option needs a price of at least $1.00.");
+  const hasInvalidSellablePrice = input.published !== false && variants.some((variant) => variant.published && variant.availableForSale && variant.priceCents < 100);
+  if (hasInvalidSellablePrice) throw new Error("Every published option available for sale needs a price of at least $1.00. Unpublish the product to save it as a draft.");
   return { ...input, name, productType, ticketLocationSlug: productType === "ticket" ? ticketLocationSlug : "", ticketEventStartsAt: productType === "ticket" ? ticketEventStartsAt : "", ticketSalesEndAt: productType === "ticket" ? ticketSalesEndAt : "", ticketCapacity: productType === "ticket" ? ticketCapacity : 0, ticketMaxPerOrder: productType === "ticket" ? ticketMaxPerOrder : 20, ticketFullWidth, ticketPublishAsEvent, variants };
 }
 
@@ -587,6 +588,42 @@ export async function saveShopProduct(input: ShopProductInput) {
         }
       }
       if (existingIds.size) await client.query("DELETE FROM website.shop_product_variants WHERE product_id=$1 AND NOT (id=ANY($2::bigint[]))", [productId, retainedIds]);
+
+      const persistedProductResult = await client.query("SELECT category_id,name,description,published,featured,sort_order,product_type,updated_at FROM website.shop_products WHERE id=$1", [productId]);
+      const persistedProduct = persistedProductResult.rows[0];
+      const expectedCategoryId = categoryId === null ? null : Number(categoryId);
+      const actualCategoryId = persistedProduct?.category_id === null || persistedProduct?.category_id === undefined ? null : Number(persistedProduct.category_id);
+      if (!persistedProduct
+        || actualCategoryId !== expectedCategoryId
+        || String(persistedProduct.name || "") !== normalized.name
+        || String(persistedProduct.description || "") !== (normalized.description || "")
+        || persistedProduct.published !== (normalized.published !== false)
+        || persistedProduct.featured !== (normalized.featured === true)
+        || Number(persistedProduct.sort_order || 0) !== intValue(normalized.sortOrder)
+        || String(persistedProduct.product_type || "merchandise") !== normalized.productType) {
+        throw new Error("Database verification failed after saving the product details.");
+      }
+
+      const persistedVariantsResult = await client.query("SELECT label,sku,price_cents,compare_at_price_cents,inventory_count,published,sort_order,weight_ounces,requires_shipping,track_inventory,available_for_sale FROM website.shop_product_variants WHERE product_id=$1 ORDER BY sort_order,id", [productId]);
+      if (persistedVariantsResult.rows.length !== normalized.variants.length) throw new Error("Database verification failed after saving the product options.");
+      for (let index = 0; index < normalized.variants.length; index += 1) {
+        const expected = normalized.variants[index];
+        const actual = persistedVariantsResult.rows[index];
+        if (!actual
+          || String(actual.label || "") !== expected.label
+          || String(actual.sku || "") !== expected.sku
+          || Number(actual.price_cents || 0) !== expected.priceCents
+          || (actual.compare_at_price_cents === null ? null : Number(actual.compare_at_price_cents)) !== expected.compareAtPriceCents
+          || Number(actual.inventory_count || 0) !== expected.inventoryCount
+          || actual.published !== expected.published
+          || Number(actual.sort_order || 0) !== expected.sortOrder
+          || Number(actual.weight_ounces || 0) !== expected.weightOunces
+          || actual.requires_shipping !== expected.requiresShipping
+          || actual.track_inventory !== expected.trackInventory
+          || actual.available_for_sale !== expected.availableForSale) {
+          throw new Error("Database verification failed after saving product option " + (index + 1) + ".");
+        }
+      }
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);

@@ -1534,6 +1534,7 @@
 .manager-shop-product-save-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
 .manager-shop-product-save-row .button { justify-self: start; }
 .manager-shop-product-save-status { display: inline-flex; align-items: center; min-height: 2.35rem; padding: 0 .7rem; border: 1px solid rgba(110,210,153,.5); background: rgba(34,112,72,.24); color: #b8f0ce; font: 900 .68rem/1 "Courier New", monospace; text-transform: uppercase; }
+.manager-shop-product-save-error { flex-basis: 100%; max-width: 48rem; border-left: 3px solid #e4765d; padding: .55rem .7rem; background: rgba(130,39,26,.2); color: #ffd2c7; font-size: .78rem; line-height: 1.45; }
 .manager-shop-products > article.is-editing { align-items: start; opacity: 1; background: #102f48; }
 .manager-shop-inline-edit { grid-column: 1 / -1; min-width: 0; border-top: 1px solid rgba(184,217,236,.18); padding-top: .8rem; }
 .manager-shop-inline-edit .manager-shop-product-form { margin: 0; }
