@@ -90,7 +90,7 @@ Issue the TLS certificate with Certbot or the server provider's HTTPS tooling, t
 
 ## 4. Make Aviator Live reachable
 
-The website fetches the live music schedule server-side through `AVIATOR_LIVE_SCHEDULE_URL`, and the band application buttons use `AVIATOR_LIVE_APPLY_URL`.
+The website fetches the live music schedule server-side through `AVIATOR_LIVE_SCHEDULE_URL`, recent attendance check-in shows through `AVIATOR_LIVE_BOOKINGS_URL`, and the band application buttons use `AVIATOR_LIVE_APPLY_URL`.
 
 For the external website, these must be reachable from the external server. A private LAN URL such as `http://192.168.7.171:5123/...` will only work on the brewery network. Use a public DNS name, VPN route, SSH tunnel, or an HTTPS reverse proxy to Aviator Live.
 
@@ -99,9 +99,11 @@ Current production template values:
 ```bash
 AVIATOR_LIVE_APPLY_URL=http://aviatorlive.is-with-theband.com/apply
 AVIATOR_LIVE_SCHEDULE_URL=http://aviatorlive.is-with-theband.com/api/public/live-music
+AVIATOR_LIVE_BOOKINGS_URL=https://aviatorlive.beer/api/bookings
+AVIATOR_LIVE_BOOKINGS_AUTH=Bearer your-aviator-live-token
 ```
 
-Prefer HTTPS for those URLs before public launch.
+Prefer HTTPS for those URLs before public launch. Local development defaults attendance check-ins to `http://127.0.0.1:4100/api/bookings` when `AVIATOR_LIVE_BOOKINGS_URL` is not set.
 
 ## 5. Persist manager content
 
