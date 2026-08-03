@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prepareShopCart, type ShopCartRequestItem } from "@/lib/shop";
+import { prepareShopCart, ShopCartAvailabilityError, type ShopCartRequestItem } from "@/lib/shop";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +17,6 @@ export async function POST(request: NextRequest) {
       },
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not validate your cart." }, { status: 400 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not validate your cart.", unavailableVariantIds: error instanceof ShopCartAvailabilityError ? error.variantIds : [] }, { status: error instanceof ShopCartAvailabilityError ? 409 : 400 });
   }
 }

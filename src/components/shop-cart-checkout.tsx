@@ -39,6 +39,7 @@ export function ShopCartCheckout({ checkoutStatus }: { checkoutStatus?: string }
   const [address, setAddress] = useState<Address>({ name: "", street1: "", street2: "", city: "", state: "NC", zip: "", country: "US", phone: "" });
   const [state, setState] = useState<"idle" | "loading" | "shipping" | "checkout" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [unavailableVariantIds, setUnavailableVariantIds] = useState<number[]>([]);
   const requestItems = useMemo(() => items.map((item) => ({ variantId: item.variantId, quantity: item.quantity })), [items]);
   const requestKey = JSON.stringify(requestItems);
 
@@ -51,14 +52,18 @@ export function ShopCartCheckout({ checkoutStatus }: { checkoutStatus?: string }
     setRates([]); setSelectedToken("");
     if (!requestItems.length) { setCart(null); setState("idle"); return; }
     const controller = new AbortController();
-    setState("loading"); setMessage("");
+    setState("loading"); setMessage(""); setUnavailableVariantIds([]);
     fetch("/api/shop/cart", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: requestItems }), signal: controller.signal })
       .then(async (response) => {
         const body = await response.json();
-        if (!response.ok) throw new Error(body.error || "Could not validate your cart.");
-        setCart(body as PreparedCart); setState("idle");
+        if (!response.ok) {
+          setCart(null);
+          setUnavailableVariantIds(Array.isArray(body.unavailableVariantIds) ? body.unavailableVariantIds.map(Number).filter(Number.isInteger) : []);
+          throw new Error(body.error || "Could not validate your cart.");
+        }
+        setCart(body as PreparedCart); setUnavailableVariantIds([]); setState("idle");
       })
-      .catch((error) => { if (error.name !== "AbortError") { setState("error"); setMessage(error.message); } });
+      .catch((error) => { if (error.name !== "AbortError") { setCart(null); setState("error"); setMessage(error.message); } });
     return () => controller.abort();
   }, [hydrated, requestKey, checkoutStatus]);
 
@@ -89,6 +94,12 @@ export function ShopCartCheckout({ checkoutStatus }: { checkoutStatus?: string }
     } catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "Checkout could not be opened."); }
   }
 
+  function emptyCart() {
+    if (!window.confirm("Empty every item from your Aviator cart?")) return;
+    clearCart();
+    setCart(null); setRates([]); setSelectedToken(""); setUnavailableVariantIds([]); setMessage(""); setState("idle");
+  }
+
   if (checkoutStatus === "success") return <section className="section shop-cart-page"><div className="content-wrap shop-order-confirmation"><p className="eyebrow">Order confirmed</p><h1>Payment received.</h1><p>Your order is in the Aviator queue. A Stripe receipt has been sent to your email address.</p><Link className="button" href="/shop-new">Continue shopping</Link></div></section>;
 
   if (!hydrated || state === "loading") return <section className="section shop-cart-page"><div className="content-wrap shop-cart-empty"><p className="eyebrow">Loading manifest</p><h1>Checking your cart...</h1></div></section>;
@@ -99,20 +110,23 @@ export function ShopCartCheckout({ checkoutStatus }: { checkoutStatus?: string }
   const threshold = cart?.settings.bonusThresholdCents || 2000;
   const bonusRemaining = Math.max(0, threshold + 1 - (cart?.subtotalCents || 0));
   const freeShippingRemaining = Math.max(0, 7500 - (cart?.subtotalCents || 0));
+  const displayItems: PreparedItem[] = cart?.merchandiseItems || items.map((item) => ({ ...item, productId: 0, isBonus: false }));
+  const cartNeedsAttention = !cart && state === "error";
 
   return <section className="section shop-cart-page"><div className="content-wrap">
-    <header className="shop-cart-heading"><div><p className="eyebrow">Cargo manifest</p><h1>Your Aviator cart.</h1></div><Link href="/shop-new">Continue shopping</Link></header>
+    <header className="shop-cart-heading"><div><p className="eyebrow">Cargo manifest</p><h1>Your Aviator cart.</h1></div><div className="shop-cart-heading-actions"><Link href="/shop-new">Continue shopping</Link><button className="button button-outline shop-empty-cart-button" type="button" onClick={emptyCart}>Empty cart</button></div></header>
     {checkoutStatus === "cancel" ? <p className="shop-cart-notice">Checkout was canceled. Your cart is still here.</p> : null}
     {message ? <p className="shop-new-error" role="alert">{message}</p> : null}
     <div className="shop-checkout-grid"><div className="shop-cart-manifest">
-      <div className="shop-cart-items">{cart?.merchandiseItems.map((item) => {
+      <div className="shop-cart-items">{displayItems.map((item) => {
         const stored = items.find((entry) => entry.variantId === item.variantId);
-        return <article key={item.variantId}>{item.imageUrl ? <img src={item.imageUrl} alt="" /> : <div className="shop-cart-image-placeholder">AVIATOR</div>}<div><h2>{item.productName}</h2><p>{item.variantLabel}</p><strong>{money(item.unitPriceCents)}</strong></div><label>Qty<input type="number" min="1" max={stored?.maxQuantity || 25} value={stored?.quantity || item.quantity} onChange={(event) => updateQuantity(item.variantId, Number(event.currentTarget.value))} /></label><button type="button" onClick={() => removeItem(item.variantId)} aria-label={"Remove " + item.productName}>Remove</button></article>;
+        const unavailable = unavailableVariantIds.includes(item.variantId);
+        return <article className={unavailable ? "is-unavailable" : ""} key={item.variantId}>{item.imageUrl ? <img src={item.imageUrl} alt="" /> : <div className="shop-cart-image-placeholder">AVIATOR</div>}<div><h2>{item.productName}</h2><p>{item.variantLabel}</p>{unavailable ? <span className="shop-cart-item-warning">Needs attention</span> : null}<strong>{money(item.unitPriceCents)}</strong></div><label>Qty<input type="number" min="1" max={stored?.maxQuantity || 25} value={stored?.quantity || item.quantity} onChange={(event) => updateQuantity(item.variantId, Number(event.currentTarget.value))} /></label><button type="button" onClick={() => removeItem(item.variantId)} aria-label={"Remove " + item.productName}>Remove</button></article>;
       })}</div>
-      {!cart?.ticketOnly ? <div className={"shop-bonus-panel " + (cart?.bonusItem ? "is-earned" : "")}><span aria-hidden="true">{cart?.bonusItem ? "BONUS LOADED" : "BONUS APPROACH"}</span><div><strong>{cart?.bonusItem ? cart.bonusItem.productName : "Free Aviator sticker over " + money(threshold)}</strong><p>{cart?.bonusItem ? "Added automatically at no charge." : "Add " + money(bonusRemaining) + " more in merchandise to unlock it."}</p></div></div> : null}
+      {cart && !cart.ticketOnly ? <div className={"shop-bonus-panel " + (cart?.bonusItem ? "is-earned" : "")}><span aria-hidden="true">{cart?.bonusItem ? "BONUS LOADED" : "BONUS APPROACH"}</span><div><strong>{cart?.bonusItem ? cart.bonusItem.productName : "Free Aviator sticker over " + money(threshold)}</strong><p>{cart?.bonusItem ? "Added automatically at no charge." : "Add " + money(bonusRemaining) + " more in merchandise to unlock it."}</p></div></div> : null}
       {cart?.bonusItem ? <article className="shop-cart-bonus-line">{cart.bonusItem.imageUrl ? <img src={cart.bonusItem.imageUrl} alt="" /> : null}<div><h2>{cart.bonusItem.productName}</h2><p>{cart.bonusItem.variantLabel}</p></div><strong>FREE</strong></article> : null}
     </div>
-    <form className="shop-shipping-form" onSubmit={cart?.requiresShipping ? calculateShipping : (event) => { event.preventDefault(); checkout(); }}>
+    {cartNeedsAttention ? <aside className="shop-cart-recovery"><p className="eyebrow">Cart update required</p><h2>Review the highlighted item.</h2><p>Its availability changed after it was added. Adjust its quantity, remove it, or empty the cart to continue.</p><button className="button" type="button" onClick={emptyCart}>Empty cart</button><Link href="/shop-new">Return to catalog</Link></aside> : <form className="shop-shipping-form" onSubmit={cart?.requiresShipping ? calculateShipping : (event) => { event.preventDefault(); checkout(); }}>
       <p className="eyebrow">{cart?.ticketOnly ? "Ticket holder" : "Delivery coordinates"}</p><h2>{cart?.ticketOnly ? "Event admission" : "USPS shipping"}</h2>{cart?.requiresShipping ? <p className="shop-free-shipping-note">{freeShippingRemaining ? "Add " + money(freeShippingRemaining) + " more for free shipping." : "Free shipping unlocked for this order."}</p> : <p className="shop-free-shipping-note">Tickets are delivered by email. No shipping address is needed.</p>}
       <label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.currentTarget.value)} autoComplete="email" /></label>
       <label>Full name<input required value={address.name} onChange={(event) => addressField("name", event.currentTarget.value)} autoComplete="name" /></label>
@@ -123,6 +137,6 @@ export function ShopCartCheckout({ checkoutStatus }: { checkoutStatus?: string }
       <dl className="shop-order-totals"><div><dt>Merchandise</dt><dd>{money(cart?.subtotalCents || 0)}</dd></div><div><dt>Shipping</dt><dd>{cart?.requiresShipping ? shipping ? money(shipping.amountCents) : "Calculate above" : "Not required"}</dd></div><div><dt>Total</dt><dd>{cart?.requiresShipping && !shipping ? "--" : money(total)}</dd></div></dl>
       <button className="button shop-checkout-button" type="button" onClick={checkout} disabled={(cart?.requiresShipping && !selectedToken) || state === "checkout"}>{state === "checkout" ? "Opening secure checkout..." : "Checkout"}</button>
       <p className="shop-secure-note">{cart?.requiresShipping ? "ZIP-based rates are estimates until live USPS rates are connected. Prices and inventory are checked again before payment. Stripe securely handles card details." : "Ticket availability is checked again before payment. Stripe securely handles card details."}</p>
-    </form></div>
+    </form>}</div>
   </div></section>;
 }

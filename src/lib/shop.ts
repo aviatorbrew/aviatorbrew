@@ -638,6 +638,16 @@ function normalizeCartRequests(items: ShopCartRequestItem[]) {
   return [...combined].map(([variantId, quantity]) => ({ variantId, quantity }));
 }
 
+export class ShopCartAvailabilityError extends Error {
+  variantIds: number[];
+
+  constructor(message: string, variantIds: number[]) {
+    super(message);
+    this.name = "ShopCartAvailabilityError";
+    this.variantIds = variantIds;
+  }
+}
+
 export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<PreparedShopCart> {
   const requests = normalizeCartRequests(rawItems);
   return withDatabase(async (client) => {
@@ -647,22 +657,22 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
     const ticketProductQuantities = new Map<number, number>();
     const merchandiseItems = requests.map((request) => {
       const row = rows.get(request.variantId);
-      if (!row || row.product_published !== true) throw new Error("A product in your cart is no longer available.");
+      if (!row || row.product_published !== true) throw new ShopCartAvailabilityError("A product in your cart is no longer available.", [request.variantId]);
       const variant = variantFromRow(row);
       const productType = row.product_type === "ticket" ? "ticket" as const : "merchandise" as const;
       if (productType === "ticket") {
         const cutoff = row.ticket_sales_end_at || row.ticket_event_starts_at;
-        if (cutoff && new Date(String(cutoff)).getTime() <= Date.now()) throw new Error(String(row.product_name || "This event") + " ticket sales are closed.");
+        if (cutoff && new Date(String(cutoff)).getTime() <= Date.now()) throw new ShopCartAvailabilityError(String(row.product_name || "This event") + " ticket sales are closed.", [request.variantId]);
         const productQuantity = (ticketProductQuantities.get(variant.productId) || 0) + request.quantity;
         const maxPerOrder = Math.max(1, Number(row.ticket_max_per_order || 20));
         const eventAvailable = Math.max(0, Number(row.ticket_capacity || 0) - Number(row.ticket_sold_count || 0) - Number(row.ticket_product_reserved_count || 0));
-        if (productQuantity > maxPerOrder) throw new Error("Ticket purchases for " + String(row.product_name || "this event") + " are limited to " + maxPerOrder + " per customer.");
-        if (productQuantity > eventAvailable) throw new Error(eventAvailable ? "Only " + eventAvailable + " tickets remain for " + String(row.product_name || "this event") + "." : String(row.product_name || "This event") + " is sold out.");
+        if (productQuantity > maxPerOrder) throw new ShopCartAvailabilityError("Ticket purchases for " + String(row.product_name || "this event") + " are limited to " + maxPerOrder + " per customer.", [request.variantId]);
+        if (productQuantity > eventAvailable) throw new ShopCartAvailabilityError(eventAvailable ? "Only " + eventAvailable + " tickets remain for " + String(row.product_name || "this event") + "." : String(row.product_name || "This event") + " is sold out.", [request.variantId]);
         ticketProductQuantities.set(variant.productId, productQuantity);
       }
       if (productType !== "ticket" && request.quantity > 25) throw new Error("Merchandise quantities are limited to 25 per option.");
-      if (!shopVariantAvailable(variant)) throw new Error(String(row.product_name || "An item") + " - " + variant.label + " is sold out.");
-      if (variant.trackInventory && request.quantity > variant.availableInventoryCount) throw new Error("Only " + variant.availableInventoryCount + " of " + String(row.product_name || "that item") + " - " + variant.label + " are available.");
+      if (!shopVariantAvailable(variant)) throw new ShopCartAvailabilityError(String(row.product_name || "An item") + " - " + variant.label + " is sold out.", [request.variantId]);
+      if (variant.trackInventory && request.quantity > variant.availableInventoryCount) throw new ShopCartAvailabilityError("Only " + variant.availableInventoryCount + " of " + String(row.product_name || "that item") + " - " + variant.label + " are available.", [request.variantId]);
       return {
         variantId: variant.id,
         productId: variant.productId,
