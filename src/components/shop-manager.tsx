@@ -32,6 +32,47 @@ function imageWithVersion(src: string, version: number) { return src ? src + (sr
 function wholeOunces(value: unknown, fallback = 8) { const parsed = Number(value); return String(Math.max(1, Math.round(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback))); }
 function productImageUrls(product?: ShopProduct | null) { return product?.imageUrls?.length ? product.imageUrls : product?.imageUrl ? [product.imageUrl] : []; }
 
+type ProductSaveState = "idle" | "saving" | "saved";
+type VerifiedShopCatalog = ShopCatalog & { savedProductId?: number };
+
+function formText(values: FormData, key: string) { return String(values.get(key) || "").trim(); }
+function formBoolean(values: FormData, key: string) { return formText(values, key).toLowerCase() === "true"; }
+function formNumber(values: FormData, key: string) { const parsed = Number(formText(values, key)); return Number.isFinite(parsed) ? parsed : 0; }
+function formInt(values: FormData, key: string) { return Math.max(0, Math.floor(formNumber(values, key))); }
+function formCents(values: FormData, key: string) { return Math.round(Math.max(0, formNumber(values, key)) * 100); }
+function formWholeOunces(values: FormData, key: string, fallback = 8) { const parsed = formNumber(values, key); return Math.max(1, Math.round(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback)); }
+
+function verifySavedProduct(catalog: VerifiedShopCatalog, values: FormData, isEdit: boolean) {
+  const savedId = Number(catalog.savedProductId || values.get("id") || 0);
+  const product = catalog.products.find((item) => item.id === savedId) || (!isEdit ? catalog.products.find((item) => item.name === formText(values, "name")) : undefined);
+  if (!product) return { product: undefined, error: "Database verification failed: saved product was not found in the refreshed catalog." };
+  if (product.name !== formText(values, "name")) return { product, error: "Database verification failed: product name did not match after save." };
+  if (product.description !== formText(values, "description")) return { product, error: "Database verification failed: description did not match after save." };
+  const categoryId = formNumber(values, "categoryId") || null;
+  if ((product.categoryId || null) !== categoryId) return { product, error: "Database verification failed: catalog did not match after save." };
+  if (product.published !== formBoolean(values, "published")) return { product, error: "Database verification failed: published status did not match after save." };
+  if (product.featured !== formBoolean(values, "featured")) return { product, error: "Database verification failed: featured status did not match after save." };
+  if (product.productType !== (formText(values, "productType") === "ticket" ? "ticket" : "merchandise")) return { product, error: "Database verification failed: product type did not match after save." };
+  if (product.sortOrder !== formInt(values, "sortOrder")) return { product, error: "Database verification failed: sort order did not match after save." };
+  const variantCount = formInt(values, "variantCount");
+  if (product.variants.length !== variantCount) return { product, error: "Database verification failed: option count did not match after save." };
+  for (let index = 0; index < variantCount; index += 1) {
+    const variant = product.variants[index];
+    if (!variant) return { product, error: "Database verification failed: an option was missing after save." };
+    if (variant.label !== formText(values, "variantLabel_" + index)) return { product, error: "Database verification failed: option label did not match after save." };
+    if (variant.sku !== formText(values, "variantSku_" + index)) return { product, error: "Database verification failed: option SKU did not match after save." };
+    if (variant.priceCents !== formCents(values, "variantPrice_" + index)) return { product, error: "Database verification failed: option price did not match after save." };
+    if (variant.inventoryCount !== formInt(values, "variantInventory_" + index)) return { product, error: "Database verification failed: option inventory did not match after save." };
+    if (variant.published !== formBoolean(values, "variantPublished_" + index)) return { product, error: "Database verification failed: option published status did not match after save." };
+    if (variant.availableForSale !== formBoolean(values, "variantAvailable_" + index)) return { product, error: "Database verification failed: option sale status did not match after save." };
+    if (variant.trackInventory !== formBoolean(values, "variantTrackInventory_" + index)) return { product, error: "Database verification failed: option inventory tracking did not match after save." };
+    const requiresShipping = formBoolean(values, "variantRequiresShipping_" + index);
+    if (variant.requiresShipping !== requiresShipping) return { product, error: "Database verification failed: option shipping status did not match after save." };
+    if (variant.weightOunces !== (requiresShipping ? formWholeOunces(values, "variantWeightOunces_" + index) : 0)) return { product, error: "Database verification failed: option weight did not match after save." };
+  }
+  return { product, error: "" };
+}
+
 type ManagedVariant = {
   id?: number;
   label: string;
@@ -66,7 +107,7 @@ function blankVariant(): ManagedVariant {
   return { label: "Default", sku: "", price: "20.00", compareAtPrice: "", inventoryCount: "10", published: true, weightOunces: "8", requiresShipping: true, trackInventory: true, availableForSale: true };
 }
 
-function ProductForm({ product, initialProductType = "merchandise", categories, locations, busy, onSubmit, onCancel, imageVersion }: { product?: ShopProduct | null; initialProductType?: "merchandise" | "ticket"; categories: ShopCategory[]; locations: NonNullable<ShopCatalog["locations"]>; busy: boolean; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; imageVersion: number }) {
+function ProductForm({ product, initialProductType = "merchandise", categories, locations, busy, saveState = "idle", onSubmit, onCancel, imageVersion }: { product?: ShopProduct | null; initialProductType?: "merchandise" | "ticket"; categories: ShopCategory[]; locations: NonNullable<ShopCatalog["locations"]>; busy: boolean; saveState?: ProductSaveState; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onCancel: () => void; imageVersion: number }) {
   const isEdit = Boolean(product);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [variants, setVariants] = useState<ManagedVariant[]>(() => product?.variants.length ? product.variants.map(variantFromProduct) : [blankVariant()]);
@@ -161,7 +202,7 @@ function ProductForm({ product, initialProductType = "merchandise", categories, 
     </section>
     <label className="manager-event-publish"><input name="published" type="checkbox" defaultChecked={product ? product.published : true} /> Publish product</label>
     <label className="manager-event-publish"><input name="featured" type="checkbox" defaultChecked={product?.featured || false} /> Feature product</label>
-    <button className="button" disabled={busy}>{busy ? "Saving..." : isEdit ? "Save product" : "Add product"}</button>
+    <button className="button" disabled={busy || saveState !== "idle"}>{saveState === "saved" ? "Saved!" : saveState === "saving" || busy ? "Saving..." : isEdit ? "Save product" : "Add product"}</button>
   </form>;
 }
 
@@ -169,6 +210,8 @@ export function ShopManager({ editId, editType, returnTo }: { editId?: string; e
   const [catalog, setCatalog] = useState<ShopCatalog>({ categories: [], products: [], orders: [] });
   const [message, setMessage] = useState("");
   const [savedProductNotice, setSavedProductNotice] = useState("");
+  const [savingProductKey, setSavingProductKey] = useState("");
+  const [savedProductKey, setSavedProductKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
   const [addingCategory, setAddingCategory] = useState(false);
@@ -201,16 +244,21 @@ export function ShopManager({ editId, editType, returnTo }: { editId?: string; e
   }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, [editId, editType]);
 
-  async function send(url: string, init: RequestInit, success: string) {
+  async function send(url: string, init: RequestInit, success = "") {
     setBusy(true); setMessage("");
     try {
       const response = await fetch(url, init);
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Shop request failed.");
-      setCatalog(body); setMessage(success); return true;
+      setCatalog(body);
+      if (success) setMessage(success);
+      return body as VerifiedShopCatalog;
     } catch (error) {
       setSavedProductNotice("");
-      setMessage(error instanceof Error ? error.message : "Shop request failed."); return false;
+      setSavingProductKey("");
+      setSavedProductKey("");
+      setMessage(error instanceof Error ? error.message : "Shop request failed.");
+      return null;
     } finally { setBusy(false); }
   }
 
@@ -238,21 +286,35 @@ export function ShopManager({ editId, editType, returnTo }: { editId?: string; e
     const form = event.currentTarget;
     const values = new FormData(form);
     const isEdit = Boolean(values.get("id"));
+    const formKey = isEdit ? String(values.get("id")) : "new";
     values.set("action", "product");
     values.set("published", values.get("published") === "on" ? "true" : "false");
     values.set("featured", values.get("featured") === "on" ? "true" : "false");
     const productName = String(values.get("name") || "Product").trim() || "Product";
-    const ok = await send("/api/manager/shop", { method: isEdit ? "PATCH" : "POST", body: values }, productName + (isEdit ? " saved." : " added."));
-    if (ok) {
-      setSavedProductNotice(productName + " saved at " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) + ". The product list below has been refreshed from the database.");
-      setImageVersion(Date.now());
-      setEditingProduct(null);
-      setAddingProduct(false);
-      form.reset();
-      if (returnTo) returnFromManagerEdit(returnTo, "/manager/shop");
+    setSavedProductNotice("");
+    setSavedProductKey("");
+    setSavingProductKey(formKey);
+    const nextCatalog = await send("/api/manager/shop", { method: isEdit ? "PATCH" : "POST", body: values });
+    if (!nextCatalog) return;
+    const verification = verifySavedProduct(nextCatalog, values, isEdit);
+    if (verification.error) {
+      setSavingProductKey("");
+      setSavedProductKey("");
+      setMessage(verification.error);
+      return;
     }
+    setSavingProductKey("");
+    setSavedProductKey(formKey);
+    setMessage(productName + (isEdit ? " saved and verified." : " added and verified."));
+    setSavedProductNotice(productName + " saved at " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) + ". Verified in the database from the refreshed catalog.");
+    setImageVersion(Date.now());
+    await new Promise((resolve) => window.setTimeout(resolve, 900));
+    setSavedProductKey("");
+    setEditingProduct(null);
+    setAddingProduct(false);
+    form.reset();
+    if (returnTo) returnFromManagerEdit(returnTo, "/manager/shop");
   }
-
   async function removeProduct(product: ShopProduct) {
     if (!window.confirm("Delete " + product.name + " from Aviator Supply?")) return;
     await send("/api/manager/shop?type=product&id=" + encodeURIComponent(product.id), { method: "DELETE" }, "Product deleted.");
@@ -291,12 +353,17 @@ export function ShopManager({ editId, editType, returnTo }: { editId?: string; e
   const settings = catalog.settings;
   const variantOptions = catalog.products.flatMap((product) => product.variants.map((variant) => ({ id: variant.id, label: product.name + " - " + variant.label })));
   const ticketProducts = catalog.products.filter((product) => product.productType === "ticket");
+  function productSaveState(key: string): ProductSaveState {
+    if (savedProductKey === key) return "saved";
+    if (savingProductKey === key) return "saving";
+    return "idle";
+  }
 
   return <section id="shop" className="coupon-manager manager-shop"><p className="eyebrow">Aviator Supply operations</p><h2>Aviator Supply</h2><p>Manage the dark storefront, full cart, Stripe orders, product catalogs, USPS parcel defaults, and automatic order bonus.</p><p className="media-message" role="status">{message}</p>
     <div className="manager-shop-layout"><aside className="manager-shop-catalogs"><div className="manager-shop-catalog-heading"><h3>Catalogs</h3><button className="button" type="button" onClick={() => { setAddingCategory(true); setEditingCategory(null); }} disabled={busy || addingCategory}>Add catalog</button></div><div className="manager-shop-filter"><button type="button" className={activeCategory === "all" ? "is-active" : ""} onClick={() => setActiveCategory("all")}>All</button>{catalog.categories.map((category) => <button type="button" className={activeCategory === category.slug ? "is-active" : ""} onClick={() => setActiveCategory(category.slug)} key={category.id}>{category.name}</button>)}</div>{addingCategory || editingCategory ? <form key={editingCategory ? "category-" + editingCategory.id : "new-category"} className="manager-shop-category-form" onSubmit={saveCategory}>{editingCategory ? <input type="hidden" name="id" value={editingCategory.id} /> : null}<label>Catalog name<input name="name" required maxLength={80} defaultValue={editingCategory?.name || ""} placeholder="Apparel" /></label><label>Description<input name="description" maxLength={160} defaultValue={editingCategory?.description || ""} placeholder="T-shirts, hoodies, and crew gear" /></label><label>Sort order<input name="sortOrder" type="number" defaultValue={editingCategory?.sortOrder || 0} /></label><label className="manager-event-publish"><input name="published" type="checkbox" defaultChecked={editingCategory ? editingCategory.published : true} /> Publish catalog</label><div><button className="button" disabled={busy}>{busy ? "Saving..." : editingCategory ? "Save catalog" : "Add catalog"}</button><button className="button button-outline" type="button" onClick={() => returnTo ? returnFromManagerEdit(returnTo, "/manager/shop") : (() => { setEditingCategory(null); setAddingCategory(false); })()} disabled={busy}>Cancel</button></div></form> : null}{catalog.categories.length ? <ul>{catalog.categories.map((category, index) => <li key={category.id}><span><strong>{category.name}</strong><small>Order {category.sortOrder}</small></span><div><button type="button" onClick={() => moveCategory(category, -1)} disabled={busy || index === 0}>Up</button><button type="button" onClick={() => moveCategory(category, 1)} disabled={busy || index === catalog.categories.length - 1}>Down</button><a className="button" href={managerEditHref("shop", String(category.id), "category")}>Edit</a><button type="button" onClick={() => removeCategory(category)} disabled={busy}>Delete</button></div></li>)}</ul> : null}</aside>
       <div className="manager-shop-main"><div className="manager-shop-product-toolbar"><div><p className="eyebrow">Products</p><h3>Shop items</h3></div><div className="manager-shop-product-actions"><button className="button" type="button" onClick={() => { setAddingProductType("merchandise"); setAddingProduct(true); setEditingProduct(null); setSavedProductNotice(""); }} disabled={busy || addingProduct}>Add new item</button><button className="button button-outline" type="button" onClick={() => { setAddingProductType("ticket"); setAddingProduct(true); setEditingProduct(null); setSavedProductNotice(""); }} disabled={busy || addingProduct}>Add event ticket</button></div></div>
         {savedProductNotice ? <p className="media-message" role="status">{savedProductNotice}</p> : null}
-        {addingProduct ? <ProductForm initialProductType={addingProductType} categories={catalog.categories} locations={catalog.locations || []} busy={busy} onSubmit={saveProduct} onCancel={() => setAddingProduct(false)} imageVersion={imageVersion} /> : null}
+        {addingProduct ? <ProductForm initialProductType={addingProductType} categories={catalog.categories} locations={catalog.locations || []} busy={busy} saveState={productSaveState("new")} onSubmit={saveProduct} onCancel={() => { setAddingProduct(false); setSavingProductKey(""); setSavedProductKey(""); }} imageVersion={imageVersion} /> : null}
         {settings ? <section className="manager-shop-settings-panel"><div className="manager-shop-form-heading"><div><p className="eyebrow">Checkout controls</p><h3>Order bonus + shipping</h3></div><button className="button button-outline" type="button" onClick={() => setEditingCheckoutSettings((open) => !open)} disabled={busy}>{editingCheckoutSettings ? "Collapse" : "Edit"}</button></div>{!editingCheckoutSettings ? <div className="manager-shop-settings-summary"><span>{settings.bonusEnabled ? "Bonus on" : "Bonus off"}</span><span>{settings.bonusLabel || "No bonus label"}</span><span>{money(settings.bonusThresholdCents)} minimum</span><span>Orders to {settings.orderNotificationEmail}</span></div> : <form className="manager-shop-settings" onSubmit={saveSettings}>
       <label className="manager-event-publish"><input name="bonusEnabled" type="checkbox" defaultChecked={settings.bonusEnabled} /> Enable order bonus</label>
       <label>Bonus starts over<input name="bonusThreshold" type="number" min="0" step=".01" defaultValue={(settings.bonusThresholdCents / 100).toFixed(2)} /></label>
@@ -316,7 +383,7 @@ export function ShopManager({ editId, editType, returnTo }: { editId?: string; e
       <label>Default box height (in)<input name="parcelHeight" type="number" min=".1" step=".1" defaultValue={settings.parcelHeight} /></label>
       <button className="button" disabled={busy}>{busy ? "Saving..." : "Save checkout settings"}</button>
     </form>}</section> : null}
-        <div className="manager-shop-products"><h3 className="tour-signups-heading">Shop products ({visibleProducts.length})</h3>{visibleProducts.length ? visibleProducts.map((product) => <article className={(product.published && publicVariantCount(product) ? "" : "is-hidden") + (editingProduct?.id === product.id ? " is-editing" : "")} key={product.id}>{productImageUrls(product).length ? <div className="manager-shop-product-thumbs">{productImageUrls(product).slice(0, 3).map((image, index) => <ShopProductGallery images={[imageWithVersion(image, imageVersion)]} name={product.name + " photo " + (index + 1)} key={image} />)}{productImageUrls(product).length > 3 ? <span>+{productImageUrls(product).length - 3}</span> : null}</div> : <div className="manager-shop-placeholder">Shop</div>}<div><p className="eyebrow">{product.categoryName}  -  {product.published ? "Published" : "Draft"}  -  {product.source === "shopify" ? "Shopify import" : "Manager"}  -  {publicVariantCount(product)} available</p><h4>{product.name}</h4><p>{product.description}</p><small>{product.variants.map((variant) => variant.label + " " + money(variant.priceCents) + " / " + (variant.trackInventory ? variant.inventoryCount + " in stock" : variant.availableForSale ? "available, untracked" : "unavailable")).join("  -  ")}</small></div><footer><button className="button" type="button" onClick={() => { setEditingProduct(product); setAddingProduct(false); setSavedProductNotice(""); }}>Edit</button><button type="button" onClick={() => removeProduct(product)} disabled={busy}>Delete</button></footer>{editingProduct?.id === product.id ? <div className="manager-shop-inline-edit"><ProductForm product={editingProduct} categories={catalog.categories} locations={catalog.locations || []} busy={busy} onSubmit={saveProduct} onCancel={() => setEditingProduct(null)} imageVersion={imageVersion} /></div> : null}</article>) : <p className="tour-schedule-empty">No products in this catalog yet.</p>}</div>
+        <div className="manager-shop-products"><h3 className="tour-signups-heading">Shop products ({visibleProducts.length})</h3>{visibleProducts.length ? visibleProducts.map((product) => <article className={(product.published && publicVariantCount(product) ? "" : "is-hidden") + (editingProduct?.id === product.id ? " is-editing" : "")} key={product.id}>{productImageUrls(product).length ? <div className="manager-shop-product-thumbs">{productImageUrls(product).slice(0, 3).map((image, index) => <ShopProductGallery images={[imageWithVersion(image, imageVersion)]} name={product.name + " photo " + (index + 1)} key={image} />)}{productImageUrls(product).length > 3 ? <span>+{productImageUrls(product).length - 3}</span> : null}</div> : <div className="manager-shop-placeholder">Shop</div>}<div><p className="eyebrow">{product.categoryName}  -  {product.published ? "Published" : "Draft"}  -  {product.source === "shopify" ? "Shopify import" : "Manager"}  -  {publicVariantCount(product)} available</p><h4>{product.name}</h4><p>{product.description}</p><small>{product.variants.map((variant) => variant.label + " " + money(variant.priceCents) + " / " + (variant.trackInventory ? variant.inventoryCount + " in stock" : variant.availableForSale ? "available, untracked" : "unavailable")).join("  -  ")}</small></div><footer><button className="button" type="button" onClick={() => { setEditingProduct(product); setAddingProduct(false); setSavedProductNotice(""); }}>Edit</button><button type="button" onClick={() => removeProduct(product)} disabled={busy}>Delete</button></footer>{editingProduct?.id === product.id ? <div className="manager-shop-inline-edit"><ProductForm product={editingProduct} categories={catalog.categories} locations={catalog.locations || []} busy={busy} saveState={productSaveState(String(editingProduct.id))} onSubmit={saveProduct} onCancel={() => { setEditingProduct(null); setSavingProductKey(""); setSavedProductKey(""); }} imageVersion={imageVersion} /></div> : null}</article>) : <p className="tour-schedule-empty">No products in this catalog yet.</p>}</div>
       </div></div>
     {ticketProducts.length ? <section className="manager-shop-ticket-rosters"><div className="manager-shop-form-heading"><div><p className="eyebrow">Event admission</p><h3>Ticket purchaser lists</h3></div></div>{ticketProducts.map((product) => {
       const purchases = (catalog.ticketPurchases || []).filter((purchase) => purchase.productId === product.id);

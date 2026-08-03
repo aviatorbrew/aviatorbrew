@@ -555,10 +555,10 @@ export async function saveShopProduct(input: ShopProductInput) {
   if (normalized.productType === "ticket" && !locations.some((location) => location.slug === normalized.ticketLocationSlug)) throw new Error("Choose a valid Aviator event location.");
   await ensureDefaultCategories();
   return withDatabase(async (client) => {
+    let productId = normalized.id;
     await client.query("BEGIN");
     try {
       const categoryId = await categoryIdForInput(client, normalized);
-      let productId = normalized.id;
       if (productId) {
         const current = await client.query("SELECT image_url,additional_image_urls,source,source_id,product_type FROM website.shop_products WHERE id=$1 FOR UPDATE", [productId]);
         if (!current.rows[0]) throw new Error("Product not found.");
@@ -592,7 +592,7 @@ export async function saveShopProduct(input: ShopProductInput) {
       await client.query("ROLLBACK").catch(() => undefined);
       throw error;
     }
-    return getShopCatalog({ manager: true });
+    return { ...(await getShopCatalog({ manager: true })), savedProductId: productId };
   }, { skipSchema: true });
 }
 
