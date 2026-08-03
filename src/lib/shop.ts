@@ -299,6 +299,14 @@ function resolveShopImageUrl(value: unknown, productSlug: string) {
   return fallbackShopImageUrl(productSlug) || normalized;
 }
 
+function resolvedShopCartImageUrl(row: Record<string, unknown>) {
+  const slug = String(row.product_slug || row.slug || "");
+  const additional = Array.isArray(row.additional_image_urls)
+    ? row.additional_image_urls.map((url: unknown) => resolveShopImageUrl(url, slug))
+    : [];
+  return normalizeShopImageUrls([resolveShopImageUrl(row.image_url, slug), ...additional])[0] || "";
+}
+
 function settingsFromRow(row: Record<string, unknown> | undefined): ShopSettings {
   return {
     bonusEnabled: row?.bonus_enabled !== false,
@@ -652,7 +660,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
   const requests = normalizeCartRequests(rawItems);
   return withDatabase(async (client) => {
     const ids = requests.map((item) => item.variantId);
-    const result = await client.query("SELECT v.*,p.name AS product_name,p.image_url,p.published AS product_published,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at,p.ticket_sales_end_at,p.ticket_capacity,p.ticket_max_per_order,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS ticket_sold_count,COALESCE((SELECT SUM(oi.quantity) FROM website.shop_order_items oi JOIN website.shop_orders oo ON oo.id=oi.order_id WHERE oi.product_id=p.id AND oi.is_bonus=false AND oo.status='pending' AND oo.checkout_expires_at>now()),0)::int AS ticket_product_reserved_count,COALESCE(r.reserved_count,0)::int AS reserved_count FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id LEFT JOIN (SELECT i.variant_id,SUM(i.quantity)::int AS reserved_count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.status='pending' AND o.checkout_expires_at>now() AND i.is_bonus=false GROUP BY i.variant_id) r ON r.variant_id=v.id WHERE v.id=ANY($1::bigint[])", [ids]);
+    const result = await client.query("SELECT v.*,p.name AS product_name,p.slug AS product_slug,p.image_url,p.additional_image_urls,p.published AS product_published,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at,p.ticket_sales_end_at,p.ticket_capacity,p.ticket_max_per_order,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS ticket_sold_count,COALESCE((SELECT SUM(oi.quantity) FROM website.shop_order_items oi JOIN website.shop_orders oo ON oo.id=oi.order_id WHERE oi.product_id=p.id AND oi.is_bonus=false AND oo.status='pending' AND oo.checkout_expires_at>now()),0)::int AS ticket_product_reserved_count,COALESCE(r.reserved_count,0)::int AS reserved_count FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id LEFT JOIN (SELECT i.variant_id,SUM(i.quantity)::int AS reserved_count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.status='pending' AND o.checkout_expires_at>now() AND i.is_bonus=false GROUP BY i.variant_id) r ON r.variant_id=v.id WHERE v.id=ANY($1::bigint[])", [ids]);
     const rows = new Map(result.rows.map((row) => [Number(row.id), row]));
     const ticketProductQuantities = new Map<number, number>();
     const merchandiseItems = requests.map((request) => {
@@ -678,7 +686,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
         productId: variant.productId,
         productName: String(row.product_name || ""),
         variantLabel: variant.label,
-        imageUrl: normalizeShopImageUrl(row.image_url),
+        imageUrl: resolvedShopCartImageUrl(row),
         unitPriceCents: variant.priceCents,
         quantity: request.quantity,
         weightOunces: variant.weightOunces,
@@ -694,7 +702,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
     const ticketOnly = merchandiseItems.every((item) => item.productType === "ticket");
     let bonusItem: ShopCartItem | null = null;
     if (!ticketOnly && settings.bonusEnabled && settings.bonusVariantId && subtotalCents > settings.bonusThresholdCents) {
-      const bonusResult = await client.query("SELECT v.*,p.name AS product_name,p.image_url,p.published AS product_published FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id WHERE v.id=$1", [settings.bonusVariantId]);
+      const bonusResult = await client.query("SELECT v.*,p.name AS product_name,p.slug AS product_slug,p.image_url,p.additional_image_urls,p.published AS product_published FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id WHERE v.id=$1", [settings.bonusVariantId]);
       const row = bonusResult.rows[0];
       if (row && row.product_published === true) {
         const variant = variantFromRow(row);
@@ -703,7 +711,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
           productId: variant.productId,
           productName: settings.bonusLabel,
           variantLabel: variant.label,
-          imageUrl: normalizeShopImageUrl(row.image_url),
+          imageUrl: resolvedShopCartImageUrl(row),
           unitPriceCents: 0,
           quantity: 1,
           weightOunces: variant.weightOunces,
