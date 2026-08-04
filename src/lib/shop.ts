@@ -503,17 +503,24 @@ function normalizedDate(value: unknown, label: string) {
   return date.toISOString();
 }
 
-function normalizeProductInput(input: ShopProductInput) {
+function currentInt(current: Record<string, unknown> | undefined, key: string, fallback = 0) {
+  const value = current?.[key];
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : fallback;
+}
+
+function normalizeProductInput(input: ShopProductInput, current?: Record<string, unknown>) {
   const name = input.name.trim();
   if (!name) throw new Error("Product name is required.");
   const productType = input.productType === "ticket" ? "ticket" as const : "merchandise" as const;
-  const ticketLocationSlug = String(input.ticketLocationSlug || "").trim().slice(0, 100);
-  const ticketEventStartsAt = normalizedDate(input.ticketEventStartsAt, "Event date and time");
-  const ticketSalesEndAt = normalizedDate(input.ticketSalesEndAt, "Ticket sales end date");
-  const ticketCapacity = Math.max(0, Math.floor(Number(input.ticketCapacity || 0)));
-  const ticketMaxPerOrder = Math.max(1, Math.min(1000, Math.floor(Number(input.ticketMaxPerOrder || 20))));
-  const ticketFullWidth = productType === "ticket" && input.ticketFullWidth === true;
-  const ticketPublishAsEvent = productType === "ticket" && input.ticketPublishAsEvent === true;
+  const currentTicketLocationSlug = String(current?.ticket_location_slug || "").trim();
+  const ticketLocationSlug = String(input.ticketLocationSlug === undefined ? currentTicketLocationSlug : input.ticketLocationSlug || "").trim().slice(0, 100);
+  const ticketEventStartsAt = normalizedDate(input.ticketEventStartsAt === undefined ? current?.ticket_event_starts_at : input.ticketEventStartsAt, "Event date and time");
+  const ticketSalesEndAt = normalizedDate(input.ticketSalesEndAt === undefined ? current?.ticket_sales_end_at : input.ticketSalesEndAt, "Ticket sales end date");
+  const ticketCapacity = Math.max(0, Math.floor(Number(input.ticketCapacity === undefined ? currentInt(current, "ticket_capacity", 0) : input.ticketCapacity || 0)));
+  const ticketMaxPerOrder = Math.max(1, Math.min(1000, Math.floor(Number(input.ticketMaxPerOrder === undefined ? currentInt(current, "ticket_max_per_order", 20) : input.ticketMaxPerOrder || 0))));
+  const ticketFullWidth = productType === "ticket" && (input.ticketFullWidth === undefined ? current?.ticket_full_width === true : input.ticketFullWidth === true);
+  const ticketPublishAsEvent = productType === "ticket" && (input.ticketPublishAsEvent === undefined ? current?.ticket_publish_as_event === true : input.ticketPublishAsEvent === true);
   if (productType === "ticket" && !ticketLocationSlug) throw new Error("Choose the event location for this ticket.");
   if (productType === "ticket" && !ticketEventStartsAt) throw new Error("Set the event date and time for this ticket.");
   if (productType === "ticket" && ticketCapacity < 1) throw new Error("Set the total number of tickets for sale.");
@@ -551,25 +558,30 @@ function productImagesForSave(input: ShopProductInput, current?: Record<string, 
 
 export async function saveShopProduct(input: ShopProductInput) {
   await ensureDatabaseSchema();
-  const normalized = normalizeProductInput(input);
-  const locations = await getAllLocations();
-  if (normalized.productType === "ticket" && !locations.some((location) => location.slug === normalized.ticketLocationSlug)) throw new Error("Choose a valid Aviator event location.");
   await ensureDefaultCategories();
   return withDatabase(async (client) => {
-    let productId = normalized.id;
+    let productId = input.id;
     await client.query("BEGIN");
     try {
+      let currentProduct: Record<string, unknown> | undefined;
+      if (productId) {
+        const current = await client.query("SELECT * FROM website.shop_products WHERE id=$1 FOR UPDATE", [productId]);
+        if (!current.rows[0]) throw new Error("Product not found.");
+        currentProduct = current.rows[0];
+      }
+      const normalized = normalizeProductInput(input, currentProduct);
+      productId = normalized.id;
+      const locations = await getAllLocations();
+      if (normalized.productType === "ticket" && !locations.some((location) => location.slug === normalized.ticketLocationSlug)) throw new Error("Choose a valid Aviator event location.");
       const categoryId = await categoryIdForInput(client, normalized);
       if (productId) {
-        const current = await client.query("SELECT image_url,additional_image_urls,source,source_id,product_type FROM website.shop_products WHERE id=$1 FOR UPDATE", [productId]);
-        if (!current.rows[0]) throw new Error("Product not found.");
         const committedTickets = await client.query("SELECT COALESCE(SUM(party_size),0)::int AS sold FROM website.shop_ticket_purchases WHERE product_id=$1", [productId]);
         const reservedTickets = await client.query("SELECT COALESCE(SUM(i.quantity),0)::int AS reserved FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=$1 AND i.is_bonus=false AND o.status='pending' AND o.checkout_expires_at>now()", [productId]);
         const allocatedTickets = Number(committedTickets.rows[0]?.sold || 0) + Number(reservedTickets.rows[0]?.reserved || 0);
         if (allocatedTickets > 0 && normalized.productType !== "ticket") throw new Error("A ticket product with sales or active checkout reservations cannot be changed to merchandise.");
         if (normalized.productType === "ticket" && normalized.ticketCapacity < allocatedTickets) throw new Error("Total ticket capacity cannot be lower than the " + allocatedTickets + " tickets already sold or reserved.");
-        const images = productImagesForSave(normalized, current.rows[0]);
-        await client.query("UPDATE website.shop_products SET category_id=$2,name=$3,description=$4,image_url=$5,additional_image_urls=$6::jsonb,published=$7,featured=$8,sort_order=$9,source=$10,source_id=$11,product_type=$12,ticket_location_slug=$13,ticket_event_starts_at=$14,ticket_sales_end_at=$15,ticket_capacity=$16,ticket_max_per_order=$17,ticket_full_width=$18,ticket_publish_as_event=$19,updated_at=now() WHERE id=$1", [productId, categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || current.rows[0].source || "manager", normalized.sourceId || current.rows[0].source_id || null, normalized.productType, normalized.ticketLocationSlug || null, normalized.ticketEventStartsAt || null, normalized.ticketSalesEndAt || null, normalized.ticketCapacity, normalized.ticketMaxPerOrder, normalized.ticketFullWidth, normalized.ticketPublishAsEvent]);
+        const images = productImagesForSave(normalized, currentProduct);
+        await client.query("UPDATE website.shop_products SET category_id=$2,name=$3,description=$4,image_url=$5,additional_image_urls=$6::jsonb,published=$7,featured=$8,sort_order=$9,source=$10,source_id=$11,product_type=$12,ticket_location_slug=$13,ticket_event_starts_at=$14,ticket_sales_end_at=$15,ticket_capacity=$16,ticket_max_per_order=$17,ticket_full_width=$18,ticket_publish_as_event=$19,updated_at=now() WHERE id=$1", [productId, categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || currentProduct?.source || "manager", normalized.sourceId || currentProduct?.source_id || null, normalized.productType, normalized.ticketLocationSlug || null, normalized.ticketEventStartsAt || null, normalized.ticketSalesEndAt || null, normalized.ticketCapacity, normalized.ticketMaxPerOrder, normalized.ticketFullWidth, normalized.ticketPublishAsEvent]);
       } else {
         const images = productImagesForSave(normalized);
         const inserted = await client.query("INSERT INTO website.shop_products (slug,category_id,name,description,image_url,additional_image_urls,published,featured,sort_order,source,source_id,product_type,ticket_location_slug,ticket_event_starts_at,ticket_sales_end_at,ticket_capacity,ticket_max_per_order,ticket_full_width,ticket_publish_as_event) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id", [shopSlug(normalized.name), categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || "manager", normalized.sourceId || null, normalized.productType, normalized.ticketLocationSlug || null, normalized.ticketEventStartsAt || null, normalized.ticketSalesEndAt || null, normalized.ticketCapacity, normalized.ticketMaxPerOrder, normalized.ticketFullWidth, normalized.ticketPublishAsEvent]);
@@ -589,7 +601,7 @@ export async function saveShopProduct(input: ShopProductInput) {
       }
       if (existingIds.size) await client.query("DELETE FROM website.shop_product_variants WHERE product_id=$1 AND NOT (id=ANY($2::bigint[]))", [productId, retainedIds]);
 
-      const persistedProductResult = await client.query("SELECT category_id,name,description,published,featured,sort_order,product_type,updated_at FROM website.shop_products WHERE id=$1", [productId]);
+      const persistedProductResult = await client.query("SELECT category_id,name,description,published,featured,sort_order,product_type,ticket_location_slug,ticket_event_starts_at,ticket_sales_end_at,ticket_capacity,ticket_max_per_order,ticket_full_width,ticket_publish_as_event,updated_at FROM website.shop_products WHERE id=$1", [productId]);
       const persistedProduct = persistedProductResult.rows[0];
       const expectedCategoryId = categoryId === null ? null : Number(categoryId);
       const actualCategoryId = persistedProduct?.category_id === null || persistedProduct?.category_id === undefined ? null : Number(persistedProduct.category_id);
@@ -600,7 +612,14 @@ export async function saveShopProduct(input: ShopProductInput) {
         || persistedProduct.published !== (normalized.published !== false)
         || persistedProduct.featured !== (normalized.featured === true)
         || Number(persistedProduct.sort_order || 0) !== intValue(normalized.sortOrder)
-        || String(persistedProduct.product_type || "merchandise") !== normalized.productType) {
+        || String(persistedProduct.product_type || "merchandise") !== normalized.productType
+        || String(persistedProduct.ticket_location_slug || "") !== normalized.ticketLocationSlug
+        || normalizedDate(persistedProduct.ticket_event_starts_at, "Saved event date and time") !== normalized.ticketEventStartsAt
+        || normalizedDate(persistedProduct.ticket_sales_end_at, "Saved ticket sales end date") !== normalized.ticketSalesEndAt
+        || Number(persistedProduct.ticket_capacity || 0) !== normalized.ticketCapacity
+        || Number(persistedProduct.ticket_max_per_order || 20) !== normalized.ticketMaxPerOrder
+        || persistedProduct.ticket_full_width !== normalized.ticketFullWidth
+        || persistedProduct.ticket_publish_as_event !== normalized.ticketPublishAsEvent) {
         throw new Error("Database verification failed after saving the product details.");
       }
 

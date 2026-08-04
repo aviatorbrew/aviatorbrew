@@ -17,6 +17,9 @@ const noStore = { "Cache-Control": "private, no-store, max-age=0, must-revalidat
 function text(value: FormDataEntryValue | null) { return typeof value === "string" ? value.trim() : ""; }
 function number(value: FormDataEntryValue | null) { const parsed = Number(text(value)); return Number.isFinite(parsed) ? parsed : 0; }
 function bool(value: FormDataEntryValue | null, fallback = false) { const raw = text(value).toLowerCase(); return raw ? ["true", "on", "1", "yes"].includes(raw) : fallback; }
+function optionalText(form: FormData, key: string) { return form.has(key) ? text(form.get(key)) : undefined; }
+function optionalWholeNumber(form: FormData, key: string) { return form.has(key) ? Math.floor(number(form.get(key))) : undefined; }
+function ticketBoolean(form: FormData, key: string) { return form.has("ticketCapacity") ? bool(form.get(key), false) : undefined; }
 function unique(values: string[]) { return values.filter((value, index, all) => value && all.indexOf(value) === index); }
 function wholeOunces(value: unknown, fallback = 8) { const parsed = Number(value); return Math.max(1, Math.round(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback)); }
 
@@ -191,13 +194,13 @@ async function productInput(form: FormData) {
       featured: bool(form.get("featured"), false),
       sortOrder: number(form.get("sortOrder")),
       productType: text(form.get("productType")) === "ticket" ? "ticket" as const : "merchandise" as const,
-      ticketLocationSlug: text(form.get("ticketLocationSlug")),
-      ticketEventStartsAt: text(form.get("ticketEventStartsAt")),
-      ticketSalesEndAt: text(form.get("ticketSalesEndAt")),
-      ticketCapacity: Math.max(0, Math.floor(number(form.get("ticketCapacity")))),
-      ticketMaxPerOrder: Math.max(1, Math.floor(number(form.get("ticketMaxPerOrder")) || 20)),
-      ticketFullWidth: bool(form.get("ticketFullWidth"), false),
-      ticketPublishAsEvent: bool(form.get("ticketPublishAsEvent"), false),
+      ticketLocationSlug: optionalText(form, "ticketLocationSlug"),
+      ticketEventStartsAt: optionalText(form, "ticketEventStartsAt"),
+      ticketSalesEndAt: optionalText(form, "ticketSalesEndAt"),
+      ticketCapacity: optionalWholeNumber(form, "ticketCapacity"),
+      ticketMaxPerOrder: optionalWholeNumber(form, "ticketMaxPerOrder"),
+      ticketFullWidth: ticketBoolean(form, "ticketFullWidth"),
+      ticketPublishAsEvent: ticketBoolean(form, "ticketPublishAsEvent"),
       variants: parseVariants(form),
     },
     uploadedImages,

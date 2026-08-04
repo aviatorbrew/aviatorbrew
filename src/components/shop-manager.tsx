@@ -41,6 +41,12 @@ function formNumber(values: FormData, key: string) { const parsed = Number(formT
 function formInt(values: FormData, key: string) { return Math.max(0, Math.floor(formNumber(values, key))); }
 function formCents(values: FormData, key: string) { return Math.round(Math.max(0, formNumber(values, key)) * 100); }
 function formWholeOunces(values: FormData, key: string, fallback = 8) { const parsed = formNumber(values, key); return Math.max(1, Math.round(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback)); }
+function formDateIso(values: FormData, key: string) {
+  const value = formText(values, key);
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : "";
+}
 
 function verifySavedProduct(catalog: VerifiedShopCatalog, values: FormData, isEdit: boolean) {
   const savedId = Number(catalog.savedProductId || values.get("id") || 0);
@@ -52,8 +58,18 @@ function verifySavedProduct(catalog: VerifiedShopCatalog, values: FormData, isEd
   if ((product.categoryId || null) !== categoryId) return { product, error: "Database verification failed: catalog did not match after save." };
   if (product.published !== formBoolean(values, "published")) return { product, error: "Database verification failed: published status did not match after save." };
   if (product.featured !== formBoolean(values, "featured")) return { product, error: "Database verification failed: featured status did not match after save." };
-  if (product.productType !== (formText(values, "productType") === "ticket" ? "ticket" : "merchandise")) return { product, error: "Database verification failed: product type did not match after save." };
+  const productType = formText(values, "productType") === "ticket" ? "ticket" : "merchandise";
+  if (product.productType !== productType) return { product, error: "Database verification failed: product type did not match after save." };
   if (product.sortOrder !== formInt(values, "sortOrder")) return { product, error: "Database verification failed: sort order did not match after save." };
+  if (productType === "ticket") {
+    if (product.ticketLocationSlug !== formText(values, "ticketLocationSlug")) return { product, error: "Database verification failed: ticket location did not match after save." };
+    if (product.ticketEventStartsAt !== formDateIso(values, "ticketEventStartsAt")) return { product, error: "Database verification failed: ticket event date did not match after save." };
+    if ((product.ticketSalesEndAt || "") !== formDateIso(values, "ticketSalesEndAt")) return { product, error: "Database verification failed: ticket sales end date did not match after save." };
+    if (product.ticketCapacity !== formInt(values, "ticketCapacity")) return { product, error: "Database verification failed: ticket capacity did not match after save." };
+    if (product.ticketMaxPerOrder !== Math.max(1, formInt(values, "ticketMaxPerOrder"))) return { product, error: "Database verification failed: ticket customer limit did not match after save." };
+    if (product.ticketFullWidth !== formBoolean(values, "ticketFullWidth")) return { product, error: "Database verification failed: ticket display setting did not match after save." };
+    if (product.ticketPublishAsEvent !== formBoolean(values, "ticketPublishAsEvent")) return { product, error: "Database verification failed: ticket event publish setting did not match after save." };
+  }
   const variantCount = formInt(values, "variantCount");
   if (product.variants.length !== variantCount) return { product, error: "Database verification failed: option count did not match after save." };
   for (let index = 0; index < variantCount; index += 1) {
