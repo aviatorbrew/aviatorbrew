@@ -47,6 +47,10 @@ function labelFor(key: string) {
   return key.replace(/([A-Z])/g, " $1").replace(/^./, (value) => value.toUpperCase());
 }
 
+function inquirySourceLabel(kind: string) {
+  return kind === "event" ? "Aviator Event" : "aviatorbrew.com";
+}
+
 function detailRow(label: string, value?: string) {
   return `<tr><th style="padding:10px 12px;text-align:left;border-bottom:1px solid #d8e2e7;color:#59707d;font-size:11px;letter-spacing:.08em;text-transform:uppercase;width:34%">${escapeHtml(label)}</th><td style="padding:10px 12px;border-bottom:1px solid #d8e2e7;color:#172b3b;font-size:15px;line-height:1.45">${escapeHtml(value || "Not provided")}</td></tr>`;
 }
@@ -112,7 +116,7 @@ function cateringCustomerText(body: Record<string, string>) {
 async function recordInquiry(body: Record<string, string>) {
   if (!databaseConfigured() || body.kind === "newsletter") return;
   await withDatabase(async (client) => {
-    await client.query("INSERT INTO website.form_inquiries (kind,email,name,payload,source) VALUES ($1,$2,$3,$4::jsonb,$5)", [body.kind, body.email, body.name || null, JSON.stringify(body), "aviatorbrew.com"]);
+    await client.query("INSERT INTO website.form_inquiries (kind,email,name,payload,source) VALUES ($1,$2,$3,$4::jsonb,$5)", [body.kind, body.email, body.name || null, JSON.stringify(body), inquirySourceLabel(body.kind)]);
   }).catch(() => undefined);
 }
 
@@ -124,8 +128,9 @@ export async function POST(request: Request) {
     if (body.kind !== "newsletter" && (!body.name || (!body.message && body.kind !== "career"))) return NextResponse.json({ error: "Please complete the required fields." }, { status: 400 });
     if (body.kind === "catering" && !pickupTimeIsAvailable(body.pickupTime || "")) return NextResponse.json({ error: "Catering pickup is available from 10:00 AM to 7:00 PM. Please choose a pickup time in that window." }, { status: 400 });
     const webhook = process.env.FORM_WEBHOOK_URL;
+    const source = inquirySourceLabel(body.kind);
     if (webhook) {
-      const response = await fetch(webhook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, source: "aviatorbrew.com" }) });
+      const response = await fetch(webhook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, source }) });
       if (!response.ok) throw new Error("Submission endpoint unavailable");
     }
 
@@ -169,7 +174,7 @@ export async function POST(request: Request) {
         if (!customerSent) throw new Error("Email delivery is not configured");
       } else {
         const html = body.kind === "event" ? `<!doctype html><html><body style="margin:0;background:#eef2f3;padding:32px 16px;font-family:Arial,sans-serif;color:#172b3b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:650px;background:#ffffff;border:1px solid #d5dfe3"><tr><td style="padding:32px 36px;background:#102b3e;color:#ffffff"><div style="color:#efb45f;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Aviator Private Events</div><h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;font-weight:700">New event inquiry</h1></td></tr><tr><td style="padding:30px 36px">${Object.entries(body).filter(([key]) => key !== "website" && key !== "humanCheck").map(([key, value]) => `<div style="padding:0 0 20px;margin:0 0 20px;border-bottom:1px solid #e0e7ea"><div style="margin:0 0 7px;color:#637783;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">${escapeHtml(labelFor(key))}</div><div style="color:#172b3b;font-size:16px;line-height:1.6;white-space:pre-wrap">${escapeHtml(value)}</div></div>`).join("")}<p style="margin:28px 0 0;color:#637783;font-size:13px;line-height:1.6">Reply directly to <a href="mailto:${escapeHtml(body.email)}" style="color:#a76125">${escapeHtml(body.email)}</a> to follow up.</p></td></tr></table></td></tr></table></body></html>` : undefined;
-        const sent = await sendMail({ to: recipient, subject, text: subject + "\n\n" + text, html, replyTo: body.email });
+        const sent = await sendMail({ to: recipient, subject, text: subject + "\n\n" + text, html, replyTo: body.email, fromName: body.kind === "event" ? source : undefined });
         if (!sent) throw new Error("Email delivery is not configured");
       }
     }

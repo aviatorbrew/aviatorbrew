@@ -3,7 +3,7 @@ import path from "node:path";
 import { findCustomLogo } from "@/lib/site-branding";
 
 type MailAttachment = { filename: string; path: string; cid?: string; contentType?: string };
-type MailMessage = { to: string; subject: string; text: string; html?: string; replyTo?: string; attachments?: MailAttachment[] };
+type MailMessage = { to: string; subject: string; text: string; html?: string; replyTo?: string; attachments?: MailAttachment[]; fromName?: string };
 
 let transporter: nodemailer.Transporter | undefined;
 let verification: Promise<boolean> | undefined;
@@ -72,7 +72,7 @@ export async function sendMail(message: MailMessage) {
     });
   }
   await transport.sendMail({
-    from: { name: process.env.MAIL_FROM_NAME || "Aviator Brewing Company", address: process.env.MAIL_FROM_EMAIL! },
+    from: { name: message.fromName || process.env.MAIL_FROM_NAME || "Aviator Brewing Company", address: process.env.MAIL_FROM_EMAIL! },
     to: message.to,
     subject: message.subject,
     text: message.text,
