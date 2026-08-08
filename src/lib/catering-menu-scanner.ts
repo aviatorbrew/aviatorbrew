@@ -321,6 +321,15 @@ function textField(record: JsonRecord, keys: string[]) {
   return "";
 }
 
+function noteField(record: JsonRecord) {
+  for (const key of ["note", "notes", "description", "details"]) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return normalizeLine(value).slice(0, 260);
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return "";
+}
+
 function firstArray(record: JsonRecord, keys: string[]) {
   for (const key of keys) {
     const value = record[key];
@@ -412,14 +421,14 @@ function addJsonItem(items: CateringMenuItem[], record: JsonRecord, fallbackGrou
   }
   if (!name) return;
 
-  const baseNote = textField(record, ["note", "notes", "description", "details"]);
+  const baseNote = noteField(record);
   const basePrice = priceCentsFromRecord(record) ?? priceFromNote(baseNote);
   const variants = firstArray(record, ["variants", "sizes", "servingSizes", "servings", "packages"]);
   if (variants.length) {
     variants.forEach((variant) => {
       if (isRecord(variant)) {
         const label = jsonVariantLabel(variant);
-        const variantNote = textField(variant, ["note", "notes", "description", "details"]) || baseNote;
+        const variantNote = noteField(variant) || baseNote;
         appendItem(items, {
           id: slugify(recordGroup + "-" + name + "-" + label),
           group: recordGroup,

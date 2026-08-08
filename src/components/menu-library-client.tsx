@@ -8,6 +8,7 @@ import { CouponManager } from "@/components/coupons";
 type MenuFile = { name: string; size: number; updatedAt: string; url: string };
 type MenuKind = "food" | "drinks";
 type FileMap = Record<string, MenuFile[]>;
+type UploadMode = "menu" | "ordering-json";
 
 const menuKinds: { id: MenuKind; label: string }[] = [{ id: "food", label: "Food Menu" }, { id: "drinks", label: "Drinks Menu" }];
 const menuUploadAccept = ".pdf,.png,.jpg,.jpeg,.webp";
@@ -17,6 +18,7 @@ function folderKey(location: string, kind: MenuKind) { return location + ":" + k
 function labelsFor(location: string) { return location === "catering-events" ? [{ id: "food" as MenuKind, label: "Onsite Event Buffet" }, { id: "drinks" as MenuKind, label: "Catering To-Go" }] : menuKinds; }
 function readableSize(bytes: number) { return bytes < 1024 * 1024 ? Math.max(1, Math.round(bytes / 1024)) + " KB" : (bytes / 1024 / 1024).toFixed(1) + " MB"; }
 function isOrderingJsonFile(name: string) { return name.toLowerCase().endsWith(".json"); }
+function isMenuUploadFile(name: string) { return /\.(pdf|png|jpe?g|webp)$/i.test(name); }
 function isCateringToGo(location: string, kind: MenuKind) { return location === "catering-events" && kind === "drinks"; }
 function fileRole(name: string) { return isOrderingJsonFile(name) ? "Ordering JSON" : "Menu file"; }
 function cleanFileName(name: string) { return name.replace(/^[0-9]+-/, ""); }
@@ -69,11 +71,17 @@ export function MenuLibraryClient({ managerMode = false }: { managerMode?: boole
     finally { setLoading(false); }
   }
 
-  async function upload(location: string, kind: MenuKind, uploadFiles: FileList | File[]) {
+  async function upload(location: string, kind: MenuKind, uploadFiles: FileList | File[], mode: UploadMode = "menu") {
     if (!accessKey || !uploadFiles.length) return;
     const activeFolder = folderKey(location, kind);
     const uploads = Array.from(uploadFiles);
-    const hasOrderingJson = uploads.some((file) => isOrderingJsonFile(file.name));
+    const invalidFile = uploads.find((file) => mode === "ordering-json" ? !isOrderingJsonFile(file.name) : !isMenuUploadFile(file.name));
+    if (invalidFile) {
+      setMessage(mode === "ordering-json" ? "Drop a .json file into the order JSON box." : "Drop a PDF, PNG, JPG, JPEG, or WEBP menu file into this box.");
+      return;
+    }
+
+    const hasOrderingJson = mode === "ordering-json";
     setBusyFolder(activeFolder);
     setMessage("");
     try {
@@ -112,6 +120,6 @@ export function MenuLibraryClient({ managerMode = false }: { managerMode?: boole
     const activeFolder = folderKey(location.slug, kind.id);
     const currentFiles = files[activeFolder] || [];
     const showOrderingJson = isCateringToGo(location.slug, kind.id);
-    return <section className="menu-folder-section" key={kind.id}><h3>{kind.label}</h3><div className="menu-dropzone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(location.slug, kind.id, event.dataTransfer.files); }}><input id={"menu-upload-" + location.slug + "-" + kind.id} type="file" accept={menuUploadAccept} onChange={(event) => { if (event.currentTarget.files) upload(location.slug, kind.id, event.currentTarget.files); event.currentTarget.value = ""; }} /><label htmlFor={"menu-upload-" + location.slug + "-" + kind.id}>{busyFolder === activeFolder ? "Uploading..." : "Drop " + kind.label.toLowerCase() + " here"}</label><small>or choose a replacement file - 25 MB max</small></div>{showOrderingJson ? <div className="menu-dropzone menu-json-dropzone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(location.slug, kind.id, event.dataTransfer.files); }}><input id={"menu-json-upload-" + location.slug + "-" + kind.id} type="file" accept={orderingJsonAccept} onChange={(event) => { if (event.currentTarget.files) upload(location.slug, kind.id, event.currentTarget.files); event.currentTarget.value = ""; }} /><label htmlFor={"menu-json-upload-" + location.slug + "-" + kind.id}>Upload order JSON</label><small>builds the online ordering form</small></div> : null}<ul>{currentFiles.length ? currentFiles.map((file) => <li key={file.name}><a href={file.url} target="_blank" rel="noreferrer">{cleanFileName(file.name)}</a><span>{fileRole(file.name)} - {readableSize(file.size)} - {new Date(file.updatedAt).toLocaleDateString()}</span><button type="button" onClick={() => remove(location.slug, kind.id, file.name)} disabled={busyFolder === activeFolder}>Remove</button></li>) : <li className="menu-empty">{loading ? "Loading..." : "No " + kind.label.toLowerCase() + " uploaded yet."}</li>}</ul></section>;
+    return <section className="menu-folder-section" key={kind.id}><h3>{kind.label}</h3><div className="menu-dropzone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); upload(location.slug, kind.id, event.dataTransfer.files, "menu"); }}><input id={"menu-upload-" + location.slug + "-" + kind.id} type="file" accept={menuUploadAccept} onChange={(event) => { if (event.currentTarget.files) upload(location.slug, kind.id, event.currentTarget.files, "menu"); event.currentTarget.value = ""; }} /><label htmlFor={"menu-upload-" + location.slug + "-" + kind.id}>{busyFolder === activeFolder ? "Uploading..." : "Drop " + kind.label.toLowerCase() + " menu file here"}</label><small>or choose a replacement file - 25 MB max</small></div>{showOrderingJson ? <div className="menu-dropzone menu-json-dropzone" onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); upload(location.slug, kind.id, event.dataTransfer.files, "ordering-json"); }}><input id={"menu-json-upload-" + location.slug + "-" + kind.id} type="file" accept={orderingJsonAccept} onChange={(event) => { if (event.currentTarget.files) upload(location.slug, kind.id, event.currentTarget.files, "ordering-json"); event.currentTarget.value = ""; }} /><label htmlFor={"menu-json-upload-" + location.slug + "-" + kind.id}>{busyFolder === activeFolder ? "Uploading..." : "Drop order JSON here"}</label><small>builds the online ordering form</small></div> : null}<ul>{currentFiles.length ? currentFiles.map((file) => <li key={file.name}><a href={file.url} target="_blank" rel="noreferrer">{cleanFileName(file.name)}</a><span>{fileRole(file.name)} - {readableSize(file.size)} - {new Date(file.updatedAt).toLocaleDateString()}</span><button type="button" onClick={() => remove(location.slug, kind.id, file.name)} disabled={busyFolder === activeFolder}>Remove</button></li>) : <li className="menu-empty">{loading ? "Loading..." : "No " + kind.label.toLowerCase() + " uploaded yet."}</li>}</ul></section>;
   })}</div>{location.slug !== "catering-events" && <WebsitePhotosLibrary accessKey={accessKey} location={{ slug: location.slug, name: location.name }} />}</article>)}</div><WebsitePhotosLibrary accessKey={accessKey} />{!managerMode ? <CouponManager accessKey={accessKey} /> : null}</div></section>;
 }
