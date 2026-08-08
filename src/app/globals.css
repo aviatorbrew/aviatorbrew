@@ -406,6 +406,15 @@ body {
 
 /* Beer card title contrast */
 .hangar-beer-grid .beer-card h3 { color: #ffffff !important; text-shadow: 0 2px 8px rgba(0,0,0,.55); }
+.new-squadron { margin-bottom: clamp(3rem, 6vw, 5rem); }
+.new-squadron-heading { margin-bottom: clamp(1.4rem, 3vw, 2.2rem); }
+.new-squadron-heading h2 { max-width: 14ch; }
+.new-squadron-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; border: 1px solid rgba(148,202,226,.35); background: rgba(148,202,226,.35); }
+.new-squadron-grid .beer-card { min-height: clamp(19rem, 32vw, 30rem); background: #d7e7ed !important; }
+.new-squadron-grid .beer-card:nth-child(2n) { background: #c8dde5 !important; }
+.new-squadron-grid .beer-card h3 { color: #10233a !important; text-shadow: none; }
+.new-squadron-grid .beer-card p { max-width: 30rem; }
+@media (max-width: 700px) { .new-squadron-grid { grid-template-columns: 1fr; } .new-squadron-grid .beer-card { min-height: 17rem; } }
 
 /* Manager photo library readability */
 .media-library .website-photo-library {

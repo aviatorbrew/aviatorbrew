@@ -75,6 +75,10 @@ function byCategoryThenName(a: Beer, b: Beer) {
   const categoryDelta = (categoryOrder.indexOf(a.category) === -1 ? 999 : categoryOrder.indexOf(a.category)) - (categoryOrder.indexOf(b.category) === -1 ? 999 : categoryOrder.indexOf(b.category));
   return categoryDelta || byName(a, b);
 }
+function createdAtStamp(beer: PortalBeer) {
+  const stamp = Date.parse(beer.createdAt);
+  return Number.isFinite(stamp) ? stamp : 0;
+}
 
 export async function getManagedBeers() { return readManagedFile(); }
 export async function getAllBeers(): Promise<Beer[]> {
@@ -88,6 +92,20 @@ export async function getPortalBeers(): Promise<PortalBeer[]> {
   const db = databaseItems || [];
   const dbSlugs = new Set(db.map((beer) => beer.slug));
   return [...mergeCatalog(overrides, db).map((beer) => ({ ...beer, id: "catalog_" + beer.slug, createdAt: "", source: "catalog" as const, published: beer.published !== false })), ...managed.filter((beer) => !dbSlugs.has(beer.slug)).map((beer) => ({ ...normalizeBeerImage(beer), source: "managed" as const, published: beer.published !== false })), ...db.filter((beer) => beer.source === "managed")].sort(byName);
+}
+export async function getNewestBeers(limit = 2): Promise<Beer[]> {
+  const [allBeers, portalBeers] = await Promise.all([getAllBeers(), getPortalBeers()]);
+  const publishedBySlug = new Map(allBeers.map((beer) => [beer.slug, beer]));
+  const newestManaged = portalBeers
+    .filter((beer) => beer.source === "managed" && beer.published !== false && createdAtStamp(beer) > 0 && publishedBySlug.has(beer.slug))
+    .sort((a, b) => createdAtStamp(b) - createdAtStamp(a) || byName(a, b))
+    .map((beer) => publishedBySlug.get(beer.slug)!);
+  const seen = new Set(newestManaged.map((beer) => beer.slug));
+  const newestCatalog = [...beers]
+    .reverse()
+    .map((beer) => publishedBySlug.get(beer.slug))
+    .filter((beer): beer is Beer => Boolean(beer && !seen.has(beer.slug)));
+  return [...newestManaged, ...newestCatalog].slice(0, limit);
 }
 export async function getPortalBeer(id: string) { return (await getPortalBeers()).find((beer) => beer.id === id) || null; }
 
