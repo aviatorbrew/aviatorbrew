@@ -36,7 +36,8 @@ function cleanMenuName(name: string) {
 
 export default async function CateringToGoPage() {
   const [menu, backupMenu, hangar, menuScan] = await Promise.all([latestMenu("catering-events", "drinks"), latestMenu("catering-events", "food"), getLocation("hangar-bar"), getCateringMenuScan()]);
-  const menuFile = menu || backupMenu || (menuScan.menuUrl ? { name: menuScan.menuName, url: menuScan.menuUrl } : null);
+  const scannedMenuFile = menuScan.source === "scanned" && menuScan.menuUrl ? { name: menuScan.menuName, url: menuScan.menuUrl } : null;
+  const menuFile = scannedMenuFile || menu || backupMenu || null;
   const pickupAddress = hangar?.address || "688 Brewing Drive, Fuquay-Varina, NC 27526";
   const pickupPhone = hangar?.phone || "919-567-2337";
   const pickupHours = hangar?.hours || "Open daily at the brewery campus";

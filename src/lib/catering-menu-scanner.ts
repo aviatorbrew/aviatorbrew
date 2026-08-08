@@ -11,6 +11,15 @@ export type CateringMenuItem = { id: string; group: string; name: string; note?:
 export type CateringMenuScan = { menuName: string; menuUrl: string; source: "scanned" | "fallback"; items: CateringMenuItem[] };
 
 type MenuFile = { name: string; file: string; url: string; mtimeMs: number };
+type TextColumn = { start: number; end?: number };
+type VariantSectionConfig = {
+  group: string;
+  start: string;
+  end: string[];
+  column: TextColumn;
+  optionsForBaseName?: (baseName: string) => CateringMenuOption[] | undefined;
+  variantLabel?: (variant: string) => string;
+};
 
 const sauceOptions = ["Jet Fuel Buffalo", "Honey Bourbon BBQ", "Garlic Parm", "Lemon Pepper", "Hot Honey", "BlackMamba", "Aviator Dry Rub BBQ", "Afterburner (+$5)", "Cherry Bomb (+$5)"].map((value) => ({ label: value, value }));
 const drinkOptions = ["Root Beer", "Cream Soda", "Mixed"].map((value) => ({ label: value, value }));
@@ -95,38 +104,230 @@ function slugify(value: string) {
   return value.toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70) || "menu-item";
 }
 
-function isLikelyItem(line: string) {
-  if (ignored.has(line.toUpperCase())) return false;
-  if (/page \d+ of \d+/i.test(line)) return false;
-  if (/events@|919-|688 brewing|questions|pricing and availability|delivery is available|setup is available|contact |order details|catering packs|meals, seafood|beer is available|current selections|ordering details|choose up to|confirm timing|service details|listed on page/i.test(line)) return false;
-  if (/^\$?\d+(\.\d{2})?$/.test(line)) return false;
-  if (/^(small|large|half|full) tray$/i.test(line)) return false;
-  if (/^(add bacon|add jalapenos):/i.test(line)) return false;
-  if (/^serves \d/i.test(line)) return false;
-  if (/^\d+(-\d+)?$/.test(line)) return false;
-  if (/^\d+\s+sliders$/i.test(line)) return false;
-  if (/^\d+\s+(pieces|lb)$/i.test(line)) return false;
-  if (/[.!?]$/.test(line)) return false;
-  if (line.includes(",") || /\(\+\$\d+\)/.test(line)) return false;
-  return /[a-z]/.test(line) || /^\d+\s+wings/i.test(line);
+function normalizeLine(value: string) {
+  return value.replace(/\s+/g, " ").trim();
 }
 
-function parseScannedItems(text: string) {
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+function priceCents(value: string) {
+  return Math.round(Number(value.replace(/[$,]/g, "")) * 100);
+}
+
+function formatOptionPrice(cents: number) {
+  const amount = cents / 100;
+  return Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+}
+
+function appendItem(items: CateringMenuItem[], item: CateringMenuItem) {
+  if (items.some((existing) => existing.group === item.group && existing.name.toLowerCase() === item.name.toLowerCase())) return;
+  let id = item.id;
+  let suffix = 2;
+  while (items.some((existing) => existing.id === id)) {
+    id = item.id + "-" + suffix;
+    suffix += 1;
+  }
+  const priceNote = item.priceCents ? "$" + formatOptionPrice(item.priceCents) : "";
+  const note = priceNote && item.note && !item.note.includes("$") ? priceNote + " - " + item.note : item.note || priceNote || undefined;
+  items.push({ ...item, id, note });
+}
+
+function sectionLines(rawLines: string[], start: string, end: string[], column: TextColumn) {
+  const startUpper = start.toUpperCase();
+  const endUpper = end.map((value) => value.toUpperCase());
+  const lines: string[] = [];
+  let active = false;
+
+  for (const rawLine of rawLines) {
+    const upper = rawLine.toUpperCase();
+    if (!active && upper.includes(startUpper)) active = true;
+    if (!active) continue;
+    if (lines.length && endUpper.some((heading) => upper.includes(heading))) break;
+    const line = normalizeLine(rawLine.slice(column.start, column.end));
+    if (line) lines.push(line);
+  }
+
+  return lines;
+}
+
+function sectionLinesFromLastExactHeading(rawLines: string[], start: string, end: string[], column: TextColumn) {
+  const startUpper = start.toUpperCase();
+  const endUpper = end.map((value) => value.toUpperCase());
+  const startIndex = rawLines.reduce((latest, rawLine, index) => normalizeLine(rawLine.slice(column.start, column.end)).toUpperCase() === startUpper ? index : latest, -1);
+  if (startIndex === -1) return [];
+
+  const lines: string[] = [];
+  for (const rawLine of rawLines.slice(startIndex)) {
+    const upper = rawLine.toUpperCase();
+    if (lines.length && endUpper.some((heading) => upper.includes(heading))) break;
+    const line = normalizeLine(rawLine.slice(column.start, column.end));
+    if (line) lines.push(line);
+  }
+
+  return lines;
+}
+
+function isTableNoise(line: string) {
+  const upper = line.toUpperCase();
+  if (!line || ignored.has(upper) || sectionMap.has(upper)) return true;
+  if (/page \d+ of \d+/i.test(line)) return true;
+  if (/^(ITEM|MEAL|SIDE|QUANTITY|SAUCE OPTIONS|PRICE|SIZE|SERVES|PACK|HALF TRAY|FULL TRAY)\b/i.test(line) && !/\$\d/.test(line)) return true;
+  if (/events@|919-|688 brewing|questions|pricing and availability|delivery is available|setup is available|contact |order details|catering packs|meals, seafood|beer is available|current selections|ordering details|confirm timing|service details|listed on page/i.test(line)) return true;
+  return false;
+}
+
+function isStandaloneItemName(line: string) {
+  if (isTableNoise(line) || /\$/.test(line)) return false;
+  if (line.length > 75 || /[.!?]$/.test(line) || line.includes(",")) return false;
+  if (/^(small|large|half|full) tray$/i.test(line)) return false;
+  if (/^serves \d/i.test(line) || /^\d+(-\d+)?$/.test(line)) return false;
+  if (/^\d+\s*(sliders|pieces|lb|oysters|-?pack)$/i.test(line)) return false;
+  return /[a-z]/i.test(line);
+}
+
+function parseVariantPriceLine(line: string) {
+  const variantPattern = "(?:\\d+\\s*-\\s*pack|\\d+-pack|\\d+\\s*(?:sliders|pieces|lb|oysters)|(?:small|large|half|full)\\s+tray|serves\\s+\\d+(?:\\s*-\\s*\\d+)?|\\d+)";
+  const match = line.match(new RegExp("^(?:(.+?)\\s+)?(" + variantPattern + ")\\s+\\$(\\d+(?:\\.\\d{2})?)\\b", "i"));
+  if (!match) return null;
+  return {
+    baseName: match[1] ? normalizeLine(match[1]) : "",
+    variant: normalizeLine(match[2].replace(/\s*-\s*/g, "-")),
+    priceCents: priceCents(match[3]),
+  };
+}
+
+function variantName(baseName: string, variant: string) {
+  return baseName + " - " + variant;
+}
+
+function parseSauceOptions(text: string) {
+  const rawLines = text.split(/\r?\n/);
+  const parts: string[] = [];
+  let active = false;
+
+  for (const rawLine of rawLines) {
+    const leftLine = normalizeLine(rawLine.slice(0, 80));
+    if (/^HOUSE SAUCES$/i.test(leftLine)) { active = true; continue; }
+    if (!active) continue;
+    if (/^APP PACKS/i.test(leftLine)) break;
+    if (leftLine && !isTableNoise(leftLine)) parts.push(leftLine);
+  }
+
+  const options = parts.join(" ").split(",").map((option) => normalizeLine(option).replace(/\s+\+\$(\d+(?:\.\d{2})?)/, (_match, amount) => " (+$" + amount + ")")).filter(Boolean);
+  return options.length >= 4 ? options.map((value) => ({ label: value, value })) : sauceOptions;
+}
+
+function parseSliderOptions(text: string) {
+  const bacon = text.match(/Add bacon:\s*\$(\d+(?:\.\d{2})?)/i);
+  const jalapenos = text.match(/Add jalapenos:\s*\$(\d+(?:\.\d{2})?)/i);
+  if (!bacon || !jalapenos) return sliderOptions;
+
+  const baconCents = priceCents(bacon[1]);
+  const jalapenoCents = priceCents(jalapenos[1]);
+  const values = [
+    "No add-ons",
+    "Add bacon (+$" + formatOptionPrice(baconCents) + ")",
+    "Add jalapenos (+$" + formatOptionPrice(jalapenoCents) + ")",
+    "Add bacon and jalapenos (+$" + formatOptionPrice(baconCents + jalapenoCents) + ")",
+  ];
+  return values.map((value) => ({ label: value, value }));
+}
+
+function parseWingPacks(rawLines: string[], sauceChoices: CateringMenuOption[]) {
   const items: CateringMenuItem[] = [];
-  let group = "Catering menu";
-  for (const line of lines) {
-    const upper = line.toUpperCase();
-    if (sectionMap.has(upper)) { group = sectionMap.get(upper)!; continue; }
-    if (!isLikelyItem(line)) continue;
-    if (line.length > 95) continue;
-    const id = slugify(`${group}-${line}`);
-    if (!items.some((item) => item.id === id || item.name.toLowerCase() === line.toLowerCase())) items.push({ id, group, name: line });
+  for (const line of sectionLines(rawLines, "WING PACKS", ["HOUSE SAUCES", "APP PACKS"], { start: 0, end: 80 })) {
+    const match = line.match(/^(\d+\s+wings)\s+(choose up to \d+)\s+\$(\d+(?:\.\d{2})?)\b/i);
+    if (!match) continue;
+    const name = normalizeLine(match[1]);
+    const choiceNote = normalizeLine(match[2]).replace(/^choose/i, "Choose");
+    appendItem(items, {
+      id: slugify("Wing packs-" + name),
+      group: "Wing packs",
+      name,
+      note: choiceNote + " sauces",
+      options: sauceChoices,
+      priceCents: priceCents(match[3]),
+    });
   }
   return items;
 }
 
-function scannedTextMatchesKnownMenu(text: string) {
+function parseVariantSection(rawLines: string[], config: VariantSectionConfig) {
+  const items: CateringMenuItem[] = [];
+  let currentBaseName = "";
+
+  for (const line of sectionLines(rawLines, config.start, config.end, config.column)) {
+    if (isTableNoise(line)) continue;
+    const priced = parseVariantPriceLine(line);
+    if (priced) {
+      const baseName = priced.baseName || currentBaseName;
+      if (!baseName || isTableNoise(baseName)) continue;
+      currentBaseName = baseName;
+      const label = config.variantLabel ? config.variantLabel(priced.variant) : priced.variant;
+      appendItem(items, {
+        id: slugify(config.group + "-" + baseName + "-" + label),
+        group: config.group,
+        name: variantName(baseName, label),
+        priceCents: priced.priceCents,
+        options: config.optionsForBaseName?.(baseName),
+      });
+      continue;
+    }
+    if (isStandaloneItemName(line)) currentBaseName = line;
+  }
+
+  return items;
+}
+
+function parseTwoPriceSection(rawLines: string[], start: string, end: string[], column: TextColumn, group: string, firstLabel: string, secondLabel: string) {
+  const items: CateringMenuItem[] = [];
+
+  for (const line of sectionLines(rawLines, start, end, column)) {
+    if (isTableNoise(line)) continue;
+    const match = line.match(/^(.+?)\s+\$(\d+(?:\.\d{2})?)\s+\$(\d+(?:\.\d{2})?)$/);
+    if (!match) continue;
+    const name = normalizeLine(match[1]);
+    appendItem(items, { id: slugify(group + "-" + name + "-" + firstLabel), group, name: variantName(name, firstLabel), priceCents: priceCents(match[2]) });
+    appendItem(items, { id: slugify(group + "-" + name + "-" + secondLabel), group, name: variantName(name, secondLabel), priceCents: priceCents(match[3]) });
+  }
+
+  return items;
+}
+
+function parsePricedItemSection(rawLines: string[], start: string, end: string[], column: TextColumn, group: string) {
+  const items: CateringMenuItem[] = [];
+
+  for (const line of sectionLinesFromLastExactHeading(rawLines, start, end, column)) {
+    if (isTableNoise(line)) continue;
+    const match = line.match(/^(.+?)\s+\$(\d+(?:\.\d{2})?)$/);
+    if (!match) continue;
+    const name = normalizeLine(match[1]);
+    appendItem(items, { id: slugify(group + "-" + name), group, name, priceCents: priceCents(match[2]) });
+  }
+
+  return items;
+}
+
+function parseScannedItems(text: string) {
+  const items: CateringMenuItem[] = [];
+  const rawLines = text.split(/\r?\n/);
+  const sauceChoices = parseSauceOptions(text);
+  const sliderChoices = parseSliderOptions(text);
+
+  const rootBeerOptions = (baseName: string) => /root beer|cream soda/i.test(baseName) ? drinkOptions : undefined;
+  const sliderAddOns = (baseName: string) => /smash slider/i.test(baseName) ? sliderChoices : undefined;
+
+  parseWingPacks(rawLines, sauceChoices).forEach((item) => appendItem(items, item));
+  parseVariantSection(rawLines, { group: "Slider & sandwich packs", start: "SLIDER & SANDWICH PACKS", end: ["APP PACKS"], column: { start: 80 }, optionsForBaseName: sliderAddOns }).forEach((item) => appendItem(items, item));
+  parseVariantSection(rawLines, { group: "App packs", start: "APP PACKS", end: ["Pricing and availability", "PICKUP TO GO CATERING"], column: { start: 0, end: 80 } }).forEach((item) => appendItem(items, item));
+  parseVariantSection(rawLines, { group: "BBQ & comfort catering", start: "BBQ & COMFORT CATERING", end: ["SEAFOOD PACKS"], column: { start: 0, end: 75 }, variantLabel: (variant) => /^\d+$/.test(variant) ? "serves " + variant : variant }).forEach((item) => appendItem(items, item));
+  parseTwoPriceSection(rawLines, "HOUSE CATERING SIDES", ["DRINK PACKS"], { start: 75 }, "House catering sides", "half tray", "full tray").forEach((item) => appendItem(items, item));
+  parseVariantSection(rawLines, { group: "Seafood packs", start: "SEAFOOD PACKS", end: ["BEER & THC BEVERAGES"], column: { start: 0, end: 75 } }).forEach((item) => appendItem(items, item));
+  parseVariantSection(rawLines, { group: "Drink packs", start: "DRINK PACKS", end: ["ADD-ONS"], column: { start: 75 }, optionsForBaseName: rootBeerOptions }).forEach((item) => appendItem(items, item));
+  parsePricedItemSection(rawLines, "ADD-ONS", ["Questions, ordering"], { start: 75 }, "Add-ons").forEach((item) => appendItem(items, item));
+
+  return items;
+}
+
+function scannedTextMatchesCateringToGo(text: string) {
   const normalized = text.toLowerCase();
   const markers = [
     "pickup to go catering",
@@ -136,10 +337,10 @@ function scannedTextMatchesKnownMenu(text: string) {
     "aviator crab boil",
     "aviator root beer or cream soda",
   ];
-  return markers.filter((marker) => normalized.includes(marker)).length >= 4;
+  return markers.filter((marker) => normalized.includes(marker)).length >= 3;
 }
 
-async function latestMenuFile(): Promise<MenuFile | null> {
+async function latestMenuFiles(): Promise<MenuFile[]> {
   const files: MenuFile[] = [];
   for (const type of ["drinks", "food"]) {
     for (const root of menuRoots()) {
@@ -156,23 +357,28 @@ async function latestMenuFile(): Promise<MenuFile | null> {
     }
   }
   files.sort((a, b) => b.mtimeMs - a.mtimeMs);
-  return files[0] || null;
+  return files;
 }
 
 async function extractPdfText(file: string) {
   if (!file.toLowerCase().endsWith(".pdf")) return "";
-  const result = await execFileAsync("pdftotext", [file, "-"], { timeout: 8000, maxBuffer: 1024 * 1024 });
+  const result = await execFileAsync("pdftotext", ["-layout", file, "-"], { timeout: 8000, maxBuffer: 1024 * 1024 });
   return result.stdout;
 }
 
 export async function getCateringMenuScan(): Promise<CateringMenuScan> {
-  const file = await latestMenuFile();
-  if (!file) return { menuName: "Catering To Go menu", menuUrl: "", source: "fallback", items: pricedFallbackItems };
-  try {
-    const text = await extractPdfText(file.file);
-    const scanned = parseScannedItems(text);
-    if (scannedTextMatchesKnownMenu(text)) return { menuName: file.name, menuUrl: file.url, source: "scanned", items: pricedFallbackItems };
-    if (scanned.length >= 8) return { menuName: file.name, menuUrl: file.url, source: "scanned", items: scanned };
-  } catch {}
-  return { menuName: file.name, menuUrl: file.url, source: "fallback", items: pricedFallbackItems };
+  const files = await latestMenuFiles();
+  if (!files.length) return { menuName: "Catering To Go menu", menuUrl: "", source: "fallback", items: pricedFallbackItems };
+
+  for (const file of files) {
+    try {
+      const text = await extractPdfText(file.file);
+      if (!scannedTextMatchesCateringToGo(text)) continue;
+      const scanned = parseScannedItems(text);
+      const pricedCount = scanned.filter((item) => item.priceCents).length;
+      if (pricedCount >= 8) return { menuName: file.name, menuUrl: file.url, source: "scanned", items: scanned };
+    } catch {}
+  }
+
+  return { menuName: files[0].name, menuUrl: files[0].url, source: "fallback", items: pricedFallbackItems };
 }
