@@ -410,11 +410,15 @@ body {
 .new-squadron-heading { margin-bottom: clamp(1.4rem, 3vw, 2.2rem); }
 .new-squadron-heading h2 { max-width: 14ch; }
 .new-squadron-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; border: 1px solid rgba(148,202,226,.35); background: rgba(148,202,226,.35); }
-.new-squadron-grid .beer-card { min-height: clamp(19rem, 32vw, 30rem); background: #d7e7ed !important; }
-.new-squadron-grid .beer-card:nth-child(2n) { background: #c8dde5 !important; }
-.new-squadron-grid .beer-card h3 { color: #10233a !important; text-shadow: none; }
-.new-squadron-grid .beer-card p { max-width: 30rem; }
-@media (max-width: 700px) { .new-squadron-grid { grid-template-columns: 1fr; } .new-squadron-grid .beer-card { min-height: 17rem; } }
+.new-squadron-grid .beer-card { min-height: clamp(20rem, 32vw, 30rem); align-content: end; padding: 0; background: #123653 !important; color: #f2f8fa !important; }
+.new-squadron-grid .beer-card:nth-child(2n) { background: #0e2c47 !important; }
+.new-squadron-grid .beer-image { opacity: .95 !important; }
+.new-squadron-grid .beer-image img { filter: saturate(1.08) contrast(1.06) brightness(.92); mix-blend-mode: normal !important; }
+.new-squadron-grid .beer-card > div:last-of-type { position: relative; z-index: 2; max-width: min(30rem, calc(100% - 2rem)); margin: auto 1rem 1rem; padding: 1rem; border: 1px solid rgba(184,217,236,.32); background: linear-gradient(145deg, rgba(6,24,39,.96), rgba(13,54,82,.93)) !important; box-shadow: 0 .8rem 2.2rem rgba(0,0,0,.32); }
+.new-squadron-grid .beer-card span { color: #efb45e !important; }
+.new-squadron-grid .beer-card h3 { color: #f4f9fb !important; text-shadow: none; }
+.new-squadron-grid .beer-card p { max-width: 30rem; color: #d4e6ee !important; line-height: 1.45; }
+@media (max-width: 700px) { .new-squadron-grid { grid-template-columns: 1fr; } .new-squadron-grid .beer-card { min-height: 18rem; } .new-squadron-grid .beer-card > div:last-of-type { margin: auto .8rem .8rem; padding: .9rem; } }
 
 /* Manager photo library readability */
 .media-library .website-photo-library {
