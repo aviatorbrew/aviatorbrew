@@ -24,7 +24,7 @@ export const drinksStops: ItineraryStop[] = [
     image: "/images/locations/speakeasy.png",
     address: "688 Brewing Drive, Fuquay-Varina, NC 27526",
     description: "A quieter first stop built around whiskey, cocktails, and the Thursday Buffalo Trace feature.",
-    menuUrl: "/media/menus/speakeasy/drinks/1785011736450-Whiskey-Bar-Menu-v22.pdf",
+    menuUrl: "/api/menu-files/speakeasy/drinks/1785011736450-Whiskey-Bar-Menu-v22.pdf",
     highlights: [
       { name: "$10 Buffalo Trace Thursday", detail: "Buffalo Trace Old Fashioned Thursday feature" },
       { name: "Mach One", detail: "Rye, honey, citrus, and bitters - $13" },
@@ -40,7 +40,7 @@ export const drinksStops: ItineraryStop[] = [
     image: "/images/locations/hangar-bar.png",
     address: "688 Brewing Drive, Fuquay-Varina, NC 27526",
     description: "Fresh brewery pours and cocktails outside at the center of the brewery campus.",
-    menuUrl: "/media/menus/hangar-bar/drinks/1784992744058-Hangar-Beer-Menu-v38.pdf",
+    menuUrl: "/api/menu-files/hangar-bar/drinks/1784992744058-Hangar-Beer-Menu-v38.pdf",
     highlights: [
       { name: "Aviator Old Fashioned", detail: "Bulleit Bourbon, bitters, simple syrup, and orange" },
       { name: "Aviator Rock and Rye", detail: "Rye whiskey, orange peel, and simple syrup" },
@@ -56,7 +56,7 @@ export const drinksStops: ItineraryStop[] = [
     image: "/images/locations/taphouse.png",
     address: "600 E. Broad St., Fuquay-Varina, NC 27526",
     description: "Start downtown at the original Aviator with a house beer or a bourbon-forward cocktail.",
-    menuUrl: "/media/menus/taphouse/drinks/1785011506479-TapHouse-Beer-Menu-ver-168.pdf",
+    menuUrl: "/api/menu-files/taphouse/drinks/1785011506479-TapHouse-Beer-Menu-ver-168.pdf",
     highlights: [
       { name: "Working Man's Lunch", detail: "22 oz. 3Bones and a house-whiskey shot - $10" },
       { name: "Aviator Old Fashioned", detail: "Bulleit Bourbon, bitters, simple syrup, and orange" },
@@ -72,7 +72,7 @@ export const drinksStops: ItineraryStop[] = [
     image: "/images/locations/pizza-pub.png",
     address: "601 E. Broad St., Fuquay-Varina, NC 27526",
     description: "A rooftop first round downtown with Aviator beer, cocktails, and Broad Street views.",
-    menuUrl: "/media/menus/pizza-pub/drinks/1785011703224-Pizza-Beer-Menu-v79.pdf",
+    menuUrl: "/api/menu-files/pizza-pub/drinks/1785011703224-Pizza-Beer-Menu-v79.pdf",
     highlights: [
       { name: "Orange Crush", detail: "Orange vodka, triple sec, fresh orange, and Starry" },
       { name: "Blackberry Margarita", detail: "A classic margarita with blackberry syrup" },
@@ -91,7 +91,7 @@ export const appetizerStops: ItineraryStop[] = [
     image: "/images/locations/taphouse.png",
     address: "600 E. Broad St., Fuquay-Varina, NC 27526",
     description: "Start downtown with shareable plates before the main stop.",
-    menuUrl: "/media/menus/taphouse/food/1785011503692-TapHouse-Menu-ver-319.pdf",
+    menuUrl: "/api/menu-files/taphouse/food/1785011503692-TapHouse-Menu-ver-319.pdf",
     highlights: [
       { name: "Aviator Bavarian Pretzel", detail: "Lager queso and honey mustard - $12" },
       { name: "Loaded Tots", detail: "Crispy tots, cheese, bacon, scallions, and sauce" },
@@ -107,7 +107,7 @@ export const appetizerStops: ItineraryStop[] = [
     image: "/images/locations/pizza-pub.png",
     address: "601 E. Broad St., Fuquay-Varina, NC 27526",
     description: "A quick Broad Street stop for wings, slices, and shareables.",
-    menuUrl: "/media/menus/pizza-pub/food/1785011695064-Pizza-Menu-ver-154.pdf",
+    menuUrl: "/api/menu-files/pizza-pub/food/1785011695064-Pizza-Menu-ver-154.pdf",
     highlights: [
       { name: "Brick-oven pizza", detail: "Small pies are easy to split before dinner" },
       { name: "Hot Honey Pizza", detail: "Pepperoni, red onion, ricotta, and hot honey" },
@@ -123,7 +123,7 @@ export const appetizerStops: ItineraryStop[] = [
     image: "/images/locations/hangar-bar.png",
     address: "688 Brewing Drive, Fuquay-Varina, NC 27526",
     description: "Campus shareables with the brewery energy already around you.",
-    menuUrl: "/media/menus/hangar-bar/food/1784992728085-Hangar-Bar-v81.pdf",
+    menuUrl: "/api/menu-files/hangar-bar/food/1784992728085-Hangar-Bar-v81.pdf",
     highlights: [
       { name: "Big Bavarian Pretzel", detail: "Beer cheese and house honey mustard - $12" },
       { name: "Wings", detail: "Aviator sauces and brewery-campus crowd energy" },
@@ -142,7 +142,7 @@ export const dinnerStops: ItineraryStop[] = [
     image: "/images/locations/taphouse.png",
     address: "600 E. Broad St., Fuquay-Varina, NC 27526",
     description: "Gastropub dinner at the original Aviator in historic Varina.",
-    menuUrl: "/media/menus/taphouse/food/1785011503692-TapHouse-Menu-ver-319.pdf",
+    menuUrl: "/api/menu-files/taphouse/food/1785011503692-TapHouse-Menu-ver-319.pdf",
     highlights: [
       { name: "Black Barrel Bacon Smash", detail: "Two patties, bacon, pickles, and bourbon BBQ - $17" },
       { name: "BlackMamba Corned Beef Reuben", detail: "House-braised stout corned beef on rye - $17" },
@@ -158,7 +158,7 @@ export const dinnerStops: ItineraryStop[] = [
     image: "/images/locations/pizza-pub.png",
     address: "601 E. Broad St., Fuquay-Varina, NC 27526",
     description: "Brick-oven pizza, wings, burgers, and brewery beer across from the TapHouse.",
-    menuUrl: "/media/menus/pizza-pub/food/1785011695064-Pizza-Menu-ver-154.pdf",
+    menuUrl: "/api/menu-files/pizza-pub/food/1785011695064-Pizza-Menu-ver-154.pdf",
     highlights: [
       { name: "Hot Honey Pizza", detail: "Pepperoni, red onion, ricotta, and hot honey - $9 / $16" },
       { name: "Meat-a-Palooza", detail: "Six meats on a brick-oven pizza - $10 / $17" },
@@ -174,7 +174,7 @@ export const dinnerStops: ItineraryStop[] = [
     image: "/images/locations/hangar-bar.png",
     address: "688 Brewing Drive, Fuquay-Varina, NC 27526",
     description: "Brewery-campus dinner with smoked meats, wings, burgers, and beer brewed steps away.",
-    menuUrl: "/media/menus/hangar-bar/food/1784992728085-Hangar-Bar-v81.pdf",
+    menuUrl: "/api/menu-files/hangar-bar/food/1784992728085-Hangar-Bar-v81.pdf",
     highlights: [
       { name: "House-Smoked Brisket Sandwich", detail: "Brioche, pickled onion, and cheddar - $17" },
       { name: "Aviator Cuban", detail: "Smoked pork, ham, Swiss, pickles, and mustard - $15" },

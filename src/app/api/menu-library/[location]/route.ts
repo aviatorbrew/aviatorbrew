@@ -3,15 +3,14 @@ import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { isMenuLocation } from "@/data/menu-library";
 import { canManageMedia, menuLibraryKey } from "@/lib/manager-auth";
+import { menuDirectory, menuFileTypes, menuPublicUrl } from "@/lib/menu-files";
 import { requestBodyExceeds } from "@/lib/server-file-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const allowedExtensions = new Set([".pdf", ".png", ".jpg", ".jpeg", ".webp"]);
-const menuTypes = new Set(["food", "drinks"]);
 const maxBytes = 25 * 1024 * 1024;
-const uploadRoot = path.join(process.cwd(), "public", "media", "menus");
 
 function authorized(request: NextRequest) { return canManageMedia(request); }
 
@@ -24,11 +23,11 @@ function deny() {
 
 function menuType(request: NextRequest) {
   const value = request.nextUrl.searchParams.get("type") || "food";
-  return menuTypes.has(value) ? value : null;
+  return menuFileTypes.has(value) ? value : null;
 }
 
 function directoryFor(location: string, type: string) {
-  return path.join(uploadRoot, location, type);
+  return menuDirectory(location, type);
 }
 
 function safeFileName(value: string) {
@@ -36,7 +35,7 @@ function safeFileName(value: string) {
 }
 
 function publicUrl(location: string, type: string, fileName: string) {
-  return "/media/menus/" + location + "/" + type + "/" + encodeURIComponent(fileName);
+  return menuPublicUrl(location, type, fileName);
 }
 
 async function deleteExistingMenuFiles(directory: string) {

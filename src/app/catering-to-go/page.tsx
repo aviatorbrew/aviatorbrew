@@ -6,6 +6,7 @@ import { ArrowUpRight, MapPin, Phone } from "@/components/icons";
 import { CateringOrderForm } from "@/components/catering-order-form";
 import { getCateringMenuScan } from "@/lib/catering-menu-scanner";
 import { getLocation } from "@/lib/managed-locations";
+import { menuPublicUrl, menuRoots } from "@/lib/menu-files";
 
 export const dynamic = "force-dynamic";
 
@@ -17,14 +18,16 @@ export const metadata: Metadata = {
 type MenuFile = { name: string; url: string } | null;
 
 async function latestMenu(location: string, type: "food" | "drinks"): Promise<MenuFile> {
-  const directory = path.join(process.cwd(), "public", "media", "menus", location, type);
-  try {
-    const entries = await fs.readdir(directory, { withFileTypes: true });
-    const candidates = await Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => ({ name: entry.name, stats: await fs.stat(path.join(directory, entry.name)) })));
-    candidates.sort((a, b) => b.stats.mtimeMs - a.stats.mtimeMs);
-    const current = candidates[0];
-    return current ? { name: current.name, url: "/media/menus/" + location + "/" + type + "/" + encodeURIComponent(current.name) } : null;
-  } catch { return null; }
+  const candidates = (await Promise.all(menuRoots().map(async (root) => {
+    const directory = path.join(root, location, type);
+    try {
+      const entries = await fs.readdir(directory, { withFileTypes: true });
+      return Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => ({ name: entry.name, stats: await fs.stat(path.join(directory, entry.name)) })));
+    } catch { return []; }
+  }))).flat();
+  candidates.sort((a, b) => b.stats.mtimeMs - a.stats.mtimeMs);
+  const current = candidates[0];
+  return current ? { name: current.name, url: menuPublicUrl(location, type, current.name) } : null;
 }
 
 function cleanMenuName(name: string) {

@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { menuPublicUrl, menuRoots } from "@/lib/menu-files";
 
 const execFileAsync = promisify(execFile);
 
@@ -139,22 +140,20 @@ function scannedTextMatchesKnownMenu(text: string) {
 }
 
 async function latestMenuFile(): Promise<MenuFile | null> {
-  const directories = [
-    path.join(process.cwd(), "public", "media", "menus", "catering-events", "drinks"),
-    path.join(process.cwd(), "public", "media", "menus", "catering-events", "food"),
-  ];
   const files: MenuFile[] = [];
-  for (const directory of directories) {
-    try {
-      const entries = await fs.readdir(directory, { withFileTypes: true });
-      for (const entry of entries) {
-        if (!entry.isFile()) continue;
-        const file = path.join(directory, entry.name);
-        const stats = await fs.stat(file);
-        const relative = path.relative(path.join(process.cwd(), "public"), file).split(path.sep).map(encodeURIComponent).join("/");
-        files.push({ name: entry.name, file, url: "/" + relative, mtimeMs: stats.mtimeMs });
-      }
-    } catch {}
+  for (const type of ["drinks", "food"]) {
+    for (const root of menuRoots()) {
+      const directory = path.join(root, "catering-events", type);
+      try {
+        const entries = await fs.readdir(directory, { withFileTypes: true });
+        for (const entry of entries) {
+          if (!entry.isFile()) continue;
+          const file = path.join(directory, entry.name);
+          const stats = await fs.stat(file);
+          files.push({ name: entry.name, file, url: menuPublicUrl("catering-events", type, entry.name), mtimeMs: stats.mtimeMs });
+        }
+      } catch {}
+    }
   }
   files.sort((a, b) => b.mtimeMs - a.mtimeMs);
   return files[0] || null;

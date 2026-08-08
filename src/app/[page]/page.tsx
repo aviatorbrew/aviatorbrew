@@ -66,7 +66,7 @@ export default async function ContentPage({
             : page === "shop" || page === "distillery" ? <a className="button" href="https://maps.google.com/?q=688+Brewing+Drive+Fuquay-Varina+NC+27526" target="_blank" rel="noreferrer" data-analytics={`${page}_directions`}><MapPin />{content.action}</a>
               : <a className="button" href={formKind ? "#inquiry" : "/about"} data-analytics={`${page}_action`}>{content.action} <ArrowUpRight /></a>}
           {page === "private-events" ? <>
-            <a className="button button-outline" href="/media/menus/catering-events/food/1785010242714-Aviator_Ready_Room_Event_Menu_Clean.pdf" target="_blank" rel="noreferrer" data-analytics="private_events_onsite_buffet_menu">Onsite catering buffet menu <ArrowUpRight /></a>
+            <a className="button button-outline" href="/api/menu-files/catering-events/food/1785010242714-Aviator_Ready_Room_Event_Menu_Clean.pdf" target="_blank" rel="noreferrer" data-analytics="private_events_onsite_buffet_menu">Onsite catering buffet menu <ArrowUpRight /></a>
             <PrivateEventPaymentButton />
           </> : null}
         </div>
