@@ -7,7 +7,8 @@ import { menuPublicUrl, menuRoots } from "@/lib/menu-files";
 const execFileAsync = promisify(execFile);
 
 export type CateringMenuOption = { label: string; value: string };
-export type CateringMenuItem = { id: string; group: string; name: string; note?: string; priceCents?: number; options?: CateringMenuOption[] };
+export type CateringMenuOptionGroup = { name: string; options: CateringMenuOption[] };
+export type CateringMenuItem = { id: string; group: string; name: string; note?: string; priceCents?: number; options?: CateringMenuOption[]; optionSlots?: number; optionLabel?: string; optionGroups?: CateringMenuOptionGroup[] };
 export type CateringMenuScan = { menuName: string; menuUrl: string; source: "json" | "scanned" | "fallback"; items: CateringMenuItem[] };
 
 type MenuFile = { name: string; file: string; url: string; mtimeMs: number; type: "drinks" | "food" };
@@ -26,9 +27,9 @@ const drinkOptions = ["Root Beer", "Cream Soda", "Mixed"].map((value) => ({ labe
 const sliderOptions = ["No add-ons", "Add bacon (+$12)", "Add jalapenos (+$12)", "Add bacon and jalapenos (+$24)"].map((value) => ({ label: value, value }));
 
 const fallbackItems: CateringMenuItem[] = [
-  { id: "wings-25", group: "Wing packs", name: "25 Wings", options: sauceOptions, note: "$45 - choose up to 2 sauces" },
-  { id: "wings-50", group: "Wing packs", name: "50 Wings", options: sauceOptions, note: "$85 - choose up to 3 sauces" },
-  { id: "wings-100", group: "Wing packs", name: "100 Wings", options: sauceOptions, note: "$160 - choose up to 4 sauces" },
+  { id: "wings-25", group: "Wing packs", name: "25 Wings", options: sauceOptions, optionSlots: 2, optionLabel: "Wing sauce", note: "$45 - choose up to 2 sauces" },
+  { id: "wings-50", group: "Wing packs", name: "50 Wings", options: sauceOptions, optionSlots: 3, optionLabel: "Wing sauce", note: "$85 - choose up to 3 sauces" },
+  { id: "wings-100", group: "Wing packs", name: "100 Wings", options: sauceOptions, optionSlots: 4, optionLabel: "Wing sauce", note: "$160 - choose up to 4 sauces" },
   { id: "smash-sliders-12", group: "Slider & sandwich packs", name: "Hangar Smash Slider Pack - 12 sliders", options: sliderOptions, note: "$48" },
   { id: "smash-sliders-24", group: "Slider & sandwich packs", name: "Hangar Smash Slider Pack - 24 sliders", options: sliderOptions, note: "$90" },
   { id: "pulled-pork-10", group: "Slider & sandwich packs", name: "Pulled Pork BBQ Pack w/Buns - serves 10-12", note: "$110" },
@@ -117,6 +118,46 @@ function formatOptionPrice(cents: number) {
   return Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
 }
 
+function cappedOptionSlots(count: number) {
+  return Number.isFinite(count) && count > 1 ? Math.min(6, Math.round(count)) : undefined;
+}
+
+function optionSlotsFromUnknown(value: unknown) {
+  if (typeof value === "number") return cappedOptionSlots(value);
+  if (typeof value !== "string") return undefined;
+  const match = value.match(/\d+/);
+  return match ? cappedOptionSlots(Number(match[0])) : undefined;
+}
+
+function optionSlotsFromText(...values: Array<string | undefined>) {
+  const text = values.filter(Boolean).join(" ");
+  const match = text.match(/choose\s+up\s+to\s+(\d+)/i) || text.match(/up\s+to\s+(\d+)\s+(?:wing\s+)?(?:sauces|choices|options)/i) || text.match(/\b(\d+)\s+(?:wing\s+)?sauces?\b/i);
+  return match ? cappedOptionSlots(Number(match[1])) : undefined;
+}
+
+function inferredWingSauceSlots(item: CateringMenuItem) {
+  const text = [item.group, item.name, item.note].filter(Boolean).join(" ");
+  const explicit = optionSlotsFromText(text);
+  if (explicit) return explicit;
+  if (!/wing/i.test(text)) return undefined;
+  const wingCount = Number(text.match(/\b(25|50|100)\s+(?:jumbo\s+)?wings?\b/i)?.[1] || 0);
+  if (wingCount >= 100) return 4;
+  if (wingCount >= 50) return 3;
+  if (wingCount >= 25) return 2;
+  return undefined;
+}
+
+function inferredOptionLabel(item: CateringMenuItem) {
+  const text = [item.group, item.name, item.note].filter(Boolean).join(" ");
+  return /wing|sauce/i.test(text) ? "Wing sauce" : "Option";
+}
+
+function withOptionSlots(item: CateringMenuItem) {
+  if (item.optionGroups?.length || !item.options?.length) return item;
+  const slots = cappedOptionSlots(item.optionSlots || 0) || inferredWingSauceSlots(item);
+  return slots ? { ...item, optionSlots: slots, optionLabel: item.optionLabel || inferredOptionLabel(item) } : item;
+}
+
 function appendItem(items: CateringMenuItem[], item: CateringMenuItem) {
   if (items.some((existing) => existing.group === item.group && existing.name.toLowerCase() === item.name.toLowerCase())) return;
   let id = item.id;
@@ -127,7 +168,7 @@ function appendItem(items: CateringMenuItem[], item: CateringMenuItem) {
   }
   const priceNote = item.priceCents ? "$" + formatOptionPrice(item.priceCents) : "";
   const note = priceNote && item.note && !item.note.includes("$") ? priceNote + " - " + item.note : item.note || priceNote || undefined;
-  items.push({ ...item, id, note });
+  items.push(withOptionSlots({ ...item, id, note }));
 }
 
 function sectionLines(rawLines: string[], start: string, end: string[], column: TextColumn) {
@@ -244,6 +285,8 @@ function parseWingPacks(rawLines: string[], sauceChoices: CateringMenuOption[]) 
       name,
       note: choiceNote + " sauces",
       options: sauceChoices,
+      optionSlots: optionSlotsFromText(choiceNote),
+      optionLabel: "Wing sauce",
       priceCents: priceCents(match[3]),
     });
   }
@@ -390,6 +433,41 @@ function jsonOptionsFromRecord(record: JsonRecord) {
   return undefined;
 }
 
+function jsonOptionGroupsFromValue(value: unknown) {
+  if (!Array.isArray(value)) return undefined;
+  const groups = value.flatMap((entry, index) => {
+    if (Array.isArray(entry)) {
+      const options = jsonOptionsFromValue(entry);
+      return options ? [{ name: "Option " + (index + 1), options }] : [];
+    }
+    if (!isRecord(entry)) return [];
+    const name = textField(entry, ["name", "label", "title"]) || "Option " + (index + 1);
+    const options = ["options", "choices", "sauces", "modifiers", "selectOptions", "values"].map((key) => jsonOptionsFromValue(entry[key])).find(Boolean);
+    return options ? [{ name, options }] : [];
+  });
+  return groups.length ? groups : undefined;
+}
+
+function jsonOptionGroupsFromRecord(record: JsonRecord) {
+  for (const key of ["optionGroups", "option_groups", "choiceGroups", "choice_groups", "modifierGroups", "modifier_groups"]) {
+    const groups = jsonOptionGroupsFromValue(record[key]);
+    if (groups) return groups;
+  }
+  return undefined;
+}
+
+function jsonOptionSlotsFromRecord(record: JsonRecord) {
+  for (const key of ["optionSlots", "option_slots", "optionCount", "option_count", "maxOptions", "max_options", "maxSelections", "max_selections", "sauceCount", "sauce_count"]) {
+    const slots = optionSlotsFromUnknown(record[key]);
+    if (slots) return slots;
+  }
+  return undefined;
+}
+
+function jsonOptionLabelFromRecord(record: JsonRecord) {
+  return textField(record, ["optionLabel", "option_label", "choiceLabel", "choice_label", "selectLabel", "select_label"]);
+}
+
 function jsonVariantLabel(value: unknown) {
   if (typeof value === "string" || typeof value === "number") return normalizeLine(String(value));
   if (!isRecord(value)) return "";
@@ -413,7 +491,10 @@ function addJsonItem(items: CateringMenuItem[], record: JsonRecord, fallbackGrou
   const nestedItems = firstArray(record, ["items", "menuItems", "orderItems", "products"]);
   const recordGroup = normalizeGroupLabel(textField(record, ["group", "category", "section", "groupName", "categoryName"]) || fallbackGroup);
   const name = textField(record, ["name", "item", "itemName", "title", "label"]);
-  const options = jsonOptionsFromRecord(record) || inheritedOptions;
+  const optionGroups = jsonOptionGroupsFromRecord(record);
+  const options = optionGroups ? undefined : jsonOptionsFromRecord(record) || inheritedOptions;
+  const optionSlots = jsonOptionSlotsFromRecord(record);
+  const optionLabel = jsonOptionLabelFromRecord(record);
 
   if (nestedItems.length && !name) {
     nestedItems.forEach((value) => { if (isRecord(value)) addJsonItem(items, value, recordGroup, options); });
@@ -435,12 +516,15 @@ function addJsonItem(items: CateringMenuItem[], record: JsonRecord, fallbackGrou
           name: itemNameWithVariant(name, label),
           note: variantNote || undefined,
           priceCents: priceCentsFromRecord(variant) ?? basePrice,
-          options: jsonOptionsFromRecord(variant) || options,
+          options: jsonOptionGroupsFromRecord(variant) ? undefined : jsonOptionsFromRecord(variant) || options,
+          optionSlots: jsonOptionSlotsFromRecord(variant) || optionSlots,
+          optionLabel: jsonOptionLabelFromRecord(variant) || optionLabel || undefined,
+          optionGroups: jsonOptionGroupsFromRecord(variant) || optionGroups,
         });
         return;
       }
       const label = jsonVariantLabel(variant);
-      appendItem(items, { id: slugify(recordGroup + "-" + name + "-" + label), group: recordGroup, name: itemNameWithVariant(name, label), note: baseNote || undefined, priceCents: basePrice, options });
+      appendItem(items, { id: slugify(recordGroup + "-" + name + "-" + label), group: recordGroup, name: itemNameWithVariant(name, label), note: baseNote || undefined, priceCents: basePrice, options, optionSlots, optionLabel: optionLabel || undefined, optionGroups });
     });
     return;
   }
@@ -453,6 +537,9 @@ function addJsonItem(items: CateringMenuItem[], record: JsonRecord, fallbackGrou
     note: baseNote || undefined,
     priceCents: basePrice,
     options,
+    optionSlots,
+    optionLabel: optionLabel || undefined,
+    optionGroups,
   });
 }
 
