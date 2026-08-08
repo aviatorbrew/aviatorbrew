@@ -17,12 +17,14 @@ export const metadata: Metadata = {
 
 type MenuFile = { name: string; url: string } | null;
 
+const publicMenuExtensions = new Set([".pdf", ".png", ".jpg", ".jpeg", ".webp"]);
+
 async function latestMenu(location: string, type: "food" | "drinks"): Promise<MenuFile> {
   const candidates = (await Promise.all(menuRoots().map(async (root) => {
     const directory = path.join(root, location, type);
     try {
       const entries = await fs.readdir(directory, { withFileTypes: true });
-      return Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => ({ name: entry.name, stats: await fs.stat(path.join(directory, entry.name)) })));
+      return Promise.all(entries.filter((entry) => entry.isFile() && publicMenuExtensions.has(path.extname(entry.name).toLowerCase())).map(async (entry) => ({ name: entry.name, stats: await fs.stat(path.join(directory, entry.name)) })));
     } catch { return []; }
   }))).flat();
   candidates.sort((a, b) => b.stats.mtimeMs - a.stats.mtimeMs);
@@ -49,7 +51,7 @@ export default async function CateringToGoPage() {
 
     <section className="section section-dark catering-steps-section"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">How it works</p><h2>File the flight plan.</h2></div><p>The form does not lock in an order by itself. The Aviator events team will review your request and confirm menu availability, pickup time, and any payment details.</p></div><div className="catering-steps"><article><span>01</span><h3>Open the menu</h3><p>Pick the items, quantities, and any notes for your group.</p></article><article><span>02</span><h3>Send the request</h3><p>Tell us the pickup date, preferred pickup time, guest count, and order details.</p></article><article><span>03</span><h3>Wait for confirmation</h3><p>We will confirm availability and pickup instructions before the order is final.</p></article></div></div></section>
 
-    <section id="catering-request" className="section catering-request-section"><div className="content-wrap catering-request-grid"><div><p className="eyebrow">Contact events</p><h2>Request Catering To Go.</h2><p>Send this form to the Aviator events team at <a href="mailto:events@aviatorbrew.com">events@aviatorbrew.com</a>. Include your pickup date, time, guest count, and the menu items you are considering.</p><dl><div><dt>Pickup</dt><dd>Aviator Hangar Bar</dd></div><div><dt>Address</dt><dd>{pickupAddress}</dd></div><div><dt>Best for</dt><dd>Office lunches, parties, meetings, birthdays, tailgates, and casual group orders.</dd></div></dl></div><div className="catering-form-card"><CateringOrderForm items={menuScan.items} menuUrl={menuFile?.url} scanSource={menuScan.source} /></div></div></section>
+    <section id="catering-request" className="section catering-request-section"><div className="content-wrap catering-request-grid"><div><p className="eyebrow">Contact events</p><h2>Request Catering To Go.</h2><p>Send this form to the Aviator events team at <a href="mailto:events@aviatorbrew.com">events@aviatorbrew.com</a>. Include your pickup date, time, guest count, and the menu items you are considering.</p><dl><div><dt>Pickup</dt><dd>Aviator Hangar Bar</dd></div><div><dt>Address</dt><dd>{pickupAddress}</dd></div><div><dt>Best for</dt><dd>Office lunches, parties, meetings, birthdays, tailgates, and casual group orders.</dd></div></dl></div><div className="catering-form-card"><CateringOrderForm items={menuScan.items} menuUrl={menuScan.menuUrl || menuFile?.url} scanSource={menuScan.source} /></div></div></section>
   </main>;
 }
 

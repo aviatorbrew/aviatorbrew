@@ -8,9 +8,9 @@ const execFileAsync = promisify(execFile);
 
 export type CateringMenuOption = { label: string; value: string };
 export type CateringMenuItem = { id: string; group: string; name: string; note?: string; priceCents?: number; options?: CateringMenuOption[] };
-export type CateringMenuScan = { menuName: string; menuUrl: string; source: "scanned" | "fallback"; items: CateringMenuItem[] };
+export type CateringMenuScan = { menuName: string; menuUrl: string; source: "json" | "scanned" | "fallback"; items: CateringMenuItem[] };
 
-type MenuFile = { name: string; file: string; url: string; mtimeMs: number };
+type MenuFile = { name: string; file: string; url: string; mtimeMs: number; type: "drinks" | "food" };
 type TextColumn = { start: number; end?: number };
 type VariantSectionConfig = {
   group: string;
@@ -306,6 +306,175 @@ function parsePricedItemSection(rawLines: string[], start: string, end: string[]
   return items;
 }
 
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function textField(record: JsonRecord, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return normalizeLine(value).slice(0, 140);
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return "";
+}
+
+function firstArray(record: JsonRecord, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}
+
+function normalizeGroupLabel(value: string) {
+  const group = normalizeLine(value);
+  return sectionMap.get(group.toUpperCase()) || group || "Catering menu";
+}
+
+function priceCentsFromUnknown(value: unknown, centsAlready = false) {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, Math.round(centsAlready ? value : value * 100));
+  if (typeof value !== "string") return undefined;
+  const match = value.replace(/,/g, "").match(/\$?\s*(\d+(?:\.\d{1,2})?)/);
+  if (!match) return undefined;
+  return Math.max(0, Math.round((centsAlready && !value.includes("$") && !value.includes(".")) ? Number(match[1]) : Number(match[1]) * 100));
+}
+
+function priceCentsFromRecord(record: JsonRecord) {
+  for (const key of ["priceCents", "price_cents", "unitPriceCents", "unit_price_cents"]) {
+    const cents = priceCentsFromUnknown(record[key], true);
+    if (cents !== undefined) return cents;
+  }
+  for (const key of ["price", "unitPrice", "unit_price", "amount", "cost"]) {
+    const cents = priceCentsFromUnknown(record[key]);
+    if (cents !== undefined) return cents;
+  }
+  return undefined;
+}
+
+function jsonOption(value: unknown): CateringMenuOption | null {
+  if (typeof value === "string") {
+    const label = normalizeLine(value);
+    return label ? { label, value: label } : null;
+  }
+  if (!isRecord(value)) return null;
+  const label = textField(value, ["label", "name", "title", "value"]);
+  if (!label) return null;
+  const extraPrice = priceCentsFromRecord(value);
+  const pricedLabel = extraPrice && !/\+\$/.test(label) ? label + " (+$" + formatOptionPrice(extraPrice) + ")" : label;
+  return { label: pricedLabel, value: pricedLabel };
+}
+
+function jsonOptionsFromValue(value: unknown) {
+  if (!Array.isArray(value)) return undefined;
+  const options = value.map(jsonOption).filter((option): option is CateringMenuOption => Boolean(option));
+  return options.length ? options : undefined;
+}
+
+function jsonOptionsFromRecord(record: JsonRecord) {
+  for (const key of ["options", "choices", "sauces", "modifiers", "selectOptions"]) {
+    const options = jsonOptionsFromValue(record[key]);
+    if (options) return options;
+  }
+  return undefined;
+}
+
+function jsonVariantLabel(value: unknown) {
+  if (typeof value === "string" || typeof value === "number") return normalizeLine(String(value));
+  if (!isRecord(value)) return "";
+  const serves = textField(value, ["serves", "serving", "servings"]);
+  if (serves) return /^serves\b/i.test(serves) ? serves : "serves " + serves;
+  return textField(value, ["size", "pack", "package", "portion", "variant", "label", "title", "name"]);
+}
+
+function jsonInlineVariantLabel(record: JsonRecord) {
+  const serves = textField(record, ["serves", "serving", "servings"]);
+  if (serves) return /^serves\b/i.test(serves) ? serves : "serves " + serves;
+  return textField(record, ["size", "pack", "package", "portion", "variant"]);
+}
+
+function itemNameWithVariant(name: string, variant: string) {
+  if (!variant) return name;
+  return name.toLowerCase().includes(variant.toLowerCase()) ? name : variantName(name, variant);
+}
+
+function addJsonItem(items: CateringMenuItem[], record: JsonRecord, fallbackGroup: string, inheritedOptions?: CateringMenuOption[]) {
+  const nestedItems = firstArray(record, ["items", "menuItems", "orderItems", "products"]);
+  const recordGroup = normalizeGroupLabel(textField(record, ["group", "category", "section", "groupName", "categoryName"]) || fallbackGroup);
+  const name = textField(record, ["name", "item", "itemName", "title", "label"]);
+  const options = jsonOptionsFromRecord(record) || inheritedOptions;
+
+  if (nestedItems.length && !name) {
+    nestedItems.forEach((value) => { if (isRecord(value)) addJsonItem(items, value, recordGroup, options); });
+    return;
+  }
+  if (!name) return;
+
+  const baseNote = textField(record, ["note", "notes", "description", "details"]);
+  const basePrice = priceCentsFromRecord(record) ?? priceFromNote(baseNote);
+  const variants = firstArray(record, ["variants", "sizes", "servingSizes", "servings", "packages"]);
+  if (variants.length) {
+    variants.forEach((variant) => {
+      if (isRecord(variant)) {
+        const label = jsonVariantLabel(variant);
+        const variantNote = textField(variant, ["note", "notes", "description", "details"]) || baseNote;
+        appendItem(items, {
+          id: slugify(recordGroup + "-" + name + "-" + label),
+          group: recordGroup,
+          name: itemNameWithVariant(name, label),
+          note: variantNote || undefined,
+          priceCents: priceCentsFromRecord(variant) ?? basePrice,
+          options: jsonOptionsFromRecord(variant) || options,
+        });
+        return;
+      }
+      const label = jsonVariantLabel(variant);
+      appendItem(items, { id: slugify(recordGroup + "-" + name + "-" + label), group: recordGroup, name: itemNameWithVariant(name, label), note: baseNote || undefined, priceCents: basePrice, options });
+    });
+    return;
+  }
+
+  const inlineVariant = jsonInlineVariantLabel(record);
+  appendItem(items, {
+    id: slugify(textField(record, ["id", "sku"]) || recordGroup + "-" + name + "-" + inlineVariant),
+    group: recordGroup,
+    name: itemNameWithVariant(name, inlineVariant),
+    note: baseNote || undefined,
+    priceCents: basePrice,
+    options,
+  });
+}
+
+function parseJsonMenuItems(value: unknown) {
+  const items: CateringMenuItem[] = [];
+  const root = isRecord(value) ? value : null;
+  const defaultGroup = root ? normalizeGroupLabel(textField(root, ["group", "category", "section"]) || "Catering menu") : "Catering menu";
+
+  const sections = root ? firstArray(root, ["sections", "categories", "groups"]) : [];
+  sections.forEach((section) => {
+    if (Array.isArray(section)) {
+      section.forEach((entry) => { if (isRecord(entry)) addJsonItem(items, entry, defaultGroup); });
+      return;
+    }
+    if (!isRecord(section)) return;
+    const group = normalizeGroupLabel(textField(section, ["group", "category", "section", "name", "title", "label"]) || defaultGroup);
+    const sectionOptions = jsonOptionsFromRecord(section);
+    firstArray(section, ["items", "menuItems", "orderItems", "products"]).forEach((entry) => { if (isRecord(entry)) addJsonItem(items, entry, group, sectionOptions); });
+  });
+
+  const rootItems = Array.isArray(value) ? value : root ? firstArray(root, ["items", "menuItems", "orderItems", "products"]) : [];
+  rootItems.forEach((entry) => { if (isRecord(entry)) addJsonItem(items, entry, defaultGroup); });
+
+  return items.slice(0, 200);
+}
+
+async function parseJsonMenuFile(file: string) {
+  const raw = await fs.readFile(file, "utf8");
+  return parseJsonMenuItems(JSON.parse(raw));
+}
+
 function parseScannedItems(text: string) {
   const items: CateringMenuItem[] = [];
   const rawLines = text.split(/\r?\n/);
@@ -342,7 +511,7 @@ function scannedTextMatchesCateringToGo(text: string) {
 
 async function latestMenuFiles(): Promise<MenuFile[]> {
   const files: MenuFile[] = [];
-  for (const type of ["drinks", "food"]) {
+  for (const type of ["drinks", "food"] as const) {
     for (const root of menuRoots()) {
       const directory = path.join(root, "catering-events", type);
       try {
@@ -351,7 +520,7 @@ async function latestMenuFiles(): Promise<MenuFile[]> {
           if (!entry.isFile()) continue;
           const file = path.join(directory, entry.name);
           const stats = await fs.stat(file);
-          files.push({ name: entry.name, file, url: menuPublicUrl("catering-events", type, entry.name), mtimeMs: stats.mtimeMs });
+          files.push({ name: entry.name, file, url: menuPublicUrl("catering-events", type, entry.name), mtimeMs: stats.mtimeMs, type });
         }
       } catch {}
     }
@@ -372,6 +541,12 @@ export async function getCateringMenuScan(): Promise<CateringMenuScan> {
 
   for (const file of files) {
     try {
+      const extension = path.extname(file.name).toLowerCase();
+      if (extension === ".json" && file.type === "drinks") {
+        const items = await parseJsonMenuFile(file.file);
+        if (items.length) return { menuName: file.name, menuUrl: file.url, source: "json", items };
+        continue;
+      }
       const text = await extractPdfText(file.file);
       if (!scannedTextMatchesCateringToGo(text)) continue;
       const scanned = parseScannedItems(text);

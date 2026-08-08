@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { CateringMenuItem } from "@/lib/catering-menu-scanner";
+import type { CateringMenuItem, CateringMenuScan } from "@/lib/catering-menu-scanner";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 type SelectedOrderRow = { id: string; group: string; name: string; quantity: number; option: string; note: string; priceCents?: number; optionPriceCents: number };
@@ -23,7 +23,7 @@ function pickupTimeIsAvailable(value: string) {
   return !value || (value >= PICKUP_START_TIME && value <= PICKUP_END_TIME);
 }
 
-export function CateringOrderForm({ items, menuUrl, scanSource }: { items: CateringMenuItem[]; menuUrl?: string; scanSource: "scanned" | "fallback" }) {
+export function CateringOrderForm({ items, menuUrl, scanSource }: { items: CateringMenuItem[]; menuUrl?: string; scanSource: CateringMenuScan["source"] }) {
   const [state, setState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState("");
   const [showOrder, setShowOrder] = useState(false);

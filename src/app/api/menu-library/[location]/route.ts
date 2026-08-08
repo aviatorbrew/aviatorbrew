@@ -9,8 +9,10 @@ import { requestBodyExceeds } from "@/lib/server-file-response";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const allowedExtensions = new Set([".pdf", ".png", ".jpg", ".jpeg", ".webp"]);
+const menuExtensions = new Set([".pdf", ".png", ".jpg", ".jpeg", ".webp"]);
+const orderingJsonExtension = ".json";
 const maxBytes = 25 * 1024 * 1024;
+const maxJsonBytes = 1 * 1024 * 1024;
 
 function authorized(request: NextRequest) { return canManageMedia(request); }
 
@@ -38,10 +40,18 @@ function publicUrl(location: string, type: string, fileName: string) {
   return menuPublicUrl(location, type, fileName);
 }
 
-async function deleteExistingMenuFiles(directory: string) {
+function canUploadOrderingJson(location: string, type: string) {
+  return location === "catering-events" && type === "drinks";
+}
+
+async function deleteExistingMenuFiles(directory: string, mode: "menu" | "ordering-json") {
   await fs.mkdir(directory, { recursive: true });
   const entries = await fs.readdir(directory, { withFileTypes: true });
-  await Promise.all(entries.filter((entry) => entry.isFile()).map((entry) => fs.unlink(path.join(directory, entry.name))));
+  await Promise.all(entries.filter((entry) => {
+    if (!entry.isFile()) return false;
+    const extension = path.extname(entry.name).toLowerCase();
+    return mode === "ordering-json" ? extension === orderingJsonExtension : extension !== orderingJsonExtension;
+  }).map((entry) => fs.unlink(path.join(directory, entry.name))));
 }
 
 async function resolve(request: NextRequest, context: { params: Promise<{ location: string }> }) {
@@ -79,14 +89,26 @@ export async function POST(request: NextRequest, context: { params: Promise<{ lo
   if (upload.size > maxBytes) return NextResponse.json({ error: "Files must be 25 MB or smaller." }, { status: 413 });
 
   const fileName = safeFileName(upload.name);
-  if (!fileName || !allowedExtensions.has(path.extname(fileName).toLowerCase())) {
-    return NextResponse.json({ error: "Use a PDF, PNG, JPG, or WEBP menu file." }, { status: 415 });
+  const extension = path.extname(fileName).toLowerCase();
+  const isOrderingJson = extension === orderingJsonExtension;
+  if (!fileName || (!menuExtensions.has(extension) && !isOrderingJson)) {
+    return NextResponse.json({ error: "Use a PDF, PNG, JPG, WEBP, or Catering To-Go ordering JSON file." }, { status: 415 });
+  }
+  if (isOrderingJson && !canUploadOrderingJson(target.location, target.type)) {
+    return NextResponse.json({ error: "Ordering JSON uploads are only available for Catering To-Go." }, { status: 415 });
+  }
+  if (isOrderingJson && upload.size > maxJsonBytes) return NextResponse.json({ error: "Ordering JSON files must be 1 MB or smaller." }, { status: 413 });
+
+  const bytes = Buffer.from(await upload.arrayBuffer());
+  if (isOrderingJson) {
+    try { JSON.parse(bytes.toString("utf8")); }
+    catch { return NextResponse.json({ error: "Upload a valid JSON file for the Catering To-Go order form." }, { status: 400 }); }
   }
 
   const directory = directoryFor(target.location, target.type);
-  await deleteExistingMenuFiles(directory);
+  await deleteExistingMenuFiles(directory, isOrderingJson ? "ordering-json" : "menu");
   const savedName = Date.now() + "-" + fileName;
-  await fs.writeFile(path.join(directory, savedName), Buffer.from(await upload.arrayBuffer()));
+  await fs.writeFile(path.join(directory, savedName), bytes);
   return NextResponse.json({ name: savedName, size: upload.size, url: publicUrl(target.location, target.type, savedName) }, { status: 201 });
 }
 

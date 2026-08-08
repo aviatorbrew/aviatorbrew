@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 const contentTypes: Record<string, string> = {
   ".jpeg": "image/jpeg",
   ".jpg": "image/jpeg",
+  ".json": "application/json; charset=utf-8",
   ".pdf": "application/pdf",
   ".png": "image/png",
   ".webp": "image/webp",
