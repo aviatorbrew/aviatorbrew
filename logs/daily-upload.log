@@ -1923,3 +1923,163 @@ Route (app)                                          Size  First Load JS
 ƒ  (Dynamic)  server-rendered on demand
 
 standalone.prepared
+[main b7f13df] Daily Aviator Live update
+ 1 file changed, 157 insertions(+)
+To https://github.com/aviatorbrew/aviatorbrew.git
+   225eb09..b7f13df  main -> main
+branch 'main' set up to track 'origin/main'.
+2026-08-09T03:00:01-04:00 Changes detected; running GitHub upload.
+
+> aviator-brewing-company@0.1.0 build
+> next build && node scripts/prepare-standalone.mjs
+
+   ▲ Next.js 15.5.21
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 2.6s
+   Linting and checking validity of types ...
+   Collecting page data ...
+mail.smtp_verified
+mail.smtp_verified
+mail.smtp_verified
+   Generating static pages (0/61) ...
+   Generating static pages (15/61) 
+   Generating static pages (30/61) 
+   Generating static pages (45/61) 
+mail.smtp_verified
+mail.smtp_verified
+ ✓ Generating static pages (61/61)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                          Size  First Load JS
+┌ ƒ /                                             4.13 kB         118 kB
+├ ○ /_not-found                                     297 B         103 kB
+├ ● /[page]                                       3.25 kB         114 kB
+├   ├ /distillery
+├   ├ /private-events
+├   ├ /careers
+├   └ [+5 more paths]
+├ ƒ /about                                        2.51 kB         114 kB
+├ ƒ /api/beer-images/[filename]                     297 B         103 kB
+├ ƒ /api/beer-release-alert-assets/[filename]       297 B         103 kB
+├ ƒ /api/beverage-images/[filename]                 297 B         103 kB
+├ ƒ /api/branding/logo                              297 B         103 kB
+├ ƒ /api/checkout                                   297 B         103 kB
+├ ƒ /api/coupons                                    297 B         103 kB
+├ ƒ /api/coupons/[token]/image                      297 B         103 kB
+├ ƒ /api/coupons/manage                             297 B         103 kB
+├ ƒ /api/coupons/validate                           297 B         103 kB
+├ ƒ /api/event-images/[filename]                    297 B         103 kB
+├ ƒ /api/flight-log-avatar-files/[filename]         297 B         103 kB
+├ ƒ /api/flight-log-images/[filename]               297 B         103 kB
+├ ƒ /api/flight-log-post-files/[filename]           297 B         103 kB
+├ ƒ /api/flight-log/auth/forgot-password            297 B         103 kB
+├ ƒ /api/flight-log/auth/login                      297 B         103 kB
+├ ƒ /api/flight-log/auth/logout                     297 B         103 kB
+├ ƒ /api/flight-log/auth/register                   297 B         103 kB
+├ ƒ /api/flight-log/auth/resend-verification        297 B         103 kB
+├ ƒ /api/flight-log/auth/reset-password             297 B         103 kB
+├ ƒ /api/flight-log/check-ins                       297 B         103 kB
+├ ƒ /api/flight-log/friends                         297 B         103 kB
+├ ƒ /api/flight-log/interactions                    297 B         103 kB
+├ ƒ /api/flight-log/moderation                      297 B         103 kB
+├ ƒ /api/flight-log/posts                           297 B         103 kB
+├ ƒ /api/flight-log/profile                         297 B         103 kB
+├ ƒ /api/flight-log/profile/avatar                  297 B         103 kB
+├ ƒ /api/gift-cards/balance                         297 B         103 kB
+├ ƒ /api/inquiries                                  297 B         103 kB
+├ ƒ /api/itinerary/email                            297 B         103 kB
+├ ƒ /api/keg-orders                                 297 B         103 kB
+├ ƒ /api/manager/beer-release-alert                 297 B         103 kB
+├ ƒ /api/manager/beers                              297 B         103 kB
+├ ƒ /api/manager/beyond-beer                        297 B         103 kB
+├ ƒ /api/manager/branding                           297 B         103 kB
+├ ƒ /api/manager/database                           297 B         103 kB
+├ ƒ /api/manager/events                             297 B         103 kB
+├ ƒ /api/manager/flight-log                         297 B         103 kB
+├ ƒ /api/manager/flight-log/users                   297 B         103 kB
+├ ƒ /api/manager/inquiries                          297 B         103 kB
+├ ƒ /api/manager/keg-pricing                        297 B         103 kB
+├ ƒ /api/manager/kegs                               297 B         103 kB
+├ ƒ /api/manager/locations                          297 B         103 kB
+├ ƒ /api/manager/newsletter                         297 B         103 kB
+├ ƒ /api/manager/password-reset                     297 B         103 kB
+├ ƒ /api/manager/payments                           297 B         103 kB
+├ ƒ /api/manager/session                            297 B         103 kB
+├ ƒ /api/manager/shop                               297 B         103 kB
+├ ƒ /api/manager/shop/tickets                       297 B         103 kB
+├ ƒ /api/manager/test-email                         297 B         103 kB
+├ ƒ /api/manager/test-sms                           297 B         103 kB
+├ ƒ /api/manager/tours                              297 B         103 kB
+├ ƒ /api/menu-files/[location]/[type]/[filename]    297 B         103 kB
+├ ƒ /api/menu-library/[location]                    297 B         103 kB
+├ ƒ /api/newsletter/confirm                         297 B         103 kB
+├ ƒ /api/newsletter/unsubscribe                     297 B         103 kB
+├ ƒ /api/shop-product-images/[filename]             297 B         103 kB
+├ ƒ /api/shop/cart                                  297 B         103 kB
+├ ƒ /api/shop/checkout                              297 B         103 kB
+├ ƒ /api/shop/shipping-rates                        297 B         103 kB
+├ ƒ /api/stripe/webhook                             297 B         103 kB
+├ ƒ /api/tours                                      297 B         103 kB
+├ ƒ /api/tours/weekly-notify                        297 B         103 kB
+├ ƒ /api/twilio/status                              297 B         103 kB
+├ ƒ /api/website-photo-files/[target]/[filename]    297 B         103 kB
+├ ƒ /api/website-photos                             297 B         103 kB
+├ ƒ /beer                                         2.94 kB         114 kB
+├ ƒ /beer/[slug]                                  1.66 kB         113 kB
+├ ƒ /book-a-band                                    297 B         103 kB
+├ ƒ /brewery                                      3.62 kB         115 kB
+├ ƒ /catering-to-go                               3.58 kB         109 kB
+├ ○ /coupon-validate                                949 B         103 kB
+├ ƒ /coupons                                        162 B         105 kB
+├ ƒ /events                                       1.07 kB         107 kB
+├ ● /events/[slug]                                  179 B         111 kB
+├   ├ /events/live-at-the-hangar
+├   ├ /events/sunday-brunch-flight
+├   └ /events/cars-coffee-campus
+├ ƒ /events/live-music                              185 B         106 kB
+├ ƒ /flight-log                                   4.84 kB         111 kB
+├ ƒ /flight-log/[slug]                              185 B         106 kB
+├ ○ /flight-log/forgot-password                   1.74 kB         108 kB
+├ ○ /flight-log/join                              1.74 kB         108 kB
+├ ƒ /flight-log/profile                            3.9 kB         110 kB
+├ ƒ /flight-log/reset-password                    1.74 kB         108 kB
+├ ○ /flight-log/sign-in                           1.74 kB         108 kB
+├ ƒ /flight-log/verify                              185 B         106 kB
+├ ○ /flight-log/verify/resend                     1.74 kB         108 kB
+├ ○ /gift-card-balance                            1.59 kB         107 kB
+├ ○ /itinerary                                    6.58 kB         114 kB
+├ ƒ /kegs                                          2.3 kB         108 kB
+├ ƒ /locations                                      175 B         111 kB
+├ ● /locations/[slug]                               179 B         111 kB
+├   ├ /locations/hangar-bar
+├   ├ /locations/aviator-amphitheater
+├   ├ /locations/taphouse
+├   └ [+5 more paths]
+├ ƒ /manager                                        138 B         158 kB
+├ ƒ /manager/[section]                              138 B         158 kB
+├ ƒ /manager/[section]/edit                         138 B         158 kB
+├ ƒ /manager/reset                                  870 B         107 kB
+├ ○ /media-library                                  166 B         110 kB
+├ ○ /menus                                          297 B         103 kB
+├ ○ /more                                           185 B         106 kB
+├ ƒ /order-food                                     488 B         108 kB
+├ ○ /privacy-policy                                 185 B         106 kB
+├ ○ /robots.txt                                     297 B         103 kB
+├ ƒ /shop-new                                      2.9 kB         109 kB
+├ ƒ /shop-new/cart                                4.36 kB         110 kB
+├ ○ /sitemap.xml                                    297 B         103 kB
+└ ○ /terms-and-conditions                           185 B         106 kB
++ First Load JS shared by all                      102 kB
+  ├ chunks/1255-612df69cb02f2021.js               46.3 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js           54.2 kB
+  └ other shared chunks (total)                   1.95 kB
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+standalone.prepared
