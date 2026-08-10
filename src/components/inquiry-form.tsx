@@ -10,6 +10,10 @@ export function InquiryForm({ kind, tourMinimum = DEFAULT_TOUR_MINIMUM, tourPric
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [eventGuestCount, setEventGuestCount] = useState("");
+  const eventGuestTotal = Number(eventGuestCount.replace(/[^0-9.]/g, ""));
+  const showOutdoorSeatingNote = kind === "event" && Number.isFinite(eventGuestTotal) && eventGuestTotal > 70;
+  const outdoorSeatingNote = "Guest count is over 70. Extra seating may be available outside, weather permitting.";
   const needsCaptcha = kind === "event" || kind === "catering" || kind === "newsletter";
   async function submit(formData: FormData) {
     setState("submitting"); setMessage(""); setPaymentUrl(null);
@@ -29,7 +33,7 @@ export function InquiryForm({ kind, tourMinimum = DEFAULT_TOUR_MINIMUM, tourPric
     <input name="website" className="honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" />
     {kind !== "newsletter" && <label>Name<input name="name" required autoComplete="name" /></label>}
     <label>Email<input type="email" name="email" required autoComplete="email" /></label>
-    {kind === "event" && <><label>Event type<select name="eventType" defaultValue=""><option value="" disabled>Select an event type</option><option>Wedding or rehearsal dinner</option><option>Corporate event</option><option>Birthday or celebration</option><option>Concert or fundraiser</option><option>Other</option></select></label><label>Estimated guest count<input name="guestCount" inputMode="numeric" /></label></>}
+    {kind === "event" && <><label>Event type<select name="eventType" defaultValue=""><option value="" disabled>Select an event type</option><option>Wedding or rehearsal dinner</option><option>Corporate event</option><option>Birthday or celebration</option><option>Concert or fundraiser</option><option>Other</option></select></label><label>Estimated guest count<input name="guestCount" inputMode="numeric" value={eventGuestCount} onChange={(event) => setEventGuestCount(event.target.value)} /></label>{showOutdoorSeatingNote ? <><input type="hidden" name="seatingNote" value={outdoorSeatingNote} /><p className="event-seating-note">For groups over 70, we can add extra seating outside, weather permitting.</p></> : null}</>}
     {kind === "catering" && <><input type="hidden" name="eventType" value="Catering To Go" /><label>Phone<input name="phone" type="tel" autoComplete="tel" /></label><label>Pickup date<input name="pickupDate" type="date" /></label><label>Preferred pickup time<input name="pickupTime" type="time" /></label><label>Estimated guest count<input name="guestCount" inputMode="numeric" /></label></>}
     {kind === "career" && <label>Role or area of interest<input name="interest" required /></label>}
     {kind === "job" && <><label>Role or area of interest<input name="interest" required /></label><label>Resume or portfolio link (optional)<input name="resumeUrl" type="url" inputMode="url" /></label></>}

@@ -8,7 +8,7 @@ import { PrivateEventPaymentButton } from "@/components/private-event-payment-bu
 import { getPrivateEventPaymentResult } from "@/lib/private-event-checkout";
 import { notifyPrivateEventPayment } from "@/lib/private-event-payments";
 import { getPrivateEventPhotos, type PrivateEventPhoto } from "@/lib/private-event-photos";
-import { formatPrivateEventBookingFee, getPrivateEventSettings } from "@/lib/private-event-settings";
+import { DEFAULT_PRIVATE_EVENT_AVIATOR_WAY_COPY, DEFAULT_PRIVATE_EVENT_INQUIRY_COPY, formatPrivateEventBookingFee, getPrivateEventSettings } from "@/lib/private-event-settings";
 import { latestPublicMenu } from "@/lib/menu-files";
 import { pageContent } from "@/data/site";
 
@@ -60,6 +60,8 @@ export default async function ContentPage({
   const privateEventSettings = page === "private-events" ? await getPrivateEventSettings() : null;
   const privateEventBookingFeeLabel = privateEventSettings ? formatPrivateEventBookingFee(privateEventSettings.bookingFeeCents) : "$500.00";
   const privateEventMenu = page === "private-events" ? await latestPublicMenu("catering-events", "food") : null;
+  const privateEventAviatorWayCopy = privateEventSettings?.aviatorWayCopy || DEFAULT_PRIVATE_EVENT_AVIATOR_WAY_COPY;
+  const privateEventInquiryCopy = privateEventSettings?.inquiryCopy || DEFAULT_PRIVATE_EVENT_INQUIRY_COPY;
   const privateEventPhotos = page === "private-events" ? await getPrivateEventPhotos() : [];
 
   return <>
@@ -88,18 +90,14 @@ export default async function ContentPage({
       <div className="content-wrap split-content">
         <div><p className="eyebrow">The Aviator way</p><h2>Craft, hospitality, and <em>a reason to get together.</em></h2></div>
         {page === "private-events" ? <div>
-          <p>The Ready Room is a private event space built for celebrations, corporate gatherings, rehearsal dinners, birthdays, live music, presentations, and everything in between.</p>
-          <p>Your event can include a dedicated bartender, full buffet service, and a customizable food and beverage experience. The centerpiece of the room is our custom Spanish cedar bar, serving Aviator house beers, house-made Gold Leaf spirits, cocktails, wine, and a full selection of premium liquors.</p>
-          <p>A full stage gives you plenty of flexibility for live bands, DJs, guest speakers, awards, or presentations. The Ready Room also features a complete audio and visual system, professional sound for music and speaking, and a large-screen TV for videos, slideshows, presentations, or game-day events.</p>
-          <p>From the food and drinks to the music, lighting, and service, our team helps bring everything together so you can enjoy the event instead of managing it.</p>
-          <p>That&apos;s the Aviator way: great beer, great food, genuine hospitality, and a memorable place to gather.</p>
+          {privateEventAviatorWayCopy.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
           <Link className="section-link" href="/locations/ready-room">Explore the Ready Room <ArrowUpRight /></Link>
         </div> : <div><p>Need the right Aviator landing spot? Start with the location, crew, or event room that matches what you are planning. Each stop has its own hours, phone number, menus, photos, and directions so you can make a clean plan before you head out.</p><p>Whether you are asking a question, planning a gathering, checking out career opportunities, or just looking for the next place to grab a beer, the location pages are the fastest way to get oriented.</p><Link className="section-link" href="/locations">Explore the locations <ArrowUpRight /></Link></div>}
       </div>
     </section>
 
     {page === "faq" && <section className="section section-dark"><div className="content-wrap"><div className="story-timeline">{faqs.map(([question, answer]) => <div key={question}><strong>{question}</strong><span>{answer}</span></div>)}</div></div></section>}
-    {formKind && <section id="inquiry" className="section section-dark"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">{content.eyebrow}</p><h2>Let&apos;s get the <em>details moving.</em></h2></div></div><InquiryForm kind={formKind} /></div></section>}
+    {formKind && <section id="inquiry" className="section section-dark"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">{content.eyebrow}</p><h2>Let&apos;s get the <em>details moving.</em></h2>{page === "private-events" ? privateEventInquiryCopy.map((paragraph, index) => <p key={index}>{paragraph}</p>) : null}</div></div><InquiryForm kind={formKind} /></div></section>}
 
     {page === "private-events" && privateEventPhotos.length ? <section className="section private-event-gallery-band"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Ready Room photos</p><h2>See the room <em>set for the next event.</em></h2></div><p>Private event room photography is managed by the Aviator team and updated as the space changes.</p></div><div className="private-event-gallery brewery-gallery">{privateEventPhotos.slice(0, 6).map((photo, index) => <figure className={index === 0 ? "is-featured" : ""} key={photo.name}><PrivateEventGalleryMedia photo={photo} alt={"Aviator Ready Room private event view " + (index + 1)} sizes={index === 0 ? "(max-width: 700px) 100vw, 66vw" : "(max-width: 700px) 100vw, 33vw"} />{index === 0 ? <figcaption>Featured event room photo</figcaption> : null}</figure>)}</div></div></section> : null}
   </>;

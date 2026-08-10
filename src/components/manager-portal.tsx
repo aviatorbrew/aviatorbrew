@@ -508,35 +508,64 @@ function PrivateEventPhotosManager() {
 
 function PrivateEventsManager() {
   const [bookingFee, setBookingFee] = useState(500);
+  const [aviatorWayCopy, setAviatorWayCopy] = useState("");
+  const [inquiryCopy, setInquiryCopy] = useState("");
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"" | "bookingFee" | "copy">("");
   const [message, setMessage] = useState("");
+
+  function copyText(value: unknown) {
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).join("\n\n") : "";
+  }
 
   async function loadSettings() {
     const response = await fetch("/api/manager/private-events", { cache: "no-store" });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "Could not load private event settings.");
     setBookingFee(Number(body.bookingFeeCents || 50000) / 100);
+    setAviatorWayCopy(copyText(body.aviatorWayCopy));
+    setInquiryCopy(copyText(body.inquiryCopy));
     setSettingsLoaded(true);
   }
 
   useEffect(() => { loadSettings().catch((error) => setMessage(error instanceof Error ? error.message : "Could not load private event settings.")); }, []);
 
-  async function saveSettings(event: FormEvent<HTMLFormElement>) {
+  async function saveBookingFee(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!settingsLoaded) { setMessage("Private event settings are still loading. Try again after the configured value appears."); return; }
-    setBusy(true);
+    setBusy("bookingFee");
     setMessage("");
-    const response = await fetch("/api/manager/private-events", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ bookingFeeCents: Math.round(bookingFee * 100) }) });
-    const body = await response.json();
-    setBusy(false);
-    if (!response.ok) { setMessage(body.error || "Could not save private event settings."); return; }
-    setBookingFee(Number(body.bookingFeeCents || 50000) / 100);
-    setMessage("Room booking fee saved. New Stripe checkout sessions now charge $" + (Number(body.bookingFeeCents || 0) / 100).toFixed(2) + ".");
+    try {
+      const response = await fetch("/api/manager/private-events", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ bookingFeeCents: Math.round(bookingFee * 100) }) });
+      const body = await response.json();
+      if (!response.ok) { setMessage(body.error || "Could not save private event settings."); return; }
+      setBookingFee(Number(body.bookingFeeCents || 50000) / 100);
+      setAviatorWayCopy(copyText(body.aviatorWayCopy));
+      setInquiryCopy(copyText(body.inquiryCopy));
+      setMessage("Room booking fee saved. New Stripe checkout sessions now charge $" + (Number(body.bookingFeeCents || 0) / 100).toFixed(2) + ".");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save private event settings."); }
+    finally { setBusy(""); }
+  }
+
+  async function saveCopy(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!settingsLoaded) { setMessage("Private event settings are still loading. Try again after the configured copy appears."); return; }
+    setBusy("copy");
+    setMessage("");
+    try {
+      const response = await fetch("/api/manager/private-events", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ aviatorWayCopyText: aviatorWayCopy, inquiryCopyText: inquiryCopy }) });
+      const body = await response.json();
+      if (!response.ok) { setMessage(body.error || "Could not save private event copy."); return; }
+      setBookingFee(Number(body.bookingFeeCents || 50000) / 100);
+      setAviatorWayCopy(copyText(body.aviatorWayCopy));
+      setInquiryCopy(copyText(body.inquiryCopy));
+      setMessage("Private Events copy saved. The public Private Events page now uses this text.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save private event copy."); }
+    finally { setBusy(""); }
   }
 
   return <>
-    <section id="private-event-settings" className="coupon-manager tour-manager private-event-settings-manager"><p className="eyebrow">Private event settings</p><h2>Room booking fee</h2><p>Set the Ready Room booking fee used by the public Private Events Stripe checkout button and payment confirmation copy.</p><p className="media-message" role="status">{message}</p><form className="tour-threshold-form" onSubmit={saveSettings}><label>Room booking fee (USD)<input type="number" min="1" max="20000" step="0.01" value={bookingFee} onChange={(event) => setBookingFee(Number(event.target.value))} required disabled={!settingsLoaded || busy} /><small>Applied to each new room booking checkout session.</small></label><button className="button" disabled={busy || !settingsLoaded}>{busy ? "Saving..." : settingsLoaded ? "Save booking fee" : "Loading settings..."}</button></form></section>
+    <section id="private-event-settings" className="coupon-manager tour-manager private-event-settings-manager"><p className="eyebrow">Private event settings</p><h2>Private Events</h2><p>Update the Ready Room booking fee and public Private Events copy.</p><p className="media-message" role="status">{message}</p><h3>Room booking fee</h3><form className="tour-threshold-form" onSubmit={saveBookingFee}><label>Room booking fee (USD)<input type="number" min="1" max="20000" step="0.01" value={bookingFee} onChange={(event) => setBookingFee(Number(event.target.value))} required disabled={!settingsLoaded || Boolean(busy)} /><small>Applied to each new room booking checkout session.</small></label><button className="button" disabled={Boolean(busy) || !settingsLoaded}>{busy === "bookingFee" ? "Saving..." : settingsLoaded ? "Save booking fee" : "Loading settings..."}</button></form><h3>Private Events page copy</h3><p>Shown on the public Private Events page. Separate paragraphs with a blank line.</p><form className="private-event-copy-form" onSubmit={saveCopy}><label>The Aviator Way copy<textarea rows={8} maxLength={2400} value={aviatorWayCopy} onChange={(event) => setAviatorWayCopy(event.target.value)} required disabled={!settingsLoaded || Boolean(busy)} /></label><label>Inquiry section copy<textarea rows={5} maxLength={1400} value={inquiryCopy} onChange={(event) => setInquiryCopy(event.target.value)} required disabled={!settingsLoaded || Boolean(busy)} /><small>Shown under Private Events / Let&apos;s get the details moving.</small></label><button className="button" disabled={Boolean(busy) || !settingsLoaded}>{busy === "copy" ? "Saving..." : settingsLoaded ? "Save private events copy" : "Loading settings..."}</button></form></section>
     <PrivateEventsInquiryManager />
   </>;
 }
