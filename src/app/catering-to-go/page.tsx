@@ -1,12 +1,10 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, MapPin, Phone } from "@/components/icons";
 import { CateringOrderForm } from "@/components/catering-order-form";
 import { getCateringMenuScan } from "@/lib/catering-menu-scanner";
 import { getLocation } from "@/lib/managed-locations";
-import { menuPublicUrl, menuRoots } from "@/lib/menu-files";
+import { latestPublicMenu } from "@/lib/menu-files";
 
 export const dynamic = "force-dynamic";
 
@@ -15,29 +13,12 @@ export const metadata: Metadata = {
   description: "Browse the Aviator Catering To Go menu, pickup details at Aviator Hangar Bar, and contact the events team for catering orders in Fuquay-Varina.",
 };
 
-type MenuFile = { name: string; url: string } | null;
-
-const publicMenuExtensions = new Set([".pdf", ".png", ".jpg", ".jpeg", ".webp"]);
-
-async function latestMenu(location: string, type: "food" | "drinks"): Promise<MenuFile> {
-  const candidates = (await Promise.all(menuRoots().map(async (root) => {
-    const directory = path.join(root, location, type);
-    try {
-      const entries = await fs.readdir(directory, { withFileTypes: true });
-      return Promise.all(entries.filter((entry) => entry.isFile() && publicMenuExtensions.has(path.extname(entry.name).toLowerCase())).map(async (entry) => ({ name: entry.name, stats: await fs.stat(path.join(directory, entry.name)) })));
-    } catch { return []; }
-  }))).flat();
-  candidates.sort((a, b) => b.stats.mtimeMs - a.stats.mtimeMs);
-  const current = candidates[0];
-  return current ? { name: current.name, url: menuPublicUrl(location, type, current.name) } : null;
-}
-
 function cleanMenuName(name: string) {
   return name.replace(/^\d+-/, "").replace(/[_-]+/g, " ").replace(/\.pdf$/i, "");
 }
 
 export default async function CateringToGoPage() {
-  const [menu, backupMenu, hangar, menuScan] = await Promise.all([latestMenu("catering-events", "drinks"), latestMenu("catering-events", "food"), getLocation("hangar-bar"), getCateringMenuScan()]);
+  const [menu, backupMenu, hangar, menuScan] = await Promise.all([latestPublicMenu("catering-events", "drinks"), latestPublicMenu("catering-events", "food"), getLocation("hangar-bar"), getCateringMenuScan()]);
   const scannedMenuFile = menuScan.source === "scanned" && menuScan.menuUrl ? { name: menuScan.menuName, url: menuScan.menuUrl } : null;
   const menuFile = scannedMenuFile || menu || backupMenu || null;
   const pickupAddress = hangar?.address || "688 Brewing Drive, Fuquay-Varina, NC 27526";

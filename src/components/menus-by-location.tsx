@@ -1,14 +1,12 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, MapPin } from "@/components/icons";
 import { menuLocations } from "@/data/menu-library";
 import { getLocationHero } from "@/lib/location-photos";
 import { getAllLocations } from "@/lib/managed-locations";
-import { menuPublicUrl, menuRoots } from "@/lib/menu-files";
+import { latestPublicMenu, type PublishedMenuFile } from "@/lib/menu-files";
 
-type PublishedMenu = { name: string; url: string } | null;
+type PublishedMenu = PublishedMenuFile | null;
 type LocationMenus = { slug: string; name: string; food: PublishedMenu; drinks: PublishedMenu };
 
 function labelForMenu(location: string, type: "food" | "drinks") {
@@ -16,21 +14,8 @@ function labelForMenu(location: string, type: "food" | "drinks") {
   return type === "food" ? "Food" : "Drinks";
 }
 
-async function latestMenu(location: string, type: "food" | "drinks"): Promise<PublishedMenu> {
-  const candidates = (await Promise.all(menuRoots().map(async (root) => {
-    const directory = path.join(root, location, type);
-    try {
-      const entries = await fs.readdir(directory, { withFileTypes: true });
-      return Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => ({ name: entry.name, stats: await fs.stat(path.join(directory, entry.name)) })));
-    } catch { return []; }
-  }))).flat();
-  candidates.sort((a, b) => b.stats.mtimeMs - a.stats.mtimeMs);
-  const current = candidates[0];
-  return current ? { name: current.name, url: menuPublicUrl(location, type, current.name) } : null;
-}
-
 async function getLocationMenus(): Promise<LocationMenus[]> {
-  return Promise.all(menuLocations.map(async (location) => ({ slug: location.slug, name: location.name, food: await latestMenu(location.slug, "food"), drinks: await latestMenu(location.slug, "drinks") })));
+  return Promise.all(menuLocations.map(async (location) => ({ slug: location.slug, name: location.name, food: await latestPublicMenu(location.slug, "food"), drinks: await latestPublicMenu(location.slug, "drinks") })));
 }
 
 function MenuAction({ location, type, item }: { location: LocationMenus; type: "food" | "drinks"; item: PublishedMenu }) {
