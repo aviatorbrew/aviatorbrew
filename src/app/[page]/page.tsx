@@ -8,6 +8,7 @@ import { PrivateEventPaymentButton } from "@/components/private-event-payment-bu
 import { getPrivateEventPaymentResult } from "@/lib/private-event-checkout";
 import { notifyPrivateEventPayment } from "@/lib/private-event-payments";
 import { getPrivateEventPhotos, type PrivateEventPhoto } from "@/lib/private-event-photos";
+import { formatPrivateEventBookingFee, getPrivateEventSettings } from "@/lib/private-event-settings";
 import { pageContent } from "@/data/site";
 
 function PrivateEventGalleryMedia({ photo, alt, sizes }: { photo: PrivateEventPhoto; alt: string; sizes: string }) {
@@ -15,6 +16,8 @@ function PrivateEventGalleryMedia({ photo, alt, sizes }: { photo: PrivateEventPh
     ? <video src={photo.url} controls muted playsInline preload="metadata" />
     : <Image src={photo.url} alt={alt} fill unoptimized sizes={sizes} />;
 }
+
+export const dynamic = "force-dynamic";
 
 const faqs = [
   ["Where is Aviator Brewing Company?", "The flagship brewery campus is at 688 Brewing Drive in Fuquay-Varina, North Carolina."],
@@ -53,6 +56,8 @@ export default async function ContentPage({
   const paymentNotificationSent = verifiedPayment === "paid" && paymentResult?.session
     ? await notifyPrivateEventPayment(paymentResult.session)
     : false;
+  const privateEventSettings = page === "private-events" ? await getPrivateEventSettings() : null;
+  const privateEventBookingFeeLabel = privateEventSettings ? formatPrivateEventBookingFee(privateEventSettings.bookingFeeCents) : "$500.00";
   const privateEventPhotos = page === "private-events" ? await getPrivateEventPhotos() : [];
 
   return <>
@@ -67,12 +72,12 @@ export default async function ContentPage({
               : <a className="button" href={formKind ? "#inquiry" : "/about"} data-analytics={`${page}_action`}>{content.action} <ArrowUpRight /></a>}
           {page === "private-events" ? <>
             <a className="button button-outline" href="/api/menu-files/catering-events/food/1785010242714-Aviator_Ready_Room_Event_Menu_Clean.pdf" target="_blank" rel="noreferrer" data-analytics="private_events_onsite_buffet_menu">Onsite catering buffet menu <ArrowUpRight /></a>
-            <PrivateEventPaymentButton />
+            <PrivateEventPaymentButton bookingFeeLabel={privateEventBookingFeeLabel} />
           </> : null}
         </div>
-        {verifiedPayment === "paid" ? <p className="private-event-payment-status success" role="status"><strong>Payment complete.</strong> Your &#36;500 room booking fee was processed securely through Stripe. {paymentNotificationSent ? "The Aviator events team has been notified." : "Keep your Stripe receipt and contact the Aviator events team if you do not hear from us."}</p> : null}
+        {verifiedPayment === "paid" ? <p className="private-event-payment-status success" role="status"><strong>Payment complete.</strong> Your {privateEventBookingFeeLabel} room booking fee was processed securely through Stripe. {paymentNotificationSent ? "The Aviator events team has been notified." : "Keep your Stripe receipt and contact the Aviator events team if you do not hear from us."}</p> : null}
         {verifiedPayment === "pending" ? <p className="private-event-payment-status" role="status">Stripe is still confirming your payment. Keep your Stripe receipt; the Aviator events team will follow up after processing completes.</p> : null}
-        {paymentStatus === "success" && verifiedPayment === "invalid" ? <p className="private-event-payment-status cancel" role="alert">This link does not verify a completed &#36;500 room booking payment. Please return to secure checkout or contact the Aviator events team.</p> : null}
+        {paymentStatus === "success" && verifiedPayment === "invalid" ? <p className="private-event-payment-status cancel" role="alert">This link does not verify a completed {privateEventBookingFeeLabel} room booking payment. Please return to secure checkout or contact the Aviator events team.</p> : null}
         {paymentStatus === "cancel" ? <p className="private-event-payment-status cancel" role="status">Checkout was canceled. No room booking fee was paid.</p> : null}
       </div>
     </section>

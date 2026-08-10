@@ -81,7 +81,7 @@ export const managerSections = [
     id: "private-events",
     href: "/manager/private-events",
     label: "Private Events",
-    description: "Review archived private event inquiries and export marketing lists.",
+    description: "Set the room booking fee, review private event inquiries, and export marketing lists.",
   },
   {
     id: "catering",

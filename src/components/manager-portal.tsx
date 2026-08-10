@@ -506,6 +506,41 @@ function PrivateEventPhotosManager() {
   return <section className="manager-brewery-photos manager-private-event-photos"><WebsitePhotosLibrary accessKey="manager-session" location={{ slug: "private-events", name: "Private Event Room" }} /></section>;
 }
 
+function PrivateEventsManager() {
+  const [bookingFee, setBookingFee] = useState(500);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function loadSettings() {
+    const response = await fetch("/api/manager/private-events", { cache: "no-store" });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error || "Could not load private event settings.");
+    setBookingFee(Number(body.bookingFeeCents || 50000) / 100);
+    setSettingsLoaded(true);
+  }
+
+  useEffect(() => { loadSettings().catch((error) => setMessage(error instanceof Error ? error.message : "Could not load private event settings.")); }, []);
+
+  async function saveSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!settingsLoaded) { setMessage("Private event settings are still loading. Try again after the configured value appears."); return; }
+    setBusy(true);
+    setMessage("");
+    const response = await fetch("/api/manager/private-events", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ bookingFeeCents: Math.round(bookingFee * 100) }) });
+    const body = await response.json();
+    setBusy(false);
+    if (!response.ok) { setMessage(body.error || "Could not save private event settings."); return; }
+    setBookingFee(Number(body.bookingFeeCents || 50000) / 100);
+    setMessage("Room booking fee saved. New Stripe checkout sessions now charge $" + (Number(body.bookingFeeCents || 0) / 100).toFixed(2) + ".");
+  }
+
+  return <>
+    <section id="private-event-settings" className="coupon-manager tour-manager private-event-settings-manager"><p className="eyebrow">Private event settings</p><h2>Room booking fee</h2><p>Set the Ready Room booking fee used by the public Private Events Stripe checkout button and payment confirmation copy.</p><p className="media-message" role="status">{message}</p><form className="tour-threshold-form" onSubmit={saveSettings}><label>Room booking fee (USD)<input type="number" min="1" max="20000" step="0.01" value={bookingFee} onChange={(event) => setBookingFee(Number(event.target.value))} required disabled={!settingsLoaded || busy} /><small>Applied to each new room booking checkout session.</small></label><button className="button" disabled={busy || !settingsLoaded}>{busy ? "Saving..." : settingsLoaded ? "Save booking fee" : "Loading settings..."}</button></form></section>
+    <PrivateEventsInquiryManager />
+  </>;
+}
+
 function AmphitheaterPhotosManager() {
   return <section className="manager-brewery-photos manager-amphitheater-photos"><WebsitePhotosLibrary accessKey="manager-session" location={{ slug: "aviator-amphitheater", name: "Aviator Amphitheater" }} /></section>;
 }
@@ -631,7 +666,7 @@ function ManagerSectionContent({ section, editId, editType, returnTo }: { sectio
     case "beverages": return <BeverageManager editId={editId} returnTo={returnTo} />;
     case "kegs": return <KegInventoryManager editId={editId} returnTo={returnTo} />;
     case "events": return <EventManager editId={editId} returnTo={returnTo} />;
-    case "private-events": return <PrivateEventsInquiryManager />;
+    case "private-events": return <PrivateEventsManager />;
     case "catering": return <CateringManager />;
     case "database": return <DatabaseManager />;
     case "email-test": return <EmailTestManager />;

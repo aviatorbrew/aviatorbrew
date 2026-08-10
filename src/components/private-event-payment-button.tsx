@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowUpRight } from "@/components/icons";
 
-export function PrivateEventPaymentButton() {
+export function PrivateEventPaymentButton({ bookingFeeLabel }: { bookingFeeLabel: string }) {
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -33,7 +33,7 @@ export function PrivateEventPaymentButton() {
       disabled={state === "loading"}
       data-analytics="private_events_room_booking_payment"
     >
-      {state === "loading" ? "Opening secure checkout..." : "PAY ROOM BOOKING FEE"}
+      {state === "loading" ? "Opening secure checkout..." : "PAY " + bookingFeeLabel + " ROOM BOOKING FEE"}
       {state !== "loading" ? <ArrowUpRight /> : null}
     </button>
     {state === "error" ? <span className="private-event-payment-error" role="alert">{message || "Checkout could not be opened. Please try again."}</span> : null}

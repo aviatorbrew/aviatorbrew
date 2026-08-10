@@ -1,3 +1,4 @@
+import { DEFAULT_PRIVATE_EVENT_BOOKING_FEE_CENTS } from "@/lib/private-event-settings";
 type CheckoutItem = {
   name: string;
   description: string;
@@ -22,7 +23,7 @@ export const checkoutCatalog: Record<CheckoutItemKey, CheckoutItem> = {
   "private-event-room-booking": {
     name: "Private Event Room Booking Fee",
     description: "Room booking fee for a private event at Aviator Brewing Company.",
-    unitAmount: 50000,
+    unitAmount: DEFAULT_PRIVATE_EVENT_BOOKING_FEE_CENTS,
     currency: "usd",
     successPath: "/private-events?booking_payment=success&session_id={CHECKOUT_SESSION_ID}",
     cancelPath: "/private-events?booking_payment=cancel",

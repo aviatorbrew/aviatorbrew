@@ -1,4 +1,5 @@
 import type { PrivateEventCheckoutSession } from "@/lib/private-event-payments";
+import { DEFAULT_PRIVATE_EVENT_BOOKING_FEE_CENTS, getPrivateEventSettings, validPrivateEventBookingFeeCents } from "@/lib/private-event-settings";
 
 export type PrivateEventPaymentStatus = "paid" | "pending" | "invalid";
 
@@ -20,7 +21,11 @@ export async function getPrivateEventPaymentResult(sessionId: string): Promise<P
     });
     if (!response.ok) return { status: "invalid" };
     const session = await response.json() as PrivateEventCheckoutSession & { payment_status?: string };
-    if (session.metadata?.item !== "private-event-room-booking" || session.amount_total !== 50000 || session.currency !== "usd") return { status: "invalid" };
+    const configured = await getPrivateEventSettings();
+    const metadataAmount = session.metadata?.bookingFeeCents ? Number(session.metadata.bookingFeeCents) : undefined;
+    const expectedAmount = metadataAmount && Number.isInteger(metadataAmount) ? validPrivateEventBookingFeeCents(metadataAmount) : configured.bookingFeeCents;
+    const legacyDefaultValid = !metadataAmount && session.amount_total === DEFAULT_PRIVATE_EVENT_BOOKING_FEE_CENTS;
+    if (session.metadata?.item !== "private-event-room-booking" || session.currency !== "usd" || (session.amount_total !== expectedAmount && !legacyDefaultValid)) return { status: "invalid" };
     return {
       status: session.payment_status === "paid" ? "paid" : "pending",
       session,
