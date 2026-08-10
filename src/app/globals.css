@@ -730,6 +730,8 @@ body {
 .tour-threshold-form { display: flex; flex-wrap: wrap; align-items: end; gap: .8rem; margin: 1.25rem 0; padding: 1rem; border: 1px solid rgba(184, 217, 236, .28); background: #10334f; }
 .tour-threshold-form label { display: grid; gap: .35rem; min-width: min(100%, 17rem); color: #d9e8ef; font-size: .76rem; font-weight: 800; }
 .tour-threshold-form input { width: 7rem; border: 1px solid #50809d; background: #071e31; color: #f2f8fa; padding: .65rem; font: inherit; }
+.private-event-inquiry-copy { display: grid; gap: .75rem; margin-top: clamp(1.5rem, 3vw, 2.35rem); }
+.private-event-inquiry-copy p { max-width: 42rem; margin: 0; color: #b7c9d3; line-height: 1.65; }
 .private-event-settings-manager h3 { margin-top: 1.25rem; }
 .private-event-copy-form label { max-width: 58rem; }
 .private-event-copy-form textarea { min-height: 12rem; resize: vertical; line-height: 1.45; }
