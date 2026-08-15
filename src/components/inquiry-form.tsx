@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
+import { DEFAULT_TOUR_BOOKING_CUTOFF_HOURS, DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
 
 type FormKind = "newsletter" | "contact" | "event" | "catering" | "career" | "tour" | "band" | "donation" | "job";
 const labels: Record<FormKind, string> = { newsletter: "Join the Flight Crew", contact: "Send your message", event: "Plan your event", catering: "Request catering to go", career: "Tell us about yourself", tour: "Continue to secure payment", band: "Submit your band", donation: "Send donation request", job: "Apply now" };
 
-export function InquiryForm({ kind, tourMinimum = DEFAULT_TOUR_MINIMUM, tourPriceCents = DEFAULT_TOUR_PRICE_CENTS }: { kind: FormKind; tourMinimum?: number; tourPriceCents?: number }) {
+export function InquiryForm({ kind, tourMinimum = DEFAULT_TOUR_MINIMUM, tourPriceCents = DEFAULT_TOUR_PRICE_CENTS, tourBookingCutoffHours = DEFAULT_TOUR_BOOKING_CUTOFF_HOURS }: { kind: FormKind; tourMinimum?: number; tourPriceCents?: number; tourBookingCutoffHours?: number }) {
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export function InquiryForm({ kind, tourMinimum = DEFAULT_TOUR_MINIMUM, tourPric
     {kind === "job" && <><label>Role or area of interest<input name="interest" required /></label><label>Resume or portfolio link (optional)<input name="resumeUrl" type="url" inputMode="url" /></label></>}
     {kind === "band" && <><label>Band or artist name<input name="bandName" required /></label><label>Website or music link<input name="musicUrl" type="url" inputMode="url" required /></label></>}
     {kind === "donation" && <><label>Organization name<input name="organization" required /></label><label>Event or needed-by date<input name="eventDate" type="date" /></label></>}
-    {kind === "tour" && <><label>How many tickets?<input name="tickets" type="number" min="1" max="6" defaultValue="1" required /><small>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(tourPriceCents / 100)} per guest. Each ticket includes a pint glass, one beer pour, and one flight of four pours.</small></label><p className="tour-signup-note">Tours are approximately 30 minutes and launch on Saturdays at 4:00 PM once {tourMinimum} guests are signed up. Each flight can hold up to {TOUR_CAPACITY} guests; if that flight fills, the next guests are assigned to a 6:00 PM tour. Signups inside 24 hours roll to the following Saturday.</p></>}
+    {kind === "tour" && <><label>How many tickets?<input name="tickets" type="number" min="1" max="6" defaultValue="1" required /><small>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(tourPriceCents / 100)} per guest. Each ticket includes a pint glass, one beer pour, and one flight of four pours.</small></label><p className="tour-signup-note">Tours are approximately 30 minutes and launch on Saturdays at 4:00 PM once {tourMinimum} guests are signed up. Each flight can hold up to {TOUR_CAPACITY} guests; if that flight fills, the next guests are assigned to a 6:00 PM tour. Signups inside {tourBookingCutoffHours} hour{tourBookingCutoffHours === 1 ? "" : "s"} roll to the following Saturday.</p></>}
     {kind !== "newsletter" && kind !== "tour" && <label>{kind === "band" ? "Tell us about your sound, dates, and draw" : kind === "donation" ? "Tell us about your request and community impact" : kind === "job" ? "Tell us about your experience and availability" : kind === "catering" ? "What would you like to order?" : "How can we help?"}<textarea name="message" required rows={kind === "catering" ? 6 : 4} placeholder={kind === "catering" ? "Menu items, quantities, pickup notes, special requests, or questions." : undefined} /></label>}
     {kind === "tour" && <label>Questions or notes?<textarea name="message" rows={3} /></label>}
     {needsCaptcha && <label className="captcha-check"><input type="checkbox" name="humanCheck" value="yes" required /><span>I am a real person submitting this form.</span></label>}

@@ -1,7 +1,7 @@
-import { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
+import { DEFAULT_TOUR_BOOKING_CUTOFF_HOURS, DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 
-export { DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY, TOUR_MINIMUM } from "@/lib/tour-config";
+export { DEFAULT_TOUR_BOOKING_CUTOFF_HOURS, DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY, TOUR_MINIMUM } from "@/lib/tour-config";
 export type TourSlot = "4:00 PM" | "6:00 PM";
 
 export type TourSignup = {
@@ -18,7 +18,7 @@ export type TourSignup = {
 };
 
 type TourNotification = { key: string; sentAt: string };
-type TourStore = { signups: TourSignup[]; notifications: TourNotification[]; minimum: number; priceCents: number; cancelledTours: string[] };
+type TourStore = { signups: TourSignup[]; notifications: TourNotification[]; minimum: number; priceCents: number; bookingCutoffHours: number; cancelledTours: string[] };
 
 export type TourSummary = {
   date: string;
@@ -27,16 +27,19 @@ export type TourSummary = {
   confirmedTours: Array<{ date: string; time: TourSlot }>;
   minimum: number;
   priceCents: number;
+  bookingCutoffHours: number;
 };
 
 const smtpConfigured = () => process.env.MAIL_MODE === "smtp" && Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD && process.env.MAIL_FROM_EMAIL);
 
 const validMinimum = (value: unknown) => Number.isInteger(value) && Number(value) >= 1 && Number(value) <= TOUR_CAPACITY ? Number(value) : DEFAULT_TOUR_MINIMUM;
 const validPriceCents = (value: unknown) => Number.isInteger(value) && Number(value) >= 100 && Number(value) <= 100000 ? Number(value) : DEFAULT_TOUR_PRICE_CENTS;
+const validBookingCutoffHours = (value: unknown) => Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 168 ? Number(value) : DEFAULT_TOUR_BOOKING_CUTOFF_HOURS;
 const runtimeNumber = (name: string) => { const raw = process.env[name]; if (raw === undefined || raw === "") return undefined; const value = Number(raw); return Number.isFinite(value) ? value : undefined; };
 const configuredMinimum = () => validMinimum(runtimeNumber("TOUR_MINIMUM") ?? runtimeNumber("NEXT_PUBLIC_TOUR_MINIMUM") ?? DEFAULT_TOUR_MINIMUM);
 const configuredPriceCents = () => validPriceCents(runtimeNumber("TOUR_PRICE_CENTS") ?? runtimeNumber("NEXT_PUBLIC_TOUR_PRICE_CENTS") ?? DEFAULT_TOUR_PRICE_CENTS);
-const emptyStore = (): TourStore => ({ signups: [], notifications: [], minimum: configuredMinimum(), priceCents: configuredPriceCents(), cancelledTours: [] });
+const configuredBookingCutoffHours = () => validBookingCutoffHours(runtimeNumber("TOUR_BOOKING_CUTOFF_HOURS") ?? runtimeNumber("NEXT_PUBLIC_TOUR_BOOKING_CUTOFF_HOURS") ?? DEFAULT_TOUR_BOOKING_CUTOFF_HOURS);
+const emptyStore = (): TourStore => ({ signups: [], notifications: [], minimum: configuredMinimum(), priceCents: configuredPriceCents(), bookingCutoffHours: configuredBookingCutoffHours(), cancelledTours: [] });
 const dataFile = () => process.env.TOUR_DATA_FILE || "data/tour-signups.json";
 const dataDirectory = (file: string) => { const index = file.lastIndexOf("/"); return index > -1 ? file.slice(0, index) || "." : "."; };
 const storageUnavailable = (error: unknown) => {
@@ -51,7 +54,7 @@ async function readFileStore(): Promise<TourStore> {
     const { promises: fs } = await import("fs");
     const parsed = JSON.parse(await fs.readFile(dataFile(), "utf8")) as Partial<TourStore>;
     const fallback = emptyStore();
-    return { signups: Array.isArray(parsed.signups) ? parsed.signups : [], notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [], minimum: parsed.minimum === undefined ? fallback.minimum : validMinimum(parsed.minimum), priceCents: parsed.priceCents === undefined ? fallback.priceCents : validPriceCents(parsed.priceCents), cancelledTours: Array.isArray(parsed.cancelledTours) ? parsed.cancelledTours.filter((key): key is string => typeof key === "string") : [] };
+    return { signups: Array.isArray(parsed.signups) ? parsed.signups : [], notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [], minimum: parsed.minimum === undefined ? fallback.minimum : validMinimum(parsed.minimum), priceCents: parsed.priceCents === undefined ? fallback.priceCents : validPriceCents(parsed.priceCents), bookingCutoffHours: parsed.bookingCutoffHours === undefined ? fallback.bookingCutoffHours : validBookingCutoffHours(parsed.bookingCutoffHours), cancelledTours: Array.isArray(parsed.cancelledTours) ? parsed.cancelledTours.filter((key): key is string => typeof key === "string") : [] };
   } catch (error) {
     if (storageUnavailable(error)) return emptyStore();
     throw error;
@@ -65,7 +68,7 @@ async function writeFileStore(store: TourStore) {
     await fs.mkdir(dataDirectory(file), { recursive: true });
     await fs.writeFile(file, JSON.stringify(store, null, 2) + "\n", "utf8");
   } catch (error) {
-    if (storageUnavailable(error)) throw new Error("Tour signup storage is not writable in this environment. Update hosted tour settings with TOUR_MINIMUM and TOUR_PRICE_CENTS, or configure writable storage.");
+    if (storageUnavailable(error)) throw new Error("Tour signup storage is not writable in this environment. Update hosted tour settings with TOUR_MINIMUM, TOUR_PRICE_CENTS, and TOUR_BOOKING_CUTOFF_HOURS, or configure writable storage.");
     throw error;
   }
 }
@@ -89,6 +92,7 @@ async function readDatabaseStore(): Promise<TourStore | null> {
       cancelledTours: cancellationsResult.rows.map((row) => row.key),
       minimum: validMinimum(settings.minimum ?? configuredMinimum()),
       priceCents: validPriceCents(settings.priceCents ?? configuredPriceCents()),
+      bookingCutoffHours: validBookingCutoffHours(settings.bookingCutoffHours ?? configuredBookingCutoffHours()),
     };
   });
 }
@@ -103,7 +107,7 @@ async function writeDatabaseStore(store: TourStore) {
       for (const signup of store.signups) await client.query("INSERT INTO website.tour_signups (id,created_at,name,email,tickets,message,tour_date,tour_time,payment_status,stripe_session_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)", [signup.id, signup.createdAt, signup.name, signup.email, signup.tickets, signup.message || "", signup.tourDate, signup.tourTime, signup.paymentStatus || null, signup.stripeSessionId || null]);
       for (const notification of store.notifications) await client.query("INSERT INTO website.tour_notifications (key,sent_at) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET sent_at=EXCLUDED.sent_at", [notification.key, notification.sentAt]);
       for (const key of store.cancelledTours) await client.query("INSERT INTO website.tour_cancellations (key) VALUES ($1) ON CONFLICT (key) DO NOTHING", [key]);
-      await client.query("INSERT INTO website.settings (key,value,description,updated_at) VALUES ($1,$2::jsonb,$3,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, description=EXCLUDED.description, updated_at=now()", ["tour_settings", JSON.stringify({ minimum: store.minimum, priceCents: store.priceCents }), "Tour launch and pricing settings"]);
+      await client.query("INSERT INTO website.settings (key,value,description,updated_at) VALUES ($1,$2::jsonb,$3,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, description=EXCLUDED.description, updated_at=now()", ["tour_settings", JSON.stringify({ minimum: store.minimum, priceCents: store.priceCents, bookingCutoffHours: store.bookingCutoffHours }), "Tour launch, pricing, and booking cutoff settings"]);
       await client.query("COMMIT");
     } catch (error) { await client.query("ROLLBACK").catch(() => undefined); throw error; }
   });
@@ -154,13 +158,13 @@ function tourStart(date: string, slot: TourSlot) {
   return new Date(localAsUtc - (observedLocalAsUtc - probe.getTime()));
 }
 
-export function nextEligibleTourDate(now = new Date()) {
+export function nextEligibleTourDate(now = new Date(), bookingCutoffHours = configuredBookingCutoffHours()) {
   const local = easternParts(now);
   const today = dateKey(local.year, local.month, local.day);
   const weekday = new Date(Date.UTC(local.year, local.month - 1, local.day)).getUTCDay();
   let daysUntilSaturday = (6 - weekday + 7) % 7;
   let candidate = addDays(today, daysUntilSaturday);
-  if (tourStart(candidate, "4:00 PM").getTime() - now.getTime() < 24 * 60 * 60 * 1000) candidate = addDays(candidate, 7);
+  if (tourStart(candidate, "4:00 PM").getTime() - now.getTime() < bookingCutoffHours * 60 * 60 * 1000) candidate = addDays(candidate, 7);
   return candidate;
 }
 
@@ -168,8 +172,8 @@ function booked(signups: TourSignup[], date: string, slot: TourSlot) {
   return signups.filter((signup) => signup.tourDate === date && signup.tourTime === slot).reduce((total, signup) => total + signup.tickets, 0);
 }
 
-function pickSlot(signups: TourSignup[], tickets: number, now: Date) {
-  let date = nextEligibleTourDate(now);
+function pickSlot(signups: TourSignup[], tickets: number, now: Date, bookingCutoffHours: number) {
+  let date = nextEligibleTourDate(now, bookingCutoffHours);
   for (let attempts = 0; attempts < 40; attempts += 1) {
     if (booked(signups, date, "4:00 PM") + tickets <= TOUR_CAPACITY) return { date, slot: "4:00 PM" as TourSlot };
     if (booked(signups, date, "6:00 PM") + tickets <= TOUR_CAPACITY) return { date, slot: "6:00 PM" as TourSlot };
@@ -200,16 +204,17 @@ function details(signups: TourSignup[], date: string, minimum: number) {
 
 export async function getTourSummary(now = new Date()): Promise<TourSummary> {
   const store = await readStore();
-  const candidate = pickSlot(store.signups, 1, now);
-  const upcomingDate = nextEligibleTourDate(now);
+  const bookingCutoffHours = store.bookingCutoffHours;
+  const candidate = pickSlot(store.signups, 1, now, bookingCutoffHours);
+  const upcomingDate = nextEligibleTourDate(now, bookingCutoffHours);
   const minimum = store.minimum;
   const confirmedTours = [...new Set(store.signups.map((signup) => signup.tourDate))].filter((date) => date >= upcomingDate).flatMap((date) => (["4:00 PM", "6:00 PM"] as TourSlot[]).filter((time) => !store.cancelledTours.includes(date + "|" + time) && booked(store.signups, date, time) >= minimum).map((time) => ({ date, time }))).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  return { ...details(store.signups, candidate.date, minimum), confirmedTours, minimum, priceCents: store.priceCents };
+  return { ...details(store.signups, candidate.date, minimum), confirmedTours, minimum, priceCents: store.priceCents, bookingCutoffHours };
 }
 
 export async function createTourSignup(input: { name: string; email: string; tickets: number; message?: string }, now = new Date()) {
   const store = await readStore();
-  const assignment = pickSlot(store.signups, input.tickets, now);
+  const assignment = pickSlot(store.signups, input.tickets, now, store.bookingCutoffHours);
   const minimum = store.minimum;
   const signup: TourSignup = {
     id: "tour_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8),
@@ -226,7 +231,7 @@ export async function createTourSignup(input: { name: string; email: string; tic
   await writeStore(store);
   const summary = details(store.signups, assignment.date, minimum);
   const slot = assignment.slot === "4:00 PM" ? summary.fourPm : summary.sixPm;
-  return { signup, summary, currentTotal: slot.booked, qualified: slot.confirmed, minimum, priceCents: store.priceCents };
+  return { signup, summary, currentTotal: slot.booked, qualified: slot.confirmed, minimum, priceCents: store.priceCents, bookingCutoffHours: store.bookingCutoffHours };
 }
 
 export function formatTourPrice(priceCents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(priceCents / 100); }
@@ -311,12 +316,12 @@ export async function notifyQualifiedTours(now = new Date()) {
 }
 
 export async function notifyGuestOfSignup(result: Awaited<ReturnType<typeof createTourSignup>>) {
-  const { signup, currentTotal, qualified, minimum, priceCents } = result;
+  const { signup, currentTotal, qualified, minimum, priceCents, bookingCutoffHours } = result;
   const date = formatTourDate(signup.tourDate);
   const remaining = Math.max(minimum - currentTotal, 0);
   const status = qualified ? "TOUR IS ON" : "TENTATIVELY SET";
   const body = qualified ? "Great news - your tour is on! This flight has reached the " + minimum + "-person launch minimum." : "Your tour is tentatively set for " + date + " at " + signup.tourTime + ". It is waiting for " + remaining + " more signup(s) before it is officially on.";
-  const text = ["Thanks for joining the Aviator brewery tour list.", body, "Tentative flight: " + date + " at " + signup.tourTime, "Current flight total: " + currentTotal + " of " + TOUR_CAPACITY + " seats (" + minimum + " required to launch).", "Your registration: " + signup.tickets + " ticket(s).", "The tour is approximately 30 minutes. Each " + formatTourPrice(priceCents) + " ticket includes a pint glass, one beer pour, and one flight of four pours.", "Signups made within 24 hours of a Saturday are assigned to the following Saturday.", "Questions? tours@aviatorbrew.com"].join("\n");
+  const text = ["Thanks for joining the Aviator brewery tour list.", body, "Tentative flight: " + date + " at " + signup.tourTime, "Current flight total: " + currentTotal + " of " + TOUR_CAPACITY + " seats (" + minimum + " required to launch).", "Your registration: " + signup.tickets + " ticket(s).", "The tour is approximately 30 minutes. Each " + formatTourPrice(priceCents) + " ticket includes a pint glass, one beer pour, and one flight of four pours.", "Signups made within " + bookingCutoffHours + " hour" + (bookingCutoffHours === 1 ? "" : "s") + " of a Saturday tour are assigned to the following Saturday.", "Questions? tours@aviatorbrew.com"].join("\n");
   return deliverTourEmail({ to: signup.email, subject: qualified ? "Your Aviator brewery tour is on" : "Your Aviator tour is tentatively set", text, html: tourEmailHtml({ title: qualified ? "Your tour is on!" : "Your tour is tentatively set", status, date, time: signup.tourTime, body, attendee: signup.name, tickets: signup.tickets, total: currentTotal, minimum, priceCents }), category: "tour-signup-status" });
 }
 
@@ -334,10 +339,10 @@ export async function getTourManagerData() {
     const tickets = guests.reduce((total, guest) => total + guest.tickets, 0);
     return { date, displayDate: formatTourDate(date), time, guests: guests.length, tickets, confirmed: tickets >= minimum };
   }).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  return { signups, scheduledTours, summary: await getTourSummary(), minimum, priceCents: store.priceCents };
+  return { signups, scheduledTours, summary: await getTourSummary(), minimum, priceCents: store.priceCents, bookingCutoffHours: store.bookingCutoffHours };
 }
 
-export async function setTourSettings(input: { minimum?: number; priceCents?: number }) {
+export async function setTourSettings(input: { minimum?: number; priceCents?: number; bookingCutoffHours?: number }) {
   const store = await readStore();
   if (input.minimum !== undefined) {
     if (!Number.isInteger(input.minimum) || input.minimum < 1 || input.minimum > TOUR_CAPACITY) throw new Error("Tour launch minimum must be between 1 and " + TOUR_CAPACITY + ".");
@@ -347,6 +352,10 @@ export async function setTourSettings(input: { minimum?: number; priceCents?: nu
   if (input.priceCents !== undefined) {
     if (!Number.isInteger(input.priceCents) || input.priceCents < 100 || input.priceCents > 100000) throw new Error("Tour ticket price must be between $1.00 and $1,000.00.");
     store.priceCents = input.priceCents;
+  }
+  if (input.bookingCutoffHours !== undefined) {
+    if (!Number.isInteger(input.bookingCutoffHours) || input.bookingCutoffHours < 0 || input.bookingCutoffHours > 168) throw new Error("Tour booking cutoff must be between 0 and 168 hours.");
+    store.bookingCutoffHours = input.bookingCutoffHours;
   }
   await writeStore(store);
   return getTourManagerData();
