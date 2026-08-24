@@ -158,6 +158,17 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
         </article>
       </div>
 
+      <aside className="private-event-order-form">
+        <div>
+          <p className="eyebrow">Fillable event order form</p>
+          <h3>Ready Room Event Flight Plan</h3>
+          <p>Organize your date, schedule, package, menu, Pizza Bar, bar setup, extras, totals, and signatures in one place. Fill it out digitally or print it for handwriting.</p>
+        </div>
+        <a className="button" href="/documents/ready-room-event-flight-plan.pdf" target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
+          Download Event Flight Plan <ArrowUpRight />
+        </a>
+      </aside>
+
       <footer className="private-event-package-actions">
         <div><strong>Ready to choose a flight plan?</strong><span>Send your date, guest count, and package ideas to the Aviator events team.</span></div>
         <div>
