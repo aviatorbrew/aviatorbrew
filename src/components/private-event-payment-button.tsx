@@ -33,7 +33,7 @@ export function PrivateEventPaymentButton({ bookingFeeLabel }: { bookingFeeLabel
       disabled={state === "loading"}
       data-analytics="private_events_room_booking_payment"
     >
-      {state === "loading" ? "Opening secure checkout..." : "Book Room! Pay Here!"}
+      {state === "loading" ? "Opening secure checkout..." : "Pay Event Fee"}
       {state !== "loading" ? <ArrowUpRight /> : null}
     </button>
     {state === "error" ? <span className="private-event-payment-error" role="alert">{message || "Checkout could not be opened. Please try again."}</span> : null}

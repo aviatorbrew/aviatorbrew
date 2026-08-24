@@ -76,7 +76,7 @@ export default async function ContentPage({
             : page === "shop" || page === "distillery" ? <a className="button" href="https://maps.google.com/?q=688+Brewing+Drive+Fuquay-Varina+NC+27526" target="_blank" rel="noreferrer" data-analytics={`${page}_directions`}><MapPin />{content.action}</a>
               : <a className="button" href={formKind ? "#inquiry" : "/about"} data-analytics={`${page}_action`}>{content.action} <ArrowUpRight /></a>}
           {page === "private-events" ? <>
-            <a className="button button-outline" href="#packages" data-analytics="private_events_packages">See packages &amp; pizza <ArrowUpRight /></a>
+            <a className="button button-outline" href="#packages" data-analytics="private_events_packages">See Packages <ArrowUpRight /></a>
             <PrivateEventPaymentButton bookingFeeLabel={privateEventBookingFeeLabel} />
           </> : null}
         </div>
