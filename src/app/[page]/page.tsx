@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { InquiryForm } from "@/components/inquiry-form";
 import { ArrowUpRight, MapPin } from "@/components/icons";
 import { PrivateEventPaymentButton } from "@/components/private-event-payment-button";
+import { PrivateEventPackages } from "@/components/private-event-packages";
 import { getPrivateEventPaymentResult } from "@/lib/private-event-checkout";
 import { notifyPrivateEventPayment } from "@/lib/private-event-payments";
 import { getPrivateEventPhotos, type PrivateEventPhoto } from "@/lib/private-event-photos";
@@ -75,7 +76,7 @@ export default async function ContentPage({
             : page === "shop" || page === "distillery" ? <a className="button" href="https://maps.google.com/?q=688+Brewing+Drive+Fuquay-Varina+NC+27526" target="_blank" rel="noreferrer" data-analytics={`${page}_directions`}><MapPin />{content.action}</a>
               : <a className="button" href={formKind ? "#inquiry" : "/about"} data-analytics={`${page}_action`}>{content.action} <ArrowUpRight /></a>}
           {page === "private-events" ? <>
-            {privateEventMenu ? <a className="button button-outline" href={privateEventMenu.url} target="_blank" rel="noreferrer" data-analytics="private_events_onsite_buffet_menu">Ready Room Packages &amp; Menu <ArrowUpRight /></a> : null}
+            <a className="button button-outline" href="#packages" data-analytics="private_events_packages">See packages &amp; pizza <ArrowUpRight /></a>
             <PrivateEventPaymentButton bookingFeeLabel={privateEventBookingFeeLabel} />
           </> : null}
         </div>
@@ -85,6 +86,8 @@ export default async function ContentPage({
         {paymentStatus === "cancel" ? <p className="private-event-payment-status cancel" role="status">Checkout was canceled. No room booking fee was paid.</p> : null}
       </div>
     </section>
+
+    {page === "private-events" ? <PrivateEventPackages bookingFeeLabel={privateEventBookingFeeLabel} menuUrl={privateEventMenu?.url} /> : null}
 
     <section className="section">
       <div className="content-wrap split-content">

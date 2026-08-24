@@ -2,10 +2,10 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 
-export const DEFAULT_PRIVATE_EVENT_BOOKING_FEE_CENTS = 50000;
+export const DEFAULT_PRIVATE_EVENT_BOOKING_FEE_CENTS = 35000;
 export const DEFAULT_PRIVATE_EVENT_AVIATOR_WAY_COPY = [
   "The Ready Room is built for rehearsal dinners, business meetings, birthdays, retirements, reunions, graduations, and private celebrations for up to 70 guests inside, with extra outside seating sometimes available when weather permits. Your event can include a full bar with 10 Aviator beers on tap, liquor, wine, sound, and a big-screen TV for presentations, slideshows, or game-day gatherings.",
-  "For food, choose from Ready Room packages built around shareable appetizers, salads, entrees, and sides. Crowd favorites include Aviator Smoked Wings, Pulled Pork BBQ, Beef Brisket, Country Fried Chicken Cutlet, Bacon Wrapped Meatloaf, and Grilled Flat Iron Steak. Bar service can be set up as open bar, capped open bar, drink tickets, or guest-paid tabs.",
+  "For food, choose from Ready Room packages built around shareable appetizers, salads, entrees, sides, and the Aviator Pizzeria Pizza Bar. Crowd favorites include Aviator Smoked Wings, Pulled Pork BBQ, Beef Brisket, Country Fried Chicken Cutlet, Bacon Wrapped Meatloaf, and Grilled Flat Iron Steak. Bar service can be set up as open bar, capped open bar, drink tickets, or guest-paid tabs.",
 ];
 export const DEFAULT_PRIVATE_EVENT_INQUIRY_COPY = [
   "Tell us the date, time, guest count, event style, and any food or bar plans you already know. The Aviator events team will review the request and follow up with availability, package details, and next steps.",

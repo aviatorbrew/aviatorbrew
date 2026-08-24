@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./site-enhancements.css";
 import "./private-event-payment.css";
+import "./private-event-packages.css";
 import "./flight-crew.css";
 import "./itinerary.css";
 import "./payment-test.css";

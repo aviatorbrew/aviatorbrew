@@ -40,16 +40,23 @@ export function menuPublicUrl(location: string, type: string, fileName: string) 
 }
 
 
+function menuFileVersion(name: string, fallback: number) {
+  const match = name.match(/^\d{10,}-/)?.[0];
+  const version = match ? Number(match.slice(0, -1)) : fallback;
+  return Number.isFinite(version) ? version : fallback;
+}
+
 export async function latestPublicMenu(location: string, type: string): Promise<PublishedMenuFile | null> {
+  const candidates: Array<{ name: string; mtimeMs: number }> = [];
   for (const root of menuRoots()) {
     const directory = path.join(root, location, type);
     try {
       const entries = await fs.readdir(directory, { withFileTypes: true });
-      const files = await Promise.all(entries.filter((entry) => entry.isFile() && publicMenuExtensions.has(path.extname(entry.name).toLowerCase())).map(async (entry) => ({ name: entry.name, stats: await fs.stat(path.join(directory, entry.name)) })));
-      files.sort((a, b) => b.stats.mtimeMs - a.stats.mtimeMs);
-      const current = files[0];
-      if (current) return { name: current.name, url: menuPublicUrl(location, type, current.name) };
+      const files = await Promise.all(entries.filter((entry) => entry.isFile() && publicMenuExtensions.has(path.extname(entry.name).toLowerCase())).map(async (entry) => ({ name: entry.name, mtimeMs: (await fs.stat(path.join(directory, entry.name))).mtimeMs })));
+      candidates.push(...files);
     } catch {}
   }
-  return null;
+  candidates.sort((a, b) => menuFileVersion(b.name, b.mtimeMs) - menuFileVersion(a.name, a.mtimeMs) || b.mtimeMs - a.mtimeMs);
+  const current = candidates[0];
+  return current ? { name: current.name, url: menuPublicUrl(location, type, current.name) } : null;
 }
