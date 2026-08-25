@@ -98,10 +98,10 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
       </header>
 
       <div className="private-event-quick-facts" aria-label="Private event package details">
+        <span><strong>4 hours</strong> guest event time</span>
         <span><strong>30</strong> guest minimum</span>
         <span><strong>70</strong> indoor capacity</span>
         <span><strong>{bookingFeeLabel}</strong> deposit applied to your bill</span>
-        <span><strong>Full bar</strong> no required drink package</span>
       </div>
 
       <div className="private-event-package-grid">
@@ -144,7 +144,7 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
         <article>
           <p className="eyebrow">Event extras</p><h3>Make it yours.</h3>
           <dl>
-            <div><dt>Additional event hour</dt><dd>$150</dd></div>
+            <div><dt>Additional event hour</dt><dd>$100</dd></div>
             <div><dt>Additional appetizer</dt><dd>+$5 / guest</dd></div>
             <div><dt>Additional entree</dt><dd>+$8 / guest</dd></div>
             <div><dt>Dessert display</dt><dd>+$6 / guest</dd></div>
@@ -157,6 +157,25 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
           <p><strong>Included with the room:</strong> big-screen presentation setup, house sound system, and microphone.</p>
         </article>
       </div>
+
+      <aside className="private-event-decor-policy" aria-labelledby="private-event-decor-title">
+        <div className="private-event-decor-intro">
+          <p className="eyebrow">Event timing + decorating</p>
+          <h3 id="private-event-decor-title">Four hours. One easy setup window.</h3>
+          <p>Each Ready Room booking includes four hours of guest event time, one hour of decorating access before the scheduled start, and 30 minutes afterward for decoration removal and room reset. Setup and removal time do not extend guest event time. Additional event time is &#36;100 per hour and must be arranged in advance.</p>
+        </div>
+        <div className="private-event-decor-rules">
+          <article>
+            <h4>Welcome aboard</h4>
+            <ul><li>Tabletop and freestanding decorations</li><li>Weighted balloons, florals, signs, and easels</li><li>Battery-operated candles</li><li>Approved decorators and vendors</li></ul>
+          </article>
+          <article>
+            <h4>Not permitted</h4>
+            <ul><li>Glitter, confetti, rice, or silly string</li><li>Open flames, smoke, or fog machines</li><li>Nails, screws, staples, tape, or wall adhesives</li><li>Items attached to ceilings, lights, sprinklers, or fixtures</li><li>Anything blocking exits, aisles, or safety equipment</li></ul>
+          </article>
+        </div>
+        <p className="private-event-decor-fine-print">All decorations require advance approval. Early access beyond the included hour requires coordinator approval. The host must remove all decorations within the 30-minute removal window and is responsible for damage or excessive cleaning.</p>
+      </aside>
 
       <aside className="private-event-order-form">
         <div>
