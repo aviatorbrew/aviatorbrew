@@ -183,8 +183,8 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
           <h3>Ready Room Event Flight Plan</h3>
           <p>Organize your date, schedule, package, menu, Pizza Bar, bar setup, extras, totals, and signatures in one place. Fill it out digitally or print it for handwriting.</p>
         </div>
-        <a className="button" href="/documents/ready-room-event-flight-plan.pdf" target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
-          Download Event Flight Plan <ArrowUpRight />
+        <a className="button" href="/documents/ready-room-event-flight-plan.pdf?v=2026.08.28.2" target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
+          Download Event Flight Plan v2026.08.28.2 <ArrowUpRight />
         </a>
       </aside>
 
