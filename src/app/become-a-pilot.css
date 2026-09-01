@@ -20,11 +20,14 @@
 .pilot-card-link svg, .pilot-school-actions svg, .pilot-resource-grid svg { width: .9rem; height: .9rem; flex: 0 0 auto; }
 .pilot-callout, .pilot-save-box, .pilot-radio-card { margin-top: 1.4rem; padding: clamp(1rem, 2.5vw, 1.5rem); border: 1px solid rgba(239,180,95,.55); background: rgba(239,180,95,.08); }
 .pilot-callout strong, .pilot-save-box h3 { color: #f4c77f; font-size: 1.05rem; text-transform: uppercase; }
-.pilot-flyin-callout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 1rem; }
+.pilot-flyin-callout { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 1rem; }
 .pilot-flyin-callout small { display: block; color: #9fbdca; font-size: .78rem; line-height: 1.4; }
-.pilot-flyin-links { display: grid; gap: .45rem; }
-.pilot-flyin-links a { display: grid; gap: .2rem; padding: .55rem .65rem; border: 1px solid rgba(184,217,236,.22); background: rgba(9,40,64,.52); color: #f4f9fb; text-decoration: none; }
-.pilot-flyin-links span { color: #efb45f; font-size: .78rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.pilot-featured-flyins, .pilot-flyin-links { display: grid; gap: .45rem; }
+.pilot-featured-flyins { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pilot-featured-flyins a, .pilot-flyin-links a { display: grid; gap: .2rem; padding: .55rem .65rem; border: 1px solid rgba(184,217,236,.22); background: rgba(9,40,64,.52); color: #f4f9fb; text-decoration: none; }
+.pilot-featured-flyins strong, .pilot-flyin-links span { color: #efb45f; font-size: .78rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.pilot-featured-flyins span { color: #f4f9fb; font-family: Impact, Haettenschweiler, sans-serif; font-size: 1.55rem; line-height: .95; text-transform: uppercase; }
+.pilot-featured-flyins em { color: #9fbdca; font-size: .68rem; font-style: normal; letter-spacing: .04em; text-transform: uppercase; }
 .pilot-info-grid, .pilot-cost-grid, .pilot-term-grid { grid-template-columns: repeat(4, 1fr); }
 .pilot-cost-grid article { display: grid; gap: .55rem; min-height: 7rem; padding: 1rem; background: #0d3857; }
 .pilot-cost-grid strong { color: #f4f9fb; }
@@ -58,4 +61,4 @@
 .pilot-final-cta h2 { max-width: 16ch; font-size: clamp(2.6rem, 7vw, 6.4rem); }
 .pilot-final-cta .pilot-disclaimer { max-width: 60rem; }
 @media (max-width: 1050px) { .pilot-info-grid, .pilot-cost-grid, .pilot-term-grid, .pilot-school-list, .pilot-certificate-grid, .pilot-resource-grid { grid-template-columns: repeat(2, 1fr); } .pilot-career-path { grid-template-columns: repeat(3, 1fr); } .pilot-next-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 720px) { .pilot-hero { min-height: 42rem; background-position: 58% center; } .pilot-map-grid, .pilot-info-grid, .pilot-cost-grid, .pilot-school-list, .pilot-certificate-grid, .pilot-resource-grid, .pilot-term-grid, .pilot-next-grid, .pilot-career-path, .pilot-flyin-callout { grid-template-columns: 1fr; } .pilot-map-grid iframe { min-height: 22rem; } .pilot-hero::after { opacity: .35; } }
+@media (max-width: 720px) { .pilot-hero { min-height: 42rem; background-position: 58% center; } .pilot-map-grid, .pilot-info-grid, .pilot-cost-grid, .pilot-school-list, .pilot-certificate-grid, .pilot-resource-grid, .pilot-term-grid, .pilot-next-grid, .pilot-career-path, .pilot-flyin-callout, .pilot-featured-flyins { grid-template-columns: 1fr; } .pilot-map-grid iframe { min-height: 22rem; } .pilot-hero::after { opacity: .35; } }

@@ -1,5 +1,32 @@
 import { writeFileSync } from "node:fs";
 
+const featuredFlyins = [
+  {
+    name: "SUN 'n FUN Aerospace Expo",
+    dates: "April 6-11, 2027",
+    location: "Lakeland Linder International Airport (KLAL), Lakeland, Florida",
+    note: "Major spring aviation expo, airshow, fly-in, forums, aircraft camping, and exhibitor event.",
+    href: "https://flysnf.org/",
+    sourceLabel: "SUN 'n FUN official dates",
+  },
+  {
+    name: "EAA AirVenture Oshkosh",
+    dates: "July 26-August 1, 2027",
+    location: "Wittman Regional Airport (KOSH), Oshkosh, Wisconsin",
+    note: "EAA's annual fly-in convention and one of the largest aviation gatherings in the world.",
+    href: "https://www.eaa.org/airventure/landing-pages",
+    sourceLabel: "EAA official AirVenture dates",
+  },
+  {
+    name: "Triple Tree Fly-In",
+    dates: "September 20-26, 2027",
+    location: "Triple Tree Aerodrome (SC00), Woodruff, South Carolina",
+    note: "General aviation fly-in on Triple Tree's 7,000-foot grass runway. The 2026 event is September 21-27, 2026.",
+    href: "https://tta.aero/ttfi/",
+    sourceLabel: "Triple Tree official future dates",
+  },
+];
+
 const sources = [
   {
     label: "EAA Calendar of Events",
@@ -46,12 +73,17 @@ function serialize(value) {
   return JSON.stringify(value, null, 2).replace(/"([^"]+)":/g, "$1:");
 }
 
-for (const source of sources) {
+for (const source of [...featuredFlyins, ...sources]) {
   await verifySource(source);
 }
 
 const lastChecked = new Date().toISOString().slice(0, 10);
-const body = `export const nationalFlyinsLastChecked = ${JSON.stringify(lastChecked)};\n\nexport const nationalFlyinSources = ${serialize(sources)};\n`;
+const body = `export const nationalFlyinsLastChecked = ${JSON.stringify(lastChecked)};
+
+export const nationalFeaturedFlyins = ${serialize(featuredFlyins)};
+
+export const nationalFlyinSources = ${serialize(sources)};
+`;
 
 writeFileSync("src/data/national-flyins.ts", body);
 console.log(`Updated national fly-in source check date to ${lastChecked}.`);
