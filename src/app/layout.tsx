@@ -7,6 +7,7 @@ import "./flight-crew.css";
 import "./itinerary.css";
 import "./payment-test.css";
 import "./home-logo-viewer.css";
+import "./become-a-pilot.css";
 import { AnalyticsHooks } from "@/components/analytics";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";

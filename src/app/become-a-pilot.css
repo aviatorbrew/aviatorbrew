@@ -1,0 +1,52 @@
+.pilot-page { background: #061b30; color: #e9f4f8; }
+.pilot-page a { color: inherit; }
+.pilot-hero { position: relative; min-height: min(86vh, 48rem); display: grid; align-items: end; padding: clamp(8rem, 14vw, 13rem) 0 clamp(3rem, 7vw, 6rem); overflow: hidden; background: linear-gradient(95deg, rgba(3,14,25,.96), rgba(6,33,55,.74) 48%, rgba(6,33,55,.32)), url("/images/hero-runway-wwii-restored.png") center/cover; }
+.pilot-hero::after { position: absolute; inset: auto 5vw 4rem auto; width: min(34vw, 18rem); aspect-ratio: 1; border: 1px solid rgba(238,180,95,.52); border-radius: 50%; box-shadow: 0 0 0 1.2rem rgba(238,180,95,.06), 0 0 0 2.6rem rgba(184,217,236,.04); content: ""; pointer-events: none; }
+.pilot-hero .content-wrap { position: relative; z-index: 1; }
+.pilot-hero h1, .pilot-hero h2, .pilot-final-cta h2 { max-width: 12ch; margin: .3rem 0 0; color: #f5f9fb; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(4rem, 12vw, 10rem); font-weight: 400; line-height: .8; text-transform: uppercase; }
+.pilot-hero h2 { color: #efb45f; font-size: clamp(2.1rem, 6vw, 5.2rem); }
+.pilot-hero p:not(.eyebrow) { max-width: 45rem; color: #d0e1ea; font-size: clamp(1.05rem, 2vw, 1.35rem); line-height: 1.5; }
+.pilot-hero-note { padding-left: 1rem; border-left: 4px solid #efb45f; color: #f5d197 !important; }
+.pilot-section-heading h2 { color: #f5f9fb; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(2.4rem, 6vw, 5.4rem); font-weight: 400; line-height: .86; text-transform: uppercase; }
+.pilot-section-heading > p { color: #bdd2dd; }
+.pilot-roadmap, .pilot-trainers-section, .pilot-career-section, .pilot-weather-section, .pilot-resources-section { background: linear-gradient(135deg, #082944, #061b30); }
+.pilot-grid-section, .pilot-school-section, .pilot-cards-section, .pilot-next-section, .pilot-radio-section, .pilot-nc-section { background: #09233a; }
+.pilot-steps, .pilot-info-grid, .pilot-cost-grid, .pilot-school-list, .pilot-certificate-grid, .pilot-next-grid, .pilot-term-grid, .pilot-resource-grid, .pilot-map-grid { display: grid; gap: 1px; border: 1px solid rgba(142,196,220,.35); background: rgba(142,196,220,.35); }
+.pilot-steps article, .pilot-info-grid article, .pilot-certificate-grid article, .pilot-next-grid article, .pilot-term-grid article, .pilot-school-list article, .pilot-resource-grid a, .pilot-map-grid aside { padding: clamp(1rem, 2.4vw, 1.5rem); background: linear-gradient(145deg, #0d3857, #08243d); }
+.pilot-steps span, .pilot-save-box span, .pilot-chip-grid span, .pilot-next-grid span, .pilot-certificate-grid article > span, .pilot-cost-grid span, .pilot-school-list dt, .pilot-term-grid h3 { color: #efb45f; font: 900 .72rem/1 "Courier New", monospace; letter-spacing: .08em; text-transform: uppercase; }
+.pilot-steps h3, .pilot-info-grid h3, .pilot-school-list h3, .pilot-certificate-grid h3, .pilot-next-grid h3, .pilot-radio-card h3, .pilot-map-grid aside h3 { margin: 0; color: #f4f9fb; font-family: Impact, Haettenschweiler, sans-serif; font-size: clamp(1.7rem, 3vw, 2.7rem); font-weight: 400; line-height: .92; text-transform: uppercase; }
+.pilot-steps p, .pilot-info-grid p, .pilot-school-list p, .pilot-school-list dd, .pilot-certificate-grid p, .pilot-certificate-grid dd, .pilot-radio-card p, .pilot-term-grid p, .pilot-callout p, .pilot-disclaimer, .pilot-map-grid aside p { color: #c8dbe4; line-height: 1.58; }
+.pilot-card-link, .pilot-school-actions a, .pilot-resource-grid a { display: inline-flex; align-items: center; gap: .4rem; color: #efb45f; font-size: .78rem; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; text-decoration: none; }
+.pilot-card-link svg, .pilot-school-actions svg, .pilot-resource-grid svg { width: .9rem; height: .9rem; flex: 0 0 auto; }
+.pilot-callout, .pilot-save-box, .pilot-radio-card { margin-top: 1.4rem; padding: clamp(1rem, 2.5vw, 1.5rem); border: 1px solid rgba(239,180,95,.55); background: rgba(239,180,95,.08); }
+.pilot-callout strong, .pilot-save-box h3 { color: #f4c77f; font-size: 1.05rem; text-transform: uppercase; }
+.pilot-info-grid, .pilot-cost-grid, .pilot-term-grid { grid-template-columns: repeat(4, 1fr); }
+.pilot-cost-grid article { display: grid; gap: .55rem; min-height: 7rem; padding: 1rem; background: #0d3857; }
+.pilot-cost-grid strong { color: #f4f9fb; }
+.pilot-save-box { display: flex; flex-wrap: wrap; gap: .65rem; align-items: center; }
+.pilot-save-box h3 { width: 100%; margin: 0; font-family: Impact, Haettenschweiler, sans-serif; font-size: 2rem; font-weight: 400; }
+.pilot-save-box span, .pilot-chip-grid span, .pilot-alphabet span { padding: .7rem .85rem; border: 1px solid rgba(184,217,236,.28); background: rgba(9,40,64,.82); color: #e8f3f7; }
+.pilot-map-grid { grid-template-columns: minmax(0, 1.35fr) minmax(18rem, .65fr); }
+.pilot-map-grid iframe { width: 100%; min-height: 28rem; border: 0; background: #d8e6ec; }
+.pilot-school-list, .pilot-certificate-grid, .pilot-resource-grid { grid-template-columns: repeat(3, 1fr); }
+.pilot-school-list { margin-top: 1.2rem; }
+.pilot-school-list article { display: grid; gap: 1rem; align-content: start; }
+.pilot-school-list dl, .pilot-certificate-grid dl { display: grid; gap: .7rem; margin: 0; }
+.pilot-school-list dd, .pilot-certificate-grid dd { margin: .25rem 0 0; }
+.pilot-school-actions { display: flex; flex-wrap: wrap; gap: .9rem; margin-top: auto; }
+.pilot-disclaimer { margin: 1rem 0 0; font-size: .86rem; }
+.pilot-chip-grid, .pilot-alphabet { display: flex; flex-wrap: wrap; gap: .65rem; }
+.pilot-career-path { display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; margin-bottom: 1.2rem; border: 1px solid rgba(239,180,95,.44); background: rgba(239,180,95,.44); }
+.pilot-career-path span { display: grid; place-items: center; min-height: 6rem; padding: .7rem; background: #102f49; color: #f5d197; font: 900 .72rem/1.2 "Courier New", monospace; text-align: center; text-transform: uppercase; }
+.pilot-next-grid { grid-template-columns: repeat(5, 1fr); }
+.pilot-resource-grid a { justify-content: space-between; align-items: start; min-height: 5.5rem; color: #f4f9fb; }
+.pilot-resource-grid a span { display: block; margin-top: .35rem; color: #c8dbe4; font: 500 .88rem/1.45 system-ui, sans-serif; letter-spacing: 0; text-transform: none; }
+.pilot-faq-list { display: grid; gap: .65rem; }
+.pilot-faq-list details { border: 1px solid rgba(142,196,220,.35); background: #0d3857; }
+.pilot-faq-list summary { cursor: pointer; padding: 1rem; color: #f4f9fb; font-weight: 900; }
+.pilot-faq-list p { margin: 0; padding: 0 1rem 1rem; color: #c8dbe4; line-height: 1.55; }
+.pilot-final-cta { padding: clamp(3rem, 7vw, 6rem) 0; background: linear-gradient(100deg, rgba(3,14,25,.95), rgba(9,50,78,.7)), url("/images/atmosphere/warbird-formation-faded.png") center/cover; }
+.pilot-final-cta h2 { max-width: 16ch; font-size: clamp(2.6rem, 7vw, 6.4rem); }
+.pilot-final-cta .pilot-disclaimer { max-width: 60rem; }
+@media (max-width: 1050px) { .pilot-info-grid, .pilot-cost-grid, .pilot-term-grid, .pilot-school-list, .pilot-certificate-grid, .pilot-resource-grid { grid-template-columns: repeat(2, 1fr); } .pilot-career-path { grid-template-columns: repeat(3, 1fr); } .pilot-next-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 720px) { .pilot-hero { min-height: 42rem; background-position: 58% center; } .pilot-map-grid, .pilot-info-grid, .pilot-cost-grid, .pilot-school-list, .pilot-certificate-grid, .pilot-resource-grid, .pilot-term-grid, .pilot-next-grid, .pilot-career-path { grid-template-columns: 1fr; } .pilot-map-grid iframe { min-height: 22rem; } .pilot-hero::after { opacity: .35; } }

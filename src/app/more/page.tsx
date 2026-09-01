@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 };
 
 const actions = [
-  { number: "01", title: "Contact us", copy: "Questions, feedback, or a note for the Aviator crew.", href: "/contact", action: "Send a message" },
-  { number: "02", title: "Catering To Go", copy: "Browse pickup catering menus and send the events team a group order request.", href: "/catering-to-go", action: "Plan pickup catering" },
+  { number: "01", title: "Become a Pilot", copy: "A beginner-friendly route from discovery flight to Private Pilot and beyond.", href: "/become-a-pilot", action: "Start flying" },
+  { number: "02", title: "Contact us", copy: "Questions, feedback, or a note for the Aviator crew.", href: "/contact", action: "Send a message" },
   { number: "03", title: "Gift card balance", copy: "Check the remaining balance on an Aviator gift card.", href: "/gift-card-balance", action: "Check balance" },
   { number: "04", title: "Keg/package sale", copy: "Live availability straight from the Aviator BrewOps system.", href: "/kegs", action: "Browse kegs" },
   { number: "05", title: "Book a band", copy: "Bring a set to one of our stages, patios, or campus events.", href: "/book-a-band", action: "Submit your band" },

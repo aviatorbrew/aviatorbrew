@@ -1,0 +1,30 @@
+export type LocalFlightSchool = {
+  name: string;
+  airport: string;
+  city: string;
+  distance: string;
+  aircraft: string[];
+  training: string[];
+  discoveryFlight: "Yes" | "Ask" | "Not listed";
+  website: string;
+  phone: string;
+  address: string;
+  sourceLabel: string;
+  sourceUrl: string;
+};
+
+export const aviatorAddress = "688 Brewing Drive, Fuquay-Varina, NC 27526";
+
+export const localFlightSchools: LocalFlightSchool[] = [
+  { name: "Executive Flight Training & Services", airport: "Raleigh Executive Jetport / Sanford-Lee County (KTTA)", city: "Sanford", distance: "About 31 miles from Aviator", aircraft: ["Cessna 172", "Cessna 182", "Piper Cherokee / Warrior", "Redbird simulator"], training: ["Private Pilot", "Instrument Rating", "Commercial Pilot", "CFI"], discoveryFlight: "Yes", website: "https://www.execft.com/", phone: "919-897-8882", address: "700 Rod Sullivan Rd, Sanford, NC 27330", sourceLabel: "Executive Flight Training & Services", sourceUrl: "https://www.execft.com/" },
+  { name: "Elite Aircraft Services", airport: "Raleigh Executive Jetport (KTTA) and Raleigh-Durham International (KRDU)", city: "Sanford / Morrisville", distance: "About 31-34 miles from Aviator", aircraft: ["Cirrus SR20", "Cirrus SR22"], training: ["Private Pilot", "Instrument / IFR training", "Advanced Cirrus transition training"], discoveryFlight: "Yes", website: "https://flyeliteaircraft-dev.com/flight-training.html", phone: "919-576-0174", address: "703 Rod Sullivan Rd, Sanford, NC 27330", sourceLabel: "Elite Aircraft Services", sourceUrl: "https://flyeliteaircraft-dev.com/flight-training.html" },
+  { name: "ATP Flight School - Raleigh Sanford", airport: "Raleigh Executive Jetport / Sanford-Lee County (KTTA)", city: "Sanford", distance: "About 31 miles from Aviator", aircraft: ["Piper Archer", "Piper Seminole", "Cessna 172", "Advanced aviation training devices"], training: ["Airline Career Pilot Program", "Commercial Pilot", "Multi-Engine", "CFI stage training"], discoveryFlight: "Yes", website: "https://atpflightschool.com/locations/north-carolina/raleigh-sanford-flight-school-tta.html", phone: "904-595-7950", address: "700 Rod Sullivan Road, Sanford, NC 27330", sourceLabel: "ATP Flight School", sourceUrl: "https://atpflightschool.com/locations/north-carolina/raleigh-sanford-flight-school-tta.html" },
+  { name: "Wings of Carolina Flying Club", airport: "Raleigh Executive Jetport / Sanford-Lee County (KTTA)", city: "Sanford", distance: "About 31 miles from Aviator", aircraft: ["Cessna 152", "Cessna 172", "Piper Cherokee / Warrior", "Mooney M20J", "PA-30 Twin Comanche by arrangement"], training: ["Private Pilot", "Instrument Rating", "Commercial Pilot", "Multi-Engine by arrangement", "Ground school"], discoveryFlight: "Ask", website: "https://wingsofcarolina.org/flight-training", phone: "919-776-2003", address: "702 Rod Sullivan Rd, Sanford, NC 27330", sourceLabel: "Wings of Carolina Flying Club", sourceUrl: "https://wingsofcarolina.org/flight-training" },
+  { name: "Odyssey Aero Club", airport: "Raleigh Executive Jetport / Sanford-Lee County (KTTA)", city: "Sanford", distance: "About 31 miles from Aviator", aircraft: ["Diamond DA40", "Redbird TD2 BATD simulator"], training: ["VFR checkout", "IFR checkout", "Instrument training", "Commercial training", "IFR currency"], discoveryFlight: "Ask", website: "https://www.odysseyaeroclub.org/home", phone: "919-551-5002", address: "712 Rod Sullivan Road, Sanford, NC 27330", sourceLabel: "Odyssey Aero Club", sourceUrl: "https://www.odysseyaeroclub.org/home" },
+  { name: "FlightGest Academy", airport: "Raleigh-Durham International Airport (KRDU)", city: "Morrisville", distance: "About 34 miles from Aviator", aircraft: ["Piper Archer TX", "Piper Pilot 100i", "Cessna 172", "Piper Seminole", "Piper Cherokee 180", "Piper Archer II"], training: ["Private Pilot", "Instrument Rating", "Commercial Pilot", "Multi-Engine", "CFI", "CFII", "MEI"], discoveryFlight: "Yes", website: "https://www.flightgestacademy.com/", phone: "919-840-4444", address: "1725 E International Drive, Morrisville, NC 27560", sourceLabel: "FlightGest Academy", sourceUrl: "https://www.flightgestacademy.com/" },
+  { name: "Blue Line Aviation", airport: "Johnston Regional Airport (KJNX)", city: "Smithfield", distance: "About 33 miles from Aviator", aircraft: ["Piper Archer TX", "Piper Seminole", "Garmin G1000 / G1000 NXi equipped fleet"], training: ["Private Pilot", "Instrument Rating", "Commercial Pilot", "Multi-Engine", "CFI", "CFII", "MEI", "Accelerated career pilot programs"], discoveryFlight: "Ask", website: "https://www.bluelineaviation.com/", phone: "919-578-3713", address: "3149B Swift Creek Rd, Smithfield, NC 27577", sourceLabel: "Blue Line Aviation", sourceUrl: "https://www.bluelineaviation.com/" },
+  { name: "Raleigh Flying Club", airport: "Raleigh-Durham International Airport (KRDU)", city: "Morrisville", distance: "About 34 miles from Aviator", aircraft: ["Single-engine training aircraft; confirm current fleet directly"], training: ["Discovery flight", "Flight training", "Aircraft rental"], discoveryFlight: "Yes", website: "https://www.raleighflyingclub.org/", phone: "919-400-9365", address: "Raleigh-Durham International Airport, Morrisville, NC", sourceLabel: "Raleigh Flying Club discovery flight listing", sourceUrl: "https://www.flightcircle.com/shop/83c3d3d348cb/1002604" },
+  { name: "Raleigh East Flight Training", airport: "Raleigh East Airport (93NR, formerly W17)", city: "Knightdale", distance: "About 37 miles from Aviator", aircraft: ["Aircraft rental listed; confirm current aircraft directly"], training: ["Private Pilot", "Instrument training", "High-performance", "Complex", "Tailwheel"], discoveryFlight: "Ask", website: "https://sites.google.com/site/whiskey17flight/contact-us", phone: "919-610-8743", address: "Raleigh East Airport, Knightdale, NC", sourceLabel: "Raleigh East Flight Training", sourceUrl: "https://sites.google.com/site/whiskey17flight/contact-us" },
+];
+
+export const localFlightSchoolMapUrl = "https://www.google.com/maps/search/flight+schools+near+688+Brewing+Drive,+Fuquay-Varina,+NC+27526";
