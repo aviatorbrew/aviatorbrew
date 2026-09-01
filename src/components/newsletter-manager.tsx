@@ -178,7 +178,7 @@ export function NewsletterManager() {
   const [draft, setDraft] = useState<Draft>(templates[0].draft);
   const [welcome, setWelcome] = useState<Welcome>(emptyWelcome);
   const [testEmail, setTestEmail] = useState("");
-  const [view, setView] = useState<"compose" | "welcome" | "list">("compose");
+  const [view, setView] = useState<"compose" | "welcome" | "list" | "preview">("compose");
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -330,6 +330,7 @@ export function NewsletterManager() {
       <button type="button" role="tab" aria-selected={view === "compose"} className={view === "compose" ? "is-active" : ""} onClick={() => setView("compose")}>Campaigns</button>
       <button type="button" role="tab" aria-selected={view === "welcome"} className={view === "welcome" ? "is-active" : ""} onClick={() => setView("welcome")}>Welcome email</button>
       <button type="button" role="tab" aria-selected={view === "list"} className={view === "list" ? "is-active" : ""} onClick={() => setView("list")}>Member list</button>
+      <button type="button" role="tab" aria-selected={view === "preview"} className={view === "preview" ? "is-active" : ""} onClick={() => setView("preview")}>Newsletter preview</button>
     </div>
     {message ? <p className="media-message" role="status">{message}</p> : null}
 
@@ -362,6 +363,11 @@ export function NewsletterManager() {
       <form className="newsletter-import-form" onSubmit={importSubscribers}><label>Import CSV<input name="csv" type="file" accept=".csv,text/csv" required /><small>Looks for email, name, first name, and last name columns. Extra columns are ignored.</small></label><button className="button button-outline" disabled={busy}>{busy ? "Importing..." : "Import members"}</button></form>
       <div className="newsletter-list-toolbar"><label>Search Flight Crew<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, email, source, or status" /></label><button className="button button-outline" type="button" onClick={exportSubscribers} disabled={!data.subscribers.length}>Export CSV</button></div>
       <div className="newsletter-subscriber-table"><div className="newsletter-subscriber-head"><span>Member</span><span>Status</span><span>Source</span><span>Joined</span><span>Action</span></div>{filteredSubscribers.length ? filteredSubscribers.map((subscriber) => <div className="newsletter-subscriber-row" key={subscriber.email}><span><strong>{subscriber.name || "Flight Crew member"}</strong><a href={`mailto:${subscriber.email}`}>{subscriber.email}</a></span><span className={`flight-crew-status ${subscriber.status}`}>{subscriber.status}</span><span>{subscriber.source}</span><span>{new Date(subscriber.subscribedAt).toLocaleDateString()}</span><span><button type="button" onClick={() => removeSubscriber(subscriber.email)} disabled={busy}>Remove</button></span></div>) : <p className="newsletter-empty-list">{search ? "No Flight Crew members match this search." : "No Flight Crew members yet."}</p>}</div>
+    </div> : null}
+
+    {view === "preview" ? <div className="newsletter-preview-workspace">
+      <div className="newsletter-preview-note"><h3>Newsletter preview</h3><p>This preview uses the current campaign template, copy, and selected live website content. Go back to Campaigns to change the subject, headline, message, or selected sections.</p><button className="button button-outline" type="button" onClick={() => setView("compose")}>Edit campaign</button></div>
+      <NewsletterPreview draft={draft} content={data.content} />
     </div> : null}
   </section>;
 }
