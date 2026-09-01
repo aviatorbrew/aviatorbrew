@@ -24,9 +24,9 @@
 .pilot-cost-grid article { display: grid; gap: .55rem; min-height: 7rem; padding: 1rem; background: #0d3857; }
 .pilot-cost-grid strong { color: #f4f9fb; }
 .pilot-cost-grid p { margin: 0; color: #d5e8ef; font-size: .9rem; line-height: 1.45; }
-.pilot-source-list { display: grid; gap: .55rem; margin-top: 1rem; padding: 1rem; border: 1px solid rgba(184,217,236,.25); background: rgba(9,40,64,.65); }
-.pilot-source-list h3 { margin: 0; color: #f4c77f; font: 900 .82rem/1 "Courier New", monospace; letter-spacing: .08em; text-transform: uppercase; }
-.pilot-source-list a { color: #dff2f8; }
+.pilot-source-list { display: flex; flex-wrap: wrap; gap: .35rem .75rem; margin-top: .7rem; padding: .55rem .65rem; border: 1px solid rgba(184,217,236,.18); background: rgba(9,40,64,.38); }
+.pilot-source-list h3 { width: 100%; margin: 0; color: #f4c77f; font: 900 .68rem/1 "Courier New", monospace; letter-spacing: .08em; text-transform: uppercase; }
+.pilot-source-list a { color: #dff2f8; font-size: .68rem; opacity: .86; }
 .pilot-save-box { display: flex; flex-wrap: wrap; gap: .65rem; align-items: center; }
 .pilot-save-box h3 { width: 100%; margin: 0; font-family: Impact, Haettenschweiler, sans-serif; font-size: 2rem; font-weight: 400; }
 .pilot-save-box span, .pilot-chip-grid span, .pilot-alphabet span { padding: .7rem .85rem; border: 1px solid rgba(184,217,236,.28); background: rgba(9,40,64,.82); color: #e8f3f7; }
