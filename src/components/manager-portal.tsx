@@ -206,6 +206,7 @@ function kegCaseCount(item: KegInventoryItem) { return (item.case12Count || 0) +
 function kegHasInventory(item: KegInventoryItem) { return item.sixthBblKegs > 0 || item.fiftyLKegs > 0 || kegCaseCount(item) > 0; }
 function kegHasMatchedPrice(item: KegInventoryItem) { return typeof item.sixthBblPriceCents === "number" || typeof item.fiftyLPriceCents === "number" || typeof item.casePriceCents === "number" || typeof item.case12PriceCents === "number" || typeof item.case16PriceCents === "number"; }
 function kegDollars(cents?: number) { return typeof cents === "number" ? String(cents / 100) : ""; }
+function kegJsonDollars(cents?: number) { return typeof cents === "number" ? Number((cents / 100).toFixed(2)) : undefined; }
 function kegCents(value: string) { const number = Number(value); return Number.isFinite(number) && number >= 0 ? Math.round(number * 100) : undefined; }
 function editValues(item: KegInventoryItem): KegEditValues {
   return { beerName: item.beerName, category: item.category, packaging: item.packaging, sixthBblKegs: item.sixthBblKegs, fiftyLKegs: item.fiftyLKegs, totalBbl: item.totalBbl, sixthBblPrice: kegDollars(item.sixthBblPriceCents), fiftyLPrice: kegDollars(item.fiftyLPriceCents), caseSize: item.caseSize || "", casePrice: kegDollars(item.casePriceCents), case12Price: kegDollars(item.case12PriceCents), case16Price: kegDollars(item.case16PriceCents), case12Count: item.case12Count || 0, case16Count: item.case16Count || 0, caseCount: item.caseCount || 0, hidden: item.hidden === true };
@@ -255,6 +256,39 @@ function downloadKegPdf(items: KegInventoryItem[], includeZeroInventory: boolean
   link.download = "aviator-keg-sales.pdf";
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function downloadKegJson(inventory: NonNullable<KegInventoryStatus>) {
+  const payload = {
+    schemaVersion: 2,
+    exportType: "kegs-for-sale",
+    instructions: "Edit the price fields in dollars, save this file as JSON, then import it in Keg/package sales. Keep beerName, sixthBblKegs, and fiftyLKegs on every row.",
+    exportedAt: new Date().toISOString(),
+    items: inventory.items.map((item) => ({
+      beerName: item.beerName,
+      category: item.category,
+      packaging: item.packaging,
+      sixthBblKegs: item.sixthBblKegs,
+      sixthBblPrice: kegJsonDollars(item.sixthBblPriceCents),
+      fiftyLKegs: item.fiftyLKegs,
+      fiftyLPrice: kegJsonDollars(item.fiftyLPriceCents),
+      totalBbl: item.totalBbl,
+      caseSize: item.caseSize,
+      cases12oz: item.case12Count || 0,
+      case12ozPrice: kegJsonDollars(item.case12PriceCents),
+      cases16oz: item.case16Count || 0,
+      case16ozPrice: kegJsonDollars(item.case16PriceCents),
+      caseCount: item.caseCount || 0,
+      casePrice: kegJsonDollars(item.casePriceCents),
+      hidden: item.hidden === true,
+    })),
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2) + "\n"], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "aviator-keg-inventory-editable.json";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function KegInventoryManager({ editId, returnTo }: { editId?: string; returnTo?: string } = {}) {
@@ -363,8 +397,8 @@ function KegInventoryManager({ editId, returnTo }: { editId?: string; returnTo?:
   }
   const lastUpdated = inventory?.updatedAt ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(inventory.updatedAt)) : "";
   const visibleCount = inventory?.items.filter((item) => !item.hidden && kegHasInventory(item)).length || 0;
-  return <section id="kegs" className="coupon-manager manager-kegs"><p className="eyebrow">Keg/package sales</p><h2>Keg/package sales</h2><p>Upload BrewOps inventory counts and package pricing together. Imports replace current availability and pricing for the uploaded kegs; each keg can still be edited, hidden, published, or exported for sales.</p><p className="media-message" role="status">{message}</p>
-    <form className="manager-keg-upload" onSubmit={upload}><label>Import keg inventory JSON or CSV<input name="file" type="file" accept=".json,.csv,application/json,text/csv" onChange={importSelectedFile} disabled={busy} /><small>Choose kegs-for-sale.json or a CSV export, then click Import selected keg list. CSV headers can include beerName, sixthBblKegs, sixthBblPrice, fiftyLKegs, fiftyLPrice, cases12oz, case12ozPrice, cases16oz, case16ozPrice, totalBbl, batches, loose12oz, and loose16oz.</small>{selectedKegFile ? <small>Selected: {selectedKegFile.name}</small> : null}</label><button className="button" disabled={busy || !selectedKegFile}>{busy ? "Importing..." : "Import selected keg list"}</button><button className="button button-outline" type="button" onClick={clearInventory} disabled={busy}>Clear inventory</button></form>
+  return <section id="kegs" className="coupon-manager manager-kegs"><p className="eyebrow">Keg/package sales</p><h2>Keg/package sales</h2><p>Download the editable JSON, update prices in dollars, then import it back here. Imports replace current availability and pricing for the uploaded kegs; each keg can still be edited, hidden, published, or exported for sales.</p><p className="media-message" role="status">{message}</p>
+    <form className="manager-keg-upload" onSubmit={upload}><label>Import edited JSON or BrewOps CSV<input name="file" type="file" accept=".json,.csv,application/json,text/csv" onChange={importSelectedFile} disabled={busy} /><small>For the easiest pricing update, download the editable JSON, change sixthBblPrice, fiftyLPrice, case12ozPrice, case16ozPrice, or casePrice in dollars, save it, then import it here.</small>{selectedKegFile ? <small>Selected: {selectedKegFile.name}</small> : null}</label><button className="button" disabled={busy || !selectedKegFile}>{busy ? "Importing..." : "Import selected keg list"}</button><button className="button button-outline" type="button" onClick={() => inventory && downloadKegJson(inventory)} disabled={busy || !inventory}>Download editable JSON</button><button className="button button-outline" type="button" onClick={clearInventory} disabled={busy}>Clear inventory</button></form>
     {inventory ? <div className="manager-keg-status"><div><p className="eyebrow">Public inventory live</p><h3>{visibleCount} of {inventory.items.length} keg lines visible</h3><p>Inventory timestamp: {lastUpdated}. Upload time: {new Date(inventory.uploadedAt).toLocaleString()}.</p><div className="manager-keg-export"><label><input type="checkbox" checked={exportZeroInventory} onChange={(event) => setExportZeroInventory(event.currentTarget.checked)} /> Include kegs with 0 inventory</label><button type="button" onClick={() => downloadKegPdf(inventory.items, exportZeroInventory)}>Export PDF</button></div></div><ul>{inventory.items.slice(0, 8).map((item) => <li key={item.beerName}><strong>{item.beerName}</strong><span>{item.sixthBblKegs} sixtels · {item.fiftyLKegs} halves · {kegCaseCount(item)} cases</span></li>)}{inventory.items.length > 8 ? <li>+ {inventory.items.length - 8} more lines below</li> : null}</ul></div> : <div className="manager-keg-status is-empty"><p className="eyebrow">No inventory published</p><p>Upload BrewOps JSON or CSV to add current keg availability counts and package pricing.</p></div>}
     {inventory ? <div className="manager-keg-list"><h3 className="tour-signups-heading">Keg/package sales</h3>{inventory.items.map((item) => {
       const hasInventory = kegHasInventory(item); const publicHidden = item.hidden || !hasInventory; const isEditing = editing?.beerName === item.beerName;

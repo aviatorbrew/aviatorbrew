@@ -320,7 +320,7 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
     const fiftyLPriceCents = firstCents(item, ["fiftyLPriceCents", "fiftyLPrice", "50L Price", "50 L Price", "50L Keg Price", "50 L Keg Price", "1/2 BBL Price", "Half BBL Price"]);
     const case12PriceCents = firstCents(item, ["case12PriceCents", "case12ozPrice", "cases12ozPrice", "12oz Case Price", "12 oz Case Price", "12oz Price", "12 oz Price"]);
     const case16PriceCents = firstCents(item, ["case16PriceCents", "case16ozPrice", "cases16ozPrice", "16oz Case Price", "16 oz Case Price", "16oz Price", "16 oz Price"]);
-    const casePriceCents = firstCents(item, ["casePriceCents", "Case Price"]);
+    const casePriceCents = firstCents(item, ["casePriceCents", "casePrice", "Case Price"]);
     const rawCaseCount = count(field(item, ["caseCount", "Cases", "Case Count"]));
     const importedCaseSize = text(field(item, ["caseSize", "Case Size"]), 24);
     const importedCase12Count = firstCount(item, ["case12Count", "cases12oz", "12oz Cases", "12 oz Cases", "12oz Case Count", "12 oz Case Count", "12oz Cases Available", "12 oz Cases Available"]);
