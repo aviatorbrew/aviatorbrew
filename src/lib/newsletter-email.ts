@@ -37,6 +37,7 @@ export type NewsletterFeature = {
   copy?: string;
   url?: string;
   action?: string;
+  imageUrl?: string;
 };
 
 export type NewsletterSourceContent = {
@@ -110,6 +111,12 @@ export function newsletterMusicForNextTwoWeeks(shows: LiveMusicShow[], now = new
 function absoluteUrl(value: string) {
   try { return new URL(value, siteUrl()).toString(); }
   catch { return siteUrl(); }
+}
+
+function imageUrl(value?: string | null) {
+  const url = (value || "").trim();
+  if (!url || url.toLowerCase().endsWith(".pdf")) return "";
+  return absoluteUrl(url);
 }
 
 function tokenFor(purpose: string, email: string, qualifier = "") {
@@ -197,61 +204,108 @@ export function buildFlightCrewWelcomeMessage(welcome: FlightCrewWelcome, conten
 }
 
 export function buildNewsletterMessage(draft: NewsletterDraft, content: NewsletterSourceContent, recipientEmail?: string) {
-  const beers = draft.sections.beers ? content.beers.map((beer) =>
-    `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(beer.name)}</strong><br><span style="color:#b8ceda">${escapeHtml(beer.style)}${beer.abv ? ` &bull; ${escapeHtml(beer.abv)}` : ""}</span></div>`) : [];
-  const events = draft.sections.events ? content.events.map((event) =>
-    `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(event.title)}</strong><br><span style="color:#b8ceda">${escapeHtml(formatDate(event.date))} &bull; ${escapeHtml(formatTime(event.startTime))} &bull; ${escapeHtml(event.location)}</span></div>`) : [];
-  const twoWeekMusic = newsletterMusicForNextTwoWeeks(content.music);
-  const music = draft.sections.music ? twoWeekMusic.map((show) =>
-    `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(show.band?.name || show.title)}</strong><br><span style="color:#b8ceda">${escapeHtml(formatDate(show.performanceDate || show.startsAt))} &bull; ${escapeHtml(formatTime(show.startsAt))} &bull; ${escapeHtml(show.venueName)}</span></div>`) : [];
-  const hangarMenu = draft.sections.hangarMenu && content.hangarMenu
-    ? [`<div style="margin:0"><strong style="color:#f4f7f8">See what is cooking at 688 Brewing Drive.</strong><br><span style="color:#b8ceda">Browse the current Hangar Bar food menu before your visit.</span><br><a href="${escapeHtml(absoluteUrl(content.hangarMenu.url))}" style="display:inline-block;margin-top:14px;padding:12px 16px;background:#efb45f;color:#071827;font-weight:800;text-decoration:none">View the food menu</a></div>`]
-    : [];
-  const extras = draft.sections.extras ? content.highlights.map((item) =>
-    `<div style="margin:0 0 16px"><strong style="color:#f4f7f8">${escapeHtml(item.title)}</strong><br><span style="color:#b8ceda">${escapeHtml(item.copy)}</span><br><a href="${escapeHtml(absoluteUrl(item.url))}" style="color:#efb45f;font-weight:700">Learn more</a></div>`) : [];
-  const locations = draft.sections.locations ? content.locations.map((location) =>
-    `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(location.name + (location.comingSoon ? " - Coming soon" : ""))}</strong><br><span style="color:#b8ceda">${escapeHtml(location.address)}</span></div>`) : [];
+  const selectedBeers = draft.sections.beers ? content.beers.slice(0, 3) : [];
+  const beerCards = selectedBeers.map((beer) => visualCard({
+    title: beer.name,
+    meta: [beer.style, beer.abv].filter(Boolean).join(" · "),
+    copy: beer.description,
+    url: `/beer/${beer.slug}`,
+    action: "See beer",
+    imageUrl: beer.image,
+  }));
+  if (selectedBeers.length) beerCards.push(moreCard("More Aviator beer", "See the full current beer lineup on the website.", "/beer", "More beer"));
 
-  const releases = draft.sections.releases ? featureItems(content.releases || []) : [];
-  const packages = draft.sections.packages ? featureItems(content.packagedBeer || []) : [];
-  const food = draft.sections.food ? featureItems(content.food || []) : [];
-  const coupons = draft.sections.coupons ? featureItems(content.coupons || []) : [];
-  const tours = draft.sections.tours ? featureItems(content.tours || []) : [];
-  const visit = draft.sections.visit ? featureItems(content.visit || []) : [];
-  const community = draft.sections.community ? featureItems(content.community || []) : [];
-  const shop = draft.sections.shop ? featureItems(content.shop || []) : [];
-  const hospitality = draft.sections.hospitality ? featureItems(content.hospitality || []) : [];
-  const behindScenes = draft.sections.behindScenes ? featureItems(content.behindScenes || []) : [];
+  const events = draft.sections.events ? content.events.slice(0, 2).map((event) => visualCard({
+    title: event.title,
+    meta: `${formatDate(event.date)} · ${formatTime(event.startTime)} · ${event.location}`,
+    copy: event.description,
+    url: event.ticketUrl || "/events",
+    action: event.ticketUrl ? "Details + tickets" : "More events",
+    imageUrl: event.imageUrl,
+  })) : [];
+  if (events.length) events.push(moreCard("More events", "See everything currently on the Aviator calendar.", "/events", "Full calendar"));
+
+  const twoWeekMusic = newsletterMusicForNextTwoWeeks(content.music);
+  const music = draft.sections.music ? twoWeekMusic.map((show) => musicRow(show)) : [];
+  if (music.length) music.push(`<tr><td colspan="2" style="padding:12px 0 0"><a href="${siteUrl()}/events/live-music" style="display:inline-block;padding:12px 16px;background:#efb45f;color:#071827;font-weight:800;text-decoration:none;border-radius:2px">Full music schedule</a></td></tr>`);
+
+  const hangarMenu = draft.sections.hangarMenu && content.hangarMenu
+    ? [promoBlock("Hangar Bar food menu", "Check the current Hangar Bar food menu before you head to 688 Brewing Drive.", content.hangarMenu.url, "View menu", `${siteUrl()}/images/locations/hangar-bar.png`)]
+    : [];
+  const releases = draft.sections.releases ? featureItems((content.releases || []).slice(0, 2)) : [];
+  const packages = draft.sections.packages ? featureItems((content.packagedBeer || []).slice(0, 3)) : [];
+  const food = draft.sections.food ? featureItems((content.food || []).slice(0, 1)) : [];
+  const coupons = draft.sections.coupons ? featureItems((content.coupons || []).slice(0, 2)) : [];
+  const tours = draft.sections.tours ? featureItems((content.tours || []).slice(0, 1)) : [];
+  const visit = draft.sections.visit ? featureItems((content.visit || []).slice(0, 1)) : [];
+  const community = draft.sections.community ? featureItems((content.community || []).slice(0, 1)) : [];
+  const shop = draft.sections.shop ? featureItems((content.shop || []).slice(0, 2)) : [];
+  const hospitality = draft.sections.hospitality ? featureItems((content.hospitality || []).slice(0, 2)) : [];
+  const behindScenes = draft.sections.behindScenes ? featureItems((content.behindScenes || []).slice(0, 1)) : [];
+  const extras = draft.sections.extras ? content.highlights.slice(0, 4).map((item) => quickLink(item.title, item.copy, item.url)) : [];
+  const locations = draft.sections.locations ? content.locations.slice(0, 4).map((location) => `<div style="margin:0 0 10px"><strong style="color:#f4f7f8">${escapeHtml(location.name + (location.comingSoon ? " - Coming soon" : ""))}</strong><br><span style="color:#b8ceda">${escapeHtml(location.address)}</span></div>`) : [];
 
   const unsubscribeUrl = recipientEmail
     ? `${siteUrl()}/api/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}&token=${newsletterUnsubscribeToken(recipientEmail)}`
     : "";
-  const html = emailFrame(`<tr><td style="padding:32px 28px;background:#071827"><h1 style="margin:0;color:#f4f7f8;font-size:34px;line-height:1">${escapeHtml(draft.heading)}</h1></td></tr><tr><td style="padding:26px 28px;color:#d8e7ee;font-size:17px;line-height:1.6">${escapeHtml(draft.message).replace(/\n/g, "<br>")}</td></tr><tr><td>${section("New releases", releases)}${section("Live music: next 2 weeks", music)}${section("Upcoming events", events)}${section("Hangar Bar food menu", hangarMenu)}${section("Food spotlight", food)}${section("4-packs & 6-packs to go", packages)}${section("Current beers", beers)}${section("Current offers", coupons)}${section("Brewery tours", tours)}${section("Plan your visit", visit)}${section("From the Flight Crew", community)}${section("Behind the scenes", behindScenes)}${section("Aviator shop", shop)}${section("Private events & catering", hospitality)}${section("Quick links", extras)}${section("Aviator locations", locations)}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : ""}</td></tr>`, draft.subject);
+  const html = emailFrame(`<tr><td style="padding:0;background:#071827"><img src="${siteUrl()}/images/hero-runway-wwii-restored.png" width="640" alt="Aviator Brewing runway" style="display:block;width:100%;max-width:640px;height:auto;border:0"></td></tr><tr><td style="padding:28px 24px 24px;background:#071827"><div style="color:#efb45f;font-size:12px;font-weight:900;letter-spacing:1.8px;text-transform:uppercase">Aviator Flight Crew</div><h1 style="margin:8px 0 12px;color:#f4f7f8;font-size:38px;line-height:.95;text-transform:uppercase">${escapeHtml(draft.heading)}</h1><p style="margin:0;color:#d8e7ee;font-size:17px;line-height:1.55">${escapeHtml(draft.message).replace(/\n/g, "<br>")}</p></td></tr><tr><td>${cardSection("This week's picks", [...releases, ...food, ...coupons].slice(0, 4))}${cardSection("Beer spotlight", beerCards)}${tableSection("Live music: next 2 weeks", music)}${cardSection("Upcoming events", events)}${imagePromoSection(hangarMenu)}${cardSection("4-packs & 6-packs to go", packages)}${cardSection("Brewery tours", tours)}${cardSection("Plan your visit", visit)}${cardSection("From the Flight Crew", community)}${cardSection("Behind the scenes", behindScenes)}${cardSection("Aviator shop", shop)}${cardSection("Private events & catering", hospitality)}${quickLinksSection("More from Aviator", extras)}${section("Aviator locations", locations)}</td></tr><tr><td style="padding:20px 24px;color:#9fb7c5;font-size:12px;line-height:1.5">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : "Newsletter preview"}</td></tr>`, draft.subject);
 
   const lines = [draft.heading, "", draft.message];
-  lines.push(...featureLines("New releases", draft.sections.releases ? content.releases || [] : []));
-  lines.push(...featureLines("4-packs & 6-packs to go", draft.sections.packages ? content.packagedBeer || [] : []));
-  lines.push(...featureLines("Food spotlight", draft.sections.food ? content.food || [] : []));
-  lines.push(...featureLines("Current offers", draft.sections.coupons ? content.coupons || [] : []));
-  lines.push(...featureLines("Brewery tours", draft.sections.tours ? content.tours || [] : []));
-  lines.push(...featureLines("Plan your visit", draft.sections.visit ? content.visit || [] : []));
-  lines.push(...featureLines("From the Flight Crew", draft.sections.community ? content.community || [] : []));
-  lines.push(...featureLines("Behind the scenes", draft.sections.behindScenes ? content.behindScenes || [] : []));
-  lines.push(...featureLines("Aviator shop", draft.sections.shop ? content.shop || [] : []));
-  lines.push(...featureLines("Private events & catering", draft.sections.hospitality ? content.hospitality || [] : []));
-  if (beers.length) lines.push("", "CURRENT BEERS", ...content.beers.map((beer) => `${beer.name} - ${beer.style}${beer.abv ? ` - ${beer.abv}` : ""}`));
-  if (events.length) lines.push("", "EVENTS", ...content.events.map((event) => `${event.title} - ${formatDate(event.date)}, ${formatTime(event.startTime)} at ${event.location}`));
-  if (music.length) lines.push("", "LIVE MUSIC: NEXT 2 WEEKS", ...twoWeekMusic.map((show) => `${show.band?.name || show.title} - ${formatDate(show.performanceDate || show.startsAt)}, ${formatTime(show.startsAt)} at ${show.venueName}`));
-  if (hangarMenu.length && content.hangarMenu) lines.push("", "HANGAR BAR FOOD MENU", "See what is cooking at 688 Brewing Drive.", absoluteUrl(content.hangarMenu.url));
-  if (extras.length) lines.push("", "QUICK LINKS", ...content.highlights.flatMap((item) => [item.title, item.copy, absoluteUrl(item.url)]));
-  if (locations.length) lines.push("", "LOCATIONS", ...content.locations.map((location) => `${location.name}${location.comingSoon ? " - Coming soon" : ""} - ${location.address}`));
+  lines.push(...featureLines("This week's picks", draft.sections.releases ? (content.releases || []).slice(0, 2) : []));
+  if (selectedBeers.length) lines.push("", "BEER SPOTLIGHT", ...selectedBeers.map((beer) => `${beer.name} - ${beer.style}${beer.abv ? ` - ${beer.abv}` : ""}`), `More beer: ${siteUrl()}/beer`);
+  if (music.length) lines.push("", "LIVE MUSIC: NEXT 2 WEEKS", ...twoWeekMusic.map((show) => `${show.band?.name || show.title} - ${formatDate(show.performanceDate || show.startsAt)}, ${formatTime(show.startsAt)} at ${show.venueName}`), `${siteUrl()}/events/live-music`);
+  if (events.length) lines.push("", "EVENTS", ...content.events.slice(0, 2).map((event) => `${event.title} - ${formatDate(event.date)}, ${formatTime(event.startTime)} at ${event.location}`), `${siteUrl()}/events`);
+  lines.push(...featureLines("4-packs & 6-packs to go", draft.sections.packages ? (content.packagedBeer || []).slice(0, 3) : []));
+  if (hangarMenu.length && content.hangarMenu) lines.push("", "HANGAR BAR FOOD MENU", absoluteUrl(content.hangarMenu.url));
   lines.push("", "Aviator Brewing Company", siteUrl());
   if (unsubscribeUrl) lines.push(`Leave the Flight Crew: ${unsubscribeUrl}`);
   return { html, text: lines.join("\n") };
 }
+function cardSection(title: string, items: string[]) {
+  if (!items.length) return "";
+  return `<section style="margin:0;padding:24px 18px;border-top:1px solid #315a78"><h2 style="margin:0 6px 14px;color:#efb45f;font:900 19px Arial,sans-serif;text-transform:uppercase;letter-spacing:.4px">${escapeHtml(title)}</h2>${items.join("")}</section>`;
+}
+
+function tableSection(title: string, rows: string[]) {
+  if (!rows.length) return "";
+  return `<section style="margin:0;padding:24px 24px;border-top:1px solid #315a78"><h2 style="margin:0 0 14px;color:#efb45f;font:900 19px Arial,sans-serif;text-transform:uppercase;letter-spacing:.4px">${escapeHtml(title)}</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">${rows.join("")}</table></section>`;
+}
+
+function imagePromoSection(items: string[]) {
+  return items.length ? items.join("") : "";
+}
+
+function visualCard(item: NewsletterFeature) {
+  const href = item.url ? absoluteUrl(item.url) : siteUrl();
+  const img = imageUrl(item.imageUrl);
+  const image = img ? `<a href="${escapeHtml(href)}" style="display:block"><img src="${escapeHtml(img)}" width="260" alt="" style="display:block;width:100%;max-width:260px;height:auto;border:0;background:#0b2941"></a>` : "";
+  return `<article style="display:inline-block;width:276px;max-width:100%;vertical-align:top;margin:0 6px 12px;background:#0d3857;border:1px solid #315a78">${image}<div style="padding:14px"><h3 style="margin:0 0 7px;color:#f4f7f8;font-size:20px;line-height:1.05">${escapeHtml(item.title)}</h3>${item.meta ? `<div style="margin:0 0 8px;color:#efb45f;font-size:12px;font-weight:800;text-transform:uppercase">${escapeHtml(item.meta)}</div>` : ""}${item.copy ? `<p style="margin:0 0 12px;color:#c8dbe4;font-size:14px;line-height:1.45">${escapeHtml(item.copy).slice(0, 220)}</p>` : ""}<a href="${escapeHtml(href)}" style="display:inline-block;color:#efb45f;font-size:12px;font-weight:900;text-transform:uppercase;text-decoration:none">${escapeHtml(item.action || "More")}</a></div></article>`;
+}
+
+function moreCard(title: string, copy: string, url: string, action: string) {
+  return `<article style="display:inline-block;width:276px;max-width:100%;vertical-align:top;margin:0 6px 12px;background:#071827;border:1px dashed #efb45f"><div style="padding:16px"><h3 style="margin:0 0 7px;color:#f4f7f8;font-size:20px;line-height:1.05">${escapeHtml(title)}</h3><p style="margin:0 0 12px;color:#c8dbe4;font-size:14px;line-height:1.45">${escapeHtml(copy)}</p><a href="${escapeHtml(absoluteUrl(url))}" style="display:inline-block;padding:11px 14px;background:#efb45f;color:#071827;font-size:12px;font-weight:900;text-transform:uppercase;text-decoration:none">${escapeHtml(action)}</a></div></article>`;
+}
+
+function musicRow(show: LiveMusicShow) {
+  const href = show.ticketUrl ? absoluteUrl(show.ticketUrl) : `${siteUrl()}/events/live-music`;
+  const img = imageUrl(show.band?.imageUrl);
+  return `<tr><td style="width:74px;padding:0 12px 12px 0;vertical-align:top">${img ? `<img src="${escapeHtml(img)}" width="74" height="74" alt="" style="display:block;width:74px;height:74px;object-fit:cover;border:0;background:#0b2941">` : `<div style="width:74px;height:74px;background:#0d3857;color:#efb45f;text-align:center;font-size:11px;font-weight:900;line-height:74px">LIVE</div>`}</td><td style="padding:0 0 12px;vertical-align:top"><strong style="display:block;color:#f4f7f8;font-size:17px;line-height:1.2">${escapeHtml(show.band?.name || show.title)}</strong><span style="display:block;margin-top:4px;color:#efb45f;font-size:12px;font-weight:800;text-transform:uppercase">${escapeHtml(formatDate(show.performanceDate || show.startsAt))} · ${escapeHtml(formatTime(show.startsAt))}</span><span style="display:block;margin-top:3px;color:#b8ceda;font-size:13px">${escapeHtml(show.venueName)}</span><a href="${escapeHtml(href)}" style="display:inline-block;margin-top:8px;color:#efb45f;font-size:12px;font-weight:900;text-transform:uppercase;text-decoration:none">Show details</a></td></tr>`;
+}
+
+function promoBlock(title: string, copy: string, url: string, action: string, img: string) {
+  return `<section style="margin:0;padding:24px;border-top:1px solid #315a78;background:#08243d"><img src="${escapeHtml(img)}" width="592" alt="" style="display:block;width:100%;max-width:592px;height:auto;border:0;margin:0 0 16px;background:#0b2941"><h2 style="margin:0 0 8px;color:#efb45f;font:900 19px Arial,sans-serif;text-transform:uppercase">${escapeHtml(title)}</h2><p style="margin:0 0 14px;color:#d8e7ee;font-size:15px;line-height:1.5">${escapeHtml(copy)}</p><a href="${escapeHtml(absoluteUrl(url))}" style="display:inline-block;padding:12px 16px;background:#efb45f;color:#071827;font-weight:900;text-decoration:none;text-transform:uppercase;font-size:12px">${escapeHtml(action)}</a></section>`;
+}
+
+function quickLink(title: string, copy: string, url: string) {
+  return `<a href="${escapeHtml(absoluteUrl(url))}" style="display:block;margin:0 0 8px;padding:12px 14px;background:#0d3857;border:1px solid #315a78;color:#f4f7f8;text-decoration:none"><strong style="display:block;color:#efb45f;font-size:12px;text-transform:uppercase">${escapeHtml(title)}</strong><span style="display:block;margin-top:4px;color:#c8dbe4;font-size:13px;line-height:1.4">${escapeHtml(copy)}</span></a>`;
+}
+
+function quickLinksSection(title: string, items: string[]) {
+  return items.length ? `<section style="margin:0;padding:22px 24px;border-top:1px solid #315a78"><h2 style="margin:0 0 12px;color:#efb45f;font:900 19px Arial,sans-serif;text-transform:uppercase">${escapeHtml(title)}</h2>${items.join("")}</section>` : "";
+}
 
 function featureItems(items: NewsletterFeature[]) {
-  return items.map((item) => `<div style="margin:0 0 16px"><strong style="color:#f4f7f8">${escapeHtml(item.title)}</strong>${item.meta ? `<br><span style="color:#efb45f">${escapeHtml(item.meta)}</span>` : ""}${item.copy ? `<br><span style="color:#b8ceda">${escapeHtml(item.copy)}</span>` : ""}${item.url ? `<br><a href="${escapeHtml(absoluteUrl(item.url))}" style="color:#efb45f;font-weight:700">${escapeHtml(item.action || "Learn more")}</a>` : ""}</div>`);
+  return items.map((item) => visualCard(item));
 }
 
 function featureLines(title: string, items: NewsletterFeature[]) {

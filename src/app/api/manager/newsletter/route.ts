@@ -119,24 +119,24 @@ async function getContent() {
     .slice(0, 3);
 
   return {
-    beers: beers.slice(0, 6),
+    beers: beers.slice(0, 3),
     events: events.slice(0, 3),
     locations,
     music: newsletterMusicForNextTwoWeeks(liveMusic.schedule?.shows || []),
     hangarMenu,
-    releases: releases.slice(0, 3).map((release) => ({ title: release.beerName, meta: [release.releaseDate, release.releaseTime, release.locations].filter(Boolean).join(" · "), copy: release.specials, url: release.sellSheetUrl || "/beer", action: "See the release" })),
+    releases: releases.slice(0, 2).map((release) => ({ title: release.beerName, meta: [release.releaseDate, release.releaseTime, release.locations].filter(Boolean).join(" · "), copy: release.specials, url: release.sellSheetUrl || "/beer", action: "See the release", imageUrl: beers.find((beer) => beer.name.toLowerCase() === release.beerName.toLowerCase())?.image })),
     packagedBeer: [{ title: "Cold 4-packs and 6-packs to go", copy: "Stock the fridge with Aviator beer at great prices. The packaged beer list below comes directly from the current Kegs & Beer to Go inventory.", url: "/kegs", action: "See all beer to go" }, ...packagedBeer],
-    food: foodPost ? [{ title: foodPost.title, copy: foodPost.excerpt || foodPost.body.slice(0, 260), url: `/flight-log/${foodPost.slug}`, action: "See the food feature" }] : [],
+    food: foodPost ? [{ title: foodPost.title, copy: foodPost.excerpt || foodPost.body.slice(0, 260), url: `/flight-log/${foodPost.slug}`, action: "See the food feature", imageUrl: foodPost.imageUrl }] : [],
     coupons: coupons.slice(0, 3).map((offer) => ({ title: offer.title, meta: `Code ${offer.code} · Expires ${offer.expiresAt}`, copy: [offer.description, offer.terms].filter(Boolean).join(" "), url: "/coupons", action: "Get the offer" })),
     tours: tour ? [{ title: `Saturday brewery tours · ${tour.date}`, meta: `4 PM: ${tour.fourPm.remaining} seats · 6 PM: ${tour.sixPm.remaining} seats`, copy: `${money(tour.priceCents)} per guest. Tour the brewhouse and hear the Aviator story.`, url: "/about#brewery-tours", action: "Reserve a tour" }] : [],
     visit: hangar ? [{ title: hangar.name, meta: hangar.address, copy: "Check the menu, hours, directions, and join the waitlist before you arrive.", url: `/locations/${hangar.slug}`, action: "Plan your visit" }] : [],
     community: communityPost ? [{ title: communityPost.title || `From ${communityPost.authorName}`, meta: communityPost.authorHandle ? `@${communityPost.authorHandle}` : communityPost.authorName, copy: communityPost.body.slice(0, 260), url: "/flight-log", action: "Open the Flight Log" }] : [],
-    shop: merchandise.map((product) => ({ title: product.name, meta: product.categoryName, copy: product.description.slice(0, 220), url: `/shop-new#product-${product.slug}`, action: "Shop now" })),
+    shop: merchandise.map((product) => ({ title: product.name, meta: product.categoryName, copy: product.description.slice(0, 220), url: `/shop-new#product-${product.slug}`, action: "Shop now", imageUrl: product.imageUrl })),
     hospitality: [
       { title: "Host a private event", copy: "Bring your group to Aviator for celebrations, company gatherings, and custom events.", url: "/private-events", action: "Plan an event" },
       { title: "Catering to go", copy: "Make the next gathering easy with Aviator food ready to pick up.", url: "/catering-to-go", action: "See catering" },
     ],
-    behindScenes: breweryPost ? [{ title: breweryPost.title, copy: breweryPost.excerpt || breweryPost.body.slice(0, 260), url: `/flight-log/${breweryPost.slug}`, action: "Read the brewery update" }] : [],
+    behindScenes: breweryPost ? [{ title: breweryPost.title, copy: breweryPost.excerpt || breweryPost.body.slice(0, 260), url: `/flight-log/${breweryPost.slug}`, action: "Read the brewery update", imageUrl: breweryPost.imageUrl }] : [],
     highlights: [
       { title: "Menus", copy: "See current food and drink menus.", url: "/menus" },
       { title: "Events", copy: "Find upcoming events and the full calendar.", url: "/events" },

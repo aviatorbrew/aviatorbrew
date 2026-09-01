@@ -4,12 +4,12 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Subscriber = { email: string; name?: string; phone?: string; source: string; subscribedAt: string; status: "pending" | "confirmed" };
 type Campaign = { id: string; subject: string; template: string; recipients: number; sentAt: string; sections: string[] };
-type Beer = { id: string; name: string; style: string; abv: string; status: string };
-type Event = { id: string; title: string; date: string; startTime: string; location: string };
+type Beer = { id: string; slug: string; name: string; style: string; abv: string; status: string; description?: string; image?: string };
+type Event = { id: string; title: string; date: string; startTime: string; location: string; description?: string; imageUrl?: string; ticketUrl?: string };
 type Music = { id: string; title: string; performanceDate: string; startsAt: string; venueName: string; band: { name: string } };
 type Location = { slug: string; name: string; address: string; comingSoon?: boolean };
 type Highlight = { title: string; copy: string; url: string };
-type Feature = { title: string; meta?: string; copy?: string; url?: string; action?: string };
+type Feature = { title: string; meta?: string; copy?: string; url?: string; action?: string; imageUrl?: string };
 type Welcome = { subject: string; heading: string; intro: string; history: string; speakeasy: string; special: string };
 type NewsletterContent = {
   beers: Beer[];
@@ -51,20 +51,20 @@ type Draft = {
   };
 };
 
-const everySection: Draft["sections"] = { beers: true, releases: true, packages: true, events: true, music: true, hangarMenu: true, food: true, coupons: true, tours: true, visit: true, community: true, shop: true, hospitality: true, behindScenes: true, extras: true, locations: false };
+const everySection: Draft["sections"] = { beers: true, releases: true, packages: true, events: true, music: true, hangarMenu: true, food: true, coupons: true, tours: false, visit: true, community: false, shop: false, hospitality: false, behindScenes: false, extras: false, locations: false };
 
 const templates: { id: string; name: string; description: string; draft: Draft }[] = [
   {
-    id: "weekly", name: "Weekly Flight Plan", description: "The full roundup: releases, beer to go, food, music, events, offers, tours, community, and more.",
-    draft: { template: "weekly", subject: "This week at Aviator", heading: "Your Aviator flight plan", message: "Here is what is pouring, playing, and happening around Aviator this week.", sections: { ...everySection } },
+    id: "weekly", name: "Weekly Flight Plan", description: "A short visual email: picks, a few beers, beer to go, food, menu, music, and key events.",
+    draft: { template: "weekly", subject: "This week at Aviator", heading: "Your Aviator flight plan", message: "Fresh beer, live music, good food, and the best reasons to land at Aviator this week.", sections: { ...everySection } },
   },
   {
-    id: "beer-release", name: "Beer Release", description: "Lead with a new pour, packaged beer to go, food, and the current beer list.",
+    id: "beer-release", name: "Beer Release", description: "Lead with a new pour, a few beer cards, packaged beer to go, and a clear website link for more.",
     draft: { template: "beer-release", subject: "A new beer is cleared for takeoff", heading: "Meet the newest Aviator pour", message: "A fresh release has landed. Join us for the first pour and take home cold 4-packs and 6-packs at great prices.", sections: { ...everySection, events: false, music: false, coupons: false, tours: false, community: false, hospitality: false, behindScenes: false, locations: false } },
   },
   {
-    id: "weekend", name: "Weekend Events", description: "Highlight the next two weeks of music, events, food, offers, tours, and visit details.",
-    draft: { template: "weekend", subject: "Your weekend at Aviator", heading: "Make the weekend take off", message: "Live music, special events, fresh beer, great food, and plenty of reasons to land at Aviator.", sections: { ...everySection, beers: false, releases: false, shop: false, behindScenes: false, locations: false } },
+    id: "weekend", name: "Weekend Events", description: "A phone-friendly weekend email with music, events, food, offers, and visit details.",
+    draft: { template: "weekend", subject: "Your weekend at Aviator", heading: "Make the weekend take off", message: "Live music, special events, fresh beer, great food, and plenty of reasons to land at Aviator.", sections: { ...everySection, beers: false, releases: false, packages: false, shop: false, behindScenes: false, locations: false } },
   },
 ];
 
@@ -132,6 +132,45 @@ function extractCsvSubscribers(text: string) {
     byEmail.set(email, { email, ...(name ? { name } : {}) });
   }
   return [...byEmail.values()];
+}
+
+function displayDate(value: string) {
+  if (!value) return "Date TBA";
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(value + "T12:00:00") : new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+function displayTime(value: string) {
+  const match = value?.match(/(\d{2}):(\d{2})/);
+  if (!match) return value || "Time TBA";
+  return new Date(2020, 0, 1, Number(match[1]), Number(match[2])).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+function PreviewCard({ title, meta, copy, imageUrl, action }: { title: string; meta?: string; copy?: string; imageUrl?: string; action?: string }) {
+  return <article className={`newsletter-preview-card${imageUrl ? "" : " no-image"}`}>{imageUrl ? <img src={imageUrl} alt="" /> : null}<div><h5>{title}</h5>{meta ? <span>{meta}</span> : null}{copy ? <p>{copy}</p> : null}{action ? <b>{action}</b> : null}</div></article>;
+}
+
+function NewsletterPreview({ draft, content }: { draft: Draft; content: NewsletterContent }) {
+  const pickCards = [
+    ...(draft.sections.releases ? content.releases.slice(0, 2) : []),
+    ...(draft.sections.food ? content.food.slice(0, 1) : []),
+    ...(draft.sections.coupons ? content.coupons.slice(0, 1) : []),
+  ].slice(0, 4);
+  const beers = draft.sections.beers ? content.beers.slice(0, 3) : [];
+  const music = draft.sections.music ? content.music : [];
+  const events = draft.sections.events ? content.events.slice(0, 2) : [];
+  const packages = draft.sections.packages ? content.packagedBeer.slice(0, 3) : [];
+  return <aside className="newsletter-live-preview" aria-label="Newsletter preview">
+    <div className="newsletter-phone-frame">
+      <div className="newsletter-preview-hero"><span>Aviator Flight Crew</span><h3>{draft.heading || "Your headline"}</h3><p>{draft.message || "Your message preview appears here as you build the email."}</p></div>
+      {pickCards.length ? <section><h4>This week's picks</h4>{pickCards.map((item) => <PreviewCard key={item.title} title={item.title} meta={item.meta} copy={item.copy} imageUrl={item.imageUrl} action={item.action || "More"} />)}</section> : null}
+      {beers.length ? <section><h4>Beer spotlight</h4>{beers.map((beer) => <PreviewCard key={beer.id} title={beer.name} meta={[beer.style, beer.abv].filter(Boolean).join(" · ")} copy={beer.description} imageUrl={beer.image} action="See beer" />)}<div className="newsletter-preview-more">More beer on the website</div></section> : null}
+      {music.length ? <section><h4>Live music: next 2 weeks</h4>{music.slice(0, 8).map((show) => <div className="newsletter-preview-music" key={show.id}><strong>{show.band?.name || show.title}</strong><span>{displayDate(show.performanceDate)} · {displayTime(show.startsAt)} · {show.venueName}</span></div>)}<div className="newsletter-preview-more">Full music schedule</div></section> : null}
+      {events.length ? <section><h4>Upcoming events</h4>{events.map((event) => <PreviewCard key={event.id} title={event.title} meta={`${displayDate(event.date)} · ${displayTime(event.startTime)}`} copy={event.location} imageUrl={event.imageUrl} action="More events" />)}</section> : null}
+      {draft.sections.hangarMenu && content.hangarMenu ? <section><h4>Hangar Bar food menu</h4><PreviewCard title="What is cooking at the Hangar" copy="Browse the current Hangar Bar food menu before you visit." imageUrl="/images/locations/hangar-bar.png" action="View menu" /></section> : null}
+      {packages.length ? <section><h4>4-packs & 6-packs to go</h4>{packages.map((item) => <PreviewCard key={item.title} title={item.title} meta={item.meta} copy={item.copy} action={item.action || "Beer to go"} />)}</section> : null}
+    </div>
+  </aside>;
 }
 
 export function NewsletterManager() {
@@ -298,7 +337,8 @@ export function NewsletterManager() {
       <div className="newsletter-template-picker"><h3>Choose a template</h3><div>{templates.map((template) => <button type="button" key={template.id} className={draft.template === template.id ? "is-active" : ""} onClick={() => useTemplate(template)}><strong>{template.name}</strong><span>{template.description}</span></button>)}</div></div>
       <div className="newsletter-compose-grid">
         <form className="newsletter-copy-form" onSubmit={(event) => event.preventDefault()}><h3>Email copy</h3><label>Subject<input value={draft.subject} maxLength={150} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} required /></label><label>Headline<input value={draft.heading} maxLength={120} onChange={(event) => setDraft({ ...draft, heading: event.target.value })} required /></label><label>Message<textarea value={draft.message} rows={7} maxLength={5000} onChange={(event) => setDraft({ ...draft, message: event.target.value })} required /></label></form>
-        <div className="newsletter-content-selector"><h3>Live website content</h3><p>Every selected section is filled from live website content when the email is sent. Empty editorial sections stay out of the email, and music is always limited to the next two weeks.</p>{contentSections.map((section) => <div className="newsletter-content-section" key={section.key}><label><input type="checkbox" checked={draft.sections[section.key]} onChange={() => toggleSection(section.key)} /><span><strong>{section.label}</strong><small>{section.count} available</small></span></label>{draft.sections[section.key] ? <ul>{section.items.length ? section.items.slice(0, 8).map((item) => <li key={item}>{item}</li>) : <li>No current items.</li>}{section.items.length > 8 ? <li>+ {section.items.length - 8} more</li> : null}</ul> : null}</div>)}</div>
+        <div className="newsletter-content-selector"><h3>Live website content</h3><p>Every selected section is filled from live website content when the email is sent. Empty sections stay out, music is limited to the next two weeks, and beer/event sections link to the website for more.</p>{contentSections.map((section) => <div className="newsletter-content-section" key={section.key}><label><input type="checkbox" checked={draft.sections[section.key]} onChange={() => toggleSection(section.key)} /><span><strong>{section.label}</strong><small>{section.count} available</small></span></label>{draft.sections[section.key] ? <ul>{section.items.length ? section.items.slice(0, 4).map((item) => <li key={item}>{item}</li>) : <li>No current items.</li>}{section.items.length > 4 ? <li>+ {section.items.length - 4} more on the website</li> : null}</ul> : null}</div>)}</div>
+        <NewsletterPreview draft={draft} content={data.content} />
       </div>
       <div className="newsletter-send-bar"><div><strong>{data.mailConfigured ? "Email delivery ready" : "Email delivery is not configured"}</strong><span>Campaign tests go to {data.managerEmail || "the configured manager address"}.</span></div><button className="button button-outline" type="button" onClick={() => send("send-test")} disabled={busy || !data.mailConfigured}>{busy ? "Working..." : "Send test"}</button><button className="button" type="button" onClick={() => send("send-all")} disabled={busy || !data.mailConfigured || !data.confirmedCount}>Send to {data.confirmedCount} member{data.confirmedCount === 1 ? "" : "s"}</button></div>
       <div className="newsletter-history"><h3>Campaign history</h3>{data.campaigns.length ? <div>{data.campaigns.map((campaign) => <article key={campaign.id}><strong>{campaign.subject}</strong><span>{new Date(campaign.sentAt).toLocaleString()} - {campaign.recipients} recipients - {campaign.sections.join(", ") || "copy only"}</span></article>)}</div> : <p>No campaigns have been sent yet.</p>}</div>
