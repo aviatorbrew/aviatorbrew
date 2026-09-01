@@ -9,13 +9,32 @@ type Event = { id: string; title: string; date: string; startTime: string; locat
 type Music = { id: string; title: string; performanceDate: string; startsAt: string; venueName: string; band: { name: string } };
 type Location = { slug: string; name: string; address: string; comingSoon?: boolean };
 type Highlight = { title: string; copy: string; url: string };
+type Feature = { title: string; meta?: string; copy?: string; url?: string; action?: string };
 type Welcome = { subject: string; heading: string; intro: string; history: string; speakeasy: string; special: string };
+type NewsletterContent = {
+  beers: Beer[];
+  events: Event[];
+  music: Music[];
+  hangarMenu: { name: string; url: string } | null;
+  highlights: Highlight[];
+  locations: Location[];
+  releases: Feature[];
+  packagedBeer: Feature[];
+  food: Feature[];
+  coupons: Feature[];
+  tours: Feature[];
+  visit: Feature[];
+  community: Feature[];
+  shop: Feature[];
+  hospitality: Feature[];
+  behindScenes: Feature[];
+};
 type NewsletterData = {
   subscribers: Subscriber[];
   confirmedCount: number;
   pendingCount: number;
   campaigns: Campaign[];
-  content: { beers: Beer[]; events: Event[]; music: Music[]; hangarMenu: { name: string; url: string } | null; highlights: Highlight[]; locations: Location[] };
+  content: NewsletterContent;
   welcome: Welcome;
   managerEmail: string;
   mailConfigured: boolean;
@@ -25,28 +44,35 @@ type Draft = {
   subject: string;
   heading: string;
   message: string;
-  sections: { beers: boolean; events: boolean; music: boolean; hangarMenu: boolean; extras: boolean; locations: boolean };
+  sections: {
+    beers: boolean; releases: boolean; packages: boolean; events: boolean; music: boolean; hangarMenu: boolean;
+    food: boolean; coupons: boolean; tours: boolean; visit: boolean; community: boolean; shop: boolean;
+    hospitality: boolean; behindScenes: boolean; extras: boolean; locations: boolean;
+  };
 };
+
+const everySection: Draft["sections"] = { beers: true, releases: true, packages: true, events: true, music: true, hangarMenu: true, food: true, coupons: true, tours: true, visit: true, community: true, shop: true, hospitality: true, behindScenes: true, extras: true, locations: false };
 
 const templates: { id: string; name: string; description: string; draft: Draft }[] = [
   {
-    id: "weekly", name: "Weekly Flight Plan", description: "A balanced roundup of beer, events, music, and destinations.",
-    draft: { template: "weekly", subject: "This week at Aviator", heading: "Your Aviator flight plan", message: "Here is what is pouring, playing, and happening around Aviator this week.", sections: { beers: true, events: true, music: true, hangarMenu: true, extras: true, locations: false } },
+    id: "weekly", name: "Weekly Flight Plan", description: "The full roundup: releases, beer to go, food, music, events, offers, tours, community, and more.",
+    draft: { template: "weekly", subject: "This week at Aviator", heading: "Your Aviator flight plan", message: "Here is what is pouring, playing, and happening around Aviator this week.", sections: { ...everySection } },
   },
   {
-    id: "beer-release", name: "Beer Release", description: "Lead with a new pour and include the complete current beer list.",
-    draft: { template: "beer-release", subject: "A new beer is cleared for takeoff", heading: "Meet the newest Aviator pour", message: "A fresh release has landed. Join us for the first pour and see what else is currently available.", sections: { beers: true, events: false, music: false, hangarMenu: true, extras: true, locations: false } },
+    id: "beer-release", name: "Beer Release", description: "Lead with a new pour, packaged beer to go, food, and the current beer list.",
+    draft: { template: "beer-release", subject: "A new beer is cleared for takeoff", heading: "Meet the newest Aviator pour", message: "A fresh release has landed. Join us for the first pour and take home cold 4-packs and 6-packs at great prices.", sections: { ...everySection, events: false, music: false, coupons: false, tours: false, community: false, hospitality: false, behindScenes: false, locations: false } },
   },
   {
-    id: "weekend", name: "Weekend Events", description: "Highlight special events and live music across Aviator locations.",
-    draft: { template: "weekend", subject: "Your weekend at Aviator", heading: "Make the weekend take off", message: "Live music, special events, fresh beer, and plenty of reasons to land at Aviator.", sections: { beers: false, events: true, music: true, hangarMenu: true, extras: true, locations: false } },
+    id: "weekend", name: "Weekend Events", description: "Highlight the next two weeks of music, events, food, offers, tours, and visit details.",
+    draft: { template: "weekend", subject: "Your weekend at Aviator", heading: "Make the weekend take off", message: "Live music, special events, fresh beer, great food, and plenty of reasons to land at Aviator.", sections: { ...everySection, beers: false, releases: false, shop: false, behindScenes: false, locations: false } },
   },
 ];
 
 const emptyWelcome: Welcome = { subject: "", heading: "", intro: "", history: "", speakeasy: "", special: "" };
+const emptyFeatures = { releases: [], packagedBeer: [], food: [], coupons: [], tours: [], visit: [], community: [], shop: [], hospitality: [], behindScenes: [] };
 const emptyData: NewsletterData = {
   subscribers: [], confirmedCount: 0, pendingCount: 0, campaigns: [],
-  content: { beers: [], events: [], music: [], hangarMenu: null, highlights: [], locations: [] },
+  content: { beers: [], events: [], music: [], hangarMenu: null, highlights: [], locations: [], ...emptyFeatures },
   welcome: emptyWelcome, managerEmail: "", mailConfigured: false,
 };
 
@@ -239,13 +265,24 @@ export function NewsletterManager() {
     URL.revokeObjectURL(url);
   }
 
+  const featurePreview = (items: Feature[]) => items.map((item) => [item.title, item.meta, item.copy].filter(Boolean).join(" - "));
   const contentSections = [
-    { key: "beers" as const, label: "Current beers", count: data.content.beers.length, items: data.content.beers.map((beer) => `${beer.name} - ${beer.style} - ${beer.abv}`) },
-    { key: "events" as const, label: "Events", count: data.content.events.length, items: data.content.events.map((event) => `${event.title} - ${event.date} - ${event.location}`) },
+    { key: "releases" as const, label: "Featured beer & new releases", count: data.content.releases.length, items: featurePreview(data.content.releases) },
     { key: "music" as const, label: "Live music - next 2 weeks", count: data.content.music.length, items: data.content.music.map((show) => `${show.band?.name || show.title} - ${show.performanceDate} - ${show.venueName}`) },
+    { key: "events" as const, label: "Upcoming event spotlight", count: data.content.events.length, items: data.content.events.map((event) => `${event.title} - ${event.date} - ${event.location}`) },
     { key: "hangarMenu" as const, label: "Hangar Bar food menu", count: data.content.hangarMenu ? 1 : 0, items: data.content.hangarMenu ? ["Current Hangar Bar food menu - linked in the email"] : [] },
-    { key: "extras" as const, label: "More from Aviator", count: data.content.highlights.length, items: data.content.highlights.map((item) => `${item.title} - ${item.copy}`) },
-    { key: "locations" as const, label: "Locations", count: data.content.locations.length, items: data.content.locations.map((location) => `${location.name}${location.comingSoon ? " - Coming soon" : ""} - ${location.address}`) },
+    { key: "food" as const, label: "Featured food", count: data.content.food.length, items: featurePreview(data.content.food) },
+    { key: "packages" as const, label: "4-packs & 6-packs to go", count: data.content.packagedBeer.length, items: featurePreview(data.content.packagedBeer) },
+    { key: "beers" as const, label: "Current beers", count: data.content.beers.length, items: data.content.beers.map((beer) => `${beer.name} - ${beer.style} - ${beer.abv}`) },
+    { key: "coupons" as const, label: "Coupons & weekly specials", count: data.content.coupons.length, items: featurePreview(data.content.coupons) },
+    { key: "tours" as const, label: "Tour dates & seats", count: data.content.tours.length, items: featurePreview(data.content.tours) },
+    { key: "visit" as const, label: "Plan your visit", count: data.content.visit.length, items: featurePreview(data.content.visit) },
+    { key: "community" as const, label: "Flight Log community feature", count: data.content.community.length, items: featurePreview(data.content.community) },
+    { key: "behindScenes" as const, label: "Behind the scenes", count: data.content.behindScenes.length, items: featurePreview(data.content.behindScenes) },
+    { key: "shop" as const, label: "Merch & shop picks", count: data.content.shop.length, items: featurePreview(data.content.shop) },
+    { key: "hospitality" as const, label: "Private events & catering", count: data.content.hospitality.length, items: featurePreview(data.content.hospitality) },
+    { key: "extras" as const, label: "Quick links", count: data.content.highlights.length, items: data.content.highlights.map((item) => `${item.title} - ${item.copy}`) },
+    { key: "locations" as const, label: "All locations", count: data.content.locations.length, items: data.content.locations.map((location) => `${location.name}${location.comingSoon ? " - Coming soon" : ""} - ${location.address}`) },
   ];
 
   return <section id="newsletter-manager" className="coupon-manager newsletter-manager">
@@ -261,7 +298,7 @@ export function NewsletterManager() {
       <div className="newsletter-template-picker"><h3>Choose a template</h3><div>{templates.map((template) => <button type="button" key={template.id} className={draft.template === template.id ? "is-active" : ""} onClick={() => useTemplate(template)}><strong>{template.name}</strong><span>{template.description}</span></button>)}</div></div>
       <div className="newsletter-compose-grid">
         <form className="newsletter-copy-form" onSubmit={(event) => event.preventDefault()}><h3>Email copy</h3><label>Subject<input value={draft.subject} maxLength={150} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} required /></label><label>Headline<input value={draft.heading} maxLength={120} onChange={(event) => setDraft({ ...draft, heading: event.target.value })} required /></label><label>Message<textarea value={draft.message} rows={7} maxLength={5000} onChange={(event) => setDraft({ ...draft, message: event.target.value })} required /></label></form>
-        <div className="newsletter-content-selector"><h3>Live website content</h3><p>Selected sections are filled from the current beer list, events calendar, next two weeks of music, Hangar Bar food menu, and Aviator extras when the email is sent.</p>{contentSections.map((section) => <div className="newsletter-content-section" key={section.key}><label><input type="checkbox" checked={draft.sections[section.key]} onChange={() => toggleSection(section.key)} /><span><strong>{section.label}</strong><small>{section.count} available</small></span></label>{draft.sections[section.key] ? <ul>{section.items.length ? section.items.slice(0, 8).map((item) => <li key={item}>{item}</li>) : <li>No current items.</li>}{section.items.length > 8 ? <li>+ {section.items.length - 8} more</li> : null}</ul> : null}</div>)}</div>
+        <div className="newsletter-content-selector"><h3>Live website content</h3><p>Every selected section is filled from live website content when the email is sent. Empty editorial sections stay out of the email, and music is always limited to the next two weeks.</p>{contentSections.map((section) => <div className="newsletter-content-section" key={section.key}><label><input type="checkbox" checked={draft.sections[section.key]} onChange={() => toggleSection(section.key)} /><span><strong>{section.label}</strong><small>{section.count} available</small></span></label>{draft.sections[section.key] ? <ul>{section.items.length ? section.items.slice(0, 8).map((item) => <li key={item}>{item}</li>) : <li>No current items.</li>}{section.items.length > 8 ? <li>+ {section.items.length - 8} more</li> : null}</ul> : null}</div>)}</div>
       </div>
       <div className="newsletter-send-bar"><div><strong>{data.mailConfigured ? "Email delivery ready" : "Email delivery is not configured"}</strong><span>Campaign tests go to {data.managerEmail || "the configured manager address"}.</span></div><button className="button button-outline" type="button" onClick={() => send("send-test")} disabled={busy || !data.mailConfigured}>{busy ? "Working..." : "Send test"}</button><button className="button" type="button" onClick={() => send("send-all")} disabled={busy || !data.mailConfigured || !data.confirmedCount}>Send to {data.confirmedCount} member{data.confirmedCount === 1 ? "" : "s"}</button></div>
       <div className="newsletter-history"><h3>Campaign history</h3>{data.campaigns.length ? <div>{data.campaigns.map((campaign) => <article key={campaign.id}><strong>{campaign.subject}</strong><span>{new Date(campaign.sentAt).toLocaleString()} - {campaign.recipients} recipients - {campaign.sections.join(", ") || "copy only"}</span></article>)}</div> : <p>No campaigns have been sent yet.</p>}</div>

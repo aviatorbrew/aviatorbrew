@@ -7,6 +7,13 @@ import { getPublishedEvents } from "@/lib/managed-events";
 import { getAllLocations } from "@/lib/managed-locations";
 import { getLiveMusicSchedule } from "@/lib/live-music";
 import { latestPublicMenu } from "@/lib/menu-files";
+import { getPublishedBeerReleaseAlerts } from "@/lib/beer-release-alert";
+import { getCouponOffers } from "@/lib/coupons";
+import { getUploadedKegInventory, type KegInventoryItem } from "@/lib/keg-inventory";
+import { getPublishedFlightLogPosts } from "@/lib/flight-log";
+import { getPublishedCustomerFlightLogPosts } from "@/lib/flight-log-social";
+import { getShopCatalog } from "@/lib/shop";
+import { getTourSummary } from "@/lib/tours";
 import { getConfirmedNewsletterSubscribers, getNewsletterSubscribers, subscribeNewsletter, unsubscribeNewsletter } from "@/lib/newsletter";
 import { getNewsletterCampaigns, recordNewsletterCampaign } from "@/lib/newsletter-campaigns";
 import { buildFlightCrewWelcomeMessage, buildNewsletterMessage, newsletterMusicForNextTwoWeeks, type NewsletterDraft, type NewsletterSections } from "@/lib/newsletter-email";
@@ -28,9 +35,19 @@ function validateDraft(value: unknown): NewsletterDraft {
     message: clean(input.message, 5000),
     sections: {
       beers: source.beers === true,
+      releases: source.releases === true,
+      packages: source.packages === true,
       events: source.events === true,
       music: source.music === true,
       hangarMenu: source.hangarMenu === true,
+      food: source.food === true,
+      coupons: source.coupons === true,
+      tours: source.tours === true,
+      visit: source.visit === true,
+      community: source.community === true,
+      shop: source.shop === true,
+      hospitality: source.hospitality === true,
+      behindScenes: source.behindScenes === true,
       extras: source.extras === true,
       locations: source.locations === true,
     },
@@ -53,24 +70,78 @@ function validateWelcome(value: unknown): FlightCrewWelcome {
   return welcome;
 }
 
+function money(cents?: number) {
+  return typeof cents === "number" && cents > 0
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100)
+    : "";
+}
+
+function packagedAvailability(item: KegInventoryItem) {
+  const details: string[] = [];
+  if ((item.case12Count || 0) > 0) details.push(`${item.case12Count} 12 oz case${item.case12Count === 1 ? "" : "s"}${money(item.case12PriceCents || item.casePriceCents) ? ` at ${money(item.case12PriceCents || item.casePriceCents)}` : ""}`);
+  if ((item.case16Count || 0) > 0) details.push(`${item.case16Count} 16 oz case${item.case16Count === 1 ? "" : "s"}${money(item.case16PriceCents || item.casePriceCents) ? ` at ${money(item.case16PriceCents || item.casePriceCents)}` : ""}`);
+  if ((item.caseCount || 0) > 0 && !(item.case12Count || item.case16Count)) details.push(`${item.caseCount} ${item.caseSize || "case"}${item.caseCount === 1 ? "" : "s"}${money(item.casePriceCents) ? ` at ${money(item.casePriceCents)}` : ""}`);
+  return details.join(" · ");
+}
+
 async function getContent() {
-  const [beers, events, locations, liveMusic, hangarMenu] = await Promise.all([
+  const [beers, events, locations, liveMusic, hangarMenu, releases, kegInventory, coupons, tour, officialPosts, customerPosts, shopProducts] = await Promise.all([
     getPortalBeers().then((items) => items.filter((beer) => beer.published !== false)),
     getPublishedEvents({ monthsAhead: 3 }),
     getAllLocations(),
     getLiveMusicSchedule(),
     latestPublicMenu("hangar-bar", "food"),
+    getPublishedBeerReleaseAlerts().catch(() => []),
+    getUploadedKegInventory().catch(() => null),
+    getCouponOffers().catch(() => []),
+    getTourSummary().catch(() => null),
+    getPublishedFlightLogPosts("all").catch(() => []),
+    getPublishedCustomerFlightLogPosts(1).catch(() => []),
+    getShopCatalog().then((catalog) => catalog.products).catch(() => []),
   ]);
+
+  const foodPost = officialPosts.find((post) => post.category === "food_specials");
+  const breweryPost = officialPosts.find((post) => post.category === "brewery_news");
+  const communityPost = customerPosts[0];
+  const hangar = locations.find((location) => location.slug === "hangar-bar");
+  const packagedBeer = (kegInventory?.items || [])
+    .filter((item) => (item.case12Count || 0) > 0 || (item.case16Count || 0) > 0 || (item.caseCount || 0) > 0 || (/(can|case|4[ -]?pack|6[ -]?pack)/i.test(item.packaging) && Boolean(item.casePriceCents || item.case12PriceCents || item.case16PriceCents)))
+    .map((item) => ({
+      title: item.beerName,
+      meta: item.packaging || item.caseSize || item.category,
+      copy: packagedAvailability(item) || "Available in cans. See the Kegs & Beer to Go page for current package pricing.",
+      url: "/kegs",
+      action: "Order beer to go",
+    }));
+  const merchandise = shopProducts
+    .filter((product) => product.productType === "merchandise" && product.variants.some((variant) => variant.availableForSale))
+    .sort((a, b) => Number(b.featured) - Number(a.featured) || a.sortOrder - b.sortOrder)
+    .slice(0, 3);
+
   return {
-    beers,
-    events,
+    beers: beers.slice(0, 6),
+    events: events.slice(0, 3),
     locations,
     music: newsletterMusicForNextTwoWeeks(liveMusic.schedule?.shows || []),
     hangarMenu,
+    releases: releases.slice(0, 3).map((release) => ({ title: release.beerName, meta: [release.releaseDate, release.releaseTime, release.locations].filter(Boolean).join(" · "), copy: release.specials, url: release.sellSheetUrl || "/beer", action: "See the release" })),
+    packagedBeer: [{ title: "Cold 4-packs and 6-packs to go", copy: "Stock the fridge with Aviator beer at great prices. The packaged beer list below comes directly from the current Kegs & Beer to Go inventory.", url: "/kegs", action: "See all beer to go" }, ...packagedBeer],
+    food: foodPost ? [{ title: foodPost.title, copy: foodPost.excerpt || foodPost.body.slice(0, 260), url: `/flight-log/${foodPost.slug}`, action: "See the food feature" }] : [],
+    coupons: coupons.slice(0, 3).map((offer) => ({ title: offer.title, meta: `Code ${offer.code} · Expires ${offer.expiresAt}`, copy: [offer.description, offer.terms].filter(Boolean).join(" "), url: "/coupons", action: "Get the offer" })),
+    tours: tour ? [{ title: `Saturday brewery tours · ${tour.date}`, meta: `4 PM: ${tour.fourPm.remaining} seats · 6 PM: ${tour.sixPm.remaining} seats`, copy: `${money(tour.priceCents)} per guest. Tour the brewhouse and hear the Aviator story.`, url: "/about#brewery-tours", action: "Reserve a tour" }] : [],
+    visit: hangar ? [{ title: hangar.name, meta: hangar.address, copy: "Check the menu, hours, directions, and join the waitlist before you arrive.", url: `/locations/${hangar.slug}`, action: "Plan your visit" }] : [],
+    community: communityPost ? [{ title: communityPost.title || `From ${communityPost.authorName}`, meta: communityPost.authorHandle ? `@${communityPost.authorHandle}` : communityPost.authorName, copy: communityPost.body.slice(0, 260), url: "/flight-log", action: "Open the Flight Log" }] : [],
+    shop: merchandise.map((product) => ({ title: product.name, meta: product.categoryName, copy: product.description.slice(0, 220), url: `/shop-new#product-${product.slug}`, action: "Shop now" })),
+    hospitality: [
+      { title: "Host a private event", copy: "Bring your group to Aviator for celebrations, company gatherings, and custom events.", url: "/private-events", action: "Plan an event" },
+      { title: "Catering to go", copy: "Make the next gathering easy with Aviator food ready to pick up.", url: "/catering-to-go", action: "See catering" },
+    ],
+    behindScenes: breweryPost ? [{ title: breweryPost.title, copy: breweryPost.excerpt || breweryPost.body.slice(0, 260), url: `/flight-log/${breweryPost.slug}`, action: "Read the brewery update" }] : [],
     highlights: [
-      { title: "Tour the brewery", copy: "See the brewhouse, hear the Aviator story, and reserve a Saturday tour.", url: "/about#brewery-tours" },
-      { title: "Join the Hangar Bar waitlist", copy: "Add your party before you arrive at 688 Brewing Drive.", url: "https://www.waitlist.me/w/aviatorhangarbar" },
-      { title: "Check the Flight Log", copy: "Catch official dispatches, customer posts, check-ins, and community updates.", url: "/flight-log" },
+      { title: "Menus", copy: "See current food and drink menus.", url: "/menus" },
+      { title: "Events", copy: "Find upcoming events and the full calendar.", url: "/events" },
+      { title: "Flight Log", copy: "Catch official dispatches and community updates.", url: "/flight-log" },
+      { title: "All locations", copy: "Check hours, addresses, and visit details.", url: "/locations" },
     ],
   };
 }

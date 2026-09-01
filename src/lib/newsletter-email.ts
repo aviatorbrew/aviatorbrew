@@ -8,9 +8,19 @@ import { publicSiteUrl } from "@/lib/site-url";
 
 export type NewsletterSections = {
   beers: boolean;
+  releases: boolean;
+  packages: boolean;
   events: boolean;
   music: boolean;
   hangarMenu: boolean;
+  food: boolean;
+  coupons: boolean;
+  tours: boolean;
+  visit: boolean;
+  community: boolean;
+  shop: boolean;
+  hospitality: boolean;
+  behindScenes: boolean;
   extras: boolean;
   locations: boolean;
 };
@@ -21,6 +31,14 @@ export type NewsletterHighlight = {
   url: string;
 };
 
+export type NewsletterFeature = {
+  title: string;
+  meta?: string;
+  copy?: string;
+  url?: string;
+  action?: string;
+};
+
 export type NewsletterSourceContent = {
   beers: PortalBeer[];
   events: ManagedEvent[];
@@ -28,6 +46,16 @@ export type NewsletterSourceContent = {
   hangarMenu: { name: string; url: string } | null;
   highlights: NewsletterHighlight[];
   locations: Location[];
+  releases?: NewsletterFeature[];
+  packagedBeer?: NewsletterFeature[];
+  food?: NewsletterFeature[];
+  coupons?: NewsletterFeature[];
+  tours?: NewsletterFeature[];
+  visit?: NewsletterFeature[];
+  community?: NewsletterFeature[];
+  shop?: NewsletterFeature[];
+  hospitality?: NewsletterFeature[];
+  behindScenes?: NewsletterFeature[];
 };
 
 export type NewsletterDraft = {
@@ -184,19 +212,50 @@ export function buildNewsletterMessage(draft: NewsletterDraft, content: Newslett
   const locations = draft.sections.locations ? content.locations.map((location) =>
     `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(location.name + (location.comingSoon ? " - Coming soon" : ""))}</strong><br><span style="color:#b8ceda">${escapeHtml(location.address)}</span></div>`) : [];
 
+  const releases = draft.sections.releases ? featureItems(content.releases || []) : [];
+  const packages = draft.sections.packages ? featureItems(content.packagedBeer || []) : [];
+  const food = draft.sections.food ? featureItems(content.food || []) : [];
+  const coupons = draft.sections.coupons ? featureItems(content.coupons || []) : [];
+  const tours = draft.sections.tours ? featureItems(content.tours || []) : [];
+  const visit = draft.sections.visit ? featureItems(content.visit || []) : [];
+  const community = draft.sections.community ? featureItems(content.community || []) : [];
+  const shop = draft.sections.shop ? featureItems(content.shop || []) : [];
+  const hospitality = draft.sections.hospitality ? featureItems(content.hospitality || []) : [];
+  const behindScenes = draft.sections.behindScenes ? featureItems(content.behindScenes || []) : [];
+
   const unsubscribeUrl = recipientEmail
     ? `${siteUrl()}/api/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}&token=${newsletterUnsubscribeToken(recipientEmail)}`
     : "";
-  const html = emailFrame(`<tr><td style="padding:32px 28px;background:#071827"><h1 style="margin:0;color:#f4f7f8;font-size:34px;line-height:1">${escapeHtml(draft.heading)}</h1></td></tr><tr><td style="padding:26px 28px;color:#d8e7ee;font-size:17px;line-height:1.6">${escapeHtml(draft.message).replace(/\n/g, "<br>")}</td></tr><tr><td>${section("Current beers", beers)}${section("Events", events)}${section("Live music: next 2 weeks", music)}${section("Hangar Bar food menu", hangarMenu)}${section("More from Aviator", extras)}${section("Aviator locations", locations)}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : ""}</td></tr>`, draft.subject);
+  const html = emailFrame(`<tr><td style="padding:32px 28px;background:#071827"><h1 style="margin:0;color:#f4f7f8;font-size:34px;line-height:1">${escapeHtml(draft.heading)}</h1></td></tr><tr><td style="padding:26px 28px;color:#d8e7ee;font-size:17px;line-height:1.6">${escapeHtml(draft.message).replace(/\n/g, "<br>")}</td></tr><tr><td>${section("New releases", releases)}${section("Live music: next 2 weeks", music)}${section("Upcoming events", events)}${section("Hangar Bar food menu", hangarMenu)}${section("Food spotlight", food)}${section("4-packs & 6-packs to go", packages)}${section("Current beers", beers)}${section("Current offers", coupons)}${section("Brewery tours", tours)}${section("Plan your visit", visit)}${section("From the Flight Crew", community)}${section("Behind the scenes", behindScenes)}${section("Aviator shop", shop)}${section("Private events & catering", hospitality)}${section("Quick links", extras)}${section("Aviator locations", locations)}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : ""}</td></tr>`, draft.subject);
 
   const lines = [draft.heading, "", draft.message];
+  lines.push(...featureLines("New releases", draft.sections.releases ? content.releases || [] : []));
+  lines.push(...featureLines("4-packs & 6-packs to go", draft.sections.packages ? content.packagedBeer || [] : []));
+  lines.push(...featureLines("Food spotlight", draft.sections.food ? content.food || [] : []));
+  lines.push(...featureLines("Current offers", draft.sections.coupons ? content.coupons || [] : []));
+  lines.push(...featureLines("Brewery tours", draft.sections.tours ? content.tours || [] : []));
+  lines.push(...featureLines("Plan your visit", draft.sections.visit ? content.visit || [] : []));
+  lines.push(...featureLines("From the Flight Crew", draft.sections.community ? content.community || [] : []));
+  lines.push(...featureLines("Behind the scenes", draft.sections.behindScenes ? content.behindScenes || [] : []));
+  lines.push(...featureLines("Aviator shop", draft.sections.shop ? content.shop || [] : []));
+  lines.push(...featureLines("Private events & catering", draft.sections.hospitality ? content.hospitality || [] : []));
   if (beers.length) lines.push("", "CURRENT BEERS", ...content.beers.map((beer) => `${beer.name} - ${beer.style}${beer.abv ? ` - ${beer.abv}` : ""}`));
   if (events.length) lines.push("", "EVENTS", ...content.events.map((event) => `${event.title} - ${formatDate(event.date)}, ${formatTime(event.startTime)} at ${event.location}`));
   if (music.length) lines.push("", "LIVE MUSIC: NEXT 2 WEEKS", ...twoWeekMusic.map((show) => `${show.band?.name || show.title} - ${formatDate(show.performanceDate || show.startsAt)}, ${formatTime(show.startsAt)} at ${show.venueName}`));
   if (hangarMenu.length && content.hangarMenu) lines.push("", "HANGAR BAR FOOD MENU", "See what is cooking at 688 Brewing Drive.", absoluteUrl(content.hangarMenu.url));
-  if (extras.length) lines.push("", "MORE FROM AVIATOR", ...content.highlights.flatMap((item) => [item.title, item.copy, absoluteUrl(item.url)]));
+  if (extras.length) lines.push("", "QUICK LINKS", ...content.highlights.flatMap((item) => [item.title, item.copy, absoluteUrl(item.url)]));
   if (locations.length) lines.push("", "LOCATIONS", ...content.locations.map((location) => `${location.name}${location.comingSoon ? " - Coming soon" : ""} - ${location.address}`));
   lines.push("", "Aviator Brewing Company", siteUrl());
   if (unsubscribeUrl) lines.push(`Leave the Flight Crew: ${unsubscribeUrl}`);
   return { html, text: lines.join("\n") };
+}
+
+function featureItems(items: NewsletterFeature[]) {
+  return items.map((item) => `<div style="margin:0 0 16px"><strong style="color:#f4f7f8">${escapeHtml(item.title)}</strong>${item.meta ? `<br><span style="color:#efb45f">${escapeHtml(item.meta)}</span>` : ""}${item.copy ? `<br><span style="color:#b8ceda">${escapeHtml(item.copy)}</span>` : ""}${item.url ? `<br><a href="${escapeHtml(absoluteUrl(item.url))}" style="color:#efb45f;font-weight:700">${escapeHtml(item.action || "Learn more")}</a>` : ""}</div>`);
+}
+
+function featureLines(title: string, items: NewsletterFeature[]) {
+  return items.length
+    ? ["", title.toUpperCase(), ...items.flatMap((item) => [item.title, item.meta || "", item.copy || "", item.url ? absoluteUrl(item.url) : ""].filter(Boolean))]
+    : [];
 }
