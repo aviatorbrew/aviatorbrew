@@ -1603,11 +1603,50 @@ body {
   letter-spacing: 0;
 }
 .manager-top-links {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-color: #4c7894 #071827;
+  overflow: visible;
 }
+.manager-top-group {
+  position: relative;
+  min-width: 0;
+  border-right: 1px solid #315f7b;
+}
+.manager-top-group.is-active-group { background: rgba(23, 70, 100, .42); }
+.manager-top-group summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  min-height: 4.25rem;
+  padding: .55rem .7rem;
+  cursor: pointer;
+  list-style: none;
+}
+.manager-top-group summary::-webkit-details-marker { display: none; }
+.manager-top-group summary strong {
+  color: #c8dce6;
+.manager-top-group summary::after { content: "+"; grid-column: 2; grid-row: 1 / 3; align-self: center; margin-left: .5rem; color: #6f9ab2; font-weight: 900; }
+.manager-top-group[open] summary::after { content: "−"; color: #efb45f; }
+  font: 900 .56rem/1.15 "Courier New", monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.manager-top-group summary small { margin-top: .2rem; color: #6f9ab2; font: 900 .52rem/1.1 "Courier New", monospace; text-transform: uppercase; }
+.manager-top-group.is-active-group summary strong { color: #efb45f; }
+.manager-top-group-items {
+  position: absolute;
+  top: 100%;
+  left: -1px;
+  z-index: 40;
+  display: grid;
+  min-width: 15rem;
+  border: 1px solid #315f7b;
+  background: #071827;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, .36);
+}
+.manager-top-group:not([open]) .manager-top-group-items { display: none; }
+.manager-top-group:nth-last-child(-n + 2) .manager-top-group-items { right: 0; left: auto; }
 .manager-top-links a {
   display: grid;
   flex: 0 0 auto;
@@ -1630,6 +1669,14 @@ body {
   color: #f2b55f;
 }
 .manager-top-links a.is-active { box-shadow: inset 0 -3px 0 #efb45f; }
+.manager-top-group-items a {
+  place-items: start;
+  width: 100%;
+  box-sizing: border-box;
+  border-right: 0;
+  border-bottom: 1px solid rgba(92, 137, 164, .28);
+  text-align: left;
+}
 .manager-top-signout {
   min-width: 6rem;
   border: 0;
@@ -1678,11 +1725,23 @@ body {
   line-height: .9;
   text-transform: uppercase;
 }
+.manager-overview-groups {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.manager-overview-group h3 {
+  margin: 0;
+  color: #efb45f;
+  font: 900 .78rem/1.1 "Courier New", monospace;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
 .manager-overview-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
-  margin-top: 1.5rem;
+  margin-top: .65rem;
   border: 1px solid #477894;
   background: #477894;
 }
@@ -1781,12 +1840,14 @@ body {
 @media (max-width: 1000px) {
   .manager-top-menu { grid-template-columns: minmax(0, 1fr) auto; }
   .manager-top-brand { border-right: 0; }
-  .manager-top-links { grid-column: 1 / -1; grid-row: 2; border-top: 1px solid #315f7b; }
+  .manager-top-links { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid #315f7b; }
   .manager-top-signout { grid-column: 2; grid-row: 1; }
   .manager-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
   .manager-top-brand { min-width: 0; padding-left: 1rem; }
+  .manager-top-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .manager-top-group:nth-child(even) .manager-top-group-items { right: 0; left: auto; }
   .manager-top-links a { padding: .7rem .75rem; }
   .manager-overview-grid { grid-template-columns: 1fr; }
   .manager-overview-grid a { min-height: 0; }

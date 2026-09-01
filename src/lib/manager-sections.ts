@@ -104,7 +104,7 @@ export const managerSections = [
   {
     id: "newsletter",
     href: "/manager/newsletter",
-    label: "Flight Crew",
+    label: "Newsletter",
     description: "Manage members, customize the welcome email, and send campaigns.",
   },
   {
@@ -128,6 +128,15 @@ export const managerSections = [
 ] as const;
 
 export type ManagerSection = (typeof managerSections)[number]["id"];
+
+export const managerSectionGroups = [
+  { id: "dashboard", label: "Dashboard", sections: ["overview"] },
+  { id: "products", label: "Products & Sales", sections: ["beers", "beverages", "beer-release-alert", "kegs", "shop"] },
+  { id: "media", label: "Photos, Menus & Locations", sections: ["media", "brewery-photos", "private-event-photos", "amphitheater-photos", "locations"] },
+  { id: "hospitality", label: "Events & Hospitality", sections: ["events", "private-events", "catering", "tours"] },
+  { id: "marketing", label: "Marketing & Community", sections: ["flight-log", "newsletter", "coupons"] },
+  { id: "system", label: "System Tools", sections: ["payments", "email-test", "database"] },
+] as const satisfies ReadonlyArray<{ id: string; label: string; sections: readonly ManagerSection[] }>;
 
 export function isManagerSection(value: string): value is ManagerSection {
   return managerSections.some((section) => section.id === value);

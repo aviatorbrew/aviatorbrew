@@ -3,7 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { DEFAULT_TOUR_BOOKING_CUTOFF_HOURS, DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
-import { managerSections, type ManagerSection } from "@/lib/manager-sections";
+import { managerSectionGroups, managerSections, type ManagerSection } from "@/lib/manager-sections";
 import { CouponManager } from "@/components/coupons";
 import { MenuLibraryClient } from "@/components/menu-library-client";
 import { LocationManager } from "@/components/location-manager";
@@ -669,12 +669,29 @@ function EmailTestManager() {
   return <section id="email-test" className="coupon-manager manager-email-test"><p className="eyebrow">Communications diagnostics</p><h2>Send test messages</h2><p>Send live diagnostics messages using the website mail and Twilio configuration.</p><div className="manager-test-actions"><article><h3>Email</h3><p>Recipient: <strong>mark@aviatorbrew.com</strong></p><button className="button" type="button" onClick={sendTestEmail} disabled={Boolean(busy)}>{busy === "email" ? "Sending..." : "Send test email"}</button></article><article><h3>SMS</h3><p>Recipient: <strong>919-601-5497</strong></p><button className="button" type="button" onClick={sendTestSms} disabled={Boolean(busy)}>{busy === "sms" ? "Sending..." : "Send test SMS"}</button></article></div><p className="media-message" role="status">{message}</p></section>;
 }
 
+type ManagerSectionItem = (typeof managerSections)[number];
+
+function ManagerSectionLink({ item, active = false, showDescription = false }: { item: ManagerSectionItem; active?: boolean; showDescription?: boolean }) {
+  const content = showDescription ? <><strong>{item.label}</strong><span>{item.description}</span></> : item.label;
+  const className = active ? "is-active" : undefined;
+  if (item.id === "beers") return <a className={className} href={item.href} aria-current={active ? "page" : undefined}>{content}</a>;
+  return <Link className={className} href={item.href} aria-current={active ? "page" : undefined}>{content}</Link>;
+}
+
 function ManagerOverview() {
   return <section className="manager-overview">
     <p className="eyebrow">Manager dashboard</p>
-    <h2>Choose a section</h2>
-    <div className="manager-overview-grid">
-      {managerSections.filter((item) => item.id !== "overview").map((item) => item.id === "beers" ? <a href={item.href} key={item.id}><strong>{item.label}</strong><span>{item.description}</span></a> : <Link href={item.href} key={item.id}><strong>{item.label}</strong><span>{item.description}</span></Link>)}
+    <h2>Tools by function</h2>
+    <div className="manager-overview-groups">
+      {managerSectionGroups.filter((group) => group.id !== "dashboard").map((group) => <section className="manager-overview-group" key={group.id}>
+        <h3>{group.label}</h3>
+        <div className="manager-overview-grid">
+          {group.sections.map((id) => {
+            const item = managerSections.find((candidate) => candidate.id === id);
+            return item ? <ManagerSectionLink item={item} showDescription key={item.id} /> : null;
+          })}
+        </div>
+      </section>)}
     </div>
   </section>;
 }
@@ -752,7 +769,16 @@ export function ManagerPortal({ section = "overview", editId, editType, returnTo
     <nav className="manager-top-menu" aria-label="Manager sections">
       <Link className="manager-top-brand" href="/manager">Aviator <span>Manager</span></Link>
       <div className="manager-top-links">
-        {managerSections.map((item) => item.id === "beers" ? <a className={item.id === section ? "is-active" : ""} href={item.href} aria-current={item.id === section ? "page" : undefined} key={item.id}>{item.label}</a> : <Link className={item.id === section ? "is-active" : ""} href={item.href} aria-current={item.id === section ? "page" : undefined} key={item.id}>{item.label}</Link>)}
+        {managerSectionGroups.map((group) => {
+          const groupActive = group.sections.some((id) => id === section);
+          return <details className={"manager-top-group" + (groupActive ? " is-active-group" : "")} key={group.id}>
+            <summary><strong>{group.label}</strong><small>{groupActive ? activeSection.label : group.sections.length + " tools"}</small></summary>
+            <div className="manager-top-group-items">{group.sections.map((id) => {
+              const item = managerSections.find((candidate) => candidate.id === id);
+              return item ? <ManagerSectionLink item={item} active={item.id === section} key={item.id} /> : null;
+            })}</div>
+          </details>;
+        })}
       </div>
       <button className="manager-top-signout" type="button" onClick={logout}>Sign out</button>
     </nav>
