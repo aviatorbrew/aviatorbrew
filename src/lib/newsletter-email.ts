@@ -10,13 +10,23 @@ export type NewsletterSections = {
   beers: boolean;
   events: boolean;
   music: boolean;
+  hangarMenu: boolean;
+  extras: boolean;
   locations: boolean;
+};
+
+export type NewsletterHighlight = {
+  title: string;
+  copy: string;
+  url: string;
 };
 
 export type NewsletterSourceContent = {
   beers: PortalBeer[];
   events: ManagedEvent[];
   music: LiveMusicShow[];
+  hangarMenu: { name: string; url: string } | null;
+  highlights: NewsletterHighlight[];
   locations: Location[];
 };
 
@@ -49,6 +59,29 @@ function formatTime(value: string) {
   const match = value.match(/(\d{2}):(\d{2})/);
   if (!match) return value;
   return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(2020, 0, 1, Number(match[1]), Number(match[2])));
+}
+
+function easternDate(value = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function addUtcDays(date: string, days: number) {
+  return new Date(Date.parse(date + "T00:00:00Z") + days * 86400000).toISOString().slice(0, 10);
+}
+
+export function newsletterMusicForNextTwoWeeks(shows: LiveMusicShow[], now = new Date()) {
+  const firstDate = easternDate(now);
+  const endDate = addUtcDays(firstDate, 14);
+  return shows
+    .filter((show) => show.performanceDate >= firstDate && show.performanceDate < endDate)
+    .sort((a, b) => (a.performanceDate + a.startsAt).localeCompare(b.performanceDate + b.startsAt));
+}
+
+function absoluteUrl(value: string) {
+  try { return new URL(value, siteUrl()).toString(); }
+  catch { return siteUrl(); }
 }
 
 function tokenFor(purpose: string, email: string, qualifier = "") {
@@ -107,7 +140,7 @@ export function buildFlightCrewWelcomeMessage(welcome: FlightCrewWelcome, conten
     `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(show.band?.name || show.title)}</strong><br><span style="color:#b8ceda">${escapeHtml(formatDate(show.performanceDate || show.startsAt))} &bull; ${escapeHtml(formatTime(show.startsAt))} &bull; ${escapeHtml(show.venueName)}</span></div>`);
   const musicFallback = `<div style="color:#b8ceda">The next shows are being cleared now. <a href="${siteUrl()}/events" style="color:#efb45f">See the current music schedule</a>.</div>`;
   const unsubscribeUrl = recipientEmail ? `${siteUrl()}/api/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}&token=${newsletterUnsubscribeToken(recipientEmail)}` : "";
-  const contentRows = `<tr><td style="padding:34px 28px;color:#d8e7ee;font-size:17px;line-height:1.6"><h1 style="margin:0 0 18px;color:#f4f7f8;font-size:34px;line-height:1.05">${escapeHtml(welcome.heading)}</h1><p style="margin:0">${escapeHtml(welcome.intro).replace(/\n/g, "<br>")}</p></td></tr>${copySection("Where Aviator began", welcome.history)}${copySection("The Speakeasy Liquor Lounge", welcome.speakeasy)}${copySection("$10 Buffalo Trace Thursday", welcome.special)}<tr><td>${section("Aviator locations", activeLocations)}${section("Current music schedule", currentMusic.length ? currentMusic : [musicFallback])}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px;line-height:1.5">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : "This is a Flight Crew welcome email preview."}</td></tr>`;
+  const contentRows = `<tr><td style="padding:34px 28px;color:#d8e7ee;font-size:17px;line-height:1.6"><h1 style="margin:0 0 18px;color:#f4f7f8;font-size:34px;line-height:1.05">${escapeHtml(welcome.heading)}</h1><p style="margin:0">${escapeHtml(welcome.intro).replace(/\n/g, "<br>")}</p></td></tr>${copySection("Where Aviator began", welcome.history)}${copySection("The Speakeasy Liquor Lounge", welcome.speakeasy)}${copySection("$10 Buffalo Trace Thursday", welcome.special)}<tr><td>${section("Aviator locations", activeLocations)}${section("Live music: next 2 weeks", currentMusic.length ? currentMusic : [musicFallback])}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px;line-height:1.5">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : "This is a Flight Crew welcome email preview."}</td></tr>`;
   const html = emailFrame(contentRows, welcome.subject);
   const lines = [
     welcome.heading,
@@ -126,7 +159,7 @@ export function buildFlightCrewWelcomeMessage(welcome: FlightCrewWelcome, conten
     "AVIATOR LOCATIONS",
     ...content.locations.map((location) => `${location.name}${location.comingSoon ? " - Coming soon" : ""} - ${location.address}`),
     "",
-    "CURRENT MUSIC SCHEDULE",
+    "LIVE MUSIC: NEXT 2 WEEKS",
     ...(content.music.length ? content.music.slice(0, 10).map((show) => `${show.band?.name || show.title} - ${formatDate(show.performanceDate || show.startsAt)}, ${formatTime(show.startsAt)} at ${show.venueName}`) : [`See the schedule: ${siteUrl()}/events`]),
     "",
     siteUrl(),
@@ -140,20 +173,28 @@ export function buildNewsletterMessage(draft: NewsletterDraft, content: Newslett
     `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(beer.name)}</strong><br><span style="color:#b8ceda">${escapeHtml(beer.style)}${beer.abv ? ` &bull; ${escapeHtml(beer.abv)}` : ""}</span></div>`) : [];
   const events = draft.sections.events ? content.events.map((event) =>
     `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(event.title)}</strong><br><span style="color:#b8ceda">${escapeHtml(formatDate(event.date))} &bull; ${escapeHtml(formatTime(event.startTime))} &bull; ${escapeHtml(event.location)}</span></div>`) : [];
-  const music = draft.sections.music ? content.music.map((show) =>
+  const twoWeekMusic = newsletterMusicForNextTwoWeeks(content.music);
+  const music = draft.sections.music ? twoWeekMusic.map((show) =>
     `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(show.band?.name || show.title)}</strong><br><span style="color:#b8ceda">${escapeHtml(formatDate(show.performanceDate || show.startsAt))} &bull; ${escapeHtml(formatTime(show.startsAt))} &bull; ${escapeHtml(show.venueName)}</span></div>`) : [];
+  const hangarMenu = draft.sections.hangarMenu && content.hangarMenu
+    ? [`<div style="margin:0"><strong style="color:#f4f7f8">See what is cooking at 688 Brewing Drive.</strong><br><span style="color:#b8ceda">Browse the current Hangar Bar food menu before your visit.</span><br><a href="${escapeHtml(absoluteUrl(content.hangarMenu.url))}" style="display:inline-block;margin-top:14px;padding:12px 16px;background:#efb45f;color:#071827;font-weight:800;text-decoration:none">View the food menu</a></div>`]
+    : [];
+  const extras = draft.sections.extras ? content.highlights.map((item) =>
+    `<div style="margin:0 0 16px"><strong style="color:#f4f7f8">${escapeHtml(item.title)}</strong><br><span style="color:#b8ceda">${escapeHtml(item.copy)}</span><br><a href="${escapeHtml(absoluteUrl(item.url))}" style="color:#efb45f;font-weight:700">Learn more</a></div>`) : [];
   const locations = draft.sections.locations ? content.locations.map((location) =>
     `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(location.name + (location.comingSoon ? " - Coming soon" : ""))}</strong><br><span style="color:#b8ceda">${escapeHtml(location.address)}</span></div>`) : [];
 
   const unsubscribeUrl = recipientEmail
     ? `${siteUrl()}/api/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}&token=${newsletterUnsubscribeToken(recipientEmail)}`
     : "";
-  const html = emailFrame(`<tr><td style="padding:32px 28px;background:#071827"><h1 style="margin:0;color:#f4f7f8;font-size:34px;line-height:1">${escapeHtml(draft.heading)}</h1></td></tr><tr><td style="padding:26px 28px;color:#d8e7ee;font-size:17px;line-height:1.6">${escapeHtml(draft.message).replace(/\n/g, "<br>")}</td></tr><tr><td>${section("Current beers", beers)}${section("Events", events)}${section("Live music", music)}${section("Aviator locations", locations)}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : ""}</td></tr>`, draft.subject);
+  const html = emailFrame(`<tr><td style="padding:32px 28px;background:#071827"><h1 style="margin:0;color:#f4f7f8;font-size:34px;line-height:1">${escapeHtml(draft.heading)}</h1></td></tr><tr><td style="padding:26px 28px;color:#d8e7ee;font-size:17px;line-height:1.6">${escapeHtml(draft.message).replace(/\n/g, "<br>")}</td></tr><tr><td>${section("Current beers", beers)}${section("Events", events)}${section("Live music: next 2 weeks", music)}${section("Hangar Bar food menu", hangarMenu)}${section("More from Aviator", extras)}${section("Aviator locations", locations)}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : ""}</td></tr>`, draft.subject);
 
   const lines = [draft.heading, "", draft.message];
   if (beers.length) lines.push("", "CURRENT BEERS", ...content.beers.map((beer) => `${beer.name} - ${beer.style}${beer.abv ? ` - ${beer.abv}` : ""}`));
   if (events.length) lines.push("", "EVENTS", ...content.events.map((event) => `${event.title} - ${formatDate(event.date)}, ${formatTime(event.startTime)} at ${event.location}`));
-  if (music.length) lines.push("", "LIVE MUSIC", ...content.music.map((show) => `${show.band?.name || show.title} - ${formatDate(show.performanceDate || show.startsAt)}, ${formatTime(show.startsAt)} at ${show.venueName}`));
+  if (music.length) lines.push("", "LIVE MUSIC: NEXT 2 WEEKS", ...twoWeekMusic.map((show) => `${show.band?.name || show.title} - ${formatDate(show.performanceDate || show.startsAt)}, ${formatTime(show.startsAt)} at ${show.venueName}`));
+  if (hangarMenu.length && content.hangarMenu) lines.push("", "HANGAR BAR FOOD MENU", "See what is cooking at 688 Brewing Drive.", absoluteUrl(content.hangarMenu.url));
+  if (extras.length) lines.push("", "MORE FROM AVIATOR", ...content.highlights.flatMap((item) => [item.title, item.copy, absoluteUrl(item.url)]));
   if (locations.length) lines.push("", "LOCATIONS", ...content.locations.map((location) => `${location.name}${location.comingSoon ? " - Coming soon" : ""} - ${location.address}`));
   lines.push("", "Aviator Brewing Company", siteUrl());
   if (unsubscribeUrl) lines.push(`Leave the Flight Crew: ${unsubscribeUrl}`);

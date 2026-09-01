@@ -8,13 +8,14 @@ type Beer = { id: string; name: string; style: string; abv: string; status: stri
 type Event = { id: string; title: string; date: string; startTime: string; location: string };
 type Music = { id: string; title: string; performanceDate: string; startsAt: string; venueName: string; band: { name: string } };
 type Location = { slug: string; name: string; address: string; comingSoon?: boolean };
+type Highlight = { title: string; copy: string; url: string };
 type Welcome = { subject: string; heading: string; intro: string; history: string; speakeasy: string; special: string };
 type NewsletterData = {
   subscribers: Subscriber[];
   confirmedCount: number;
   pendingCount: number;
   campaigns: Campaign[];
-  content: { beers: Beer[]; events: Event[]; music: Music[]; locations: Location[] };
+  content: { beers: Beer[]; events: Event[]; music: Music[]; hangarMenu: { name: string; url: string } | null; highlights: Highlight[]; locations: Location[] };
   welcome: Welcome;
   managerEmail: string;
   mailConfigured: boolean;
@@ -24,28 +25,28 @@ type Draft = {
   subject: string;
   heading: string;
   message: string;
-  sections: { beers: boolean; events: boolean; music: boolean; locations: boolean };
+  sections: { beers: boolean; events: boolean; music: boolean; hangarMenu: boolean; extras: boolean; locations: boolean };
 };
 
 const templates: { id: string; name: string; description: string; draft: Draft }[] = [
   {
     id: "weekly", name: "Weekly Flight Plan", description: "A balanced roundup of beer, events, music, and destinations.",
-    draft: { template: "weekly", subject: "This week at Aviator", heading: "Your Aviator flight plan", message: "Here is what is pouring, playing, and happening around Aviator this week.", sections: { beers: true, events: true, music: true, locations: true } },
+    draft: { template: "weekly", subject: "This week at Aviator", heading: "Your Aviator flight plan", message: "Here is what is pouring, playing, and happening around Aviator this week.", sections: { beers: true, events: true, music: true, hangarMenu: true, extras: true, locations: false } },
   },
   {
     id: "beer-release", name: "Beer Release", description: "Lead with a new pour and include the complete current beer list.",
-    draft: { template: "beer-release", subject: "A new beer is cleared for takeoff", heading: "Meet the newest Aviator pour", message: "A fresh release has landed. Join us for the first pour and see what else is currently available.", sections: { beers: true, events: false, music: false, locations: true } },
+    draft: { template: "beer-release", subject: "A new beer is cleared for takeoff", heading: "Meet the newest Aviator pour", message: "A fresh release has landed. Join us for the first pour and see what else is currently available.", sections: { beers: true, events: false, music: false, hangarMenu: true, extras: true, locations: false } },
   },
   {
     id: "weekend", name: "Weekend Events", description: "Highlight special events and live music across Aviator locations.",
-    draft: { template: "weekend", subject: "Your weekend at Aviator", heading: "Make the weekend take off", message: "Live music, special events, fresh beer, and plenty of reasons to land at Aviator.", sections: { beers: false, events: true, music: true, locations: true } },
+    draft: { template: "weekend", subject: "Your weekend at Aviator", heading: "Make the weekend take off", message: "Live music, special events, fresh beer, and plenty of reasons to land at Aviator.", sections: { beers: false, events: true, music: true, hangarMenu: true, extras: true, locations: false } },
   },
 ];
 
 const emptyWelcome: Welcome = { subject: "", heading: "", intro: "", history: "", speakeasy: "", special: "" };
 const emptyData: NewsletterData = {
   subscribers: [], confirmedCount: 0, pendingCount: 0, campaigns: [],
-  content: { beers: [], events: [], music: [], locations: [] },
+  content: { beers: [], events: [], music: [], hangarMenu: null, highlights: [], locations: [] },
   welcome: emptyWelcome, managerEmail: "", mailConfigured: false,
 };
 
@@ -241,7 +242,9 @@ export function NewsletterManager() {
   const contentSections = [
     { key: "beers" as const, label: "Current beers", count: data.content.beers.length, items: data.content.beers.map((beer) => `${beer.name} - ${beer.style} - ${beer.abv}`) },
     { key: "events" as const, label: "Events", count: data.content.events.length, items: data.content.events.map((event) => `${event.title} - ${event.date} - ${event.location}`) },
-    { key: "music" as const, label: "Live music", count: data.content.music.length, items: data.content.music.map((show) => `${show.band?.name || show.title} - ${show.performanceDate} - ${show.venueName}`) },
+    { key: "music" as const, label: "Live music - next 2 weeks", count: data.content.music.length, items: data.content.music.map((show) => `${show.band?.name || show.title} - ${show.performanceDate} - ${show.venueName}`) },
+    { key: "hangarMenu" as const, label: "Hangar Bar food menu", count: data.content.hangarMenu ? 1 : 0, items: data.content.hangarMenu ? ["Current Hangar Bar food menu - linked in the email"] : [] },
+    { key: "extras" as const, label: "More from Aviator", count: data.content.highlights.length, items: data.content.highlights.map((item) => `${item.title} - ${item.copy}`) },
     { key: "locations" as const, label: "Locations", count: data.content.locations.length, items: data.content.locations.map((location) => `${location.name}${location.comingSoon ? " - Coming soon" : ""} - ${location.address}`) },
   ];
 
@@ -258,14 +261,14 @@ export function NewsletterManager() {
       <div className="newsletter-template-picker"><h3>Choose a template</h3><div>{templates.map((template) => <button type="button" key={template.id} className={draft.template === template.id ? "is-active" : ""} onClick={() => useTemplate(template)}><strong>{template.name}</strong><span>{template.description}</span></button>)}</div></div>
       <div className="newsletter-compose-grid">
         <form className="newsletter-copy-form" onSubmit={(event) => event.preventDefault()}><h3>Email copy</h3><label>Subject<input value={draft.subject} maxLength={150} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} required /></label><label>Headline<input value={draft.heading} maxLength={120} onChange={(event) => setDraft({ ...draft, heading: event.target.value })} required /></label><label>Message<textarea value={draft.message} rows={7} maxLength={5000} onChange={(event) => setDraft({ ...draft, message: event.target.value })} required /></label></form>
-        <div className="newsletter-content-selector"><h3>Live website content</h3><p>Selected sections are filled from the current beer list, events calendar, music schedule, and locations when the email is sent.</p>{contentSections.map((section) => <div className="newsletter-content-section" key={section.key}><label><input type="checkbox" checked={draft.sections[section.key]} onChange={() => toggleSection(section.key)} /><span><strong>{section.label}</strong><small>{section.count} available</small></span></label>{draft.sections[section.key] ? <ul>{section.items.length ? section.items.slice(0, 8).map((item) => <li key={item}>{item}</li>) : <li>No current items.</li>}{section.items.length > 8 ? <li>+ {section.items.length - 8} more</li> : null}</ul> : null}</div>)}</div>
+        <div className="newsletter-content-selector"><h3>Live website content</h3><p>Selected sections are filled from the current beer list, events calendar, next two weeks of music, Hangar Bar food menu, and Aviator extras when the email is sent.</p>{contentSections.map((section) => <div className="newsletter-content-section" key={section.key}><label><input type="checkbox" checked={draft.sections[section.key]} onChange={() => toggleSection(section.key)} /><span><strong>{section.label}</strong><small>{section.count} available</small></span></label>{draft.sections[section.key] ? <ul>{section.items.length ? section.items.slice(0, 8).map((item) => <li key={item}>{item}</li>) : <li>No current items.</li>}{section.items.length > 8 ? <li>+ {section.items.length - 8} more</li> : null}</ul> : null}</div>)}</div>
       </div>
       <div className="newsletter-send-bar"><div><strong>{data.mailConfigured ? "Email delivery ready" : "Email delivery is not configured"}</strong><span>Campaign tests go to {data.managerEmail || "the configured manager address"}.</span></div><button className="button button-outline" type="button" onClick={() => send("send-test")} disabled={busy || !data.mailConfigured}>{busy ? "Working..." : "Send test"}</button><button className="button" type="button" onClick={() => send("send-all")} disabled={busy || !data.mailConfigured || !data.confirmedCount}>Send to {data.confirmedCount} member{data.confirmedCount === 1 ? "" : "s"}</button></div>
       <div className="newsletter-history"><h3>Campaign history</h3>{data.campaigns.length ? <div>{data.campaigns.map((campaign) => <article key={campaign.id}><strong>{campaign.subject}</strong><span>{new Date(campaign.sentAt).toLocaleString()} - {campaign.recipients} recipients - {campaign.sections.join(", ") || "copy only"}</span></article>)}</div> : <p>No campaigns have been sent yet.</p>}</div>
     </div> : null}
 
     {view === "welcome" ? <div className="newsletter-compose flight-crew-welcome-editor">
-      <div className="newsletter-welcome-note"><h3>Automatic welcome</h3><p>This email is sent once, immediately after a new member confirms their address. Locations and the current music schedule are added automatically when it sends.</p></div>
+      <div className="newsletter-welcome-note"><h3>Automatic welcome</h3><p>This email is sent once, immediately after a new member confirms their address. Locations and the next two weeks of live music are added automatically when it sends.</p></div>
       <form className="newsletter-copy-form" onSubmit={(event) => event.preventDefault()}>
         <label>Subject<input value={welcome.subject} maxLength={150} onChange={(event) => setWelcome({ ...welcome, subject: event.target.value })} /></label>
         <label>Headline<input value={welcome.heading} maxLength={120} onChange={(event) => setWelcome({ ...welcome, heading: event.target.value })} /></label>

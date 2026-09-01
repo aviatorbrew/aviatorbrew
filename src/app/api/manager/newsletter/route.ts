@@ -6,9 +6,10 @@ import { getPortalBeers } from "@/lib/managed-beers";
 import { getPublishedEvents } from "@/lib/managed-events";
 import { getAllLocations } from "@/lib/managed-locations";
 import { getLiveMusicSchedule } from "@/lib/live-music";
+import { latestPublicMenu } from "@/lib/menu-files";
 import { getConfirmedNewsletterSubscribers, getNewsletterSubscribers, subscribeNewsletter, unsubscribeNewsletter } from "@/lib/newsletter";
 import { getNewsletterCampaigns, recordNewsletterCampaign } from "@/lib/newsletter-campaigns";
-import { buildFlightCrewWelcomeMessage, buildNewsletterMessage, type NewsletterDraft, type NewsletterSections } from "@/lib/newsletter-email";
+import { buildFlightCrewWelcomeMessage, buildNewsletterMessage, newsletterMusicForNextTwoWeeks, type NewsletterDraft, type NewsletterSections } from "@/lib/newsletter-email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ function validateDraft(value: unknown): NewsletterDraft {
       beers: source.beers === true,
       events: source.events === true,
       music: source.music === true,
+      hangarMenu: source.hangarMenu === true,
+      extras: source.extras === true,
       locations: source.locations === true,
     },
   };
@@ -51,13 +54,25 @@ function validateWelcome(value: unknown): FlightCrewWelcome {
 }
 
 async function getContent() {
-  const [beers, events, locations, liveMusic] = await Promise.all([
+  const [beers, events, locations, liveMusic, hangarMenu] = await Promise.all([
     getPortalBeers().then((items) => items.filter((beer) => beer.published !== false)),
     getPublishedEvents({ monthsAhead: 3 }),
     getAllLocations(),
     getLiveMusicSchedule(),
+    latestPublicMenu("hangar-bar", "food"),
   ]);
-  return { beers, events, locations, music: liveMusic.schedule?.shows || [] };
+  return {
+    beers,
+    events,
+    locations,
+    music: newsletterMusicForNextTwoWeeks(liveMusic.schedule?.shows || []),
+    hangarMenu,
+    highlights: [
+      { title: "Tour the brewery", copy: "See the brewhouse, hear the Aviator story, and reserve a Saturday tour.", url: "/about#brewery-tours" },
+      { title: "Join the Hangar Bar waitlist", copy: "Add your party before you arrive at 688 Brewing Drive.", url: "https://www.waitlist.me/w/aviatorhangarbar" },
+      { title: "Check the Flight Log", copy: "Catch official dispatches, customer posts, check-ins, and community updates.", url: "/flight-log" },
+    ],
+  };
 }
 
 async function responseData() {

@@ -5,8 +5,9 @@ import { isMailConfigured, sendMail } from "@/lib/mail";
 import { getPortalBeers } from "@/lib/managed-beers";
 import { getPublishedEvents } from "@/lib/managed-events";
 import { getAllLocations } from "@/lib/managed-locations";
+import { latestPublicMenu } from "@/lib/menu-files";
 import { confirmNewsletterSubscription, markNewsletterWelcomeSent } from "@/lib/newsletter";
-import { buildFlightCrewWelcomeMessage, verifyNewsletterConfirmationToken } from "@/lib/newsletter-email";
+import { buildFlightCrewWelcomeMessage, newsletterMusicForNextTwoWeeks, verifyNewsletterConfirmationToken } from "@/lib/newsletter-email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,14 +27,22 @@ export async function GET(request: NextRequest) {
     if (!result) return page("That confirmation link is invalid", "Please request a new Flight Crew confirmation email from aviatorbrew.com.", 400);
     if (result.shouldSendWelcome) {
       if (!isMailConfigured() && process.env.MAIL_MODE !== "record") throw new Error("Email delivery is not configured");
-      const [welcome, beers, events, locations, music] = await Promise.all([
+      const [welcome, beers, events, locations, music, hangarMenu] = await Promise.all([
         getFlightCrewWelcome(),
         getPortalBeers().then((items) => items.filter((beer) => beer.published !== false)),
         getPublishedEvents({ monthsAhead: 3 }),
         getAllLocations(),
         getLiveMusicSchedule(),
+        latestPublicMenu("hangar-bar", "food"),
       ]);
-      const message = buildFlightCrewWelcomeMessage(welcome, { beers, events, locations, music: music.schedule?.shows || [] }, result.subscriber.email);
+      const message = buildFlightCrewWelcomeMessage(welcome, {
+        beers,
+        events,
+        locations,
+        music: newsletterMusicForNextTwoWeeks(music.schedule?.shows || []),
+        hangarMenu,
+        highlights: [],
+      }, result.subscriber.email);
       const sent = await sendMail({ to: result.subscriber.email, subject: message.subject, text: message.text, html: message.html });
       if (!sent) throw new Error("Email delivery is not configured");
       await markNewsletterWelcomeSent(result.subscriber.email);
