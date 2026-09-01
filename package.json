@@ -22,7 +22,8 @@
     "test:shop": "node scripts/test-shop.mjs",
     "render:data:export": "node scripts/export-render-data.mjs",
     "render:data:import": "node scripts/import-render-data.mjs",
-    "shop:transparent-images": "node scripts/transparent-shop-images.mjs"
+    "shop:transparent-images": "node scripts/transparent-shop-images.mjs",
+    "aviation:refresh-flyins": "node scripts/update-national-flyins.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

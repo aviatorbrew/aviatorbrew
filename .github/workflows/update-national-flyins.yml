@@ -1,0 +1,33 @@
+name: Update national fly-in sources
+
+on:
+  schedule:
+    - cron: "22 10 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-national-flyins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run aviation:refresh-flyins
+      - run: npm run build
+      - name: Commit updated fly-in check date
+        run: |
+          if git diff --quiet -- src/data/national-flyins.ts; then
+            echo "No fly-in source update needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/national-flyins.ts
+          git commit -m "Update national fly-in sources"
+          git push
