@@ -1626,13 +1626,13 @@ body {
 .manager-top-group summary::-webkit-details-marker { display: none; }
 .manager-top-group summary strong {
   color: #c8dce6;
-.manager-top-group summary::after { content: "+"; grid-column: 2; grid-row: 1 / 3; align-self: center; margin-left: .5rem; color: #6f9ab2; font-weight: 900; }
-.manager-top-group[open] summary::after { content: "−"; color: #efb45f; }
-  font: 900 .56rem/1.15 "Courier New", monospace;
+  font: 900 .68rem/1.15 "Courier New", monospace;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-.manager-top-group summary small { margin-top: .2rem; color: #6f9ab2; font: 900 .52rem/1.1 "Courier New", monospace; text-transform: uppercase; }
+.manager-top-group summary::after { content: "+"; grid-column: 2; grid-row: 1 / 3; align-self: center; margin-left: .5rem; color: #6f9ab2; font-weight: 900; }
+.manager-top-group[open] summary::after { content: "−"; color: #efb45f; }
+.manager-top-group summary small { margin-top: .2rem; color: #6f9ab2; font: 900 .58rem/1.1 "Courier New", monospace; text-transform: uppercase; }
 .manager-top-group.is-active-group summary strong { color: #efb45f; }
 .manager-top-group-items {
   position: absolute;
@@ -1655,7 +1655,7 @@ body {
   border-right: 1px solid rgba(92, 137, 164, .28);
   color: #c8dce6;
   font-family: "Courier New", monospace;
-  font-size: .66rem;
+  font-size: .74rem;
   font-weight: 900;
   letter-spacing: 0;
   text-align: center;

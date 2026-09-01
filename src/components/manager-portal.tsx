@@ -728,6 +728,7 @@ export function ManagerPortal({ section = "overview", editId, editType, returnTo
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [resetBusy, setResetBusy] = useState(false);
+  const [openMenuGroup, setOpenMenuGroup] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/manager/session").then((response) => response.json()).then((body) => setAuthenticated(body.authenticated)).finally(() => setReady(true));
@@ -771,8 +772,8 @@ export function ManagerPortal({ section = "overview", editId, editType, returnTo
       <div className="manager-top-links">
         {managerSectionGroups.map((group) => {
           const groupActive = group.sections.some((id) => id === section);
-          return <details className={"manager-top-group" + (groupActive ? " is-active-group" : "")} key={group.id}>
-            <summary><strong>{group.label}</strong><small>{groupActive ? activeSection.label : group.sections.length + " tools"}</small></summary>
+          return <details className={"manager-top-group" + (groupActive ? " is-active-group" : "")} open={openMenuGroup === group.id} key={group.id}>
+            <summary onClick={(event) => { event.preventDefault(); setOpenMenuGroup((current) => current === group.id ? null : group.id); }}><strong>{group.label}</strong><small>{groupActive ? activeSection.label : group.sections.length + " tools"}</small></summary>
             <div className="manager-top-group-items">{group.sections.map((id) => {
               const item = managerSections.find((candidate) => candidate.id === id);
               return item ? <ManagerSectionLink item={item} active={item.id === section} key={item.id} /> : null;
