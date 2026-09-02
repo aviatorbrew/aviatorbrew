@@ -204,7 +204,8 @@ type KegEditValues = {
   hidden: boolean;
 };
 
-function kegMoney(cents?: number) { return typeof cents === "number" ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100) : "-"; }
+function kegMoney(cents?: number) { return typeof cents === "number" ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: cents % 100 === 0 ? 0 : 2, maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }).format(cents / 100) : "-"; }
+function kegDerivedPackPrice(casePriceCents: number | undefined, packsPerCase: number) { return typeof casePriceCents === "number" && casePriceCents > 0 ? Math.round(casePriceCents / packsPerCase) : undefined; }
 function kegCaseCount(item: KegInventoryItem) { return (item.case12Count || 0) + (item.case16Count || 0) || (item.caseCount || 0); }
 function kegHasInventory(item: KegInventoryItem) { return item.sixthBblKegs > 0 || item.fiftyLKegs > 0 || kegCaseCount(item) > 0; }
 function kegHasMatchedPrice(item: KegInventoryItem) { return typeof item.sixthBblPriceCents === "number" || typeof item.fiftyLPriceCents === "number" || typeof item.casePriceCents === "number" || typeof item.case12PriceCents === "number" || typeof item.case12FourPackPriceCents === "number" || typeof item.case12SixPackPriceCents === "number" || typeof item.case16PriceCents === "number" || typeof item.case16FourPackPriceCents === "number"; }
@@ -215,10 +216,12 @@ function editValues(item: KegInventoryItem): KegEditValues {
   return { beerName: item.beerName, category: item.category, packaging: item.packaging, sixthBblKegs: item.sixthBblKegs, fiftyLKegs: item.fiftyLKegs, totalBbl: item.totalBbl, sixthBblPrice: kegDollars(item.sixthBblPriceCents), fiftyLPrice: kegDollars(item.fiftyLPriceCents), caseSize: item.caseSize || "", casePrice: kegDollars(item.casePriceCents), case12Price: kegDollars(item.case12PriceCents), case12FourPackPrice: kegDollars(item.case12FourPackPriceCents), case12SixPackPrice: kegDollars(item.case12SixPackPriceCents), case16Price: kegDollars(item.case16PriceCents), case16FourPackPrice: kegDollars(item.case16FourPackPriceCents), case12Count: item.case12Count || 0, case16Count: item.case16Count || 0, caseCount: item.caseCount || 0, hidden: item.hidden === true };
 }
 function kegPackPriceSummary(item: KegInventoryItem) {
+  const case12Price = item.case12PriceCents || (/^12\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
+  const case16Price = item.case16PriceCents || (/^16\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
   return [
-    item.case12FourPackPriceCents ? "12oz 4-pack " + kegMoney(item.case12FourPackPriceCents) : "",
-    item.case12SixPackPriceCents ? "12oz 6-pack " + kegMoney(item.case12SixPackPriceCents) : "",
-    item.case16FourPackPriceCents ? "16oz 4-pack " + kegMoney(item.case16FourPackPriceCents) : "",
+    (item.case12Count || item.case12FourPackPriceCents) ? "12oz 4-pack " + kegMoney(item.case12FourPackPriceCents || kegDerivedPackPrice(case12Price, 6)) : "",
+    (item.case12Count || item.case12SixPackPriceCents) ? "12oz 6-pack " + kegMoney(item.case12SixPackPriceCents || kegDerivedPackPrice(case12Price, 4)) : "",
+    (item.case16Count || item.case16FourPackPriceCents) ? "16oz 4-pack " + kegMoney(item.case16FourPackPriceCents || kegDerivedPackPrice(case16Price, 6)) : "",
   ].filter(Boolean).join(" · ");
 }
 function pdfText(value: string) { return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)"); }

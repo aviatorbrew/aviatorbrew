@@ -37,8 +37,12 @@ const packageChoices: PackageOption[] = [
 
 function money(cents?: number) {
   return typeof cents === "number" && cents > 0
-    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100)
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: cents % 100 === 0 ? 0 : 2, maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }).format(cents / 100)
     : "";
+}
+
+function derivedPackPrice(casePriceCents: number | undefined, packsPerCase: number) {
+  return typeof casePriceCents === "number" && casePriceCents > 0 ? Math.round(casePriceCents / packsPerCase) : undefined;
 }
 
 function countForPackage(item: KegItem, packageSize: PackageSize) {
@@ -56,11 +60,12 @@ function priceForPackage(item: KegItem, packageSize: PackageSize) {
 }
 
 function packPricesForPackage(item: KegItem, packageSize: PackageSize): PackPrice[] {
+  const casePrice = priceForPackage(item, packageSize);
   if (packageSize === "12 oz cases") return [
-    { label: "4-pack", price: item.case12FourPackPriceCents },
-    { label: "6-pack", price: item.case12SixPackPriceCents },
+    { label: "4-pack", price: item.case12FourPackPriceCents || derivedPackPrice(casePrice, 6) },
+    { label: "6-pack", price: item.case12SixPackPriceCents || derivedPackPrice(casePrice, 4) },
   ].filter((row) => Number(row.price || 0) > 0);
-  if (packageSize === "16 oz cases") return [{ label: "4-pack", price: item.case16FourPackPriceCents }].filter((row) => Number(row.price || 0) > 0);
+  if (packageSize === "16 oz cases") return [{ label: "4-pack", price: item.case16FourPackPriceCents || derivedPackPrice(casePrice, 6) }].filter((row) => Number(row.price || 0) > 0);
   return [];
 }
 
