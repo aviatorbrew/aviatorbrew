@@ -136,14 +136,14 @@ function packPriceFromCase(casePriceCents: number | undefined, packsPerCase: num
   return typeof casePriceCents === "number" && casePriceCents > 0 ? Math.round(casePriceCents / packsPerCase) : undefined;
 }
 
-function oneConfiguredCase12PackPrice(case12PriceCents: number | undefined, fourPackPriceCents: number | undefined, sixPackPriceCents: number | undefined) {
+function oneConfiguredCase12PackPrice(case12PriceCents: number | undefined, fourPackPriceCents: number | undefined, sixPackPriceCents: number | undefined, hasCases = true) {
   if (Number(fourPackPriceCents || 0) > 0) return { case12FourPackPriceCents: fourPackPriceCents, case12SixPackPriceCents: undefined };
   if (Number(sixPackPriceCents || 0) > 0) return { case12FourPackPriceCents: undefined, case12SixPackPriceCents: sixPackPriceCents };
-  return { case12FourPackPriceCents: undefined, case12SixPackPriceCents: packPriceFromCase(case12PriceCents, 4) };
+  return { case12FourPackPriceCents: undefined, case12SixPackPriceCents: hasCases ? packPriceFromCase(case12PriceCents, 4) : undefined };
 }
 
-function configuredCase16FourPackPrice(case16PriceCents: number | undefined, fourPackPriceCents: number | undefined) {
-  return Number(fourPackPriceCents || 0) > 0 ? fourPackPriceCents : packPriceFromCase(case16PriceCents, 6);
+function configuredCase16FourPackPrice(case16PriceCents: number | undefined, fourPackPriceCents: number | undefined, hasCases = true) {
+  return Number(fourPackPriceCents || 0) > 0 ? fourPackPriceCents : hasCases ? packPriceFromCase(case16PriceCents, 6) : undefined;
 }
 
 function visibleKegItem(item: KegInventoryItem) {
@@ -168,7 +168,9 @@ async function readDatabaseKegInventory(options: { includeHidden?: boolean } = {
     const items = result.rows.map((row): KegInventoryItem => {
       const case12PriceCents = centsFromDollars(row.case_12oz_price);
       const case16PriceCents = centsFromDollars(row.case_16oz_price);
-      const case12PackPrices = oneConfiguredCase12PackPrice(case12PriceCents, centsFromDollars(row.case_12oz_four_pack_price), centsFromDollars(row.case_12oz_six_pack_price));
+      const case12Count = Number(row.cases_12oz) || 0;
+      const case16Count = Number(row.cases_16oz) || 0;
+      const case12PackPrices = oneConfiguredCase12PackPrice(case12PriceCents, centsFromDollars(row.case_12oz_four_pack_price), centsFromDollars(row.case_12oz_six_pack_price), case12Count > 0);
       return {
         beerName: row.beer_name,
         category: row.category || "Other",
@@ -183,10 +185,10 @@ async function readDatabaseKegInventory(options: { includeHidden?: boolean } = {
         case12PriceCents,
         ...case12PackPrices,
         case16PriceCents,
-        case16FourPackPriceCents: configuredCase16FourPackPrice(case16PriceCents, centsFromDollars(row.case_16oz_four_pack_price)),
-        case12Count: Number(row.cases_12oz) || 0,
-        case16Count: Number(row.cases_16oz) || 0,
-        caseCount: (Number(row.cases_12oz) || 0) + (Number(row.cases_16oz) || 0),
+        case16FourPackPriceCents: configuredCase16FourPackPrice(case16PriceCents, centsFromDollars(row.case_16oz_four_pack_price), case16Count > 0),
+        case12Count,
+        case16Count,
+        caseCount: case12Count + case16Count,
         hidden: row.hidden === true ? true : undefined,
         sixtelsAvailableViaBackfill: Number(row.sixtels_available_via_backfill) || 0,
       };
@@ -367,8 +369,8 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
     const caseSize = importedCaseSize || (case12PriceCents || case12Count ? "12oz" : case16PriceCents || case16Count ? "16oz" : casePriceCents || caseCount ? "Case" : "");
     const effectiveCase12PriceCents = case12PriceCents ?? (/^12\s*oz$/i.test(caseSize) ? casePriceCents : undefined);
     const effectiveCase16PriceCents = case16PriceCents ?? (/^16\s*oz$/i.test(caseSize) ? casePriceCents : undefined);
-    const configuredCase12PackPrices = oneConfiguredCase12PackPrice(effectiveCase12PriceCents, case12FourPackPriceCents, case12SixPackPriceCents);
-    const configuredCase16FourPackPriceCents = configuredCase16FourPackPrice(effectiveCase16PriceCents, case16FourPackPriceCents);
+    const configuredCase12PackPrices = oneConfiguredCase12PackPrice(effectiveCase12PriceCents, case12FourPackPriceCents, case12SixPackPriceCents, case12Count > 0);
+    const configuredCase16FourPackPriceCents = configuredCase16FourPackPrice(effectiveCase16PriceCents, case16FourPackPriceCents, case16Count > 0);
     const hasDraft = sixthBblKegs > 0 || fiftyLKegs > 0;
     const hasCases = case12Count > 0 || case16Count > 0 || caseCount > 0;
     const packaging = text(field(item, ["packaging", "Packaging", "Package Size", "Package", "Format"]), 80) || (hasDraft && hasCases ? "Draft/Cans" : hasCases ? "Cans" : "Draft");

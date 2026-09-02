@@ -208,7 +208,8 @@
     "beerName": "Black Cherry",
     "packaging": "Cans",
     "caseSize": "12oz",
-    "casePriceCents": 4500
+    "casePriceCents": 4500,
+    "case12FourPackPriceCents": 999
   },
   {
     "category": "Seltzer",
