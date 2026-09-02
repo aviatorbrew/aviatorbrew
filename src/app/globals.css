@@ -1979,7 +1979,7 @@ body {
 
 /* Compact public keg and package sales grid. */
 .keg-table-compact {
-  min-width: 58rem;
+  min-width: 64rem;
   table-layout: fixed;
 }
 .keg-table-compact th,
@@ -1991,13 +1991,14 @@ body {
   letter-spacing: 0;
   white-space: nowrap;
 }
-.keg-table-compact th:first-child { width: 24%; }
+.keg-table-compact th:first-child { width: 20%; }
 .keg-table-compact th:nth-child(2),
 .keg-table-compact th:nth-child(3),
 .keg-table-compact th:nth-child(4),
 .keg-table-compact th:nth-child(5),
 .keg-table-compact th:nth-child(6),
-.keg-table-compact th:nth-child(7) { width: 11%; text-align: center; }
+.keg-table-compact th:nth-child(7),
+.keg-table-compact th:nth-child(8) { width: 10%; text-align: center; }
 .keg-table-compact th:last-child { width: 10%; }
 .keg-table-compact td { text-align: center; }
 .keg-table-compact tbody th { font-size: .86rem; line-height: 1.15; }
@@ -2050,15 +2051,14 @@ body {
   font: 900 .62rem/1.1 "Courier New", monospace;
   text-transform: uppercase;
 }
-.keg-pack-price-cell b { color: #f4f8fa; }
-.keg-pack-price-cell strong { color: #efb45c; font-size: .78rem; }
+.keg-pack-price-cell strong { color: #efb45c; font-size: .82rem; }
 .keg-stock-empty { color: #668798; }
 .keg-table-compact .keg-order-button { padding: .42rem .48rem; font-size: .58rem; letter-spacing: 0; }
 @media (max-width: 700px) {
-  .keg-table-compact { min-width: 52rem; }
+  .keg-table-compact { min-width: 58rem; }
   .keg-table-compact th,
   .keg-table-compact td { padding: .42rem .4rem; }
-  .keg-table-compact th:first-child { width: 22%; }
+  .keg-table-compact th:first-child { width: 20%; }
   .keg-stock-cell { gap: .08rem; }
   .keg-stock-main { grid-template-columns: 1fr; gap: .08rem; }
 }

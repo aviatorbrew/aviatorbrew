@@ -132,6 +132,20 @@ function centsFromDollars(value: unknown) {
   return Number.isFinite(number) ? Math.round(number * 100) : 0;
 }
 
+function packPriceFromCase(casePriceCents: number | undefined, packsPerCase: number) {
+  return typeof casePriceCents === "number" && casePriceCents > 0 ? Math.round(casePriceCents / packsPerCase) : undefined;
+}
+
+function oneConfiguredCase12PackPrice(case12PriceCents: number | undefined, fourPackPriceCents: number | undefined, sixPackPriceCents: number | undefined) {
+  if (Number(fourPackPriceCents || 0) > 0) return { case12FourPackPriceCents: fourPackPriceCents, case12SixPackPriceCents: undefined };
+  if (Number(sixPackPriceCents || 0) > 0) return { case12FourPackPriceCents: undefined, case12SixPackPriceCents: sixPackPriceCents };
+  return { case12FourPackPriceCents: undefined, case12SixPackPriceCents: packPriceFromCase(case12PriceCents, 4) };
+}
+
+function configuredCase16FourPackPrice(case16PriceCents: number | undefined, fourPackPriceCents: number | undefined) {
+  return Number(fourPackPriceCents || 0) > 0 ? fourPackPriceCents : packPriceFromCase(case16PriceCents, 6);
+}
+
 function visibleKegItem(item: KegInventoryItem) {
   return item.hidden !== true && (item.sixthBblKegs > 0 || item.fiftyLKegs > 0 || (item.case12Count || 0) > 0 || (item.case16Count || 0) > 0 || (item.caseCount || 0) > 0);
 }
@@ -151,28 +165,32 @@ async function readDatabaseKegInventory(options: { includeHidden?: boolean } = {
     const hasDatabaseInventoryState = (metaResult.rowCount || 0) > 0;
     if (result.rowCount === 0 && !hasDatabaseInventoryState) return null;
     const meta = metaResult.rows[0]?.value && typeof metaResult.rows[0].value === "object" ? metaResult.rows[0].value as Partial<KegInventory> : {};
-    const items = result.rows.map((row): KegInventoryItem => ({
-      beerName: row.beer_name,
-      category: row.category || "Other",
-      packaging: row.packaging || "Draft",
-      sixthBblKegs: Number(row.sixth_bbl_kegs) || 0,
-      fiftyLKegs: Number(row.fifty_l_kegs) || 0,
-      totalBbl: Number(row.total_bbl) || 0,
-      sixthBblPriceCents: centsFromDollars(row.sixth_bbl_price),
-      fiftyLPriceCents: centsFromDollars(row.fifty_l_price),
-      caseSize: row.case_size || undefined,
-      casePriceCents: centsFromDollars(row.case_price),
-      case12PriceCents: centsFromDollars(row.case_12oz_price),
-      case12FourPackPriceCents: centsFromDollars(row.case_12oz_four_pack_price),
-      case12SixPackPriceCents: centsFromDollars(row.case_12oz_six_pack_price),
-      case16PriceCents: centsFromDollars(row.case_16oz_price),
-      case16FourPackPriceCents: centsFromDollars(row.case_16oz_four_pack_price),
-      case12Count: Number(row.cases_12oz) || 0,
-      case16Count: Number(row.cases_16oz) || 0,
-      caseCount: (Number(row.cases_12oz) || 0) + (Number(row.cases_16oz) || 0),
-      hidden: row.hidden === true ? true : undefined,
-      sixtelsAvailableViaBackfill: Number(row.sixtels_available_via_backfill) || 0,
-    }));
+    const items = result.rows.map((row): KegInventoryItem => {
+      const case12PriceCents = centsFromDollars(row.case_12oz_price);
+      const case16PriceCents = centsFromDollars(row.case_16oz_price);
+      const case12PackPrices = oneConfiguredCase12PackPrice(case12PriceCents, centsFromDollars(row.case_12oz_four_pack_price), centsFromDollars(row.case_12oz_six_pack_price));
+      return {
+        beerName: row.beer_name,
+        category: row.category || "Other",
+        packaging: row.packaging || "Draft",
+        sixthBblKegs: Number(row.sixth_bbl_kegs) || 0,
+        fiftyLKegs: Number(row.fifty_l_kegs) || 0,
+        totalBbl: Number(row.total_bbl) || 0,
+        sixthBblPriceCents: centsFromDollars(row.sixth_bbl_price),
+        fiftyLPriceCents: centsFromDollars(row.fifty_l_price),
+        caseSize: row.case_size || undefined,
+        casePriceCents: centsFromDollars(row.case_price),
+        case12PriceCents,
+        ...case12PackPrices,
+        case16PriceCents,
+        case16FourPackPriceCents: configuredCase16FourPackPrice(case16PriceCents, centsFromDollars(row.case_16oz_four_pack_price)),
+        case12Count: Number(row.cases_12oz) || 0,
+        case16Count: Number(row.cases_16oz) || 0,
+        caseCount: (Number(row.cases_12oz) || 0) + (Number(row.cases_16oz) || 0),
+        hidden: row.hidden === true ? true : undefined,
+        sixtelsAvailableViaBackfill: Number(row.sixtels_available_via_backfill) || 0,
+      };
+    });
     const filtered = options.includeHidden ? items : items.filter(visibleKegItem);
     const now = new Date().toISOString();
     return {
@@ -347,6 +365,10 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
     const case16Count = importedCase16Count ?? (/^16\s*oz$/i.test(importedCaseSize) ? rawCaseCount ?? 0 : 0);
     const caseCount = rawCaseCount ?? case12Count + case16Count;
     const caseSize = importedCaseSize || (case12PriceCents || case12Count ? "12oz" : case16PriceCents || case16Count ? "16oz" : casePriceCents || caseCount ? "Case" : "");
+    const effectiveCase12PriceCents = case12PriceCents ?? (/^12\s*oz$/i.test(caseSize) ? casePriceCents : undefined);
+    const effectiveCase16PriceCents = case16PriceCents ?? (/^16\s*oz$/i.test(caseSize) ? casePriceCents : undefined);
+    const configuredCase12PackPrices = oneConfiguredCase12PackPrice(effectiveCase12PriceCents, case12FourPackPriceCents, case12SixPackPriceCents);
+    const configuredCase16FourPackPriceCents = configuredCase16FourPackPrice(effectiveCase16PriceCents, case16FourPackPriceCents);
     const hasDraft = sixthBblKegs > 0 || fiftyLKegs > 0;
     const hasCases = case12Count > 0 || case16Count > 0 || caseCount > 0;
     const packaging = text(field(item, ["packaging", "Packaging", "Package Size", "Package", "Format"]), 80) || (hasDraft && hasCases ? "Draft/Cans" : hasCases ? "Cans" : "Draft");
@@ -363,10 +385,10 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
       ...(caseSize ? { caseSize } : {}),
       ...(casePriceCents === undefined ? case12PriceCents === undefined ? case16PriceCents === undefined ? {} : { casePriceCents: case16PriceCents } : { casePriceCents: case12PriceCents } : { casePriceCents }),
       ...(case12PriceCents === undefined ? {} : { case12PriceCents }),
-      ...(case12FourPackPriceCents === undefined ? {} : { case12FourPackPriceCents }),
-      ...(case12SixPackPriceCents === undefined ? {} : { case12SixPackPriceCents }),
+      ...(configuredCase12PackPrices.case12FourPackPriceCents === undefined ? {} : { case12FourPackPriceCents: configuredCase12PackPrices.case12FourPackPriceCents }),
+      ...(configuredCase12PackPrices.case12SixPackPriceCents === undefined ? {} : { case12SixPackPriceCents: configuredCase12PackPrices.case12SixPackPriceCents }),
       ...(case16PriceCents === undefined ? {} : { case16PriceCents }),
-      ...(case16FourPackPriceCents === undefined ? {} : { case16FourPackPriceCents }),
+      ...(configuredCase16FourPackPriceCents === undefined ? {} : { case16FourPackPriceCents: configuredCase16FourPackPriceCents }),
       case12Count,
       case16Count,
       caseCount,
