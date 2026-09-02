@@ -78,9 +78,9 @@ function money(cents?: number) {
 
 function packagedAvailability(item: KegInventoryItem) {
   const details: string[] = [];
-  if ((item.case12Count || 0) > 0) details.push(`${item.case12Count} 12 oz case${item.case12Count === 1 ? "" : "s"}${money(item.case12PriceCents || item.casePriceCents) ? ` at ${money(item.case12PriceCents || item.casePriceCents)}` : ""}`);
-  if ((item.case16Count || 0) > 0) details.push(`${item.case16Count} 16 oz case${item.case16Count === 1 ? "" : "s"}${money(item.case16PriceCents || item.casePriceCents) ? ` at ${money(item.case16PriceCents || item.casePriceCents)}` : ""}`);
-  if ((item.caseCount || 0) > 0 && !(item.case12Count || item.case16Count)) details.push(`${item.caseCount} ${item.caseSize || "case"}${item.caseCount === 1 ? "" : "s"}${money(item.casePriceCents) ? ` at ${money(item.casePriceCents)}` : ""}`);
+  if ((item.case12Count || 0) > 0) details.push(`12 oz cases${money(item.case12PriceCents || item.casePriceCents) ? ` at ${money(item.case12PriceCents || item.casePriceCents)}` : ""}`);
+  if ((item.case16Count || 0) > 0) details.push(`16 oz cases${money(item.case16PriceCents || item.casePriceCents) ? ` at ${money(item.case16PriceCents || item.casePriceCents)}` : ""}`);
+  if ((item.caseCount || 0) > 0 && !(item.case12Count || item.case16Count)) details.push(`${item.caseSize || "cases"}${money(item.casePriceCents) ? ` at ${money(item.casePriceCents)}` : ""}`);
   return details.join(" · ");
 }
 
