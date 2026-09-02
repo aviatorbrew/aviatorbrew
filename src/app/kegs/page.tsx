@@ -15,7 +15,7 @@ export default async function KegsPage() {
   const kegData = await getKegs();
   const stamp = kegData?.updatedAt ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(kegData.updatedAt)) : null;
   return <main>
-    <section className="section keg-inventory-section"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Current inventory</p><h2>Beer Kegs, Cases, 6-packs, and 4-packs for sale at the brewery</h2></div><p>{stamp ? "Inventory updated " + stamp + "." : "Today's keg/package inventory will be posted shortly."}</p></div>
+    <section className="section keg-inventory-section"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Current inventory</p><h2>Beer Kegs, Cases, 6-packs, and 4-packs for sale at the brewery<br /><em>Cleared for takeoff.</em></h2></div><p>{stamp ? "Inventory updated " + stamp + "." : "Today's keg/package inventory will be posted shortly."}</p></div>
       {kegData && kegData.items.length > 0 ? <><KegOrderForm items={kegData.items} />{kegData.backfillPickupNote ? <p className="keg-note">{kegData.backfillPickupNote}</p> : null}</> : <div className="keg-unavailable"><p className="eyebrow">No kegs available</p><h2>Keg inventory is <em>sold out.</em></h2><p>No kegs or packages are currently listed for sale. Please contact the Aviator team for today&apos;s availability or check back after the next inventory update.</p><a className="button" href="mailto:orders@aviatorbrew.com?subject=Keg%20Sales%20Request">Contact sales <ArrowUpRight /></a></div>}
       <Link className="section-link" href="/more">Back to more Aviator services <ArrowUpRight /></Link>
     </div></section>
