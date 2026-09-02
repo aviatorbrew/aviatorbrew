@@ -14,7 +14,10 @@ export type KegInventoryItem = {
   caseSize?: string;
   casePriceCents?: number;
   case12PriceCents?: number;
+  case12FourPackPriceCents?: number;
+  case12SixPackPriceCents?: number;
   case16PriceCents?: number;
+  case16FourPackPriceCents?: number;
   case12Count?: number;
   case16Count?: number;
   caseCount?: number;
@@ -138,7 +141,8 @@ async function readDatabaseKegInventory(options: { includeHidden?: boolean } = {
   return withDatabase(async (client) => {
     const result = await client.query(
       `SELECT beer_name, normalized_name, category, packaging, sixth_bbl_kegs, sixth_bbl_price, fifty_l_kegs, fifty_l_price,
-              cases_12oz, case_12oz_price, cases_16oz, case_16oz_price, case_size, case_price,
+              cases_12oz, case_12oz_price, case_12oz_four_pack_price, case_12oz_six_pack_price,
+              cases_16oz, case_16oz_price, case_16oz_four_pack_price, case_size, case_price,
               total_bbl, inventory_value, batches, source_file, imported_at, updated_at, hidden, sixtels_available_via_backfill
        FROM website.keg_package_inventory
        ORDER BY beer_name`,
@@ -159,7 +163,10 @@ async function readDatabaseKegInventory(options: { includeHidden?: boolean } = {
       caseSize: row.case_size || undefined,
       casePriceCents: centsFromDollars(row.case_price),
       case12PriceCents: centsFromDollars(row.case_12oz_price),
+      case12FourPackPriceCents: centsFromDollars(row.case_12oz_four_pack_price),
+      case12SixPackPriceCents: centsFromDollars(row.case_12oz_six_pack_price),
       case16PriceCents: centsFromDollars(row.case_16oz_price),
+      case16FourPackPriceCents: centsFromDollars(row.case_16oz_four_pack_price),
       case12Count: Number(row.cases_12oz) || 0,
       case16Count: Number(row.cases_16oz) || 0,
       caseCount: (Number(row.cases_12oz) || 0) + (Number(row.cases_16oz) || 0),
@@ -192,9 +199,10 @@ async function saveDatabaseKegInventory(inventory: KegInventory) {
         await client.query(
           `INSERT INTO website.keg_package_inventory (
              beer_name, normalized_name, category, packaging, sixth_bbl_kegs, sixth_bbl_price, fifty_l_kegs, fifty_l_price,
-             cases_12oz, case_12oz_price, cases_16oz, case_16oz_price, case_size, case_price,
+             cases_12oz, case_12oz_price, case_12oz_four_pack_price, case_12oz_six_pack_price,
+             cases_16oz, case_16oz_price, case_16oz_four_pack_price, case_size, case_price,
              total_bbl, inventory_value, batches, source_file, imported_at, updated_at, hidden, sixtels_available_via_backfill
-           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,now(),now(),$19,$20)
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,now(),now(),$22,$23)
            ON CONFLICT (normalized_name) DO UPDATE SET
              beer_name = EXCLUDED.beer_name,
              category = EXCLUDED.category,
@@ -205,8 +213,11 @@ async function saveDatabaseKegInventory(inventory: KegInventory) {
              fifty_l_price = EXCLUDED.fifty_l_price,
              cases_12oz = EXCLUDED.cases_12oz,
              case_12oz_price = EXCLUDED.case_12oz_price,
+             case_12oz_four_pack_price = EXCLUDED.case_12oz_four_pack_price,
+             case_12oz_six_pack_price = EXCLUDED.case_12oz_six_pack_price,
              cases_16oz = EXCLUDED.cases_16oz,
              case_16oz_price = EXCLUDED.case_16oz_price,
+             case_16oz_four_pack_price = EXCLUDED.case_16oz_four_pack_price,
              case_size = EXCLUDED.case_size,
              case_price = EXCLUDED.case_price,
              total_bbl = EXCLUDED.total_bbl,
@@ -227,8 +238,11 @@ async function saveDatabaseKegInventory(inventory: KegInventory) {
             dollarsFromCents(item.fiftyLPriceCents),
             item.case12Count || 0,
             dollarsFromCents(item.case12PriceCents),
+            dollarsFromCents(item.case12FourPackPriceCents),
+            dollarsFromCents(item.case12SixPackPriceCents),
             item.case16Count || 0,
             dollarsFromCents(item.case16PriceCents),
+            dollarsFromCents(item.case16FourPackPriceCents),
             item.caseSize || null,
             dollarsFromCents(item.casePriceCents),
             item.totalBbl || 0,
@@ -319,7 +333,10 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
     const sixthBblPriceCents = firstCents(item, ["sixthBblPriceCents", "sixthBblPrice", "1/6 BBL Price", "1/6 BBL Keg Price", "Sixtel Price", "Sixtel Keg Price", "1/6 Price"]);
     const fiftyLPriceCents = firstCents(item, ["fiftyLPriceCents", "fiftyLPrice", "50L Price", "50 L Price", "50L Keg Price", "50 L Keg Price", "1/2 BBL Price", "Half BBL Price"]);
     const case12PriceCents = firstCents(item, ["case12PriceCents", "case12ozPrice", "cases12ozPrice", "12oz Case Price", "12 oz Case Price", "12oz Price", "12 oz Price"]);
+    const case12FourPackPriceCents = firstCents(item, ["case12FourPackPriceCents", "case12FourPackPrice", "case12ozFourPackPrice", "case12oz4PackPrice", "12oz 4 Pack Price", "12 oz 4 Pack Price", "12oz 4-pack Price", "12 oz 4-pack Price"]);
+    const case12SixPackPriceCents = firstCents(item, ["case12SixPackPriceCents", "case12SixPackPrice", "case12ozSixPackPrice", "case12oz6PackPrice", "12oz 6 Pack Price", "12 oz 6 Pack Price", "12oz 6-pack Price", "12 oz 6-pack Price"]);
     const case16PriceCents = firstCents(item, ["case16PriceCents", "case16ozPrice", "cases16ozPrice", "16oz Case Price", "16 oz Case Price", "16oz Price", "16 oz Price"]);
+    const case16FourPackPriceCents = firstCents(item, ["case16FourPackPriceCents", "case16FourPackPrice", "case16ozFourPackPrice", "case16oz4PackPrice", "16oz 4 Pack Price", "16 oz 4 Pack Price", "16oz 4-pack Price", "16 oz 4-pack Price"]);
     const casePriceCents = firstCents(item, ["casePriceCents", "casePrice", "Case Price"]);
     const rawCaseCount = count(field(item, ["caseCount", "Cases", "Case Count"]));
     const importedCaseSize = text(field(item, ["caseSize", "Case Size"]), 24);
@@ -345,7 +362,10 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
       ...(caseSize ? { caseSize } : {}),
       ...(casePriceCents === undefined ? case12PriceCents === undefined ? case16PriceCents === undefined ? {} : { casePriceCents: case16PriceCents } : { casePriceCents: case12PriceCents } : { casePriceCents }),
       ...(case12PriceCents === undefined ? {} : { case12PriceCents }),
+      ...(case12FourPackPriceCents === undefined ? {} : { case12FourPackPriceCents }),
+      ...(case12SixPackPriceCents === undefined ? {} : { case12SixPackPriceCents }),
       ...(case16PriceCents === undefined ? {} : { case16PriceCents }),
+      ...(case16FourPackPriceCents === undefined ? {} : { case16FourPackPriceCents }),
       case12Count,
       case16Count,
       caseCount,
@@ -439,7 +459,10 @@ export type KegInventoryPatch = {
   caseSize?: string;
   casePriceCents?: unknown;
   case12PriceCents?: unknown;
+  case12FourPackPriceCents?: unknown;
+  case12SixPackPriceCents?: unknown;
   case16PriceCents?: unknown;
+  case16FourPackPriceCents?: unknown;
   case12Count?: unknown;
   case16Count?: unknown;
   caseCount?: unknown;
@@ -499,7 +522,10 @@ export async function updateKegItem(patch: KegInventoryPatch) {
     caseSize: text(patch.caseSize, 24) || undefined,
     ...(cents(patch.casePriceCents) === undefined ? { casePriceCents: undefined } : { casePriceCents: cents(patch.casePriceCents) }),
     ...(cents(patch.case12PriceCents) === undefined ? { case12PriceCents: target.case12PriceCents } : { case12PriceCents: cents(patch.case12PriceCents) }),
+    ...(cents(patch.case12FourPackPriceCents) === undefined ? { case12FourPackPriceCents: target.case12FourPackPriceCents } : { case12FourPackPriceCents: cents(patch.case12FourPackPriceCents) }),
+    ...(cents(patch.case12SixPackPriceCents) === undefined ? { case12SixPackPriceCents: target.case12SixPackPriceCents } : { case12SixPackPriceCents: cents(patch.case12SixPackPriceCents) }),
     ...(cents(patch.case16PriceCents) === undefined ? { case16PriceCents: target.case16PriceCents } : { case16PriceCents: cents(patch.case16PriceCents) }),
+    ...(cents(patch.case16FourPackPriceCents) === undefined ? { case16FourPackPriceCents: target.case16FourPackPriceCents } : { case16FourPackPriceCents: cents(patch.case16FourPackPriceCents) }),
     case12Count,
     case16Count,
     caseCount,

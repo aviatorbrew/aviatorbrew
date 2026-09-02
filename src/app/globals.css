@@ -2002,11 +2002,17 @@ body {
 .keg-table-compact tbody th small { margin-top: .18rem; font-size: .62rem; line-height: 1.2; }
 .keg-stock-cell {
   display: inline-grid;
+  gap: .22rem;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.keg-stock-main {
+  display: inline-grid;
   grid-template-columns: auto auto;
   gap: .35rem;
   align-items: baseline;
   justify-content: center;
-  white-space: nowrap;
 }
 .keg-stock-cell b {
   color: #f4f8fa;
@@ -2035,6 +2041,18 @@ body {
   font-size: .58rem;
   font-style: normal;
 }
+.keg-pack-price-list {
+  display: grid;
+  gap: .08rem;
+  color: #a8c8d8;
+  font: 700 .56rem/1.2 "Courier New", monospace;
+  text-transform: uppercase;
+}
+.keg-pack-price-list strong {
+  display: inline;
+  color: #efb45c;
+  font-size: .56rem;
+}
 .keg-stock-empty { color: #668798; }
 .keg-table-compact .keg-order-button { padding: .42rem .48rem; font-size: .58rem; letter-spacing: 0; }
 @media (max-width: 700px) {
@@ -2042,7 +2060,8 @@ body {
   .keg-table-compact th,
   .keg-table-compact td { padding: .42rem .4rem; }
   .keg-table-compact th:first-child { width: 29%; }
-  .keg-stock-cell { grid-template-columns: 1fr; gap: .08rem; }
+  .keg-stock-cell { gap: .08rem; }
+  .keg-stock-main { grid-template-columns: 1fr; gap: .08rem; }
 }
 
 .location-detail-stack { display: grid; gap: 2rem; }

@@ -79,7 +79,10 @@ function money(cents?: number) {
 function packagedAvailability(item: KegInventoryItem) {
   const details: string[] = [];
   if ((item.case12Count || 0) > 0) details.push(`12 oz cases${money(item.case12PriceCents || item.casePriceCents) ? ` at ${money(item.case12PriceCents || item.casePriceCents)}` : ""}`);
+  if (item.case12FourPackPriceCents) details.push(`12 oz 4-packs at ${money(item.case12FourPackPriceCents)}`);
+  if (item.case12SixPackPriceCents) details.push(`12 oz 6-packs at ${money(item.case12SixPackPriceCents)}`);
   if ((item.case16Count || 0) > 0) details.push(`16 oz cases${money(item.case16PriceCents || item.casePriceCents) ? ` at ${money(item.case16PriceCents || item.casePriceCents)}` : ""}`);
+  if (item.case16FourPackPriceCents) details.push(`16 oz 4-packs at ${money(item.case16FourPackPriceCents)}`);
   if ((item.caseCount || 0) > 0 && !(item.case12Count || item.case16Count)) details.push(`${item.caseSize || "cases"}${money(item.casePriceCents) ? ` at ${money(item.casePriceCents)}` : ""}`);
   return details.join(" · ");
 }
