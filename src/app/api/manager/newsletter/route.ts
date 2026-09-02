@@ -76,19 +76,16 @@ function money(cents?: number) {
     : "";
 }
 
-function packagePrice(priceCents: number | undefined, packsPerCase: number) {
-  return typeof priceCents === "number" && priceCents > 0 ? Math.round(priceCents / packsPerCase) : undefined;
-}
 
 function packagedAvailability(item: KegInventoryItem) {
   const details: string[] = [];
   const case12Price = item.case12PriceCents || (/^12\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
   const case16Price = item.case16PriceCents || (/^16\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
   if ((item.case12Count || 0) > 0) details.push(`12 oz cases${money(case12Price) ? ` at ${money(case12Price)}` : ""}`);
-  if ((item.case12Count || 0) > 0 || item.case12FourPackPriceCents) details.push(`12 oz 4-packs at ${money(item.case12FourPackPriceCents || packagePrice(case12Price, 6))}`);
-  if ((item.case12Count || 0) > 0 || item.case12SixPackPriceCents) details.push(`12 oz 6-packs at ${money(item.case12SixPackPriceCents || packagePrice(case12Price, 4))}`);
+  if (item.case12FourPackPriceCents) details.push(`12 oz 4-packs at ${money(item.case12FourPackPriceCents)}`);
+  else if (item.case12SixPackPriceCents) details.push(`12 oz 6-packs at ${money(item.case12SixPackPriceCents)}`);
   if ((item.case16Count || 0) > 0) details.push(`16 oz cases${money(case16Price) ? ` at ${money(case16Price)}` : ""}`);
-  if ((item.case16Count || 0) > 0 || item.case16FourPackPriceCents) details.push(`16 oz 4-packs at ${money(item.case16FourPackPriceCents || packagePrice(case16Price, 6))}`);
+  if (item.case16FourPackPriceCents) details.push(`16 oz 4-packs at ${money(item.case16FourPackPriceCents)}`);
   if ((item.caseCount || 0) > 0 && !(item.case12Count || item.case16Count)) details.push(`${item.caseSize || "cases"}${money(item.casePriceCents) ? ` at ${money(item.casePriceCents)}` : ""}`);
   return details.filter((item) => !item.endsWith(" at ")).join(" · ");
 }

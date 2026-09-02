@@ -1979,7 +1979,7 @@ body {
 
 /* Compact public keg and package sales grid. */
 .keg-table-compact {
-  min-width: 43rem;
+  min-width: 58rem;
   table-layout: fixed;
 }
 .keg-table-compact th,
@@ -1991,12 +1991,14 @@ body {
   letter-spacing: 0;
   white-space: nowrap;
 }
-.keg-table-compact th:first-child { width: 31%; }
+.keg-table-compact th:first-child { width: 24%; }
 .keg-table-compact th:nth-child(2),
 .keg-table-compact th:nth-child(3),
 .keg-table-compact th:nth-child(4),
-.keg-table-compact th:nth-child(5) { width: 14.5%; text-align: center; }
-.keg-table-compact th:last-child { width: 11%; }
+.keg-table-compact th:nth-child(5),
+.keg-table-compact th:nth-child(6),
+.keg-table-compact th:nth-child(7) { width: 11%; text-align: center; }
+.keg-table-compact th:last-child { width: 10%; }
 .keg-table-compact td { text-align: center; }
 .keg-table-compact tbody th { font-size: .86rem; line-height: 1.15; }
 .keg-table-compact tbody th small { margin-top: .18rem; font-size: .62rem; line-height: 1.2; }
@@ -2041,25 +2043,22 @@ body {
   font-size: .58rem;
   font-style: normal;
 }
-.keg-pack-price-list {
-  display: grid;
-  gap: .08rem;
+.keg-pack-price-cell {
+  display: inline-grid;
+  gap: .1rem;
   color: #a8c8d8;
-  font: 700 .56rem/1.2 "Courier New", monospace;
+  font: 900 .62rem/1.1 "Courier New", monospace;
   text-transform: uppercase;
 }
-.keg-pack-price-list strong {
-  display: inline;
-  color: #efb45c;
-  font-size: .56rem;
-}
+.keg-pack-price-cell b { color: #f4f8fa; }
+.keg-pack-price-cell strong { color: #efb45c; font-size: .78rem; }
 .keg-stock-empty { color: #668798; }
 .keg-table-compact .keg-order-button { padding: .42rem .48rem; font-size: .58rem; letter-spacing: 0; }
 @media (max-width: 700px) {
-  .keg-table-compact { min-width: 39rem; }
+  .keg-table-compact { min-width: 52rem; }
   .keg-table-compact th,
   .keg-table-compact td { padding: .42rem .4rem; }
-  .keg-table-compact th:first-child { width: 29%; }
+  .keg-table-compact th:first-child { width: 22%; }
   .keg-stock-cell { gap: .08rem; }
   .keg-stock-main { grid-template-columns: 1fr; gap: .08rem; }
 }

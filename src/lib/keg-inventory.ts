@@ -335,6 +335,7 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
     const case12PriceCents = firstCents(item, ["case12PriceCents", "case12ozPrice", "cases12ozPrice", "12oz Case Price", "12 oz Case Price", "12oz Price", "12 oz Price"]);
     const case12FourPackPriceCents = firstCents(item, ["case12FourPackPriceCents", "case12FourPackPrice", "case12ozFourPackPrice", "case12oz4PackPrice", "12oz 4 Pack Price", "12 oz 4 Pack Price", "12oz 4-pack Price", "12 oz 4-pack Price"]);
     const case12SixPackPriceCents = firstCents(item, ["case12SixPackPriceCents", "case12SixPackPrice", "case12ozSixPackPrice", "case12oz6PackPrice", "12oz 6 Pack Price", "12 oz 6 Pack Price", "12oz 6-pack Price", "12 oz 6-pack Price"]);
+    if (Number(case12FourPackPriceCents || 0) > 0 && Number(case12SixPackPriceCents || 0) > 0) throw new Error("Item " + (index + 1) + " has both 12oz 4-pack and 12oz 6-pack prices. Set only the package actually sold.");
     const case16PriceCents = firstCents(item, ["case16PriceCents", "case16ozPrice", "cases16ozPrice", "16oz Case Price", "16 oz Case Price", "16oz Price", "16 oz Price"]);
     const case16FourPackPriceCents = firstCents(item, ["case16FourPackPriceCents", "case16FourPackPrice", "case16ozFourPackPrice", "case16oz4PackPrice", "16oz 4 Pack Price", "16 oz 4 Pack Price", "16oz 4-pack Price", "16 oz 4-pack Price"]);
     const casePriceCents = firstCents(item, ["casePriceCents", "casePrice", "Case Price"]);
@@ -509,6 +510,11 @@ export async function updateKegItem(patch: KegInventoryPatch) {
   const case12Count = count(patch.case12Count) ?? target.case12Count ?? 0;
   const case16Count = count(patch.case16Count) ?? target.case16Count ?? 0;
   const caseCount = count(patch.caseCount) ?? case12Count + case16Count;
+  const case12FourPackPriceCents = cents(patch.case12FourPackPriceCents);
+  const case12SixPackPriceCents = cents(patch.case12SixPackPriceCents);
+  const finalCase12FourPackPriceCents = case12FourPackPriceCents === undefined ? target.case12FourPackPriceCents : case12FourPackPriceCents;
+  const finalCase12SixPackPriceCents = case12SixPackPriceCents === undefined ? target.case12SixPackPriceCents : case12SixPackPriceCents;
+  if (Number(finalCase12FourPackPriceCents || 0) > 0 && Number(finalCase12SixPackPriceCents || 0) > 0) throw new Error("Set either the 12oz 4-pack price or the 12oz 6-pack price, not both.");
   const updated: KegInventoryItem = {
     ...target,
     beerName: nextBeerName,
@@ -522,8 +528,8 @@ export async function updateKegItem(patch: KegInventoryPatch) {
     caseSize: text(patch.caseSize, 24) || undefined,
     ...(cents(patch.casePriceCents) === undefined ? { casePriceCents: undefined } : { casePriceCents: cents(patch.casePriceCents) }),
     ...(cents(patch.case12PriceCents) === undefined ? { case12PriceCents: target.case12PriceCents } : { case12PriceCents: cents(patch.case12PriceCents) }),
-    ...(cents(patch.case12FourPackPriceCents) === undefined ? { case12FourPackPriceCents: target.case12FourPackPriceCents } : { case12FourPackPriceCents: cents(patch.case12FourPackPriceCents) }),
-    ...(cents(patch.case12SixPackPriceCents) === undefined ? { case12SixPackPriceCents: target.case12SixPackPriceCents } : { case12SixPackPriceCents: cents(patch.case12SixPackPriceCents) }),
+    case12FourPackPriceCents: finalCase12FourPackPriceCents,
+    case12SixPackPriceCents: finalCase12SixPackPriceCents,
     ...(cents(patch.case16PriceCents) === undefined ? { case16PriceCents: target.case16PriceCents } : { case16PriceCents: cents(patch.case16PriceCents) }),
     ...(cents(patch.case16FourPackPriceCents) === undefined ? { case16FourPackPriceCents: target.case16FourPackPriceCents } : { case16FourPackPriceCents: cents(patch.case16FourPackPriceCents) }),
     case12Count,
