@@ -49,6 +49,7 @@ export type KegInventory = {
 const bundledSnapshotFile = () => process.env.KEG_SNAPSHOT_FILE || path.join(process.cwd(), "public", "data", "kegs-for-sale.json");
 const dataFile = () => process.env.KEG_INVENTORY_DATA_FILE || path.join(process.cwd(), "data", "keg-inventory.json");
 const importArchiveDir = () => process.env.KEG_IMPORT_ARCHIVE_DIR || path.join(path.dirname(dataFile()), "keg-imports");
+const latestImportFile = () => process.env.KEG_LATEST_IMPORT_FILE || path.join(importArchiveDir(), "latest-upload.txt");
 const maxItems = 250;
 const maxImportArchives = 20;
 
@@ -472,17 +473,26 @@ export function normalizeKegInventory(value: unknown, previous?: KegInventory | 
 }
 
 async function readKegInventoryFile(file: string, options: { includeHidden?: boolean } = {}) {
-  const parsed = JSON.parse(await fs.readFile(file, "utf8")) as unknown;
+  const rawText = await fs.readFile(file, "utf8");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawText.replace(/^\uFEFF/, "")) as unknown;
+  } catch (error) {
+    if (!file.toLowerCase().endsWith(".csv") && !rawText.trimStart().includes(",")) throw error;
+    parsed = csvToKegSource(rawText);
+  }
   const inventory = normalizeKegInventory(parsed);
   const items = options.includeHidden ? inventory.items : inventory.items.filter(visibleKegItem);
   return { ...inventory, items };
 }
 
 export async function getUploadedKegInventory(options: { includeHidden?: boolean } = {}): Promise<KegInventory | null> {
-  try {
-    return await readKegInventoryFile(bundledSnapshotFile(), options);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") return null;
+  for (const file of [bundledSnapshotFile(), latestImportFile()]) {
+    try {
+      return await readKegInventoryFile(file, options);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") return null;
+    }
   }
   try {
     const databaseInventory = await readDatabaseKegInventory(options);
