@@ -42,6 +42,7 @@ export type KegInventory = {
   backfillPickupNote?: string;
   inventoryUpdatedAt?: string;
   exportedAt?: string;
+  websiteUpdatedAt?: string;
   updatedAt: string;
   uploadedAt: string;
 };
@@ -468,6 +469,7 @@ export function normalizeKegInventory(value: unknown, previous?: KegInventory | 
     updatedAt: validDate(field(source, ["inventoryUpdatedAt", "updatedAt", "generatedAt", "timestamp"]), validDate(field(source, ["exportedAt", "uploadedAt"]), previous?.updatedAt || now)),
     inventoryUpdatedAt: validDate(field(source, ["inventoryUpdatedAt", "updatedAt", "generatedAt", "timestamp"]), validDate(field(source, ["exportedAt", "uploadedAt"]), previous?.updatedAt || now)),
     exportedAt: validDate(field(source, ["exportedAt", "generatedAt", "timestamp"]), validDate(source?.uploadedAt, now)),
+    websiteUpdatedAt: validDate(field(source, ["websiteUpdatedAt"]), ""),
     uploadedAt: validDate(field(source, ["uploadedAt", "exportedAt", "generatedAt", "timestamp"]), now),
   };
 }

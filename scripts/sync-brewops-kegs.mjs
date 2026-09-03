@@ -36,6 +36,12 @@ function validateSnapshot(snapshot) {
   }
 }
 
+function comparableSnapshot(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const { websiteUpdatedAt, ...rest } = value;
+  return rest;
+}
+
 async function readText(file) {
   try {
     return await readFile(file, "utf8");
@@ -57,14 +63,22 @@ try {
 
 validateSnapshot(snapshot);
 
-const next = JSON.stringify(snapshot, null, 2) + "\n";
 const current = await readText(targetFile);
+let currentSnapshot = null;
+try {
+  currentSnapshot = current ? JSON.parse(current) : null;
+} catch {
+  currentSnapshot = null;
+}
 
-if (current === next) {
+if (currentSnapshot?.websiteUpdatedAt && JSON.stringify(comparableSnapshot(currentSnapshot)) === JSON.stringify(comparableSnapshot(snapshot))) {
   console.log("brewops-kegs.no_change");
-  console.log(JSON.stringify({ sourceFile, targetFile, items: snapshot.items.length, exportedAt: snapshot.exportedAt || null, updatedAt: snapshot.updatedAt || null }));
+  console.log(JSON.stringify({ sourceFile, targetFile, items: snapshot.items.length, exportedAt: snapshot.exportedAt || null, updatedAt: snapshot.updatedAt || null, websiteUpdatedAt: currentSnapshot.websiteUpdatedAt || null }));
   process.exit(0);
 }
+
+const websiteUpdatedAt = new Date().toISOString();
+const next = JSON.stringify({ ...snapshot, websiteUpdatedAt }, null, 2) + "\n";
 
 await mkdir(path.dirname(targetFile), { recursive: true });
 const temporaryFile = targetFile + ".tmp";
@@ -72,4 +86,4 @@ await writeFile(temporaryFile, next, "utf8");
 await rename(temporaryFile, targetFile);
 
 console.log("brewops-kegs.updated");
-console.log(JSON.stringify({ sourceFile, targetFile, items: snapshot.items.length, exportedAt: snapshot.exportedAt || null, updatedAt: snapshot.updatedAt || null }));
+console.log(JSON.stringify({ sourceFile, targetFile, items: snapshot.items.length, exportedAt: snapshot.exportedAt || null, updatedAt: snapshot.updatedAt || null, websiteUpdatedAt }));
