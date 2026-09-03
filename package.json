@@ -23,7 +23,9 @@
     "render:data:export": "node scripts/export-render-data.mjs",
     "render:data:import": "node scripts/import-render-data.mjs",
     "shop:transparent-images": "node scripts/transparent-shop-images.mjs",
-    "aviation:refresh-flyins": "node scripts/update-national-flyins.mjs"
+    "aviation:refresh-flyins": "node scripts/update-national-flyins.mjs",
+    "kegs:sync": "node scripts/sync-brewops-kegs.mjs",
+    "kegs:sync:upload": "./scripts/sync-brewops-kegs-and-upload.sh"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",
