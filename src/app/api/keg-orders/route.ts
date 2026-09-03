@@ -7,10 +7,10 @@ import { getUploadedKegInventory, type KegInventoryItem } from "@/lib/keg-invent
 export const runtime = "nodejs";
 verifySmtpOnStart();
 
-type PackageSize = "1/6 bbl" | "50 L" | "12 oz cases" | "16 oz cases";
+type PackageSize = "1/6 bbl" | "50 L" | "12 oz cases" | "12 oz 6-packs" | "12 oz 4-packs" | "16 oz cases" | "16 oz 4-packs";
 
 function packageSize(value: unknown): PackageSize | "" {
-  return value === "1/6 bbl" || value === "50 L" || value === "12 oz cases" || value === "16 oz cases" ? value : "";
+  return value === "1/6 bbl" || value === "50 L" || value === "12 oz cases" || value === "12 oz 6-packs" || value === "12 oz 4-packs" || value === "16 oz cases" || value === "16 oz 4-packs" ? value : "";
 }
 
 function countForPackage(item: KegInventoryItem | undefined, selected: PackageSize) {
@@ -18,7 +18,10 @@ function countForPackage(item: KegInventoryItem | undefined, selected: PackageSi
   if (selected === "1/6 bbl") return item.sixthBblKegs;
   if (selected === "50 L") return item.fiftyLKegs;
   if (selected === "12 oz cases") return item.case12Count || 0;
-  return item.case16Count || 0;
+  if (selected === "12 oz 6-packs") return item.case12SixPackCount || 0;
+  if (selected === "12 oz 4-packs") return item.case12FourPackCount || 0;
+  if (selected === "16 oz cases") return item.case16Count || 0;
+  return item.case16FourPackCount || 0;
 }
 
 function priceForPackage(item: KegInventoryItem | undefined, selected: PackageSize) {
@@ -26,7 +29,10 @@ function priceForPackage(item: KegInventoryItem | undefined, selected: PackageSi
   if (selected === "1/6 bbl") return item.sixthBblPriceCents;
   if (selected === "50 L") return item.fiftyLPriceCents;
   if (selected === "12 oz cases") return item.case12PriceCents || (/^12\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
-  return item.case16PriceCents || (/^16\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
+  if (selected === "12 oz 6-packs") return item.has12ozSixPack ? item.case12SixPackPriceCents : undefined;
+  if (selected === "12 oz 4-packs") return item.has12ozFourPack ? item.case12FourPackPriceCents : undefined;
+  if (selected === "16 oz cases") return item.case16PriceCents || (/^16\s*oz$/i.test(item.caseSize || "") ? item.casePriceCents : undefined);
+  return item.has16ozFourPack ? item.case16FourPackPriceCents : undefined;
 }
 
 function orderLabel(selected: PackageSize) {
@@ -58,7 +64,7 @@ export async function POST(request: Request) {
     const available = countForPackage(keg, selectedPackage);
     const priceCents = priceForPackage(keg, selectedPackage);
     const unitPriceCents = Number(priceCents || 0);
-    const hasAnyInventory = Boolean(keg && (keg.sixthBblKegs > 0 || keg.fiftyLKegs > 0 || (keg.case12Count || 0) > 0 || (keg.case16Count || 0) > 0 || (keg.caseCount || 0) > 0));
+    const hasAnyInventory = Boolean(keg && (keg.sixthBblKegs > 0 || keg.fiftyLKegs > 0 || (keg.case12Count || 0) > 0 || (keg.case12FourPackCount || 0) > 0 || (keg.case12SixPackCount || 0) > 0 || (keg.case16Count || 0) > 0 || (keg.case16FourPackCount || 0) > 0 || (keg.caseCount || 0) > 0));
     if (!keg || keg.hidden === true || !hasAnyInventory || unitPriceCents <= 0 || available < 1 || quantity > available) return NextResponse.json({ error: "That quantity is no longer available. Please adjust your request and try again." }, { status: 409 });
     if (!isMailConfigured()) throw new Error("Mail delivery is not configured");
 
