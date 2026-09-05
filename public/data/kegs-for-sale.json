@@ -706,7 +706,7 @@
       "beerName": "Devils Tripel",
       "status": "Available",
       "forSale": true,
-      "sixthBblKegs": 63,
+      "sixthBblKegs": 61,
       "sixthBblPrice": 105,
       "fiftyLKegs": 34,
       "fiftyLPrice": 195,
@@ -731,10 +731,10 @@
       "case16ozPrice": 0,
       "fourPack16ozPrice": 0,
       "sixtelsAvailableViaBackfill": 86,
-      "totalBbl": 27.572539968027492,
-      "inventoryUpdatedAt": "2026-09-03T16:17:31.657Z",
+      "totalBbl": 27.23920663469416,
+      "inventoryUpdatedAt": "2026-09-04T16:57:00.148Z",
       "pricingUpdatedAt": "2026-09-02T17:16:36.708Z",
-      "updatedAt": "2026-09-03T16:17:31.657Z"
+      "updatedAt": "2026-09-04T16:57:00.148Z"
     },
     {
       "beerName": "Gose",
@@ -944,7 +944,7 @@
       "beerName": "HotRod Red",
       "status": "Available",
       "forSale": true,
-      "sixthBblKegs": 38,
+      "sixthBblKegs": 36,
       "sixthBblPrice": 95,
       "fiftyLKegs": 0,
       "fiftyLPrice": 185,
@@ -969,10 +969,10 @@
       "case16ozPrice": 0,
       "fourPack16ozPrice": 0,
       "sixtelsAvailableViaBackfill": 0,
-      "totalBbl": 6.333333333333333,
-      "inventoryUpdatedAt": "2026-09-01T18:44:16.713Z",
+      "totalBbl": 6,
+      "inventoryUpdatedAt": "2026-09-04T16:56:27.327Z",
       "pricingUpdatedAt": "2026-09-01T18:44:16.725Z",
-      "updatedAt": "2026-09-01T18:44:16.725Z"
+      "updatedAt": "2026-09-04T16:56:27.327Z"
     },
     {
       "beerName": "Jet Juice",
@@ -1116,7 +1116,7 @@
       "forSale": true,
       "sixthBblKegs": 4,
       "sixthBblPrice": 75,
-      "fiftyLKegs": 15,
+      "fiftyLKegs": 14,
       "fiftyLPrice": 145,
       "totalCans12oz": 1414,
       "unitsPerCase12oz": 24,
@@ -1138,11 +1138,11 @@
       "fourPacks16oz": 0,
       "case16ozPrice": 0,
       "fourPack16ozPrice": 0,
-      "sixtelsAvailableViaBackfill": 38,
-      "totalBbl": 11.334135675331549,
-      "inventoryUpdatedAt": "2026-09-03T16:16:12.319Z",
+      "sixtelsAvailableViaBackfill": 35,
+      "totalBbl": 10.908051719915179,
+      "inventoryUpdatedAt": "2026-09-04T16:57:24.553Z",
       "pricingUpdatedAt": "2026-09-02T17:16:36.709Z",
-      "updatedAt": "2026-09-03T16:16:12.319Z"
+      "updatedAt": "2026-09-04T16:57:24.553Z"
     },
     {
       "beerName": "MadBeach",
@@ -1150,7 +1150,7 @@
       "forSale": true,
       "sixthBblKegs": 23,
       "sixthBblPrice": 95,
-      "fiftyLKegs": 0,
+      "fiftyLKegs": 5,
       "fiftyLPrice": 185,
       "totalCans12oz": 1091,
       "unitsPerCase12oz": 24,
@@ -1172,11 +1172,11 @@
       "fourPacks16oz": 0,
       "case16ozPrice": 0,
       "fourPack16ozPrice": 0,
-      "sixtelsAvailableViaBackfill": 0,
-      "totalBbl": 7.132728494623656,
-      "inventoryUpdatedAt": "2026-08-26T16:55:44.768Z",
+      "sixtelsAvailableViaBackfill": 12,
+      "totalBbl": 9.263148271705498,
+      "inventoryUpdatedAt": "2026-09-04T16:57:48.687Z",
       "pricingUpdatedAt": "2026-09-02T17:16:36.709Z",
-      "updatedAt": "2026-09-02T17:16:36.709Z"
+      "updatedAt": "2026-09-04T16:57:48.687Z"
     },
     {
       "beerName": "Maximum Overhop",
@@ -1653,9 +1653,9 @@
   },
   "quantityNote": "Case counts, retail-pack counts, and total can counts are alternative views of the same available cans. Do not add them together.",
   "backfillPickupNote": "Sixtels backfilled from 50 L kegs must be picked up Monday–Friday, 8:30 AM–5:00 PM.",
-  "inventoryUpdatedAt": "2026-09-03T16:18:41.682Z",
+  "inventoryUpdatedAt": "2026-09-04T16:57:48.687Z",
   "pricingUpdatedAt": "2026-09-03T12:37:52.257Z",
-  "updatedAt": "2026-09-03T16:18:41.682Z",
-  "exportedAt": "2026-09-04T07:10:01.754Z",
-  "websiteUpdatedAt": "2026-09-04T07:20:01.830Z"
+  "updatedAt": "2026-09-04T16:57:48.687Z",
+  "exportedAt": "2026-09-05T07:10:02.304Z",
+  "websiteUpdatedAt": "2026-09-05T07:20:01.397Z"
 }
