@@ -26,7 +26,7 @@ export default async function KegsPage() {
           <h1 id="kegs-title">Bring your people.<br /><em>We&apos;ll bring<br />the beer.</em></h1>
           <p className={styles.intro}>Here&apos;s to the women who bring everyone together. From backyard catch-ups to milestone celebrations, make room for good company and great local beer.</p>
           <div className={styles.actions}>
-            <a className={styles.primaryButton} href="#keg-inventory">Find your beer <ArrowUpRight /></a>
+            <a className={styles.primaryButton} href={kegData?.items.length ? "#beer-picker" : "#keg-inventory"}>Find your beer <ArrowUpRight /></a>
             <a className={styles.secondaryLink} href="#keg-how-it-works">First time ordering?</a>
           </div>
           <p className={styles.pickup}>Kegs, cases &amp; packs <span aria-hidden="true">·</span> Brewery pickup in Fuquay-Varina, NC</p>
