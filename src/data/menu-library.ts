@@ -5,7 +5,7 @@ export const menuLocations = [
   { slug: "harddeck", name: "Aviator HardDeck Restaurant" },
   { slug: "c-54-airplane-bar", name: "Aviator C-54 Airplane Bar" },
   { slug: "ready-room", name: "Ready Room Liquor Lounge" },
-  { slug: "speakeasy", name: "Aviator Speakeasy Liquor Lounge" },
+  { slug: "speakeasy", name: "The Whiskey Bar" },
   { slug: "catering-events", name: "Catering + Events" },
 ] as const;
 

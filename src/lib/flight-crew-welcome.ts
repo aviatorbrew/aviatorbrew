@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { updateLegacyVenueName } from "@/lib/venue-names";
 
 export type FlightCrewWelcome = {
   subject: string;
@@ -15,8 +16,8 @@ export const defaultFlightCrewWelcome: FlightCrewWelcome = {
   heading: "You are cleared for takeoff.",
   intro: "Welcome to the Flight Crew. You will be first in line for fresh beer releases, concerts, events, restaurant news, and offers from across Aviator.",
   history: "Aviator started in November 2008 in an airplane hangar with one employee and two repurposed 300-gallon dairy tanks. Distribution began in January 2009. Today, the Aviator brewery campus is powered by a 60-barrel, four-vessel brewhouse and carries that original hands-on spirit into every pour.",
-  speakeasy: "The Aviator Speakeasy Liquor Lounge is our intimate campus hideaway for considered cocktails, whiskey, and a little after-hours mystery.",
-  special: "Thursday is Buffalo Trace night: enjoy a Buffalo Trace Old Fashioned for $10 at the Speakeasy Liquor Lounge.",
+  speakeasy: "The Whiskey Bar is our intimate campus hideaway for considered cocktails, whiskey, and a little after-hours mystery.",
+  special: "Thursday is Buffalo Trace night: enjoy a Buffalo Trace Old Fashioned for $10 at The Whiskey Bar.",
 };
 
 const file = () => process.env.FLIGHT_CREW_WELCOME_DATA_FILE || path.join(process.cwd(), "data", "flight-crew-welcome.json");
@@ -24,7 +25,7 @@ const file = () => process.env.FLIGHT_CREW_WELCOME_DATA_FILE || path.join(proces
 export async function getFlightCrewWelcome(): Promise<FlightCrewWelcome> {
   try {
     const value = JSON.parse(await fs.readFile(file(), "utf8")) as Partial<FlightCrewWelcome>;
-    return {
+    const welcome = {
       subject: typeof value.subject === "string" ? value.subject : defaultFlightCrewWelcome.subject,
       heading: typeof value.heading === "string" ? value.heading : defaultFlightCrewWelcome.heading,
       intro: typeof value.intro === "string" ? value.intro : defaultFlightCrewWelcome.intro,
@@ -32,6 +33,7 @@ export async function getFlightCrewWelcome(): Promise<FlightCrewWelcome> {
       speakeasy: typeof value.speakeasy === "string" ? value.speakeasy : defaultFlightCrewWelcome.speakeasy,
       special: typeof value.special === "string" ? value.special : defaultFlightCrewWelcome.special,
     };
+    return Object.fromEntries(Object.entries(welcome).map(([key, text]) => [key, updateLegacyVenueName(text)])) as FlightCrewWelcome;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return defaultFlightCrewWelcome;
     throw error;

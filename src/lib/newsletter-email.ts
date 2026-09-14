@@ -175,7 +175,7 @@ export function buildFlightCrewWelcomeMessage(welcome: FlightCrewWelcome, conten
     `<div style="margin:0 0 14px"><strong style="color:#f4f7f8">${escapeHtml(show.band?.name || show.title)}</strong><br><span style="color:#b8ceda">${escapeHtml(formatDate(show.performanceDate || show.startsAt))} &bull; ${escapeHtml(formatTime(show.startsAt))} &bull; ${escapeHtml(show.venueName)}</span></div>`);
   const musicFallback = `<div style="color:#b8ceda">The next shows are being cleared now. <a href="${siteUrl()}/events" style="color:#efb45f">See the current music schedule</a>.</div>`;
   const unsubscribeUrl = recipientEmail ? `${siteUrl()}/api/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}&token=${newsletterUnsubscribeToken(recipientEmail)}` : "";
-  const contentRows = `<tr><td style="padding:34px 28px;color:#d8e7ee;font-size:17px;line-height:1.6"><h1 style="margin:0 0 18px;color:#f4f7f8;font-size:34px;line-height:1.05">${escapeHtml(welcome.heading)}</h1><p style="margin:0">${escapeHtml(welcome.intro).replace(/\n/g, "<br>")}</p></td></tr>${copySection("Where Aviator began", welcome.history)}${copySection("The Speakeasy Liquor Lounge", welcome.speakeasy)}${copySection("$10 Buffalo Trace Thursday", welcome.special)}<tr><td>${section("Aviator locations", activeLocations)}${section("Live music: next 2 weeks", currentMusic.length ? currentMusic : [musicFallback])}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px;line-height:1.5">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : "This is a Flight Crew welcome email preview."}</td></tr>`;
+  const contentRows = `<tr><td style="padding:34px 28px;color:#d8e7ee;font-size:17px;line-height:1.6"><h1 style="margin:0 0 18px;color:#f4f7f8;font-size:34px;line-height:1.05">${escapeHtml(welcome.heading)}</h1><p style="margin:0">${escapeHtml(welcome.intro).replace(/\n/g, "<br>")}</p></td></tr>${copySection("Where Aviator began", welcome.history)}${copySection("The Whiskey Bar", welcome.speakeasy)}${copySection("$10 Buffalo Trace Thursday", welcome.special)}<tr><td>${section("Aviator locations", activeLocations)}${section("Live music: next 2 weeks", currentMusic.length ? currentMusic : [musicFallback])}</td></tr><tr><td style="padding:20px 28px;color:#9fb7c5;font-size:12px;line-height:1.5">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : "This is a Flight Crew welcome email preview."}</td></tr>`;
   const html = emailFrame(contentRows, welcome.subject);
   const lines = [
     welcome.heading,
@@ -185,7 +185,7 @@ export function buildFlightCrewWelcomeMessage(welcome: FlightCrewWelcome, conten
     "WHERE AVIATOR BEGAN",
     welcome.history,
     "",
-    "THE SPEAKEASY LIQUOR LOUNGE",
+    "THE WHISKEY BAR",
     welcome.speakeasy,
     "",
     "$10 BUFFALO TRACE THURSDAY",

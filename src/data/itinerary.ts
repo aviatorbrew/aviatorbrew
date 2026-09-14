@@ -18,8 +18,8 @@ export const drinksStops: ItineraryStop[] = [
   {
     id: "speakeasy-drinks",
     locationSlug: "speakeasy",
-    name: "Aviator Speakeasy Liquor Lounge",
-    label: "Speakeasy Liquor Lounge",
+    name: "The Whiskey Bar",
+    label: "The Whiskey Bar",
     phase: "drinks",
     image: "/images/locations/speakeasy.png",
     address: "688 Brewing Drive, Fuquay-Varina, NC 27526",

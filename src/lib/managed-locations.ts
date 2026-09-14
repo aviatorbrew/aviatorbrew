@@ -3,6 +3,7 @@ import path from "path";
 import { locations, type Location } from "@/data/site";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 import { getLocationHero } from "@/lib/location-photos";
+import { updateLegacyVenueName } from "@/lib/venue-names";
 
 export type LocationOverride = Location & { updatedAt: string };
 export type PortalLocation = Location & { id: string; updatedAt: string | null; heroImage: string };
@@ -54,7 +55,17 @@ async function readOverrides(): Promise<LocationOverride[]> {
 }
 function mergeLocations(overrides: LocationOverride[]) {
   const bySlug = new Map(overrides.map((location) => [location.slug, location]));
-  return locations.map((location) => ({ ...location, ...(bySlug.get(location.slug) || {}) }));
+  return locations.map((location) => {
+    const merged = { ...location, ...(bySlug.get(location.slug) || {}) };
+    if (merged.slug !== "speakeasy") return merged;
+    return {
+      ...merged,
+      name: updateLegacyVenueName(merged.name),
+      shortName: updateLegacyVenueName(merged.shortName),
+      description: updateLegacyVenueName(merged.description),
+      history: updateLegacyVenueName(merged.history),
+    };
+  });
 }
 export async function getAllLocations(): Promise<Location[]> { return mergeLocations(await readOverrides()); }
 export async function getLocation(slug: string): Promise<Location | null> { return (await getAllLocations()).find((location) => location.slug === slug) || null; }

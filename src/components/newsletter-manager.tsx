@@ -352,7 +352,7 @@ export function NewsletterManager() {
         <label>Headline<input value={welcome.heading} maxLength={120} onChange={(event) => setWelcome({ ...welcome, heading: event.target.value })} /></label>
         <label>Introduction<textarea value={welcome.intro} rows={4} maxLength={3000} onChange={(event) => setWelcome({ ...welcome, intro: event.target.value })} /></label>
         <label>Brewery history<textarea value={welcome.history} rows={6} maxLength={5000} onChange={(event) => setWelcome({ ...welcome, history: event.target.value })} /></label>
-        <label>Speakeasy Liquor Lounge<textarea value={welcome.speakeasy} rows={4} maxLength={3000} onChange={(event) => setWelcome({ ...welcome, speakeasy: event.target.value })} /></label>
+        <label>The Whiskey Bar<textarea value={welcome.speakeasy} rows={4} maxLength={3000} onChange={(event) => setWelcome({ ...welcome, speakeasy: event.target.value })} /></label>
         <label>$10 Buffalo Trace Thursday special<textarea value={welcome.special} rows={3} maxLength={2000} onChange={(event) => setWelcome({ ...welcome, special: event.target.value })} /></label>
       </form>
       <div className="newsletter-send-bar"><label className="newsletter-test-address">Test recipient<input type="email" value={testEmail} onChange={(event) => setTestEmail(event.target.value)} /></label><button className="button button-outline" type="button" onClick={testWelcome} disabled={busy || !data.mailConfigured}>{busy ? "Working..." : "Send welcome test"}</button><button className="button" type="button" onClick={saveWelcome} disabled={busy}>Save welcome email</button></div>
