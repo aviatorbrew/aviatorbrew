@@ -1,4 +1,8 @@
 .env.local
+.env
+.env.*
+!.env.example
+!.env.production.example
 .env.deploy.local
 .deploy-state.local
 node_modules

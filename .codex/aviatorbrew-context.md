@@ -3,7 +3,7 @@
 Last updated: 2026-07-29
 
 ## Repository
-- Local repo: /home/skynet/aviatorbrew/aviatorbrew-new
+- Local repo: /home/skynet/mdd/aviatorbrew/source
 - GitHub remote: https://github.com/aviatorbrew/aviatorbrew.git
 - Branch: main
 - Do not deploy or push to aviatorbrew/aviatorlive for this site.

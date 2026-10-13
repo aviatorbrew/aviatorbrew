@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly Aviator Brew GitHub upload
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 America/New_York
+Persistent=true
+Unit=aviatorbrew-nightly-upload.service
+
+[Install]
+WantedBy=timers.target
