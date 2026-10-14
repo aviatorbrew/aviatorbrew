@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { Readable } from "node:stream";
+import { ReadableStream as NodeReadableStream } from "node:stream/web";
 
 type StreamFileOptions = {
   cacheControl?: string;
@@ -11,6 +11,7 @@ type ByteRange = { start: number; end: number };
 
 function requestedRange(value: string | null, size: number): ByteRange | "invalid" | null {
   if (!value) return null;
+  if (size === 0) return "invalid";
   const match = /^bytes=(\d*)-(\d*)$/.exec(value.trim());
   if (!match) return "invalid";
   const startText = match[1];
@@ -64,7 +65,9 @@ export async function streamFileResponse(request: Request, filePath: string, opt
   const end = range?.end ?? Math.max(0, file.size - 1);
   const length = file.size === 0 ? 0 : end - start + 1;
   const nodeStream = createReadStream(filePath, file.size === 0 ? undefined : { start, end });
-  const body = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
+  // Pull through the async iterator so cancellation destroys the file stream without
+  // toWeb's late-data enqueue race: https://github.com/nodejs/node/issues/64529.
+  const body = NodeReadableStream.from(nodeStream) as ReadableStream<Uint8Array>;
 
   return new Response(body, {
     status: range ? 206 : 200,

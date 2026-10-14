@@ -1,6 +1,6 @@
 {
   "name": "aviator-brewing-company",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -22,7 +22,8 @@
     "shop:transparent-images": "node scripts/transparent-shop-images.mjs",
     "aviation:refresh-flyins": "node scripts/update-national-flyins.mjs",
     "kegs:sync": "node scripts/sync-brewops-kegs.mjs",
-    "kegs:sync:upload": "./scripts/sync-brewops-kegs-and-upload.sh"
+    "kegs:sync:upload": "./scripts/sync-brewops-kegs-and-upload.sh",
+    "test:file-responses": "node scripts/test-server-file-response.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

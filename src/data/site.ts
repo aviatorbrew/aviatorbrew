@@ -28,11 +28,13 @@ export const orderFoodUrl = "/order-food";
 export const primaryNav = [
   { label: "Beer", href: "/beer" },
   { label: "Brewery", href: "/brewery" },
+  { label: "Live Music", href: "https://aviatorlive.beer/live-music" },
   { label: "Shop", href: "/shop-new" },
   { label: "Sales", href: "/kegs" },
   { label: "Locations", href: "/locations" },
-  { label: "EVENTS", href: "/events", children: [{ label: "Events", href: "/events" }, { label: "Live Music", href: "/events/live-music" }, { label: "Private Events", href: "/private-events" }, { label: "Catering To Go", href: "/catering-to-go" }] },
-  { label: "MORE", href: "/more", children: [{ label: "Become a Pilot", href: "/become-a-pilot" }, { label: "About", href: "/about" }, { label: "Tours", href: "/about#brewery-tours" }, { label: "Contact Us", href: "/contact" }] },
+  { label: "EVENTS", href: "/events", children: [{ label: "Events", href: "/events" }, { label: "Private Events", href: "/private-events" }, { label: "Catering To Go", href: "/catering-to-go" }] },
+  { label: "Become a Pilot", href: "/become-a-pilot" },
+  { label: "MORE", href: "/more", children: [{ label: "About", href: "/about" }, { label: "Tours", href: "/about#brewery-tours" }, { label: "Contact Us", href: "/contact" }] },
 ];
 
 export const locations: Location[] = [

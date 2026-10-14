@@ -11,7 +11,7 @@ function normalizePath(path: string) {
   return path.length > 1 ? path.replace(/\/$/, "") : path;
 }
 
-export function SiteHeader() {
+export function SiteHeader({ version }: { version: string }) {
   const pathname = normalizePath(usePathname() || "/");
   const navRef = useRef<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -71,6 +71,7 @@ export function SiteHeader() {
   return <>
     <a className="skip-link" href="#main">Skip to content</a>
     <header className="site-header">
+      <span className="site-version" aria-label={`Website version ${version}`}>v{version}</span>
       <Link href="/" className="wordmark" aria-label="Aviator Brewing Company home"><BrandLogo className="brand-logo" decorative /> <span className="wordmark-copy">AVIATOR <b>BREWING CO.</b></span></Link>
       <nav className="desktop-nav" aria-label="Primary navigation" ref={navRef} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpenMenu(null); }}>
         {primaryNav.map((item) => {

@@ -1,0 +1,62 @@
+.site-version {
+  position: absolute;
+  top: 4px;
+  left: clamp(1rem, 4vw, 4.5rem);
+  color: #a9bfce;
+  font: 8px/1.2 "Courier New", monospace;
+  white-space: nowrap;
+}
+
+.desktop-nav-item > a,
+.desktop-nav-trigger {
+  white-space: nowrap;
+}
+
+.desktop-nav-item:last-child .desktop-submenu {
+  right: 0;
+  left: auto;
+}
+
+@media (max-width: 1600px) {
+  .site-header { gap: 1rem; }
+  .desktop-nav { gap: .75rem; }
+  .header-actions .text-action { display: none; }
+}
+
+@media (max-width: 1300px) {
+  .desktop-nav, .header-actions { display: none; }
+  .site-header { justify-content: space-between; }
+  .mobile-toggle {
+    display: grid;
+    width: 2.8rem;
+    height: 2.8rem;
+    place-content: center;
+    gap: .32rem;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--paper);
+  }
+  .mobile-toggle i { display: block; width: 1rem; height: 1px; background: currentColor; }
+  .mobile-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    max-height: calc(100dvh - 10.1rem);
+    overflow-y: auto;
+    padding: 1rem clamp(1rem, 4vw, 4.5rem) 1.5rem;
+    background: var(--navy);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobile-panel.is-open { display: block; }
+  .mobile-panel nav { display: grid; }
+  .mobile-panel nav a, .mobile-panel > a {
+    padding: .9rem 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .mobile-panel > a { display: flex; justify-content: space-between; color: var(--orange); }
+}
