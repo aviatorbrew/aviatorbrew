@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "The Aviator Brewing Company story: from a one-person hangar brewery in 2008 to the Fuquay-Varina brewery campus.",
 };
 
-const flightLog = [
+const breweryHistory = [
   ["NOV 2008", "Aviator took flight in a small airplane hangar with one employee and two old 300-gallon dairy tanks."],
   ["JAN–SEP 2009", "Two used 30-barrel fermenters helped Aviator reach the Triangle. That September, the Aviator TapHouse opened inside Fuquay-Varina's 1910 Varina Station train depot."],
   ["APR 2010", "The original hangar was outgrown. Aviator moved six miles to a larger home, added tanks and cooler space, and grew to a four-person team."],
@@ -37,7 +37,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           <p className="eyebrow">Our story / Fuquay-Varina, NC</p>
           <h1>One small hangar. <em>A lot of runway.</em></h1>
           <p>Aviator started with two dairy tanks, one person, and a little room inside an airplane hangar. It grew one determined pour, one gathering place, and one ambitious build at a time.</p>
-          <div className="hero-actions"><a className="button" href="#our-story">Read the flight log <ArrowUpRight /></a><a className="button button-outline" href="#brewery-tours">Join a brewery tour</a></div>
+          <div className="hero-actions"><a className="button" href="#our-story">Read our story <ArrowUpRight /></a><a className="button button-outline" href="#brewery-tours">Join a brewery tour</a></div>
         </div>
       </section>
 
@@ -55,10 +55,10 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
       </section>
 
-      <section className="section about-flight-log">
+      <section className="section about-history">
         <div className="content-wrap">
-          <div className="section-heading"><div><p className="eyebrow">Flight log</p><h2>Seventeen years of <em>forward motion.</em></h2></div><p>From the first modest brew day to a destination-sized campus, every milestone added capacity, character, or another place for people to meet.</p></div>
-          <div className="about-timeline">{flightLog.map(([year, story]) => <article key={year}><span>{year}</span><p>{story}</p></article>)}</div>
+          <div className="section-heading"><div><p className="eyebrow">Our history</p><h2>Seventeen years of <em>forward motion.</em></h2></div><p>From the first modest brew day to a destination-sized campus, every milestone added capacity, character, or another place for people to meet.</p></div>
+          <div className="about-timeline">{breweryHistory.map(([year, story]) => <article key={year}><span>{year}</span><p>{story}</p></article>)}</div>
         </div>
       </section>
 

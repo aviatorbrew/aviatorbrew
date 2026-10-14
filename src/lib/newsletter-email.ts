@@ -17,7 +17,6 @@ export type NewsletterSections = {
   coupons: boolean;
   tours: boolean;
   visit: boolean;
-  community: boolean;
   shop: boolean;
   hospitality: boolean;
   behindScenes: boolean;
@@ -53,7 +52,6 @@ export type NewsletterSourceContent = {
   coupons?: NewsletterFeature[];
   tours?: NewsletterFeature[];
   visit?: NewsletterFeature[];
-  community?: NewsletterFeature[];
   shop?: NewsletterFeature[];
   hospitality?: NewsletterFeature[];
   behindScenes?: NewsletterFeature[];
@@ -238,7 +236,6 @@ export function buildNewsletterMessage(draft: NewsletterDraft, content: Newslett
   const coupons = draft.sections.coupons ? featureItems((content.coupons || []).slice(0, 2)) : [];
   const tours = draft.sections.tours ? featureItems((content.tours || []).slice(0, 1)) : [];
   const visit = draft.sections.visit ? featureItems((content.visit || []).slice(0, 1)) : [];
-  const community = draft.sections.community ? featureItems((content.community || []).slice(0, 1)) : [];
   const shop = draft.sections.shop ? featureItems((content.shop || []).slice(0, 2)) : [];
   const hospitality = draft.sections.hospitality ? featureItems((content.hospitality || []).slice(0, 2)) : [];
   const behindScenes = draft.sections.behindScenes ? featureItems((content.behindScenes || []).slice(0, 1)) : [];
@@ -248,7 +245,7 @@ export function buildNewsletterMessage(draft: NewsletterDraft, content: Newslett
   const unsubscribeUrl = recipientEmail
     ? `${siteUrl()}/api/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}&token=${newsletterUnsubscribeToken(recipientEmail)}`
     : "";
-  const html = emailFrame(`<tr><td style="padding:0;background:#071827"><img src="${siteUrl()}/images/hero-runway-wwii-restored.png" width="640" alt="Aviator Brewing runway" style="display:block;width:100%;max-width:640px;height:auto;border:0"></td></tr><tr><td style="padding:28px 24px 24px;background:#071827"><div style="color:#efb45f;font-size:12px;font-weight:900;letter-spacing:1.8px;text-transform:uppercase">Aviator Flight Crew</div><h1 style="margin:8px 0 12px;color:#f4f7f8;font-size:38px;line-height:.95;text-transform:uppercase">${escapeHtml(draft.heading)}</h1><p style="margin:0;color:#d8e7ee;font-size:17px;line-height:1.55">${escapeHtml(draft.message).replace(/\n/g, "<br>")}</p></td></tr><tr><td>${cardSection("This week's picks", [...releases, ...food, ...coupons].slice(0, 4))}${cardSection("Beer spotlight", beerCards)}${tableSection("Live music: next 2 weeks", music)}${cardSection("Upcoming events", events)}${imagePromoSection(hangarMenu)}${cardSection("4-packs & 6-packs to go", packages)}${cardSection("Brewery tours", tours)}${cardSection("Plan your visit", visit)}${cardSection("From the Flight Crew", community)}${cardSection("Behind the scenes", behindScenes)}${cardSection("Aviator shop", shop)}${cardSection("Private events & catering", hospitality)}${quickLinksSection("More from Aviator", extras)}${section("Aviator locations", locations)}</td></tr><tr><td style="padding:20px 24px;color:#9fb7c5;font-size:12px;line-height:1.5">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : "Newsletter preview"}</td></tr>`, draft.subject);
+  const html = emailFrame(`<tr><td style="padding:0;background:#071827"><img src="${siteUrl()}/images/hero-runway-wwii-restored.png" width="640" alt="Aviator Brewing runway" style="display:block;width:100%;max-width:640px;height:auto;border:0"></td></tr><tr><td style="padding:28px 24px 24px;background:#071827"><div style="color:#efb45f;font-size:12px;font-weight:900;letter-spacing:1.8px;text-transform:uppercase">Aviator Flight Crew</div><h1 style="margin:8px 0 12px;color:#f4f7f8;font-size:38px;line-height:.95;text-transform:uppercase">${escapeHtml(draft.heading)}</h1><p style="margin:0;color:#d8e7ee;font-size:17px;line-height:1.55">${escapeHtml(draft.message).replace(/\n/g, "<br>")}</p></td></tr><tr><td>${cardSection("This week's picks", [...releases, ...food, ...coupons].slice(0, 4))}${cardSection("Beer spotlight", beerCards)}${tableSection("Live music: next 2 weeks", music)}${cardSection("Upcoming events", events)}${imagePromoSection(hangarMenu)}${cardSection("4-packs & 6-packs to go", packages)}${cardSection("Brewery tours", tours)}${cardSection("Plan your visit", visit)}${cardSection("Behind the scenes", behindScenes)}${cardSection("Aviator shop", shop)}${cardSection("Private events & catering", hospitality)}${quickLinksSection("More from Aviator", extras)}${section("Aviator locations", locations)}</td></tr><tr><td style="padding:20px 24px;color:#9fb7c5;font-size:12px;line-height:1.5">${unsubscribeUrl ? `<a href="${escapeHtml(unsubscribeUrl)}" style="color:#efb45f">Leave the Flight Crew</a>` : "Newsletter preview"}</td></tr>`, draft.subject);
 
   const lines = [draft.heading, "", draft.message];
   lines.push(...featureLines("This week's picks", draft.sections.releases ? (content.releases || []).slice(0, 2) : []));

@@ -24,12 +24,6 @@ export const managerSections = [
     description: "Update bold homepage release alerts and sell sheets.",
   },
   {
-    id: "flight-log",
-    href: "/manager/flight-log",
-    label: "Flight Log",
-    description: "Manage Flight Log posts, users, roles, bans, and moderation.",
-  },
-  {
     id: "beverages",
     href: "/manager/beverages",
     label: "Beverages",
@@ -134,7 +128,7 @@ export const managerSectionGroups = [
   { id: "products", label: "Products & Sales", sections: ["beers", "beverages", "beer-release-alert", "kegs", "shop"] },
   { id: "media", label: "Photos, Menus & Locations", sections: ["media", "brewery-photos", "private-event-photos", "amphitheater-photos", "locations"] },
   { id: "hospitality", label: "Events & Hospitality", sections: ["events", "private-events", "catering", "tours"] },
-  { id: "marketing", label: "Marketing & Community", sections: ["flight-log", "newsletter", "coupons"] },
+  { id: "marketing", label: "Marketing", sections: ["newsletter", "coupons"] },
   { id: "system", label: "System Tools", sections: ["payments", "email-test", "database"] },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; sections: readonly ManagerSection[] }>;
 

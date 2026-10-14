@@ -24,7 +24,6 @@ type NewsletterContent = {
   coupons: Feature[];
   tours: Feature[];
   visit: Feature[];
-  community: Feature[];
   shop: Feature[];
   hospitality: Feature[];
   behindScenes: Feature[];
@@ -46,12 +45,12 @@ type Draft = {
   message: string;
   sections: {
     beers: boolean; releases: boolean; packages: boolean; events: boolean; music: boolean; hangarMenu: boolean;
-    food: boolean; coupons: boolean; tours: boolean; visit: boolean; community: boolean; shop: boolean;
+    food: boolean; coupons: boolean; tours: boolean; visit: boolean; shop: boolean;
     hospitality: boolean; behindScenes: boolean; extras: boolean; locations: boolean;
   };
 };
 
-const everySection: Draft["sections"] = { beers: true, releases: true, packages: true, events: true, music: true, hangarMenu: true, food: true, coupons: true, tours: false, visit: true, community: false, shop: false, hospitality: false, behindScenes: false, extras: false, locations: false };
+const everySection: Draft["sections"] = { beers: true, releases: true, packages: true, events: true, music: true, hangarMenu: true, food: true, coupons: true, tours: false, visit: true, shop: false, hospitality: false, behindScenes: false, extras: false, locations: false };
 
 const templates: { id: string; name: string; description: string; draft: Draft }[] = [
   {
@@ -60,7 +59,7 @@ const templates: { id: string; name: string; description: string; draft: Draft }
   },
   {
     id: "beer-release", name: "Beer Release", description: "Lead with a new pour, a few beer cards, packaged beer to go, and a clear website link for more.",
-    draft: { template: "beer-release", subject: "A new beer is cleared for takeoff", heading: "Meet the newest Aviator pour", message: "A fresh release has landed. Join us for the first pour and take home cold 4-packs and 6-packs at great prices.", sections: { ...everySection, events: false, music: false, coupons: false, tours: false, community: false, hospitality: false, behindScenes: false, locations: false } },
+    draft: { template: "beer-release", subject: "A new beer is cleared for takeoff", heading: "Meet the newest Aviator pour", message: "A fresh release has landed. Join us for the first pour and take home cold 4-packs and 6-packs at great prices.", sections: { ...everySection, events: false, music: false, coupons: false, tours: false, hospitality: false, behindScenes: false, locations: false } },
   },
   {
     id: "weekend", name: "Weekend Events", description: "A phone-friendly weekend email with music, events, food, offers, and visit details.",
@@ -69,7 +68,7 @@ const templates: { id: string; name: string; description: string; draft: Draft }
 ];
 
 const emptyWelcome: Welcome = { subject: "", heading: "", intro: "", history: "", speakeasy: "", special: "" };
-const emptyFeatures = { releases: [], packagedBeer: [], food: [], coupons: [], tours: [], visit: [], community: [], shop: [], hospitality: [], behindScenes: [] };
+const emptyFeatures = { releases: [], packagedBeer: [], food: [], coupons: [], tours: [], visit: [], shop: [], hospitality: [], behindScenes: [] };
 const emptyData: NewsletterData = {
   subscribers: [], confirmedCount: 0, pendingCount: 0, campaigns: [],
   content: { beers: [], events: [], music: [], hangarMenu: null, highlights: [], locations: [], ...emptyFeatures },
@@ -316,7 +315,6 @@ export function NewsletterManager() {
     { key: "coupons" as const, label: "Coupons & weekly specials", count: data.content.coupons.length, items: featurePreview(data.content.coupons) },
     { key: "tours" as const, label: "Tour dates & seats", count: data.content.tours.length, items: featurePreview(data.content.tours) },
     { key: "visit" as const, label: "Plan your visit", count: data.content.visit.length, items: featurePreview(data.content.visit) },
-    { key: "community" as const, label: "Flight Log community feature", count: data.content.community.length, items: featurePreview(data.content.community) },
     { key: "behindScenes" as const, label: "Behind the scenes", count: data.content.behindScenes.length, items: featurePreview(data.content.behindScenes) },
     { key: "shop" as const, label: "Merch & shop picks", count: data.content.shop.length, items: featurePreview(data.content.shop) },
     { key: "hospitality" as const, label: "Private events & catering", count: data.content.hospitality.length, items: featurePreview(data.content.hospitality) },

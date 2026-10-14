@@ -10,8 +10,6 @@ import { latestPublicMenu } from "@/lib/menu-files";
 import { getPublishedBeerReleaseAlerts } from "@/lib/beer-release-alert";
 import { getCouponOffers } from "@/lib/coupons";
 import { getUploadedKegInventory, type KegInventoryItem } from "@/lib/keg-inventory";
-import { getPublishedFlightLogPosts } from "@/lib/flight-log";
-import { getPublishedCustomerFlightLogPosts } from "@/lib/flight-log-social";
 import { getShopCatalog } from "@/lib/shop";
 import { getTourSummary } from "@/lib/tours";
 import { getConfirmedNewsletterSubscribers, getNewsletterSubscribers, subscribeNewsletter, unsubscribeNewsletter } from "@/lib/newsletter";
@@ -44,7 +42,6 @@ function validateDraft(value: unknown): NewsletterDraft {
       coupons: source.coupons === true,
       tours: source.tours === true,
       visit: source.visit === true,
-      community: source.community === true,
       shop: source.shop === true,
       hospitality: source.hospitality === true,
       behindScenes: source.behindScenes === true,
@@ -91,7 +88,7 @@ function packagedAvailability(item: KegInventoryItem) {
 }
 
 async function getContent() {
-  const [beers, events, locations, liveMusic, hangarMenu, releases, kegInventory, coupons, tour, officialPosts, customerPosts, shopProducts] = await Promise.all([
+  const [beers, events, locations, liveMusic, hangarMenu, releases, kegInventory, coupons, tour, shopProducts] = await Promise.all([
     getPortalBeers().then((items) => items.filter((beer) => beer.published !== false)),
     getPublishedEvents({ monthsAhead: 3 }),
     getAllLocations(),
@@ -101,14 +98,9 @@ async function getContent() {
     getUploadedKegInventory().catch(() => null),
     getCouponOffers().catch(() => []),
     getTourSummary().catch(() => null),
-    getPublishedFlightLogPosts("all").catch(() => []),
-    getPublishedCustomerFlightLogPosts(1).catch(() => []),
     getShopCatalog().then((catalog) => catalog.products).catch(() => []),
   ]);
 
-  const foodPost = officialPosts.find((post) => post.category === "food_specials");
-  const breweryPost = officialPosts.find((post) => post.category === "brewery_news");
-  const communityPost = customerPosts[0];
   const hangar = locations.find((location) => location.slug === "hangar-bar");
   const packagedBeer = (kegInventory?.items || [])
     .filter((item) => (item.case12Count || 0) > 0 || (item.case16Count || 0) > 0 || (item.caseCount || 0) > 0 || (/(can|case|4[ -]?pack|6[ -]?pack)/i.test(item.packaging) && Boolean(item.casePriceCents || item.case12PriceCents || item.case16PriceCents)))
@@ -132,21 +124,19 @@ async function getContent() {
     hangarMenu,
     releases: releases.slice(0, 2).map((release) => ({ title: release.beerName, meta: [release.releaseDate, release.releaseTime, release.locations].filter(Boolean).join(" · "), copy: release.specials, url: release.sellSheetUrl || "/beer", action: "See the release", imageUrl: beers.find((beer) => beer.name.toLowerCase() === release.beerName.toLowerCase())?.image })),
     packagedBeer: [{ title: "Cold 4-packs and 6-packs to go", copy: "Stock the fridge with Aviator beer at great prices. The packaged beer list below comes directly from the current Kegs & Beer to Go inventory.", url: "/kegs", action: "See all beer to go" }, ...packagedBeer],
-    food: foodPost ? [{ title: foodPost.title, copy: foodPost.excerpt || foodPost.body.slice(0, 260), url: `/flight-log/${foodPost.slug}`, action: "See the food feature", imageUrl: foodPost.imageUrl }] : [],
+    food: [{ title: "Food at Aviator", copy: "Explore current food menus and find your next meal at Aviator.", url: "/menus", action: "See the menus" }],
     coupons: coupons.slice(0, 3).map((offer) => ({ title: offer.title, meta: `Code ${offer.code} · Expires ${offer.expiresAt}`, copy: [offer.description, offer.terms].filter(Boolean).join(" "), url: "/coupons", action: "Get the offer" })),
     tours: tour ? [{ title: `Saturday brewery tours · ${tour.date}`, meta: `4 PM: ${tour.fourPm.remaining} seats · 6 PM: ${tour.sixPm.remaining} seats`, copy: `${money(tour.priceCents)} per guest. Tour the brewhouse and hear the Aviator story.`, url: "/about#brewery-tours", action: "Reserve a tour" }] : [],
     visit: hangar ? [{ title: hangar.name, meta: hangar.address, copy: "Check the menu, hours, directions, and join the waitlist before you arrive.", url: `/locations/${hangar.slug}`, action: "Plan your visit" }] : [],
-    community: communityPost ? [{ title: communityPost.title || `From ${communityPost.authorName}`, meta: communityPost.authorHandle ? `@${communityPost.authorHandle}` : communityPost.authorName, copy: communityPost.body.slice(0, 260), url: "/flight-log", action: "Open the Flight Log" }] : [],
     shop: merchandise.map((product) => ({ title: product.name, meta: product.categoryName, copy: product.description.slice(0, 220), url: `/shop-new#product-${product.slug}`, action: "Shop now", imageUrl: product.imageUrl })),
     hospitality: [
       { title: "Host a private event", copy: "Bring your group to Aviator for celebrations, company gatherings, and custom events.", url: "/private-events", action: "Plan an event" },
       { title: "Catering to go", copy: "Make the next gathering easy with Aviator food ready to pick up.", url: "/catering-to-go", action: "See catering" },
     ],
-    behindScenes: breweryPost ? [{ title: breweryPost.title, copy: breweryPost.excerpt || breweryPost.body.slice(0, 260), url: `/flight-log/${breweryPost.slug}`, action: "Read the brewery update", imageUrl: breweryPost.imageUrl }] : [],
+    behindScenes: [{ title: "Inside the Aviator brewery", copy: "Explore the brewery and learn how Aviator beer is made.", url: "/brewery", action: "Explore the brewery" }],
     highlights: [
       { title: "Menus", copy: "See current food and drink menus.", url: "/menus" },
       { title: "Events", copy: "Find upcoming events and the full calendar.", url: "/events" },
-      { title: "Flight Log", copy: "Catch official dispatches and community updates.", url: "/flight-log" },
       { title: "All locations", copy: "Check hours, addresses, and visit details.", url: "/locations" },
     ],
   };

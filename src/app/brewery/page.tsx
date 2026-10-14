@@ -74,7 +74,7 @@ export default async function BreweryPage() {
 
     <section className="section brewery-history-band">
       <div className="content-wrap">
-        <div className="section-heading"><div><p className="eyebrow">Brewery flight log</p><h2>From two dairy tanks to a new brewing campus.</h2></div></div>
+        <div className="section-heading"><div><p className="eyebrow">Brewery history</p><h2>From two dairy tanks to a new brewing campus.</h2></div></div>
         <div className="brewery-history"><article><b>2008</b><h3>The first hangar</h3><p>One employee, two repurposed 300-gallon dairy tanks, and the first Aviator batches.</p></article><article><b>2009</b><h3>Beer leaves the field</h3><p>Distribution begins across the Triangle and the original TapHouse opens in historic Varina.</p></article><article><b>2018</b><h3>The next brewery takes shape</h3><p>Planning begins for a five-acre campus and a fully automated 60-barrel, four-vessel brewhouse.</p></article><article><b>2025</b><h3>688 Brewing Drive opens</h3><p>The new campus opens in April, bringing production, beer, food, music, events, and gathering together.</p></article></div>
       </div>
     </section>

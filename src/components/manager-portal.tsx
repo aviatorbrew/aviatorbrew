@@ -13,7 +13,6 @@ import { PaymentTestManager } from "@/components/payment-test-manager";
 import { WebsitePhotosLibrary } from "@/components/website-photos-library";
 import { BeerImageViewer } from "@/components/beer-image-viewer";
 import { BeyondBeerImageViewer } from "@/components/beyond-beer-image-viewer";
-import { FlightLogAdmin } from "@/components/flight-log-admin";
 import { ShopManager } from "@/components/shop-manager";
 import { CateringManager, PrivateEventsInquiryManager } from "@/components/catering-manager";
 import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
@@ -169,7 +168,7 @@ function EventManager({ editId, returnTo }: { editId?: string; returnTo?: string
     } catch (error) { setMessage(eventErrorMessage(error)); }
     finally { setBusy(false); }
   }
-  return <section id="events" className="coupon-manager manager-events"><p className="eyebrow">Event operations</p><div className="manager-events-heading"><div><h2>Events</h2><p>Publish special events or live music to the database. Flight Log reads special events and live music from these manager-published rows.</p></div><button className="button" type="button" onClick={() => { setAdding((value) => !value); if (editing) setEditing(null); }} disabled={busy}>{adding ? "Close event form" : "Add an event"}</button></div><p className="media-message" role="status">{message}</p>
+  return <section id="events" className="coupon-manager manager-events"><p className="eyebrow">Event operations</p><div className="manager-events-heading"><div><h2>Events</h2><p>Publish special events or live music for the website and newsletter.</p></div><button className="button" type="button" onClick={() => { setAdding((value) => !value); if (editing) setEditing(null); }} disabled={busy}>{adding ? "Close event form" : "Add an event"}</button></div><p className="media-message" role="status">{message}</p>
     {adding ? <form className="manager-event-form manager-event-add-form" onSubmit={create}><EventFormFields /><div className="manager-event-edit-actions"><button className="button" disabled={busy}>{busy ? "Saving..." : "Publish special event"}</button><button className="button button-outline" type="button" onClick={() => setAdding(false)} disabled={busy}>Cancel</button></div></form> : null}
     <div className="manager-events-saved-panel"><h3 className="tour-signups-heading">Managed special events</h3><div className="manager-events-list">{events.length ? events.map((item) => {
       const isEditing = editing?.id === item.id;
@@ -759,7 +758,6 @@ function ManagerSectionContent({ section, editId, editType, returnTo }: { sectio
     case "beers": return <BeerManager editId={editId} returnTo={returnTo} />;
     case "shop": return <ShopManager editId={editId} editType={editType} returnTo={returnTo} />;
     case "beer-release-alert": return <BeerReleaseAlertManager editId={editId} returnTo={returnTo} />;
-    case "flight-log": return <FlightLogAdmin mode={editId ? "edit" : "list"} postId={editId} returnTo={returnTo} />;
     case "brewery-photos": return <BreweryPhotosManager />;
     case "private-event-photos": return <PrivateEventPhotosManager />;
     case "amphitheater-photos": return <AmphitheaterPhotosManager />;

@@ -3,10 +3,10 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Aviator Brewing Company",
-  description: "Privacy Policy for Aviator Brewing Company website, Flight Log, Flight Crew, shop, events, and SMS communications.",
+  description: "Privacy Policy for Aviator Brewing Company website, Flight Crew, shop, events, and SMS communications.",
 };
 
-const updated = "August 1, 2026";
+const updated = "October 14, 2026";
 
 export default function PrivacyPolicyPage() {
   return <>
@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
       <div className="content-wrap">
         <p className="eyebrow">Aviator Brewing Company</p>
         <h1>Privacy Policy</h1>
-        <p>How Aviator Brewing Company collects, uses, protects, and handles customer information across our website, Flight Log, Flight Crew, shop, events, and messaging programs.</p>
+        <p>How Aviator Brewing Company collects, uses, protects, and handles customer information across our website, Flight Crew, shop, events, and messaging programs.</p>
       </div>
     </section>
 
@@ -23,17 +23,17 @@ export default function PrivacyPolicyPage() {
         <p className="legal-updated"><strong>Last updated:</strong> {updated}</p>
 
         <h2>Who We Are</h2>
-        <p>Aviator Brewing Company operates the Aviator website, Flight Log community features, Flight Crew customer club, online shop, event tools, coupon tools, and related customer communications. Our main brewery campus is located at 688 Brewing Drive, Fuquay-Varina, NC 27526.</p>
+        <p>Aviator Brewing Company operates the Aviator website, Flight Crew customer club, online shop, event tools, coupon tools, and related customer communications. Our main brewery campus is located at 688 Brewing Drive, Fuquay-Varina, NC 27526.</p>
 
         <h2>Information We Collect</h2>
         <p>We may collect information you provide directly, including your name, email address, phone number, mailing address, billing and shipping details, account username or callsign, profile information, event inquiries, coupon activity, shop orders, check-ins, uploaded photos or videos, comments, messages, and other information submitted through website forms.</p>
         <p>We may also collect technical information such as IP address, browser type, device information, pages visited, timestamps, referring pages, and basic analytics or security logs.</p>
 
         <h2>How We Use Information</h2>
-        <p>We use information to operate the website, manage customer accounts, provide Flight Log and Flight Crew features, process shop orders, respond to inquiries, manage events and bookings, send account verification or password reset messages, provide customer support, prevent fraud or abuse, improve services, and send updates when you have opted in.</p>
+        <p>We use information to operate the website, manage customer accounts, provide Flight Crew features, process shop orders, respond to inquiries, manage events and bookings, send account verification or password reset messages, provide customer support, prevent fraud or abuse, improve services, and send updates when you have opted in.</p>
 
         <h2>SMS And Mobile Messaging</h2>
-        <p>If you provide a mobile number and separately consent to receive text messages from Aviator Brewing Company, we may send SMS messages related to Flight Crew updates, Flight Log account activity, friend invitations, event updates, beer releases, shop or order updates, coupons, customer support, and related Aviator announcements.</p>
+        <p>If you provide a mobile number and separately consent to receive text messages from Aviator Brewing Company, we may send SMS messages related to Flight Crew updates, event updates, beer releases, shop or order updates, coupons, customer support, and related Aviator announcements.</p>
         <p>Message frequency varies. Marketing messages are generally limited to up to 4 messages per month, while transactional or account-related messages may be sent as needed. Message and data rates may apply.</p>
         <p><strong>Mobile information and text messaging opt-in consent will not be shared with third parties or affiliates for marketing or promotional purposes.</strong></p>
         <p><strong>Text messaging originator opt-in data and consent are excluded from any data sharing described in this policy and will not be sold, rented, shared, or purchased.</strong></p>
@@ -49,7 +49,7 @@ export default function PrivacyPolicyPage() {
         <p>The website may use cookies, local storage, session storage, analytics, and similar technologies to keep users signed in, remember preferences, understand website traffic, improve performance, and protect against abuse.</p>
 
         <h2>User Content</h2>
-        <p>Information you post publicly in Flight Log or other public areas of the website may be visible to other users and website visitors. Do not post private information that you do not want made public.</p>
+        <p>Information you post in public areas of the website may be visible to other users and website visitors. Do not post private information that you do not want made public.</p>
 
         <h2>Data Security</h2>
         <p>We use reasonable administrative, technical, and physical safeguards designed to protect customer information. No website, network, database, or communication system can be guaranteed to be completely secure.</p>
