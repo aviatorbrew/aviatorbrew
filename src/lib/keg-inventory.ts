@@ -311,6 +311,9 @@ async function saveDatabaseKegInventory(inventory: KegInventory) {
           uploadedAt: inventory.uploadedAt,
         }), "Keg/package inventory import metadata"],
       );
+      // Manager price/visibility edits remain effective after BrewOps synchronization.
+      // Preserve the receiver's operation ID, revision and cooldown independently.
+      await client.query("UPDATE website.settings SET value=jsonb_set(value,'{inventory}',$1::jsonb),updated_at=now() WHERE key='brewops_sales_snapshot'", [JSON.stringify(inventory)]);
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
@@ -489,6 +492,15 @@ async function readKegInventoryFile(file: string, options: { includeHidden?: boo
 }
 
 export async function getUploadedKegInventory(options: { includeHidden?: boolean } = {}): Promise<KegInventory | null> {
+  // This record exists only after an authenticated, verified BrewOps publication.
+  // Fail closed after activation: database failures must not resurrect a stale bundled snapshot.
+  if (process.env.BREWOPS_SALES_SYNC_TOKEN && databaseConfigured()) {
+    const synced = await withDatabase(async (client) => {
+      const result = await client.query("SELECT value FROM website.settings WHERE key = 'brewops_sales_snapshot'");
+      return result.rows[0]?.value?.inventory as KegInventory | undefined;
+    });
+    if (synced) return { ...synced, items: options.includeHidden ? synced.items : synced.items.filter(visibleKegItem) };
+  }
   for (const file of [bundledSnapshotFile(), latestImportFile()]) {
     try {
       return await readKegInventoryFile(file, options);
