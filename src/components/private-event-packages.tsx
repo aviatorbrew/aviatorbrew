@@ -111,7 +111,7 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
           <h3>{item.name}</h3>
           <div className="private-event-package-price"><strong><span aria-hidden="true">$</span>{item.price}</strong><span>/ guest</span></div>
           <ul>{item.includes.map((line) => <li key={line}>{line}</li>)}</ul>
-          <footer>Drinks included · 30 guest minimum</footer>
+          <footer>Tea, soft drinks &amp; water included · 30 guest minimum</footer>
         </article>)}
       </div>
 
@@ -154,6 +154,9 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
         <article>
           <p className="eyebrow">The bar</p><h3>Choose your setup.</h3>
           <p>Keep it simple with a guest-paid bar, arrange a hosted tab with your event coordinator, or offer drink tickets. Aviator beer is on tap, with liquor and wine available. There is no required drink package.</p>
+          <p><strong>How drink tickets work:</strong> Choose the total number of tickets for your event and distribute them to your guests. Each ticket can be exchanged for one beer, glass of wine, or liquor drink.</p>
+          <p><strong>Billed at the actual drink price:</strong> The host pays the menu price of each drink redeemed, typically ranging from $6 to $17 depending on the selection. Tickets control the number of hosted drinks; your final bar total depends on what guests order.</p>
+          <p>For example, one $6 drink and one $17 cocktail use two tickets and add $23 to the host&apos;s bar tab. Taxes and gratuity are additional.</p>
           <p><strong>Included with the room:</strong> big-screen presentation setup, house sound system, and microphone.</p>
         </article>
       </div>
