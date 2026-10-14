@@ -1,0 +1,129 @@
+.hero-runway {
+  min-height: min(740px, calc(100svh - 5.6rem));
+  align-items: start;
+}
+
+.hero-runway .hero-content {
+  padding: clamp(1.5rem, 3.5vw, 3rem) 0 2.5rem;
+}
+
+.hero-runway .home-logo-trigger { margin-bottom: .75rem; }
+.hero-runway .home-brand-logo {
+  width: clamp(4rem, 6vw, 6rem);
+  height: clamp(4rem, 6vw, 6rem);
+}
+
+.hero-runway .hero-content h1 {
+  font-size: clamp(3.2rem, 7.2vw, 7.5rem);
+}
+
+.hero-runway .hero-copy { max-width: 34rem; }
+.hero-runway .hero-copy strong { color: #fff; }
+.hero-runway .hero-actions { margin-top: 1.4rem; gap: .65rem; }
+
+.home-hangar-feature {
+  padding: clamp(2.5rem, 5vw, 5rem) 0;
+  border-top: 3px solid #efb45f;
+  border-bottom: 1px solid rgba(184, 217, 236, .22);
+  background: radial-gradient(ellipse at 85% 20%, rgba(40, 91, 119, .28), transparent 60%), #0b2235;
+}
+
+.home-hangar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 4.5rem);
+}
+
+.home-hangar-photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid rgba(239, 180, 95, .5);
+  background: #061724;
+}
+
+.home-hangar-photo img { object-fit: cover; }
+.home-hangar-photo::after {
+  position: absolute;
+  inset: 50% 0 0;
+  background: linear-gradient(transparent, rgba(3, 15, 25, .8));
+  content: "";
+  pointer-events: none;
+}
+.home-hangar-photo > span {
+  position: absolute;
+  z-index: 1;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  padding: .65rem .85rem;
+  background: #efb45f;
+  color: #071827;
+  font: 900 .7rem/1.3 "Courier New", monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.home-hangar-copy .eyebrow { color: #efb45f; }
+.home-hangar-copy h2 {
+  margin: .7rem 0 1.25rem;
+  color: #f4f7f8;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(2.8rem, 4.8vw, 4.8rem);
+  font-weight: 400;
+  line-height: .95;
+  letter-spacing: -.035em;
+  text-transform: uppercase;
+}
+.home-hangar-copy h2 em {
+  display: block;
+  margin-top: .1em;
+  color: #efb45f;
+  font-family: Georgia, serif;
+  font-style: italic;
+  letter-spacing: -.055em;
+  text-transform: none;
+}
+.home-hangar-copy > p:not(.eyebrow) {
+  max-width: 35rem;
+  color: #ccdae3;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+.home-hangar-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 1.1rem;
+  margin: 1.25rem 0;
+  padding: 0;
+  list-style: none;
+  color: #f0cf9b;
+  font: 700 .8rem/1.5 "Courier New", monospace;
+}
+.home-hangar-highlights li::before { content: "+ "; color: #efb45f; }
+.home-hangar-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.5rem 0 1.25rem; }
+.home-hangar-address {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  color: #c5d9e5;
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.home-hangar-address svg { flex: 0 0 auto; width: 1rem; height: 1rem; }
+.home-hangar-address:hover { color: #efb45f; }
+
+@media (max-width: 760px) {
+  .home-hangar-layout { grid-template-columns: minmax(0, 1fr); }
+  .home-hangar-copy { grid-row: 1; }
+  .home-hangar-photo { aspect-ratio: 16 / 10; }
+}
+
+@media (max-width: 700px) {
+  .hero-runway { min-height: 0; }
+  .hero-runway .hero-content { padding: 1.5rem 0 2rem; }
+  .hero-runway .hero-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-runway .hero-actions .button { justify-content: center; padding: .85rem .65rem; font-size: .68rem; }
+  .hero-runway .hero-actions .button:first-child { grid-column: 1 / -1; }
+  .home-hangar-actions .button { flex: 1 1 11rem; justify-content: center; }
+}

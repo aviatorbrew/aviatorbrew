@@ -14,8 +14,37 @@ import { getPublishedEvents, type ManagedEvent } from "@/lib/managed-events";
 import { couponAvailability, getCouponOffers } from "@/lib/coupons";
 import { getPublishedBeerReleaseAlerts } from "@/lib/beer-release-alert";
 import { getPublishedShopTicketEvents, type ShopProduct } from "@/lib/shop";
+import { getLocationHero } from "@/lib/location-photos";
 
 export const dynamic = "force-dynamic";
+
+async function HangarBarFeature() {
+  const image = await getLocationHero("hangar-bar", "/images/locations/hangar-bar.png");
+
+  return <section className="home-hangar-feature" aria-labelledby="home-hangar-title">
+    <div className="content-wrap home-hangar-layout">
+      <div className="home-hangar-photo">
+        <Image src={image} alt="Aviator Hangar Bar at the brewery campus" fill unoptimized sizes="(max-width: 760px) 100vw, 50vw" />
+        <span>Our flagship restaurant + bar</span>
+      </div>
+      <div className="home-hangar-copy">
+        <p className="eyebrow">Make this your first stop</p>
+        <h2 id="home-hangar-title">Aviator <em>Hangar Bar.</em></h2>
+        <p>Come hungry. Bring your crew. Settle in for fresh Aviator beer, scratch-made food, cocktails, and live music at the heart of our brewery campus.</p>
+        <ul className="home-hangar-highlights" aria-label="Hangar Bar highlights">
+          <li>Brewery-fresh beer</li>
+          <li>Scratch-made favorites</li>
+          <li>Cocktails + live music</li>
+        </ul>
+        <div className="home-hangar-actions">
+          <Link className="button" href="/locations#hangar-bar" data-analytics="home_hangar_menu">Explore the menu <ArrowUpRight /></Link>
+          <a className="button button-outline" href="https://www.waitlist.me/w/aviatorhangarbar" target="_blank" rel="noreferrer" data-analytics="hangar_bar_waitlist">Join the waitlist <ArrowUpRight /></a>
+        </div>
+        <a className="home-hangar-address" href="https://maps.google.com/?q=688+Brewing+Drive+Fuquay-Varina+NC+27526" target="_blank" rel="noreferrer" data-analytics="home_hangar_directions"><MapPin /><span>688 Brewing Drive · Fuquay-Varina, NC</span><ArrowUpRight /></a>
+      </div>
+    </div>
+  </section>;
+}
 
 function formatManagedDate(date: string) {
   return new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" }).format(new Date(`${date}T12:00:00-05:00`));
@@ -39,8 +68,8 @@ function TicketProductHomeCard({ product }: { product: ShopProduct }) {
 
 export default async function Home() { const [weekendEvents, locations, beers, couponOffers, couponStatus, beerReleaseAlert, ticketEvents] = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getAllLocations(), getAllBeers(), getCouponOffers(), couponAvailability(), getPublishedBeerReleaseAlerts(), getPublishedShopTicketEvents()]); const schema = { "@context": "https://schema.org", "@type": ["Brewery", "Restaurant", "LocalBusiness"], name: "Aviator Brewing Company", address: { "@type": "PostalAddress", streetAddress: "688 Brewing Drive", addressLocality: "Fuquay-Varina", addressRegion: "NC", postalCode: "27526", addressCountry: "US" }, telephone: "+1-919-567-2337", servesCuisine: ["American", "Pizza", "Barbecue"], url: "https://aviatorbrew.com" }; return <>
   <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-  <section className="hero hero-runway"><div className="hero-media"><Image src="/images/hero-runway-wwii-restored.png" alt="Aviator field runway leading to a glowing brewery hangar at dusk" fill priority unoptimized sizes="100vw" /></div><div className="hero-p51" aria-hidden="true"><Image src="/images/p51-strafing-hero-restored.png" alt="" fill priority unoptimized sizes="100vw" /></div><span className="flight-path" aria-hidden="true" /><span className="runway-number" aria-hidden="true">08<span>26</span></span><div className="hero-content"><HomeLogoViewer /><p className="eyebrow">Aviator Field · Fuquay-Varina, North Carolina · Est. 2008</p><h1>Your next <em>adventure</em> is brewing.</h1><p className="hero-copy">Craft beer, scratch-made food, live music, events, weekend brunch, cocktails, and aviation-inspired experiences—built for a great night out.</p><div className="hero-actions"><a className="button button-order-food" href={orderFoodUrl} data-analytics="hero_order_food">Order food <ArrowUpRight /></a><Link className="button button-outline" href="/brewery" data-analytics="hero_explore_brewery">Enter the hangar <ArrowUpRight /></Link><Link className="button button-outline" href="/locations" data-analytics="hero_view_locations">View locations</Link><Link className="button button-outline" href="/events" data-analytics="hero_events">See what&apos;s happening</Link></div><div className="flight-data" aria-label="Aviator field information"><span>FIELD <b>FVNC</b></span><span>RUNWAY <b>08 / 26</b></span><span>OPEN <b>7 DAYS</b></span></div></div></section>
-  <section className="hangar-waitlist"><div className="content-wrap hangar-waitlist-inner"><div><p className="eyebrow">Aviator Hangar Bar / 688 Brewing Drive</p><h2>Want a table? <em>Join the waitlist.</em></h2><p>Planning a stop at the Hangar Bar? Add your party to the waitlist before you arrive.</p></div><a className="button button-light" href="https://www.waitlist.me/w/aviatorhangarbar" target="_blank" rel="noreferrer" data-analytics="hangar_bar_waitlist">Join Hangar Bar waitlist <ArrowUpRight /></a></div></section>
+  <section className="hero hero-runway"><div className="hero-media"><Image src="/images/hero-runway-wwii-restored.png" alt="Aviator field runway leading to a glowing brewery hangar at dusk" fill priority unoptimized sizes="100vw" /></div><div className="hero-p51" aria-hidden="true"><Image src="/images/p51-strafing-hero-restored.png" alt="" fill priority unoptimized sizes="100vw" /></div><span className="flight-path" aria-hidden="true" /><span className="runway-number" aria-hidden="true">08<span>26</span></span><div className="hero-content"><HomeLogoViewer /><p className="eyebrow">Aviator Field · Fuquay-Varina, North Carolina · Est. 2008</p><h1>Your next <em>adventure</em> is brewing.</h1><p className="hero-copy">Start at the <strong>Aviator Hangar Bar</strong>: fresh Aviator beer, scratch-made food, cocktails, and a great night at the brewery.</p><div className="hero-actions"><Link className="button" href="/locations#hangar-bar" data-analytics="hero_hangar_menu">Hangar Bar menu <ArrowUpRight /></Link><a className="button button-outline" href="https://www.waitlist.me/w/aviatorhangarbar" target="_blank" rel="noreferrer" data-analytics="hero_hangar_waitlist">Join waitlist <ArrowUpRight /></a><a className="button button-outline" href={orderFoodUrl} data-analytics="hero_order_food">Order food <ArrowUpRight /></a></div><div className="flight-data" aria-label="Aviator field information"><span>FIELD <b>FVNC</b></span><span>RUNWAY <b>08 / 26</b></span><span>OPEN <b>7 DAYS</b></span></div></div></section>
+  <HangarBarFeature />
   <div className="arrival-strip" aria-label="Aviator field updates"><div className="arrival-track"><span>Now boarding: great beer</span><i>✦</i><span>Live music on the field</span><i>✦</i><span>BEER IS MY FRIEND</span><i>✦</i><span>Private events cleared for takeoff</span><i>✦</i><span>Now boarding: great beer</span><i>✦</i><span>Live music on the field</span><i>✦</i><span>BEER IS MY FRIEND</span><i>✦</i><span>Private events cleared for takeoff</span></div></div>
   <BeerReleaseAlertBand alerts={beerReleaseAlert} />
   {couponOffers.length ? <CouponSpotlight offers={couponOffers} allowed={couponStatus.allowed} reason={couponStatus.reason} /> : null}
