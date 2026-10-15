@@ -10,6 +10,7 @@ import "./home-logo-viewer.css";
 import "./home.css";
 import "./become-a-pilot.css";
 import "./site-header.css";
+import "./contact.css";
 import packageInfo from "../../package.json";
 import { AnalyticsHooks } from "@/components/analytics";
 import { SiteFooter } from "@/components/site-footer";

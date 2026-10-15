@@ -49,6 +49,20 @@ export default async function ContentPage({
   const page = (await params).page;
   const content = pageContent[page];
   if (!content) notFound();
+  if (page === "contact") return <section className="page-hero content-page-hero content-page-contact-hero contact-compact">
+    <div className="content-wrap contact-compact-layout">
+      <div className="contact-compact-copy">
+        <p className="eyebrow">{content.eyebrow}</p>
+        <h1>{content.title}</h1>
+        <p>{content.description}</p>
+        <Link className="section-link" href="/locations">Find hours, menus &amp; directions <ArrowUpRight /></Link>
+      </div>
+      <section id="inquiry" className="contact-compact-form" aria-labelledby="contact-form-heading">
+        <h2 id="contact-form-heading">Send a message</h2>
+        <InquiryForm kind="contact" />
+      </section>
+    </div>
+  </section>;
   const formKind = content.form;
   const query = page === "private-events" ? await searchParams : {};
   const paymentStatus = query.booking_payment;
