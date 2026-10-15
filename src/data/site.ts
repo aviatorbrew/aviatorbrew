@@ -34,7 +34,9 @@ export const primaryNav = [
   { label: "Locations", href: "/locations" },
   { label: "EVENTS", href: "/events", children: [{ label: "Events", href: "/events" }, { label: "Private Events", href: "/private-events" }, { label: "Catering To Go", href: "/catering-to-go" }] },
   { label: "Become a Pilot", href: "/become-a-pilot" },
-  { label: "MORE", href: "/more", children: [{ label: "About", href: "/about" }, { label: "Tours", href: "/about#brewery-tours" }, { label: "Contact Us", href: "/contact" }] },
+  { label: "About", href: "/about" },
+  { label: "Tours", href: "/about#brewery-tours" },
+  { label: "Contact Us", href: "/contact" },
 ];
 
 export const locations: Location[] = [

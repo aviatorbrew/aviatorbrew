@@ -17,13 +17,13 @@
   left: auto;
 }
 
-@media (max-width: 1600px) {
+@media (max-width: 1800px) {
   .site-header { gap: 1rem; }
   .desktop-nav { gap: .75rem; }
   .header-actions .text-action { display: none; }
 }
 
-@media (max-width: 1300px) {
+@media (max-width: 1400px) {
   .desktop-nav, .header-actions { display: none; }
   .site-header { justify-content: space-between; }
   .mobile-toggle {
