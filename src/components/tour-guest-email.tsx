@@ -35,7 +35,7 @@ export function TourGuestEmail({ signup }: { signup: { id: string; name: string;
       <p>To: <strong>{signup.email}</strong><br />Booking: {signup.tourDate} at {signup.tourTime}</p>
       <label>Subject<input value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={160} required disabled={busy} autoFocus /></label>
       <label>Message<textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={5000} rows={5} required disabled={busy} /></label>
-      <small>Replies go to tours@aviatorbrew.com.</small>
+      <small>Replies go to events@aviatorbrew.com.</small>
       {error ? <p className="tour-email-error" role="alert">{error}</p> : null}
       <div className="tour-email-actions"><button className="button" disabled={busy}>{busy ? "Sending..." : "Send email"}</button><button type="button" onClick={() => setOpen(false)} disabled={busy}>Close</button></div>
     </form> : null}

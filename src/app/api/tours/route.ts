@@ -60,6 +60,6 @@ export async function POST(request: Request) {
       paymentUrl,
     });
   } catch {
-    return NextResponse.json({ error: "We could not save your tour signup. Please try again or email tours@aviatorbrew.com." }, { status: 500 });
+    return NextResponse.json({ error: "We could not save your tour signup. Please try again or email events@aviatorbrew.com." }, { status: 500 });
   }
 }

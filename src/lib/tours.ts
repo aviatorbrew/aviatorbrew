@@ -255,13 +255,13 @@ function tourEmailHtml(input: { title: string; status: string; date: string; tim
   const total = input.total === undefined ? "" : '<tr><td style="padding:10px 0;color:#68879a;font-size:12px;text-transform:uppercase;letter-spacing:1px">Flight progress</td><td style="padding:10px 0;color:#102d46;font-weight:800;text-align:right">' + input.total + ' of ' + TOUR_CAPACITY + ' seats · ' + (input.minimum ?? DEFAULT_TOUR_MINIMUM) + ' needed to launch</td></tr>';
   const price = formatTourPrice(input.priceCents ?? DEFAULT_TOUR_PRICE_CENTS);
   const attendee = input.attendee ? '<tr><td style="padding:10px 0;color:#68879a;font-size:12px;text-transform:uppercase;letter-spacing:1px">Guest</td><td style="padding:10px 0;color:#102d46;font-weight:800;text-align:right">' + escapeHtml(input.attendee) + (input.tickets ? ' · ' + input.tickets + ' ticket(s)' : "") + '</td></tr>' : "";
-  return '<!doctype html><html><body style="margin:0;background:#e7f0f4;font-family:Arial,Helvetica,sans-serif;color:#102d46"><div style="max-width:620px;margin:0 auto;padding:28px 16px"><div style="padding:22px 26px;background:#082842;color:#fff;border-bottom:5px solid #efae58"><div style="font-family:monospace;color:#efb45f;font-size:12px;letter-spacing:2px">AVIATOR BREWING COMPANY · TOUR OPERATIONS</div><h1 style="margin:12px 0 0;font-size:32px;line-height:1.05">' + escapeHtml(input.title) + '</h1></div><div style="padding:26px;background:#fff"><div style="display:inline-block;padding:8px 11px;background:' + (statusOn ? "#125779" : "#e8a94d") + ';color:' + (statusOn ? "#f4fbff" : "#102d46") + ';font-family:monospace;font-size:12px;font-weight:800;letter-spacing:1px">' + escapeHtml(input.status) + '</div><p style="margin:20px 0 14px;font-size:17px;line-height:1.55">' + escapeHtml(input.body) + '</p><table style="width:100%;border-collapse:collapse;border-top:1px solid #c9dbe5;border-bottom:1px solid #c9dbe5"><tr><td style="padding:10px 0;color:#68879a;font-size:12px;text-transform:uppercase;letter-spacing:1px">Tentative tour date</td><td style="padding:10px 0;color:#102d46;font-weight:800;text-align:right">' + escapeHtml(input.date) + '</td></tr><tr><td style="padding:10px 0;color:#68879a;font-size:12px;text-transform:uppercase;letter-spacing:1px">Tour time</td><td style="padding:10px 0;color:#102d46;font-weight:800;text-align:right">' + escapeHtml(input.time) + '</td></tr>' + attendee + total + '</table><p style="margin:20px 0 0;color:#446578;font-size:14px;line-height:1.55">Tours are approximately 30 minutes. Each ' + price + ' ticket includes an Aviator pint glass, one beer pour, and one flight of four pours.</p></div><div style="padding:16px 22px;background:#103953;color:#d4e5ed;font-size:12px;line-height:1.5">Questions? Reply to this email or contact tours@aviatorbrew.com.</div></div></body></html>';
+  return '<!doctype html><html><body style="margin:0;background:#e7f0f4;font-family:Arial,Helvetica,sans-serif;color:#102d46"><div style="max-width:620px;margin:0 auto;padding:28px 16px"><div style="padding:22px 26px;background:#082842;color:#fff;border-bottom:5px solid #efae58"><div style="font-family:monospace;color:#efb45f;font-size:12px;letter-spacing:2px">AVIATOR BREWING COMPANY · TOUR OPERATIONS</div><h1 style="margin:12px 0 0;font-size:32px;line-height:1.05">' + escapeHtml(input.title) + '</h1></div><div style="padding:26px;background:#fff"><div style="display:inline-block;padding:8px 11px;background:' + (statusOn ? "#125779" : "#e8a94d") + ';color:' + (statusOn ? "#f4fbff" : "#102d46") + ';font-family:monospace;font-size:12px;font-weight:800;letter-spacing:1px">' + escapeHtml(input.status) + '</div><p style="margin:20px 0 14px;font-size:17px;line-height:1.55">' + escapeHtml(input.body) + '</p><table style="width:100%;border-collapse:collapse;border-top:1px solid #c9dbe5;border-bottom:1px solid #c9dbe5"><tr><td style="padding:10px 0;color:#68879a;font-size:12px;text-transform:uppercase;letter-spacing:1px">Tentative tour date</td><td style="padding:10px 0;color:#102d46;font-weight:800;text-align:right">' + escapeHtml(input.date) + '</td></tr><tr><td style="padding:10px 0;color:#68879a;font-size:12px;text-transform:uppercase;letter-spacing:1px">Tour time</td><td style="padding:10px 0;color:#102d46;font-weight:800;text-align:right">' + escapeHtml(input.time) + '</td></tr>' + attendee + total + '</table><p style="margin:20px 0 0;color:#446578;font-size:14px;line-height:1.55">Tours are approximately 30 minutes. Each ' + price + ' ticket includes an Aviator pint glass, one beer pour, and one flight of four pours.</p></div><div style="padding:16px 22px;background:#103953;color:#d4e5ed;font-size:12px;line-height:1.5">Questions? Reply to this email or contact events@aviatorbrew.com.</div></div></body></html>';
 }
 
 async function deliverTourEmail(message: TourMail) {
   if (isMailConfigured()) {
     try {
-      const accepted = await sendMail({ to: message.to, subject: message.subject, text: message.text, html: message.html, replyTo: "tours@aviatorbrew.com", fromName: "Aviator Brewery Tours" });
+      const accepted = await sendMail({ to: message.to, subject: message.subject, text: message.text, html: message.html, replyTo: "events@aviatorbrew.com", fromName: "Aviator Brewery Tours" });
       console.info("tour.email_result", { category: message.category, accepted });
       return accepted;
     } catch (error) {
@@ -272,13 +272,13 @@ async function deliverTourEmail(message: TourMail) {
   }
   const webhook = process.env.TOUR_EMAIL_WEBHOOK_URL;
   if (webhook) {
-    const response = await fetch(webhook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...message, replyTo: "tours@aviatorbrew.com", source: "aviatorbrew.com" }) });
+    const response = await fetch(webhook, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...message, replyTo: "events@aviatorbrew.com", source: "aviatorbrew.com" }) });
     return response.ok;
   }
   const resendKey = process.env.RESEND_API_KEY;
   const from = process.env.TOUR_FROM_EMAIL;
   if (resendKey && from) {
-    const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + resendKey, "content-type": "application/json" }, body: JSON.stringify({ from, to: [message.to], subject: message.subject, text: message.text, html: message.html, reply_to: "tours@aviatorbrew.com" }) });
+    const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + resendKey, "content-type": "application/json" }, body: JSON.stringify({ from, to: [message.to], subject: message.subject, text: message.text, html: message.html, reply_to: "events@aviatorbrew.com" }) });
     return response.ok;
   }
   return false;
@@ -289,8 +289,8 @@ export async function sendTourGuestMessage(signupId: string, subject: string, me
   const signup = store.signups.find((guest) => guest.id === signupId);
   if (!signup) return null;
   const date = formatTourDate(signup.tourDate);
-  const text = [`Hi ${signup.name},`, "", message, "", `Your booking: ${date} at ${signup.tourTime} · ${signup.tickets} ticket(s).`, "", "Aviator Brewery Tours", "Reply to tours@aviatorbrew.com"].join("\n");
-  const html = `<div style="max-width:620px;margin:auto;padding:24px;font-family:Arial,sans-serif;color:#102d46"><h1 style="font-size:24px">Aviator Brewery Tours</h1><p>Hi ${escapeHtml(signup.name)},</p><p style="white-space:pre-wrap;line-height:1.6">${escapeHtml(message)}</p><p style="border-top:1px solid #c9dbe5;padding-top:16px">Your booking: ${escapeHtml(date)} at ${escapeHtml(signup.tourTime)} · ${signup.tickets} ticket(s).</p><p>Reply to <a href="mailto:tours@aviatorbrew.com">tours@aviatorbrew.com</a></p></div>`;
+  const text = [`Hi ${signup.name},`, "", message, "", `Your booking: ${date} at ${signup.tourTime} · ${signup.tickets} ticket(s).`, "", "Aviator Brewery Tours", "Reply to events@aviatorbrew.com"].join("\n");
+  const html = `<div style="max-width:620px;margin:auto;padding:24px;font-family:Arial,sans-serif;color:#102d46"><h1 style="font-size:24px">Aviator Brewery Tours</h1><p>Hi ${escapeHtml(signup.name)},</p><p style="white-space:pre-wrap;line-height:1.6">${escapeHtml(message)}</p><p style="border-top:1px solid #c9dbe5;padding-top:16px">Your booking: ${escapeHtml(date)} at ${escapeHtml(signup.tourTime)} · ${signup.tickets} ticket(s).</p><p>Reply to <a href="mailto:events@aviatorbrew.com">events@aviatorbrew.com</a></p></div>`;
   const accepted = await deliverTourEmail({ to: signup.email, subject, text, html, category: "tour-guest-message" });
   return { accepted, recipient: signup.email };
 }
@@ -302,7 +302,7 @@ export async function notifyManagerOfSignup(result: Awaited<ReturnType<typeof cr
   const waiting = Math.max(minimum - currentTotal, 0);
   const body = qualified ? "This flight has reached the " + minimum + "-person launch minimum and is on." : "This flight is tentatively set for " + date + " at " + signup.tourTime + " and is waiting for " + waiting + " more signup(s) to launch.";
   const text = ["New brewery tour signup", "Status: " + status, body, "Guest: " + signup.name + " (" + signup.email + ")", "Tickets: " + signup.tickets, "Flight: " + date + " at " + signup.tourTime, "Flight progress: " + currentTotal + " of " + TOUR_CAPACITY + " seats (" + minimum + " required to launch)", signup.message ? "Note: " + signup.message : ""].filter(Boolean).join("\n");
-  return deliverTourEmail({ to: "tours@aviatorbrew.com", subject: "Tour " + (qualified ? "is on" : "tentatively set") + " - " + date + " at " + signup.tourTime, text, html: tourEmailHtml({ title: "New tour signup", status, date, time: signup.tourTime, body, attendee: signup.name, tickets: signup.tickets, total: currentTotal, minimum, priceCents }), category: "tour-signup" });
+  return deliverTourEmail({ to: "events@aviatorbrew.com", subject: "Tour " + (qualified ? "is on" : "tentatively set") + " - " + date + " at " + signup.tourTime, text, html: tourEmailHtml({ title: "New tour signup", status, date, time: signup.tourTime, body, attendee: signup.name, tickets: signup.tickets, total: currentTotal, minimum, priceCents }), category: "tour-signup" });
 }
 
 export async function notifyQualifiedTours(now = new Date()) {
@@ -321,11 +321,11 @@ export async function notifyQualifiedTours(now = new Date()) {
     const attendeeResults = await Promise.all(signups.map((signup) => deliverTourEmail({
       to: signup.email,
       subject: "Your Aviator brewery tour is on - " + tourDate,
-      text: [body, "When: " + tourDate + " at " + slot, "Your registration: " + signup.tickets + " ticket(s).", "Each " + formatTourPrice(store.priceCents) + " ticket includes a pint glass, one beer pour, and one flight of four pours.", "Please arrive a few minutes early. Questions? tours@aviatorbrew.com"].join("\n"),
+      text: [body, "When: " + tourDate + " at " + slot, "Your registration: " + signup.tickets + " ticket(s).", "Each " + formatTourPrice(store.priceCents) + " ticket includes a pint glass, one beer pour, and one flight of four pours.", "Please arrive a few minutes early. Questions? events@aviatorbrew.com"].join("\n"),
       html: tourEmailHtml({ title: "Your brewery tour is on!", status: "TOUR IS ON", date: tourDate, time: slot, body, attendee: signup.name, tickets: signup.tickets, total, minimum, priceCents: store.priceCents }),
       category: "tour-confirmation",
     })));
-    const managerSent = await deliverTourEmail({ to: "tours@aviatorbrew.com", subject: "Tour confirmation sent - " + tourDate + " at " + slot, text: "The " + slot + " brewery tour is on with " + total + " registered guests. Confirmation was sent to " + signups.length + " signup contact(s).", html: tourEmailHtml({ title: "Tour confirmation sent", status: "TOUR IS ON", date: tourDate, time: slot, body: "Confirmation was sent to " + signups.length + " signup contact(s).", total, minimum, priceCents: store.priceCents }), category: "tour-weekly-summary" });
+    const managerSent = await deliverTourEmail({ to: "events@aviatorbrew.com", subject: "Tour confirmation sent - " + tourDate + " at " + slot, text: "The " + slot + " brewery tour is on with " + total + " registered guests. Confirmation was sent to " + signups.length + " signup contact(s).", html: tourEmailHtml({ title: "Tour confirmation sent", status: "TOUR IS ON", date: tourDate, time: slot, body: "Confirmation was sent to " + signups.length + " signup contact(s).", total, minimum, priceCents: store.priceCents }), category: "tour-weekly-summary" });
     if (attendeeResults.every(Boolean) && managerSent) { store.notifications.push({ key, sentAt: now.toISOString() }); notified.push(key); }
   }
   if (notified.length) await writeStore(store);
@@ -338,7 +338,7 @@ export async function notifyGuestOfSignup(result: Awaited<ReturnType<typeof crea
   const remaining = Math.max(minimum - currentTotal, 0);
   const status = qualified ? "TOUR IS ON" : "TENTATIVELY SET";
   const body = qualified ? "Great news - your tour is on! This flight has reached the " + minimum + "-person launch minimum." : "Your tour is tentatively set for " + date + " at " + signup.tourTime + ". It is waiting for " + remaining + " more signup(s) before it is officially on.";
-  const text = ["Thanks for joining the Aviator brewery tour list.", body, "Tentative flight: " + date + " at " + signup.tourTime, "Current flight total: " + currentTotal + " of " + TOUR_CAPACITY + " seats (" + minimum + " required to launch).", "Your registration: " + signup.tickets + " ticket(s).", "The tour is approximately 30 minutes. Each " + formatTourPrice(priceCents) + " ticket includes a pint glass, one beer pour, and one flight of four pours.", "Signups made within " + bookingCutoffHours + " hour" + (bookingCutoffHours === 1 ? "" : "s") + " of a Saturday tour are assigned to the following Saturday.", "Questions? tours@aviatorbrew.com"].join("\n");
+  const text = ["Thanks for joining the Aviator brewery tour list.", body, "Tentative flight: " + date + " at " + signup.tourTime, "Current flight total: " + currentTotal + " of " + TOUR_CAPACITY + " seats (" + minimum + " required to launch).", "Your registration: " + signup.tickets + " ticket(s).", "The tour is approximately 30 minutes. Each " + formatTourPrice(priceCents) + " ticket includes a pint glass, one beer pour, and one flight of four pours.", "Signups made within " + bookingCutoffHours + " hour" + (bookingCutoffHours === 1 ? "" : "s") + " of a Saturday tour are assigned to the following Saturday.", "Questions? events@aviatorbrew.com"].join("\n");
   return deliverTourEmail({ to: signup.email, subject: qualified ? "Your Aviator brewery tour is on" : "Your Aviator tour is tentatively set", text, html: tourEmailHtml({ title: qualified ? "Your tour is on!" : "Your tour is tentatively set", status, date, time: signup.tourTime, body, attendee: signup.name, tickets: signup.tickets, total: currentTotal, minimum, priceCents }), category: "tour-signup-status" });
 }
 
@@ -403,12 +403,12 @@ export async function cancelTourAndReschedule(input: { date: string; time: TourS
   const sent = await Promise.allSettled(reassigned.map(({ signup, date, time }) => {
     const newDate = formatTourDate(date);
     const body = "Your " + formatTourDate(input.date) + " at " + input.time + " brewery tour has been cancelled. " + input.message.trim() + " We have moved you to " + newDate + " at " + time + ".";
-    const text = ["Aviator brewery tour update", body, "Your new tentative flight: " + newDate + " at " + time, "Your registration: " + signup.tickets + " ticket(s).", "Tours become official once the flight reaches " + minimum + " guests.", "Questions? tours@aviatorbrew.com"].join("\n");
+    const text = ["Aviator brewery tour update", body, "Your new tentative flight: " + newDate + " at " + time, "Your registration: " + signup.tickets + " ticket(s).", "Tours become official once the flight reaches " + minimum + " guests.", "Questions? events@aviatorbrew.com"].join("\n");
     return deliverTourEmail({ to: signup.email, subject: "Aviator brewery tour rescheduled - " + newDate, text, html: tourEmailHtml({ title: "Your tour was rescheduled", status: "TOUR RESCHEDULED", date: newDate, time, body, attendee: signup.name, tickets: signup.tickets, minimum, priceCents: store.priceCents }), category: "tour-cancellation" });
   }));
   const notified = sent.filter((result) => result.status === "fulfilled" && result.value).length;
   const managerText = "Cancelled " + formatTourDate(input.date) + " at " + input.time + ". " + affected.length + " guest registration(s) were moved to future flights; " + notified + " guest email(s) sent.";
-  await deliverTourEmail({ to: "tours@aviatorbrew.com", subject: "Tour cancelled and guests rescheduled - " + formatTourDate(input.date), text: managerText, html: tourEmailHtml({ title: "Tour cancelled and rescheduled", status: "TOUR RESCHEDULED", date: formatTourDate(input.date), time: input.time, body: managerText, total: affected.reduce((sum, guest) => sum + guest.tickets, 0), minimum, priceCents: store.priceCents }), category: "tour-cancellation-summary" });
+  await deliverTourEmail({ to: "events@aviatorbrew.com", subject: "Tour cancelled and guests rescheduled - " + formatTourDate(input.date), text: managerText, html: tourEmailHtml({ title: "Tour cancelled and rescheduled", status: "TOUR RESCHEDULED", date: formatTourDate(input.date), time: input.time, body: managerText, total: affected.reduce((sum, guest) => sum + guest.tickets, 0), minimum, priceCents: store.priceCents }), category: "tour-cancellation-summary" });
   return { affected: affected.length, notified, managerText, ...(await getTourManagerData()) };
 }
 
