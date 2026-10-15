@@ -1,0 +1,30 @@
+.tour-signups-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.tour-guest-details { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.tour-guest-email { grid-column: 1 / -1; }
+.tour-email-form {
+  display: grid;
+  gap: .8rem;
+  max-width: 40rem;
+  margin-top: .8rem;
+  padding: clamp(.8rem, 3vw, 1.3rem);
+  border: 1px solid var(--line);
+  background: #102d46;
+}
+.tour-email-form h4 { margin: 0; font-size: 1.1rem; }
+.tour-email-form p { margin: 0; line-height: 1.5; }
+.tour-email-form label { display: grid; gap: .35rem; font-weight: 700; }
+.tour-email-form input, .tour-email-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: .7rem;
+  border: 1px solid #68879a;
+  background: #071827;
+  color: #f4f7f8;
+  font: inherit;
+}
+.tour-email-form textarea { resize: vertical; }
+.tour-email-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+.tour-signups-list .tour-email-actions .button { padding: .85rem 1rem; background: var(--orange); color: var(--ink); }
+.tour-email-notice { color: #b9e6c4; }
+.tour-email-error { color: #ffd0c2; }
+.tour-email-form :disabled { cursor: wait; opacity: .7; }

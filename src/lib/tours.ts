@@ -1,5 +1,6 @@
 import { DEFAULT_TOUR_BOOKING_CUTOFF_HOURS, DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
 import { databaseConfigured, withDatabase } from "@/lib/database";
+import { isMailConfigured, sendMail } from "@/lib/mail";
 
 export { DEFAULT_TOUR_BOOKING_CUTOFF_HOURS, DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY, TOUR_MINIMUM } from "@/lib/tour-config";
 export type TourSlot = "4:00 PM" | "6:00 PM";
@@ -29,8 +30,6 @@ export type TourSummary = {
   priceCents: number;
   bookingCutoffHours: number;
 };
-
-const smtpConfigured = () => process.env.MAIL_MODE === "smtp" && Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD && process.env.MAIL_FROM_EMAIL);
 
 const validMinimum = (value: unknown) => Number.isInteger(value) && Number(value) >= 1 && Number(value) <= TOUR_CAPACITY ? Number(value) : DEFAULT_TOUR_MINIMUM;
 const validPriceCents = (value: unknown) => Number.isInteger(value) && Number(value) >= 100 && Number(value) <= 100000 ? Number(value) : DEFAULT_TOUR_PRICE_CENTS;
@@ -242,7 +241,7 @@ export function formatTourDate(date: string) {
 }
 
 export function isTourEmailConfigured() {
-  return smtpConfigured() || Boolean(process.env.TOUR_EMAIL_WEBHOOK_URL || (process.env.RESEND_API_KEY && process.env.TOUR_FROM_EMAIL));
+  return isMailConfigured() || Boolean(process.env.TOUR_EMAIL_WEBHOOK_URL || (process.env.RESEND_API_KEY && process.env.TOUR_FROM_EMAIL));
 }
 
 type TourMail = { to: string; subject: string; text: string; html: string; category: string };
@@ -260,9 +259,16 @@ function tourEmailHtml(input: { title: string; status: string; date: string; tim
 }
 
 async function deliverTourEmail(message: TourMail) {
-  if (smtpConfigured()) {
-    const { sendMail } = await import("@/lib/mail");
-    return sendMail({ to: message.to, subject: message.subject, text: message.text, html: message.html, replyTo: "tours@aviatorbrew.com" });
+  if (isMailConfigured()) {
+    try {
+      const accepted = await sendMail({ to: message.to, subject: message.subject, text: message.text, html: message.html, replyTo: "tours@aviatorbrew.com", fromName: "Aviator Brewery Tours" });
+      console.info("tour.email_result", { category: message.category, accepted });
+      return accepted;
+    } catch (error) {
+      const failure = error as { code?: string; responseCode?: number };
+      console.error("tour.email_failed", { category: message.category, code: failure.code, responseCode: failure.responseCode });
+      throw error;
+    }
   }
   const webhook = process.env.TOUR_EMAIL_WEBHOOK_URL;
   if (webhook) {
@@ -276,6 +282,17 @@ async function deliverTourEmail(message: TourMail) {
     return response.ok;
   }
   return false;
+}
+
+export async function sendTourGuestMessage(signupId: string, subject: string, message: string) {
+  const store = await readStore();
+  const signup = store.signups.find((guest) => guest.id === signupId);
+  if (!signup) return null;
+  const date = formatTourDate(signup.tourDate);
+  const text = [`Hi ${signup.name},`, "", message, "", `Your booking: ${date} at ${signup.tourTime} · ${signup.tickets} ticket(s).`, "", "Aviator Brewery Tours", "Reply to tours@aviatorbrew.com"].join("\n");
+  const html = `<div style="max-width:620px;margin:auto;padding:24px;font-family:Arial,sans-serif;color:#102d46"><h1 style="font-size:24px">Aviator Brewery Tours</h1><p>Hi ${escapeHtml(signup.name)},</p><p style="white-space:pre-wrap;line-height:1.6">${escapeHtml(message)}</p><p style="border-top:1px solid #c9dbe5;padding-top:16px">Your booking: ${escapeHtml(date)} at ${escapeHtml(signup.tourTime)} · ${signup.tickets} ticket(s).</p><p>Reply to <a href="mailto:tours@aviatorbrew.com">tours@aviatorbrew.com</a></p></div>`;
+  const accepted = await deliverTourEmail({ to: signup.email, subject, text, html, category: "tour-guest-message" });
+  return { accepted, recipient: signup.email };
 }
 
 export async function notifyManagerOfSignup(result: Awaited<ReturnType<typeof createTourSignup>>) {
