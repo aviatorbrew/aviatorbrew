@@ -23,7 +23,8 @@
     "aviation:refresh-flyins": "node scripts/update-national-flyins.mjs",
     "kegs:sync": "node scripts/sync-brewops-kegs.mjs",
     "kegs:sync:upload": "./scripts/sync-brewops-kegs-and-upload.sh",
-    "test:file-responses": "node scripts/test-server-file-response.mjs"
+    "test:file-responses": "node scripts/test-server-file-response.mjs",
+    "test:event-plans": "node scripts/test-event-plan.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

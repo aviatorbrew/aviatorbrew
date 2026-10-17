@@ -267,6 +267,31 @@ const schemaStatements = [
     source text NOT NULL DEFAULT 'aviatorbrew.com',
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_plans (
+    id text PRIMARY KEY,
+    source_inquiry_id bigint UNIQUE REFERENCES website.form_inquiries(id) ON DELETE SET NULL,
+    title text NOT NULL,
+    event_date date NOT NULL,
+    status text NOT NULL,
+    data jsonb NOT NULL,
+    version integer NOT NULL DEFAULT 1,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS private_event_plans_date_idx ON website.private_event_plans (event_date)`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_updates (
+    id bigserial PRIMARY KEY,
+    plan_id text NOT NULL REFERENCES website.private_event_plans(id) ON DELETE CASCADE,
+    request_id uuid NOT NULL,
+    plan_version integer NOT NULL,
+    recipient text NOT NULL,
+    content_hash text NOT NULL,
+    subject text NOT NULL,
+    status text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (request_id, recipient)
+  )`,
   `CREATE TABLE IF NOT EXISTS website.shop_categories (
     id bigserial PRIMARY KEY,
     slug text NOT NULL UNIQUE,

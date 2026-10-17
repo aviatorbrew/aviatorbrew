@@ -75,7 +75,7 @@ export const managerSections = [
     id: "private-events",
     href: "/manager/private-events",
     label: "Private Events",
-    description: "Set the room booking fee, review private event inquiries, and export marketing lists.",
+    description: "Plan private events, manage the calendar and orders, print summaries, and send guest updates.",
   },
   {
     id: "catering",

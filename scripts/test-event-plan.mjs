@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import ts from 'typescript';
+const source=await readFile(new URL('../src/lib/event-plan.ts',import.meta.url),'utf8');
+const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {emptyEventPlan,parseEventPlan,eventTotals}=await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const input={...emptyEventPlan(50000),title:'Birthday dinner',date:'2026-11-14',startTime:'17:00',endTime:'21:00',guestCount:20,contactEmail:'',items:[...emptyEventPlan(50000).items,{id:'dinner',name:'Dinner',category:'Food',quantity:20,unitPriceCents:4500,taxable:true,notes:'Vegetarian option included'}],taxRateBps:725,paidCents:50000};
+const first=parseEventPlan(input);
+assert.deepEqual(eventTotals(first),{subtotal:140000,tax:6525,total:146525,paid:50000,balance:96525});
+const changed=parseEventPlan({...input,items:input.items.map(row=>row.id==='dinner'?{...row,quantity:18,unitPriceCents:4200}:row)});
+assert.deepEqual(eventTotals(changed),{subtotal:125600,tax:5481,total:131081,paid:50000,balance:81081});
+assert.equal(eventTotals({...first,paidCents:150000}).balance,-3475);
+assert.equal(parseEventPlan({...input,contactEmail:'Guest@Example.com',guestEmails:['OTHER@example.com','other@example.com']}).guestEmails.length,1);
+assert.equal(parseEventPlan(input).contactEmail,'');
+for(const change of [{date:'2026-02-30'},{startTime:'25:00'},{contactEmail:'a@example.com\nBcc: bad@example.com'},{guestEmails:['not-an-email']},{taxRateBps:NaN},{paidCents:-1},{items:[{...input.items[0],quantity:1.5}]},{items:[{...input.items[0],unitPriceCents:-100}]},{items:[input.items[0],input.items[0]]},{items:Array(101).fill(input.items[0])}])assert.throws(()=>parseEventPlan({...input,...change}));
+console.log('Event planning: revised order totals, taxable rows, recorded payments, email-free saves, validation and duplicate rows passed.');
