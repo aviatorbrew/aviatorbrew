@@ -6,15 +6,18 @@ export const readyRoomPackages = [
   { id: "feast", name: "The Aviator Feast", priceCents: 3800, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
   { id: "dinner", name: "The Ready Room Dinner", priceCents: 4400, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
 ] as const;
+export const readyRoomExtraPrices = { appetizer: 300, entree: 500, side: 300, salad: 300, premiumAppetizer: 300 } as const;
 export const readyRoomMenu = {
-  appetizers: ["Hush Puppies", "Loaded Tots", "Chips & Salsa", "Aviator Chicken Tenders with Aviator Sauce", "Caprese Skewers", "Brisket Crostini", "Shrimp Cocktail"],
-  entrees: ["Aviator Pizzeria Pizza Bar", "Aviator Pulled Pork BBQ", "Country Fried Chicken Cutlet", "Bacon-Wrapped Meatloaf", "Aviator Chicken Tenders", "Aviator Smoked Wings", "Aviator Beef Brisket", "Grilled Flat Iron Steak with Collard Green Chimichurri"],
+  appetizers: ["Hush Puppies", "Loaded Tots", "Chips & Salsa", "Aviator Chicken Tenders with Aviator Sauce", "Caprese Skewers", "Brisket Crostini"],
+  premiumAppetizers: ["Shrimp Cocktail"],
+  entrees: ["Aviator Pizzeria Pizza Bar", "Aviator Pulled Pork BBQ", "Country Fried Chicken Cutlet", "Bacon-Wrapped Meatloaf", "Aviator Chicken Tenders", "Aviator Smoked Wings", "Grilled Flat Iron Steak with Collard Green Chimichurri"],
   premiumEntrees: ["Grilled Flat Iron Steak with Collard Green Chimichurri", "Aviator Beef Brisket", "Herb-Roasted Chicken", "Bourbon-Glazed Chicken", "Country Fried Chicken Cutlet", "Aviator Pulled Pork BBQ", "Aviator Pizzeria Pizza Bar"],
   sides: ["Mac & Cheese", "Collard Greens", "Broccoli Salad", "Tomato Cucumber Salad", "Potato Salad", "French Fries", "Tater Tots"],
   salads: ["Caesar Salad", "Greek Salad", "Spinach Caprese Salad", "Chicken Cobb Salad"],
   pizzas: ["Just the Cheese", "Ultimate Pepperoni", "The Aviator", "Veggie", "MadBeach", "Hot Honey", "Buffalo", "Caprese", "Crash & Burn", "Meat-a-Palooza", "MadBeach Heat", "BBQ Chicken"],
   av: ["Big-screen setup", "House sound system", "Microphone"],
 };
+export const readyRoomAppetizers = [...readyRoomMenu.appetizers, ...readyRoomMenu.premiumAppetizers];
 export type FlightPlan = {
   packageId: string; appetizers: string[]; entrees: string[]; sides: string[]; salads: string[]; pizzas: string[];
   extraAppetizers: string[]; extraEntrees: string[]; extraSides: string[]; extraSalads: string[]; extraSidePriceCents: number | null; extraSaladPriceCents: number | null; extraHours: number; dessert: boolean; coffee: boolean; pizzaExtra: boolean;
@@ -24,7 +27,7 @@ export type FlightPlan = {
   decorContact: string; decorPhone: string; decorCompany: string; decorNotes: string; av: string[];
 };
 export function emptyFlightPlan(): FlightPlan {
-  return { packageId: "", appetizers: [], entrees: [], sides: [], salads: [], pizzas: [], extraAppetizers: [], extraEntrees: [], extraSides: [], extraSalads: [], extraSidePriceCents: 300, extraSaladPriceCents: 400, extraHours: 0, dessert: false, coffee: false, pizzaExtra: false, glutenFreeCount: 0, pizzaTime: "", pizzaNotes: "", wingSauce: "", dietaryNeeds: "", foodNotes: "", eventType: "", organization: "", billingName: "", billingAddress: "", appetizerTime: "", outsideSeating: "", barMode: "", barCapCents: 0, ticketCount: 0, barContact: "", decorContact: "", decorPhone: "", decorCompany: "", decorNotes: "", av: [] };
+  return { packageId: "", appetizers: [], entrees: [], sides: [], salads: [], pizzas: [], extraAppetizers: [], extraEntrees: [], extraSides: [], extraSalads: [], extraSidePriceCents: readyRoomExtraPrices.side, extraSaladPriceCents: readyRoomExtraPrices.salad, extraHours: 0, dessert: false, coffee: false, pizzaExtra: false, glutenFreeCount: 0, pizzaTime: "", pizzaNotes: "", wingSauce: "", dietaryNeeds: "", foodNotes: "", eventType: "", organization: "", billingName: "", billingAddress: "", appetizerTime: "", outsideSeating: "", barMode: "", barCapCents: 0, ticketCount: 0, barContact: "", decorContact: "", decorPhone: "", decorCompany: "", decorNotes: "", av: [] };
 }
 export function changeEventPackage(plan: FlightPlan, packageId: string): FlightPlan {
   const pkg = readyRoomPackages.find(p => p.id === packageId);
@@ -46,11 +49,12 @@ export function eventOrderItems(plan: EventPlanDetails): EventOrderItem[] {
   const rows: EventOrderItem[] = [];
   const add = (id: string, name: string, quantity: number, price: number, category: EventOrderItem["category"] = "Food") => { if (quantity) rows.push({ id: `package-${id}`, name, quantity, unitPriceCents: price, taxable: true, category, notes: "" }); };
   add("base", pkg.name + " / guest", plan.guestCount, pkg.priceCents);
-  for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, 500);
-  for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional entree: ${name}`, plan.guestCount, 800);
+  for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, readyRoomExtraPrices.appetizer);
+  for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional entree: ${name}`, plan.guestCount, readyRoomExtraPrices.entree);
   for (const [i, name] of (f.extraSides || []).entries()) add(`side-${i}`, `Additional side: ${name}`, plan.guestCount, f.extraSidePriceCents ?? 0);
   for (const [i, name] of (f.extraSalads || []).entries()) add(`salad-${i}`, `Additional salad: ${name}`, plan.guestCount, f.extraSaladPriceCents ?? 0);
-  if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, 800);
+  for (const [i, name] of [...f.appetizers, ...f.extraAppetizers].entries()) if (readyRoomMenu.premiumAppetizers.includes(name)) add(`premium-app-${i}`, `Premium appetizer upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumAppetizer);
+  if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, readyRoomExtraPrices.entree);
   if (f.dessert) add("dessert", "Dessert display", plan.guestCount, 600);
   if (f.coffee) add("coffee", "Coffee service", plan.guestCount, 300);
   add("hours", "Additional event hour", f.extraHours, 10000, "Room");
@@ -110,7 +114,7 @@ function parseFlightPlan(value: unknown, guestCount: number): FlightPlan | null 
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
   if (f.packageId && !pkg) throw new Error("Choose a Ready Room package.");
   const entrees = f.packageId === "dinner" ? readyRoomMenu.premiumEntrees : readyRoomMenu.entrees;
-  const groups = { appetizers: readyRoomMenu.appetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: readyRoomMenu.appetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
+  const groups = { appetizers: readyRoomAppetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: readyRoomAppetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
   for (const key of Object.keys(groups) as (keyof typeof groups)[]) {
     const v = input[key] ?? [];
     const distinct = key === "pizzas" || key === "av";

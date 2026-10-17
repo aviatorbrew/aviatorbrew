@@ -1,3 +1,4 @@
+import { readyRoomFlightPlanUrl, readyRoomFlightPlanVersion } from "@/lib/ready-room-flight-plan";
 import { ArrowUpRight } from "@/components/icons";
 
 type PrivateEventPackagesProps = {
@@ -39,8 +40,11 @@ const menuGroups = [
       "Aviator Chicken Tenders with Aviator Sauce",
       "Caprese Skewers",
       "Brisket Crostini|+$2 / guest",
-      "Shrimp Cocktail|+$3 / guest",
     ],
+  },
+  {
+    name: "Premium appetizers",
+    items: ["Shrimp Cocktail|+$3 / guest premium upcharge; available with every package"],
   },
   {
     name: "Entrees",
@@ -51,7 +55,6 @@ const menuGroups = [
       "Bacon-Wrapped Meatloaf",
       "Aviator Chicken Tenders",
       "Aviator Smoked Wings|Dry Rub, Aviator, Buffalo, BlackMamba or Monster",
-      "Aviator Beef Brisket|+$4 / guest",
       "Grilled Flat Iron Steak with Collard Green Chimichurri|+$6 / guest",
     ],
   },
@@ -123,7 +126,7 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
           <ul>
             <li><strong>Choose up to 3 styles</strong> for the buffet</li>
             <li><strong>2 slices per guest</strong> when selected as an entree</li>
-            <li><strong>+$8 / guest</strong> to add a Pizza Bar as an extra entree</li>
+            <li><strong>+$5 / guest</strong> to add a Pizza Bar as an extra entree</li>
             <li><strong>Gluten-free pizzas</strong> available with advance notice</li>
           </ul>
         </div>
@@ -145,8 +148,10 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
           <p className="eyebrow">Event extras</p><h3>Make it yours.</h3>
           <dl>
             <div><dt>Additional event hour</dt><dd>$100</dd></div>
-            <div><dt>Additional appetizer</dt><dd>+$5 / guest</dd></div>
-            <div><dt>Additional entree</dt><dd>+$8 / guest</dd></div>
+            <div><dt>Additional appetizer</dt><dd>+$3 / guest</dd></div>
+            <div><dt>Additional entree</dt><dd>+$5 / guest</dd></div>
+            <div><dt>Additional side</dt><dd>+$3 / guest</dd></div>
+            <div><dt>Additional salad</dt><dd>+$3 / guest</dd></div>
             <div><dt>Dessert display</dt><dd>+$6 / guest</dd></div>
             <div><dt>Coffee service</dt><dd>+$3 / guest</dd></div>
           </dl>
@@ -186,8 +191,8 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
           <h3>Ready Room Event Flight Plan</h3>
           <p>Organize your date, schedule, package, menu, Pizza Bar, bar setup, extras, totals, and signatures in one place. Fill it out digitally or print it for handwriting.</p>
         </div>
-        <a className="button" href="/documents/ready-room-event-flight-plan.pdf?v=2026.08.28.3" target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
-          Download Event Flight Plan v2026.08.28.3 <ArrowUpRight />
+        <a className="button" href={readyRoomFlightPlanUrl} target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
+          Download Event Flight Plan v{readyRoomFlightPlanVersion} <ArrowUpRight />
         </a>
       </aside>
 
