@@ -26,7 +26,9 @@
     "test:file-responses": "node scripts/test-server-file-response.mjs",
     "test:event-plans": "node scripts/test-event-plan.mjs",
     "pdf:flight-plan": "python3 scripts/update-ready-room-flight-plan.py",
-    "test:flight-plan-pdf": "python3 scripts/test-ready-room-flight-plan.py"
+    "test:flight-plan-pdf": "python3 scripts/test-ready-room-flight-plan.py",
+    "calendar:sync": "node scripts/sync-ready-room-calendar.mjs",
+    "test:calendar-sync": "node scripts/test-ready-room-calendar-sync.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",
@@ -37,6 +39,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "next": "^15.5.0",
+    "node-ical": "0.27.3",
     "nodemailer": "^9.0.3",
     "pg": "^8.22.0",
     "qrcode": "^1.5.4",

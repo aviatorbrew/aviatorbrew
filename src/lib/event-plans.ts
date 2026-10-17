@@ -5,11 +5,14 @@ import { eventDateLabel, eventOrderItems, eventTotals, flightPlanSelections, mon
 
 export class EventPlanError extends Error { constructor(message: string, public status = 400) { super(message); } }
 function record(row: Record<string, unknown>): EventPlan {
-  return { id: String(row.id), version: Number(row.version), sourceInquiryId: row.source_inquiry_id ? String(row.source_inquiry_id) : null, details: row.data as EventPlanDetails, createdAt: new Date(row.created_at as string).toISOString(), updatedAt: new Date(row.updated_at as string).toISOString() };
+  return { calendarSync: row.calendar_sync as EventPlan["calendarSync"], id: String(row.id), version: Number(row.version), sourceInquiryId: row.source_inquiry_id ? String(row.source_inquiry_id) : null, details: row.data as EventPlanDetails, createdAt: new Date(row.created_at as string).toISOString(), updatedAt: new Date(row.updated_at as string).toISOString() };
 }
 export async function listEventPlans(month: string) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new EventPlanError("Choose a calendar month.");
   return withDatabase(async (client) => (await client.query("SELECT * FROM website.private_event_plans WHERE event_date >= $1::date AND event_date < $1::date + interval '1 month' ORDER BY event_date, data->>'startTime', title", [month + "-01"])).rows.map(record));
+}
+export async function eventCalendarSyncStatus() {
+  return withDatabase(async client => (await client.query("SELECT value FROM website.settings WHERE key='private_event_calendar_sync'")).rows[0]?.value || null);
 }
 export async function getEventPlan(id: string) {
   return withDatabase(async (client) => { const result = await client.query("SELECT * FROM website.private_event_plans WHERE id=$1", [id]); return result.rows[0] ? record(result.rows[0]) : null; });
