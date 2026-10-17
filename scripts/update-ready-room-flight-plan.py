@@ -52,13 +52,19 @@ def main():
     text_field(2, 'extra_side', [33.6, 94.08, 43.2, 103.68])
     text_field(2, 'extra_salad', [178.56, 114.72, 188.16, 124.32])
     text_field(2, 'extra_premium_entree', [178.56, 94.08, 188.16, 103.68])
+    text_field(1, 'app_brewer_fries', [33.6, 393.6, 43.2, 403.2])
+    text_field(1, 'app_sweet_potato_fries', [33.6, 372, 43.2, 381.6])
+    for old_name, new_name in [('app_loaded_tots', 'app_tater_tots'), ('app_brisket_crostini', 'premium_app_brisket_crostini')]:
+        ref = fields.pop(old_name, fields.get(new_name))
+        ref.get_object()[NameObject('/T')] = TextStringObject(new_name)
+        fields[new_name] = ref
     # Keep appetizers and entrees in separate columns, with dedicated premium groups.
     shrimp_ref = fields.pop('app_shrimp_cocktail', fields.get('premium_app_shrimp_cocktail'))
     shrimp = shrimp_ref.get_object()
     shrimp[NameObject('/T')] = TextStringObject('premium_app_shrimp_cocktail')
     shrimp[NameObject('/Rect')] = ArrayObject([FloatObject(n) for n in [33.6, 328.8, 43.2, 338.4]])
     fields['premium_app_shrimp_cocktail'] = shrimp_ref
-    for name in ['entree_brisket', 'entree_flat_iron', 'premium_country_chicken', 'premium_pulled_pork']:
+    for name in ['entree_brisket', 'entree_flat_iron', 'premium_country_chicken', 'premium_pulled_pork', 'app_chicken_tenders']:
         if name not in fields:
             continue
         removed = fields.pop(name)
@@ -126,7 +132,7 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
                 text(x + 7.2, 507, heading, 11, PAPER, True)
             c.setStrokeColorRGB(0.75, 0.77, 0.73)
             c.setLineWidth(.6)
-            c.line(246, 324, 246, 522)
+            c.line(246, 302, 246, 522)
 
             def menu_item(name, x, y, label, subtitle=''):
                 field = fields[name].get_object()
@@ -141,11 +147,11 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
 
             for name, y, label, subtitle in [
                 ('app_hush_puppies', 480, 'Hush Puppies', ''),
-                ('app_loaded_tots', 458.4, 'Loaded Tots', ''),
+                ('app_tater_tots', 458.4, 'Tater Tots', ''),
                 ('app_chips_salsa', 436.8, 'Chips & Salsa', ''),
-                ('app_chicken_tenders', 415.2, 'Aviator Chicken Tenders', 'with Aviator Sauce'),
-                ('app_caprese_skewers', 393.6, 'Caprese Skewers', ''),
-                ('app_brisket_crostini', 372, 'Brisket Crostini', ''),
+                ('app_caprese_skewers', 415.2, 'Caprese Skewers', ''),
+                ('app_brewer_fries', 393.6, 'Brewer Fries', ''),
+                ('app_sweet_potato_fries', 372, 'Sweet Potato Fries', ''),
             ]:
                 menu_item(name, 33.6, y, label, subtitle)
             for name, y, label, subtitle in [
@@ -159,7 +165,8 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
                 menu_item(name, 257.76, y, label, subtitle)
             box(26.4, 345.6, 214, 17, (20 / 255, 54 / 255, 78 / 255))
             text(33.6, 350.6, 'PREMIUM APPETIZERS  +$3 / PERSON', 7, GOLD, True)
-            menu_item('premium_app_shrimp_cocktail', 33.6, 328.8, 'Shrimp Cocktail')
+            menu_item('premium_app_shrimp_cocktail', 33.6, 330.8, 'Shrimp Cocktail')
+            menu_item('premium_app_brisket_crostini', 33.6, 312.8, 'Brisket Crostini')
             box(26.4, 284, 444, 22, (20 / 255, 54 / 255, 78 / 255))
             text(33.6, 291, 'PREMIUM ENTREES', 11, PAPER, True)
             text(322, 291, 'REPLACE +$2 / PERSON', 8.5, GOLD, True)

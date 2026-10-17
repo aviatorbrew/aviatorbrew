@@ -1,2 +1,2 @@
-export const readyRoomFlightPlanVersion = "2026.10.17.2";
+export const readyRoomFlightPlanVersion = "2026.10.17.3";
 export const readyRoomFlightPlanUrl = `/documents/ready-room-event-flight-plan.pdf?v=${readyRoomFlightPlanVersion}`;

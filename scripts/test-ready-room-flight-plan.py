@@ -29,7 +29,7 @@ for name, field in fields.items():
     if name in order:
         assert int(field.get('/Ff', 0)) & 1
         assert actions['C'].startswith(source)
-    if name.startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_')) or name in ('extra_side', 'extra_salad'):
+    if name.startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_')) or name in ('extra_side', 'extra_salad', 'extra_premium_entree'):
         assert field['/MaxLen'] == 2
         assert 'V' in actions
 for name in ('summary_bar', 'summary_other', 'summary_deposit'):

@@ -29,7 +29,7 @@ function aviFlightValue(doc, fieldName) {
   var pkg = null;
   for (var p = 0; p < packages.length; p++) if (quantity(packages[p].field)) pkg = packages[p];
   var guests = Math.max(0, Math.floor(amount("guest_count")));
-  var apps = count(["app_hush_puppies", "app_loaded_tots", "app_chips_salsa", "app_chicken_tenders", "app_caprese_skewers", "app_brisket_crostini", "premium_app_shrimp_cocktail"]);
+  var apps = count(["app_hush_puppies", "app_tater_tots", "app_chips_salsa", "app_caprese_skewers", "app_brewer_fries", "app_sweet_potato_fries", "premium_app_shrimp_cocktail", "premium_app_brisket_crostini"]);
   var pizza = Math.max(quantity("entree_pizza_bar"), quantity("pizza_included_entree") + quantity("pizza_extra_entree"));
   var regularEntrees = pizza + count(["entree_pulled_pork", "entree_country_chicken", "entree_meatloaf", "entree_tenders", "entree_wings"]);
   var premiumEntrees = count(["premium_flat_iron", "premium_brisket", "premium_herb_chicken", "premium_bourbon_chicken"]);
@@ -42,7 +42,7 @@ function aviFlightValue(doc, fieldName) {
   var extraSides = pkg ? Math.max(0, sides - pkg.sides, quantity("extra_side")) : 0;
   var extraSalads = pkg ? Math.max(0, salads - pkg.salads, quantity("extra_salad")) : 0;
   var pizzaExtras = Math.min(extraEntrees, quantity("pizza_extra_entree"));
-  var premiumApps = quantity("premium_app_shrimp_cocktail");
+  var premiumApps = count(["premium_app_shrimp_cocktail", "premium_app_brisket_crostini"]);
   /* Regular choices occupy included slots first. Page 3 can specify how many premium choices are extras. */
   var automaticPremiumExtras = pkg ? Math.max(0, premiumEntrees - Math.max(0, pkg.entrees - regularEntrees)) : 0;
   var premiumExtras = raw("extra_premium_entree").replace(/\s/g, "") === "" ? automaticPremiumExtras : quantity("extra_premium_entree");
@@ -53,7 +53,7 @@ function aviFlightValue(doc, fieldName) {
   var selectedFoodPerGuest = extraApps * 3 + extraEntrees * 5 + extraSides * 3 + extraSalads * 3 + premiumApps * 3 + premiumUpgrades * 2;
   var ready = pkg && guests > 0;
   if (fieldName === "summary_selection_extras") {
-    return pkg ? "Extras: " + extraApps + " app, " + extraEntrees + " entree, " + extraSides + " side, " + extraSalads + " salad | Shrimp " + premiumApps + " x $3; premium " + premiumUpgrades + " x $2 | +$" + money(selectedFoodPerGuest) + " / guest" : "Choose a package to calculate extra food selections.";
+    return pkg ? "Extras: " + extraApps + " app, " + extraEntrees + " entree, " + extraSides + " side, " + extraSalads + " salad | Premium app " + premiumApps + " x $3; entree " + premiumUpgrades + " x $2 | +$" + money(selectedFoodPerGuest) + " / guest" : "Choose a package to calculate extra food selections.";
   }
   if (fieldName === "summary_guests") return guests > 0 ? String(guests) : "";
   if (fieldName === "summary_package_rate") return pkg ? money(pkg.rate) : "";

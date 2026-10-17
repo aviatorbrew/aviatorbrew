@@ -66,6 +66,16 @@ for (const pkg of readyRoomPackages) {
 assert.ok(!readyRoomMenu.premiumEntrees.includes('Aviator Pulled Pork BBQ'));
 assert.ok(!readyRoomMenu.premiumEntrees.includes('Country Fried Chicken Cutlet'));
 assert.equal(new Set([...readyRoomMenu.entrees,...readyRoomMenu.premiumEntrees]).size,readyRoomMenu.entrees.length+readyRoomMenu.premiumEntrees.length,'Regular and premium lists must not duplicate foods');
+for(const pkg of readyRoomPackages){
+ const f={...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Brewer Fries'),entrees:['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ'],sides:['Mac & Cheese','Potato Salad'],salads:pkg.salads?['Caesar Salad']:[]};
+ const base={...emptyEventPlan(),title:'Revised appetizer menu',date:'2026-11-14',guestCount:55,flightPlan:f};
+ const regular=parseEventPlan(base);assert.equal(eventTotals(regular).subtotal,pkg.priceCents*55);
+ const crostini=parseEventPlan({...base,flightPlan:{...f,appetizers:['Brisket Crostini',...f.appetizers.slice(1)],extraAppetizers:['Brisket Crostini']}});
+ assert.equal(eventTotals(crostini).subtotal,pkg.priceCents*55+55*(300+300+300),'Included crostini premium plus extra crostini premium and extra appetizer');
+}
+for(const name of ['Brewer Fries','Sweet Potato Fries','Tater Tots'])assert.ok(readyRoomMenu.appetizers.includes(name));
+assert.ok(!readyRoomMenu.appetizers.includes('Loaded Tots'));assert.ok(!readyRoomMenu.appetizers.includes('Brisket Crostini'));
+assert.ok(!readyRoomMenu.appetizers.includes('Aviator Chicken Tenders with Aviator Sauce'));assert.ok(readyRoomMenu.entrees.includes('Aviator Chicken Tenders'));
 const dinner={...emptyFlightPlan(),packageId:'dinner',appetizers:['Hush Puppies','Hush Puppies','Loaded Tots'],entrees:['Herb-Roasted Chicken','Bourbon-Glazed Chicken'],sides:readyRoomMenu.sides.slice(0,2),salads:['Greek Salad']};
 const social=changeEventPackage(dinner,'social');assert.equal(social.appetizers.length,2);assert.equal(social.salads.length,0);assert.deepEqual(social.entrees,dinner.entrees,'Premium selections remain available as paid replacements when changing packages');
 const pizza={...dinner,extraEntrees:['Herb-Roasted Chicken','Herb-Roasted Chicken'],extraSides:['French Fries','French Fries'],extraSidePriceCents:300,extraSalads:['Caesar Salad'],extraSaladPriceCents:400,pizzaExtra:true,pizzas:['Caprese']};

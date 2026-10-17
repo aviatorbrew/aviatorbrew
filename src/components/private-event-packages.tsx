@@ -35,16 +35,16 @@ const menuGroups = [
     name: "Appetizers",
     items: [
       "Hush Puppies",
-      "Loaded Tots",
+      "Tater Tots",
       "Chips & Salsa",
-      "Aviator Chicken Tenders with Aviator Sauce",
       "Caprese Skewers",
-      "Brisket Crostini|+$2 / guest",
+      "Brewer Fries",
+      "Sweet Potato Fries",
     ],
   },
   {
     name: "Premium appetizers",
-    items: ["Shrimp Cocktail|+$3 / guest premium upcharge; available with every package"],
+    items: ["Shrimp Cocktail|+$3 / guest premium upcharge; available with every package", "Brisket Crostini|+$3 / guest premium upcharge; available with every package"],
   },
   {
     name: "Entrees",

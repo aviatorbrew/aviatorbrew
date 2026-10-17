@@ -8,8 +8,8 @@ export const readyRoomPackages = [
 ] as const;
 export const readyRoomExtraPrices = { appetizer: 300, entree: 500, side: 300, salad: 300, premiumAppetizer: 300, premiumEntree: 700, premiumEntreeUpgrade: 200 } as const;
 export const readyRoomMenu = {
-  appetizers: ["Hush Puppies", "Loaded Tots", "Chips & Salsa", "Aviator Chicken Tenders with Aviator Sauce", "Caprese Skewers", "Brisket Crostini"],
-  premiumAppetizers: ["Shrimp Cocktail"],
+  appetizers: ["Hush Puppies", "Tater Tots", "Chips & Salsa", "Caprese Skewers", "Brewer Fries", "Sweet Potato Fries"],
+  premiumAppetizers: ["Shrimp Cocktail", "Brisket Crostini"],
   entrees: ["Aviator Pizzeria Pizza Bar", "Aviator Pulled Pork BBQ", "Country Fried Chicken Cutlet", "Bacon-Wrapped Meatloaf", "Aviator Chicken Tenders", "Aviator Smoked Wings"],
   premiumEntrees: ["Grilled Flat Iron Steak with Collard Green Chimichurri", "Aviator Beef Brisket", "Herb-Roasted Chicken", "Bourbon-Glazed Chicken"],
   sides: ["Mac & Cheese", "Collard Greens", "Broccoli Salad", "Tomato Cucumber Salad", "Potato Salad", "French Fries", "Tater Tots"],
@@ -18,6 +18,8 @@ export const readyRoomMenu = {
   av: ["Big-screen setup", "House sound system", "Microphone"],
 };
 export const readyRoomAppetizers = [...readyRoomMenu.appetizers, ...readyRoomMenu.premiumAppetizers];
+// Keep existing bookings editable after menu changes; these are not offered for new selections.
+export const readyRoomLegacyAppetizers = ["Loaded Tots", "Aviator Chicken Tenders with Aviator Sauce"];
 export const readyRoomEntrees = [...readyRoomMenu.entrees, ...readyRoomMenu.premiumEntrees];
 export type FlightPlan = {
   packageId: string; appetizers: string[]; entrees: string[]; sides: string[]; salads: string[]; pizzas: string[];
@@ -116,7 +118,8 @@ function parseFlightPlan(value: unknown, guestCount: number): FlightPlan | null 
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
   if (f.packageId && !pkg) throw new Error("Choose a Ready Room package.");
   const entrees = readyRoomEntrees;
-  const groups = { appetizers: readyRoomAppetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: readyRoomAppetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
+  const appetizers = [...readyRoomAppetizers, ...readyRoomLegacyAppetizers];
+  const groups = { appetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: appetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
   for (const key of Object.keys(groups) as (keyof typeof groups)[]) {
     const v = input[key] ?? [];
     const distinct = key === "pizzas" || key === "av";
