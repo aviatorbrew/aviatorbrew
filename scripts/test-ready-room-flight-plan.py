@@ -15,6 +15,7 @@ assert len(reader.pages) == 5
 version = re.search(r'readyRoomFlightPlanVersion = "([^"]+)"', (ROOT / 'src/lib/ready-room-flight-plan.ts').read_text()).group(1)
 assert version in reader.metadata.title
 fields = {str(ref.get_object()['/T']): ref.get_object() for page in reader.pages for ref in page.get('/Annots', []) if '/T' in ref.get_object()}
+field_pages = {str(ref.get_object()['/T']): index for index, page in enumerate(reader.pages) for ref in page.get('/Annots', []) if '/T' in ref.get_object()}
 assert fields['customer_signature']['/FT'] == '/Sig'
 order = [str(ref.get_object()['/T']) for ref in reader.trailer['/Root']['/AcroForm']['/CO']]
 assert len(set(order)) == len(order) == 11
@@ -25,16 +26,17 @@ for name, field in fields.items():
     value = field.get('/V', '')
     if field.get('/FT') == '/Btn':
         value = str(value).lstrip('/')
-    data['fields'][name] = {'value': str(value), 'flags': int(field.get('/Ff', 0)), 'actions': actions}
+    data['fields'][name] = {'value': str(value), 'flags': int(field.get('/Ff', 0)), 'actions': actions, 'page': field_pages[name]}
     if name in order:
         assert int(field.get('/Ff', 0)) & 1
         assert actions['C'].startswith(source)
-    if name.startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_')) or name in ('pizza_included_entree', 'pizza_extra_entree'):
+    if (field_pages[name] == 1 and name.startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_'))) or name in ('pizza_included_entree', 'pizza_extra_entree'):
         assert field['/MaxLen'] == 1
         assert 'V' in actions and 'K' in actions
     elif name in ('extra_side', 'extra_salad', 'extra_premium_entree'):
         assert field['/MaxLen'] == 2
         assert 'V' in actions
+assert int(fields['entree_time'].get('/MaxLen', 100)) >= 8, 'Serving time must not have a quantity character limit'
 for name in ('summary_bar', 'summary_other', 'summary_deposit'):
     assert not int(fields[name].get('/Ff', 0)) & 1
 names = reader.trailer['/Root']['/Names']['/JavaScript']['/Names']

@@ -73,8 +73,18 @@ def main():
         acro[NameObject('/Fields')] = ArrayObject([ref for ref in acro['/Fields'] if ref != removed])
     for name, x, y in [('premium_flat_iron', 33.6, 264), ('premium_brisket', 33.6, 242.4), ('premium_herb_chicken', 257.76, 264), ('premium_bourbon_chicken', 257.76, 242.4)]:
         fields[name].get_object()[NameObject('/Rect')] = ArrayObject([FloatObject(n) for n in [x, y, x + 9.6, y + 9.6]])
-    menu_quantity_names = [name for name in fields if name.startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_'))]
+    # Scope food quantities to the food-selection page: entree_time is a schedule field.
+    menu_quantity_names = [str(ref.get_object().get('/T', '')) for ref in writer.pages[1].get('/Annots', []) if str(ref.get_object().get('/T', '')).startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_'))]
     menu_quantity_names += ['pizza_included_entree', 'pizza_extra_entree']
+    # Repair older generated templates if this builder is run in place.
+    entree_time = fields['entree_time'].get_object()
+    time_actions = entree_time.get('/AA', DictionaryObject())
+    for event_name in ['/K', '/V']:
+        code = str(time_actions[event_name].get_object().get('/JS', '')) if event_name in time_actions else ''
+        if 'Enter a number from 1-9.' in code or 'whole-number quantity from 0 to 99' in code:
+            del time_actions[event_name]
+            entree_time.pop('/MaxLen', None)
+            entree_time[NameObject('/TU')] = TextStringObject('Time entrees will be served, for example 6:30 PM.')
     quantity_names = menu_quantity_names + ['extra_hour', 'extra_app', 'extra_entree', 'extra_side', 'extra_salad', 'extra_dessert', 'extra_coffee', 'extra_premium_entree']
     validate_quantity = '''var value = String(event.value).replace(/^\\s+|\\s+$/g, "");
 if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
