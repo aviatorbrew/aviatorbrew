@@ -118,12 +118,12 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
 
       <aside className="private-event-order-form">
         <div>
-          <p className="eyebrow">Fillable event order form</p>
-          <h3>Ready Room Event Flight Plan</h3>
-          <p>Organize your date, schedule, package, menu, Pizza Bar, bar setup, extras, totals, and signatures in one place. Fill it out digitally or print it for handwriting.</p>
+          <p className="eyebrow">Plan your event menu</p>
+          <h3>Ready Room Event Menu Planning Sheet</h3>
+          <p>Choose your package, appetizers, entrees, sides, and extras, then add your event details. Fill out the sheet digitally or print it, and email your completed menu to events@aviatorbrew.com.</p>
         </div>
         <a className="button" href={readyRoomFlightPlanUrl} target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
-          Download Event Flight Plan v.{readyRoomFlightPlanVersion} <ArrowUpRight />
+          Download Menu Planning Sheet v.{readyRoomFlightPlanVersion} <ArrowUpRight />
         </a>
       </aside>
 

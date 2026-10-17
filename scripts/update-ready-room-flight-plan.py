@@ -112,11 +112,16 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
             c.setFont('Helvetica-Bold' if bold else 'Helvetica', size)
             c.drawString(x, y, value)
 
+        box(26.4, 17, 168.6, 21, NAVY)
+        text(26.4, 28, 'READY ROOM EVENT MENU PLANNING SHEET', 7.1, PAPER, True)
         box(195, 17, 160, 17, NAVY)
         c.setFont('Helvetica-Bold', 6.6)
         c.setFillColorRGB(*GOLD)
         c.drawCentredString(248.4, 22, 'v.' + VERSION)
         if page_index == 0:
+            box(26.4, 560, 444, 50, NAVY)
+            text(26.4, 585, 'EVENT MENU PLANNING SHEET', 26, PAPER, True)
+            text(26.4, 568, 'Choose your package, plan your menu, and confirm your event details.', 8.3, (0.75, 0.82, 0.85))
             box(26.4, 48, 444, 17)
             text(26.4, 54.5, 'For automatic totals, open in Adobe Acrobat Reader. Click outside each field after entering a value.', 6.7)
         if page_index == 1:
@@ -227,7 +232,7 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
         names.get_object().pop('/JavaScript', None)
     names = writer._root_object.setdefault(NameObject('/Names'), DictionaryObject()).get_object()
     names[NameObject('/JavaScript')] = DictionaryObject({NameObject('/Names'): ArrayObject([TextStringObject('AviatorFlightPlanInit'), action('this.calculate = true; this.calculateNow();')])})
-    writer.add_metadata({'/Title': 'Ready Room Event Flight Plan v.' + VERSION, '/Subject': 'Version ' + VERSION + ' - automatic package overages and quantity-based food extras', '/Creator': 'Aviator Brewing Company - scripts/update-ready-room-flight-plan.py'})
+    writer.add_metadata({'/Title': 'Ready Room Event Menu Planning Sheet v.' + VERSION, '/Subject': 'Version ' + VERSION + ' - event menu planning with automatic package overages and quantity-based food extras', '/Creator': 'Aviator Brewing Company - scripts/update-ready-room-flight-plan.py'})
     temporary = PDF.with_suffix('.updated.pdf')
     writer.write(temporary)
     temporary.replace(PDF)
