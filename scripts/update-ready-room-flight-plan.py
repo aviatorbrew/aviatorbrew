@@ -112,6 +112,10 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
             c.setFont('Helvetica-Bold' if bold else 'Helvetica', size)
             c.drawString(x, y, value)
 
+        box(416, 609, 54.4, 17, NAVY)
+        c.setFont('Helvetica-Bold', 9)
+        c.setFillColorRGB(*GOLD)
+        c.drawRightString(470.4, 614, 'v.' + VERSION)
         box(26.4, 17, 168.6, 21, NAVY)
         text(26.4, 28, 'READY ROOM EVENT MENU PLANNING SHEET', 7.1, PAPER, True)
         box(195, 17, 160, 17, NAVY)

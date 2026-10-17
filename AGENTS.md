@@ -21,7 +21,7 @@ Only commit files related to the requested work. Do not include unrelated local 
 
 ## Event Flight Plan Versions
 
-Increment the Event Flight Plan's simple version number for every published change to its content, menu, pricing, layout, or calculations (for example, v.1.1 → v.1.2 → v.1.3). Set the number in `src/lib/ready-room-flight-plan.ts`, regenerate the PDF, and keep its page footers, metadata, website download label, and download URL in sync. Use this simple numbering instead of date-based versions.
+Increment the Event Flight Plan's simple version number for every published change to its content, menu, pricing, layout, or calculations (for example, v.1.1 → v.1.2 → v.1.3). Set the number in `src/lib/ready-room-flight-plan.ts`, regenerate the PDF, and keep its page headers and footers, metadata, website download label, and download URL in sync. Show the version in the top-right header and footer on every PDF page. Use this simple numbering instead of date-based versions.
 
 ## Google Calendar Sync
 
