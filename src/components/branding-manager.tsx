@@ -29,7 +29,7 @@ export function BrandingManager() {
       if (!response.ok) throw new Error(body.error || "Aviator logo upload failed.");
       setBranding(body);
       form.reset();
-      setMessage("Aviator logo updated in the main header, homepage, and footer.");
+      setMessage("Aviator logo updated in the main header, homepage, footer, and browser tab.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Aviator logo upload failed.");
     } finally {
@@ -56,7 +56,7 @@ export function BrandingManager() {
   return <section id="aviator-logo" className="coupon-manager branding-manager">
     <p className="eyebrow">Header branding</p>
     <h2>Aviator logo</h2>
-    <p>Upload the current Aviator brewery logo. It updates the main header bar, homepage, and footer. Transparent PNG or WEBP artwork works best.</p>
+    <p>Upload the current Aviator brewery logo. It updates the main header bar, homepage, footer, and browser tab. Transparent PNG or WEBP artwork works best.</p>
     {message && <p className="media-message" role="status">{message}</p>}
     <div className="branding-manager-layout">
       <div className="branding-preview"><span>Current Aviator logo</span>{branding ? <img key={branding.logoUrl} src={branding.logoUrl} alt="Current Aviator logo" /> : <p>Loading logo...</p>}<small>{branding?.custom ? "Manager-uploaded logo" : "Bundled default logo"}{branding?.updatedAt ? " - Updated " + new Date(branding.updatedAt).toLocaleString() : ""}</small></div>

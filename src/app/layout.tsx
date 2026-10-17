@@ -19,7 +19,20 @@ import { SiteHeader } from "@/components/site-header";
 import { publicSiteUrl } from "@/lib/site-url";
 
 const siteUrl = publicSiteUrl();
-export const metadata: Metadata = { metadataBase: new URL(siteUrl), title: { default: "Aviator Brewing Company | Fuquay-Varina, NC", template: "%s | Aviator Brewing Company" }, description: "Craft beer, scratch-made food, live music, events, breakfast, cocktails, and aviation-inspired experiences in Fuquay-Varina, North Carolina.", openGraph: { type: "website", locale: "en_US", siteName: "Aviator Brewing Company" }, robots: { index: true, follow: true } };
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: { default: "Aviator Brewing Company | Fuquay-Varina, NC", template: "%s | Aviator Brewing Company" },
+  description: "Craft beer, scratch-made food, live music, events, breakfast, cocktails, and aviation-inspired experiences in Fuquay-Varina, North Carolina.",
+  openGraph: { type: "website", locale: "en_US", siteName: "Aviator Brewing Company" },
+  robots: { index: true, follow: true },
+  icons: {
+    icon: [
+      { url: "/api/branding/icon?size=32", type: "image/png", sizes: "32x32" },
+      { url: "/api/branding/icon?size=64", type: "image/png", sizes: "64x64" },
+    ],
+    apple: { url: "/api/branding/icon?size=180", type: "image/png", sizes: "180x180" },
+  },
+};
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const revision = process.env.RENDER_GIT_COMMIT?.slice(0, 7);
