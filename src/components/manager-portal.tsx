@@ -838,7 +838,7 @@ export function ManagerPortal({ section = "overview", editId, editType, returnTo
       </div>
       <button className="manager-top-signout" type="button" onClick={logout}>Sign out</button>
     </nav>
-    <div className="content-wrap manager-page-shell">
+    <div className={`content-wrap manager-page-shell${section === "private-events" ? " manager-private-events" : ""}`}>
       <header className="manager-page-heading"><p className="eyebrow">Aviator operations</p><h1>{activeSection.label}</h1><p>{activeSection.description}</p></header>
       <div className="manager-route-content"><ManagerSectionContent section={section} editId={editId} editType={editType} returnTo={returnTo} /></div>
     </div>
