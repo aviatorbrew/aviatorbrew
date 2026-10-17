@@ -10,7 +10,7 @@ python3 -m venv /tmp/aviator-pdf-tools
 npm run test:event-plans
 ```
 
-Bump `src/lib/ready-room-flight-plan.ts` when publishing a new PDF. Its version is used by the website download link, PDF metadata, and every page footer. The builder accepts `--input /path/to/original.pdf` to start from an untouched template.
+Increment the simple version in `src/lib/ready-room-flight-plan.ts` for every published Flight Plan change, including content, menu, pricing, layout, and calculations: v.1.1 → v.1.2 → v.1.3. Do not use date-based versions. Its version is used by the website download label and URL, PDF metadata, and every page footer; regenerate the PDF to keep them in sync. The builder accepts `--input /path/to/original.pdf` to start from an untouched template.
 
 `ready-room-flight-plan-calculations.js` uses Acrobat-compatible JavaScript. The builder embeds it in the calculated fields and sets the PDF calculation order. Menu quantities accept `X` for one or a whole-number quantity for repeated selections. Food overages are charged above each package allowance. Optional totals on page 3 use the larger of that number and the menu overage, avoiding double billing. Pizza entries mirrored on pages 2 and 3 are counted once. Each shrimp or brisket crostini selection has its $3 premium upgrade in addition to any charge for exceeding the appetizer allowance.
 

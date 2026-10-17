@@ -18,3 +18,7 @@ When starting future work, treat this as the Aviator Brew website repo. Inspect 
 After completing requested changes, run the relevant validation, commit the ready changes, and push to GitHub repository `aviatorbrew/aviatorbrew` on `main` unless the user explicitly asks for local-only work or the change is not ready to publish.
 
 Only commit files related to the requested work. Do not include unrelated local changes such as generated logs.
+
+## Event Flight Plan Versions
+
+Increment the Event Flight Plan's simple version number for every published change to its content, menu, pricing, layout, or calculations (for example, v.1.1 → v.1.2 → v.1.3). Set the number in `src/lib/ready-room-flight-plan.ts`, regenerate the PDF, and keep its page footers, metadata, website download label, and download URL in sync. Use this simple numbering instead of date-based versions.
