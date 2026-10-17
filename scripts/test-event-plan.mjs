@@ -26,13 +26,17 @@ for(const pkg of readyRoomPackages){
   assert.equal(totals.subtotal,base);assert.equal(totals.salesTax,Math.round(base*.0725));assert.equal(totals.pfbTax,Math.round(base*.01));assert.equal(totals.balance,totals.total-35000);
   assert.equal(eventOrderItems(details).length,1,'Included foods and specialty pizzas do not incur duplicate charges');
   assert.equal(eventTotals({...details,guestCount:40}).subtotal,pkg.priceCents*40,'Guest count recalculates package');
-  for(const f of [{...flightPlan,appetizers:flightPlan.appetizers.slice(1)},{...flightPlan,sides:['Mac & Cheese','Mac & Cheese']},{...flightPlan,entrees:['Unknown food','Aviator Pulled Pork BBQ']},{...flightPlan,extraHours:1.5},{...flightPlan,dessert:'yes'},{...flightPlan,extraAppetizers:[flightPlan.appetizers[0]]}])assert.throws(()=>parseEventPlan({...details,flightPlan:f}));
+  for(const f of [{...flightPlan,appetizers:flightPlan.appetizers.slice(1)},{...flightPlan,sides:['Mac & Cheese','Mac & Cheese']},{...flightPlan,entrees:['Unknown food','Aviator Pulled Pork BBQ']},{...flightPlan,extraHours:1.5},{...flightPlan,dessert:'yes'},{...flightPlan,extraEntrees:[flightPlan.entrees[0]]}])assert.throws(()=>parseEventPlan({...details,flightPlan:f}));
   assert.throws(()=>parseEventPlan({...details,guestCount:29}));
   const extra={...flightPlan,extraAppetizers:['Shrimp Cocktail'],extraEntrees:['Country Fried Chicken Cutlet'],extraHours:2,dessert:true,coffee:true};
+  const repeated={...flightPlan,appetizers:Array(pkg.appetizers).fill("Hush Puppies"),extraAppetizers:["Hush Puppies","Hush Puppies"]};
+  const repeatedPlan=parseEventPlan({...details,flightPlan:repeated});
+  assert.equal(repeatedPlan.flightPlan.appetizers.length,pkg.appetizers);
+  assert.equal(eventTotals(repeatedPlan).subtotal,base+30*500*2,"Included duplicates stay included; extra appetizer portions are charged individually");
   const withExtras=parseEventPlan({...details,flightPlan:extra});
   assert.equal(eventTotals(withExtras).subtotal,base+30*(500+800+600+300)+20000);
 }
-const dinner={...emptyFlightPlan(),packageId:'dinner',appetizers:readyRoomMenu.appetizers.slice(0,3),entrees:['Herb-Roasted Chicken','Bourbon-Glazed Chicken'],sides:readyRoomMenu.sides.slice(0,2),salads:['Greek Salad']};
+const dinner={...emptyFlightPlan(),packageId:'dinner',appetizers:['Hush Puppies','Hush Puppies','Loaded Tots'],entrees:['Herb-Roasted Chicken','Bourbon-Glazed Chicken'],sides:readyRoomMenu.sides.slice(0,2),salads:['Greek Salad']};
 const social=changeEventPackage(dinner,'social');assert.equal(social.appetizers.length,2);assert.equal(social.salads.length,0);assert.equal(social.entrees.length,0,'Changing package removes unavailable premium selections');
 const pizza={...dinner,pizzaExtra:true,pizzas:['Caprese']};
 const pizzaPlan=parseEventPlan({...emptyEventPlan(),title:'<script>event</script>',date:'2026-11-14',guestCount:30,flightPlan:{...pizza,dietaryNeeds:'Peanut allergy',barMode:'Drink tickets',ticketCount:60,decorNotes:'Blue balloons'},internalNotes:'STAFF SECRET'});
@@ -46,7 +50,7 @@ const summaryModule=await import(moduleUrl(`import {eventDateLabel,eventOrderIte
 const plan={id:'test',version:2,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),sourceInquiryId:null,details:pizzaPlan};
 for(const flight of [true,false]){
   const html=summaryModule.eventSummaryHtml(plan,true,'',flight);
-  for(const text of ['Herb-Roasted Chicken','Greek Salad','Peanut allergy','Caprese','Blue balloons','Drink tickets','60','7.25%','PFB tax (1%)','$350.00','&lt;script&gt;event&lt;/script&gt;'])assert.ok(html.includes(text),text);
+  for(const text of ['Herb-Roasted Chicken','Hush Puppies × 2','Greek Salad','Peanut allergy','Caprese','Blue balloons','Drink tickets','60','7.25%','PFB tax (1%)','$350.00','&lt;script&gt;event&lt;/script&gt;'])assert.ok(html.includes(text),text);
   assert.ok(!html.includes('STAFF SECRET'));assert.ok(!html.includes('<script>event</script>'));
   assert.equal(html.includes('Customer printed name / signature'),flight);
 }
