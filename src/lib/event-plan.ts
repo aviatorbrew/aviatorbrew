@@ -17,14 +17,14 @@ export const readyRoomMenu = {
 };
 export type FlightPlan = {
   packageId: string; appetizers: string[]; entrees: string[]; sides: string[]; salads: string[]; pizzas: string[];
-  extraAppetizers: string[]; extraEntrees: string[]; extraHours: number; dessert: boolean; coffee: boolean; pizzaExtra: boolean;
+  extraAppetizers: string[]; extraEntrees: string[]; extraSides: string[]; extraSalads: string[]; extraSidePriceCents: number | null; extraSaladPriceCents: number | null; extraHours: number; dessert: boolean; coffee: boolean; pizzaExtra: boolean;
   glutenFreeCount: number; pizzaTime: string; pizzaNotes: string; wingSauce: string; dietaryNeeds: string; foodNotes: string;
   eventType: string; organization: string; billingName: string; billingAddress: string; appetizerTime: string; outsideSeating: string;
   barMode: string; barCapCents: number; ticketCount: number; barContact: string;
   decorContact: string; decorPhone: string; decorCompany: string; decorNotes: string; av: string[];
 };
 export function emptyFlightPlan(): FlightPlan {
-  return { packageId: "", appetizers: [], entrees: [], sides: [], salads: [], pizzas: [], extraAppetizers: [], extraEntrees: [], extraHours: 0, dessert: false, coffee: false, pizzaExtra: false, glutenFreeCount: 0, pizzaTime: "", pizzaNotes: "", wingSauce: "", dietaryNeeds: "", foodNotes: "", eventType: "", organization: "", billingName: "", billingAddress: "", appetizerTime: "", outsideSeating: "", barMode: "", barCapCents: 0, ticketCount: 0, barContact: "", decorContact: "", decorPhone: "", decorCompany: "", decorNotes: "", av: [] };
+  return { packageId: "", appetizers: [], entrees: [], sides: [], salads: [], pizzas: [], extraAppetizers: [], extraEntrees: [], extraSides: [], extraSalads: [], extraSidePriceCents: 300, extraSaladPriceCents: 400, extraHours: 0, dessert: false, coffee: false, pizzaExtra: false, glutenFreeCount: 0, pizzaTime: "", pizzaNotes: "", wingSauce: "", dietaryNeeds: "", foodNotes: "", eventType: "", organization: "", billingName: "", billingAddress: "", appetizerTime: "", outsideSeating: "", barMode: "", barCapCents: 0, ticketCount: 0, barContact: "", decorContact: "", decorPhone: "", decorCompany: "", decorNotes: "", av: [] };
 }
 export function changeEventPackage(plan: FlightPlan, packageId: string): FlightPlan {
   const pkg = readyRoomPackages.find(p => p.id === packageId);
@@ -48,13 +48,15 @@ export function eventOrderItems(plan: EventPlanDetails): EventOrderItem[] {
   add("base", pkg.name + " / guest", plan.guestCount, pkg.priceCents);
   for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, 500);
   for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional entree: ${name}`, plan.guestCount, 800);
+  for (const [i, name] of (f.extraSides || []).entries()) add(`side-${i}`, `Additional side: ${name}`, plan.guestCount, f.extraSidePriceCents ?? 0);
+  for (const [i, name] of (f.extraSalads || []).entries()) add(`salad-${i}`, `Additional salad: ${name}`, plan.guestCount, f.extraSaladPriceCents ?? 0);
   if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, 800);
   if (f.dessert) add("dessert", "Dessert display", plan.guestCount, 600);
   if (f.coffee) add("coffee", "Coffee service", plan.guestCount, 300);
   add("hours", "Additional event hour", f.extraHours, 10000, "Room");
   return [...rows, ...plan.items];
 }
-function appetizerSelections(selections: string[]) {
+function foodSelections(selections: string[]) {
   return [...new Set(selections)].map(name => { const count = selections.filter(value => value === name).length; return count > 1 ? `${name} × ${count}` : name; }).join(", ");
 }
 export function flightPlanSelections(plan: EventPlanDetails): [string, string][] {
@@ -63,8 +65,8 @@ export function flightPlanSelections(plan: EventPlanDetails): [string, string][]
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
   return [
     ["Package", pkg ? `${pkg.name} · ${money(pkg.priceCents)} / guest` : ""],
-    ["Appetizers", appetizerSelections(f.appetizers)], ["Entrees", f.entrees.join(", ")], ["Sides", f.sides.join(", ")], ["Salad", f.salads.join(", ")],
-    ["Extra appetizers", appetizerSelections(f.extraAppetizers)], ["Extra entrees", f.extraEntrees.join(", ")],
+    ["Appetizers", foodSelections(f.appetizers)], ["Entrees", foodSelections(f.entrees)], ["Sides", foodSelections(f.sides)], ["Salad", foodSelections(f.salads)],
+    ["Extra appetizers", foodSelections(f.extraAppetizers)], ["Extra entrees", foodSelections(f.extraEntrees)], ["Extra sides", foodSelections(f.extraSides || [])], ["Extra salads", foodSelections(f.extraSalads || [])],
     ["Pizza styles", f.pizzas.join(", ")], ["Pizza service", f.pizzaTime ? timeLabel(f.pizzaTime) : ""], ["Gluten-free pizzas", f.glutenFreeCount ? String(f.glutenFreeCount) : ""], ["Pizza notes", f.pizzaNotes], ["Wing sauce", f.wingSauce], ["Dietary needs", f.dietaryNeeds], ["Food notes", f.foodNotes],
   ].filter(([, value]) => Boolean(value)) as [string, string][];
 }
@@ -108,18 +110,24 @@ function parseFlightPlan(value: unknown, guestCount: number): FlightPlan | null 
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
   if (f.packageId && !pkg) throw new Error("Choose a Ready Room package.");
   const entrees = f.packageId === "dinner" ? readyRoomMenu.premiumEntrees : readyRoomMenu.entrees;
-  const groups = { appetizers: readyRoomMenu.appetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: readyRoomMenu.appetizers, extraEntrees: entrees, av: readyRoomMenu.av };
+  const groups = { appetizers: readyRoomMenu.appetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: readyRoomMenu.appetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
   for (const key of Object.keys(groups) as (keyof typeof groups)[]) {
     const v = input[key] ?? [];
-    if (!Array.isArray(v) || v.length > 12 || v.some(s => typeof s !== "string" || !groups[key].includes(s)) || (key !== "appetizers" && key !== "extraAppetizers" && new Set(v).size !== v.length)) throw new Error(`Choose valid ${key}${key === "appetizers" || key === "extraAppetizers" ? "" : " without duplicates"}.`);
+    const distinct = key === "pizzas" || key === "av";
+    if (!Array.isArray(v) || v.length > 12 || v.some(s => typeof s !== "string" || !groups[key].includes(s)) || (distinct && new Set(v).size !== v.length)) throw new Error(`Choose valid ${key}${distinct ? " without duplicates" : ""}.`);
     f[key] = v as string[];
+  }
+  for (const [key, selections] of [["extraSidePriceCents", f.extraSides], ["extraSaladPriceCents", f.extraSalads]] as const) {
+    const price = input[key] === undefined ? f[key] : input[key];
+    if (price !== null && (typeof price !== "number" || !Number.isInteger(price) || price < 0 || price > 10000000)) throw new Error("Enter a valid extra side or salad price.");
+    if (selections.length && price === null) throw new Error(`Enter the additional ${key === "extraSidePriceCents" ? "side" : "salad"} price per guest.`);
+    f[key] = price as number | null;
   }
   if (pkg) {
     if (guestCount < 30) throw new Error("Ready Room packages require at least 30 guests.");
     for (const key of ["appetizers", "entrees", "sides", "salads"] as const) if (f[key].length !== pkg[key]) throw new Error(`${pkg.name}: choose ${pkg[key]} ${key}.`);
-    if (f.extraEntrees.some(s => f.entrees.includes(s))) throw new Error("Choose different foods for the additional entrees.");
     if (f.pizzaExtra && [...f.entrees, ...f.extraEntrees].includes("Aviator Pizzeria Pizza Bar")) throw new Error("Pizza Bar is already selected as an entree; do not add it twice.");
-  } else if ([f.appetizers, f.entrees, f.sides, f.salads, f.extraAppetizers, f.extraEntrees].some(v => v.length) || f.extraHours || f.dessert || f.coffee || f.pizzaExtra) throw new Error("Choose a package before its food selections and extras.");
+  } else if ([f.appetizers, f.entrees, f.sides, f.salads, f.extraAppetizers, f.extraEntrees, f.extraSides, f.extraSalads].some(v => v.length) || f.extraHours || f.dessert || f.coffee || f.pizzaExtra) throw new Error("Choose a package before its food selections and extras.");
   const pizza = [...f.entrees, ...f.extraEntrees].includes("Aviator Pizzeria Pizza Bar") || f.pizzaExtra;
   if (pizza && (f.pizzas.length < 1 || f.pizzas.length > 3)) throw new Error("Choose 1 to 3 Pizza Bar styles.");
   if (!pizza && (f.pizzas.length || f.glutenFreeCount || f.pizzaTime || f.pizzaNotes)) throw new Error("Select a Pizza Bar entree before adding pizza details.");

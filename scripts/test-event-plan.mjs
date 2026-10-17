@@ -26,21 +26,32 @@ for(const pkg of readyRoomPackages){
   assert.equal(totals.subtotal,base);assert.equal(totals.salesTax,Math.round(base*.0725));assert.equal(totals.pfbTax,Math.round(base*.01));assert.equal(totals.balance,totals.total-35000);
   assert.equal(eventOrderItems(details).length,1,'Included foods and specialty pizzas do not incur duplicate charges');
   assert.equal(eventTotals({...details,guestCount:40}).subtotal,pkg.priceCents*40,'Guest count recalculates package');
-  for(const f of [{...flightPlan,appetizers:flightPlan.appetizers.slice(1)},{...flightPlan,sides:['Mac & Cheese','Mac & Cheese']},{...flightPlan,entrees:['Unknown food','Aviator Pulled Pork BBQ']},{...flightPlan,extraHours:1.5},{...flightPlan,dessert:'yes'},{...flightPlan,extraEntrees:[flightPlan.entrees[0]]}])assert.throws(()=>parseEventPlan({...details,flightPlan:f}));
+  for(const f of [{...flightPlan,appetizers:flightPlan.appetizers.slice(1)},{...flightPlan,sides:['Unknown side','Mac & Cheese']},{...flightPlan,entrees:['Unknown food','Aviator Pulled Pork BBQ']},{...flightPlan,extraHours:1.5},{...flightPlan,dessert:'yes'},{...flightPlan,extraEntrees:['Unknown entree']}])assert.throws(()=>parseEventPlan({...details,flightPlan:f}));
   assert.throws(()=>parseEventPlan({...details,guestCount:29}));
   const extra={...flightPlan,extraAppetizers:['Shrimp Cocktail'],extraEntrees:['Country Fried Chicken Cutlet'],extraHours:2,dessert:true,coffee:true};
   const repeated={...flightPlan,appetizers:Array(pkg.appetizers).fill("Hush Puppies"),extraAppetizers:["Hush Puppies","Hush Puppies"]};
   const repeatedPlan=parseEventPlan({...details,flightPlan:repeated});
   assert.equal(repeatedPlan.flightPlan.appetizers.length,pkg.appetizers);
   assert.equal(eventTotals(repeatedPlan).subtotal,base+30*500*2,"Included duplicates stay included; extra appetizer portions are charged individually");
+  const extraSides={...flightPlan,extraSides:['French Fries'],extraSalads:['Spinach Caprese Salad'],extraSidePriceCents:300,extraSaladPriceCents:400};
+  const repeatedFoods={...flightPlan,entrees:['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ'],sides:['Mac & Cheese','Mac & Cheese'],pizzas:[],extraEntrees:['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ'],extraSides:['Mac & Cheese','Mac & Cheese'],extraSidePriceCents:300};
+  const repeatFoodPlan=parseEventPlan({...details,flightPlan:repeatedFoods});
+  assert.equal(eventTotals(repeatFoodPlan).subtotal,base+30*(800+300)*2,'Repeated included foods stay included; each extra entree and side is charged');
+  assert.deepEqual(repeatFoodPlan.flightPlan.entrees,repeatedFoods.entrees);assert.deepEqual(repeatFoodPlan.flightPlan.sides,repeatedFoods.sides);
+  const withSides=parseEventPlan({...details,flightPlan:extraSides});
+  assert.equal(eventTotals(withSides).subtotal,base+30*700,'Additional sides and salads use their recorded per-guest prices');
+  assert.equal(eventTotals({...withSides,guestCount:40}).subtotal,pkg.priceCents*40+40*700);
+  assert.equal(eventTotals(parseEventPlan({...withSides,flightPlan:{...extraSides,extraSidePriceCents:0}})).subtotal,base+30*400,'An explicitly entered complimentary side remains free');
+  for(const values of [{extraSidePriceCents:null},{extraSaladPriceCents:null},{extraSidePriceCents:-1},{extraSidePriceCents:1.5},{extraSides:['Unknown side']},{extraSalads:['Unknown salad']},{extraSides:Array(13).fill('French Fries')}])assert.throws(()=>parseEventPlan({...details,flightPlan:{...extraSides,...values}}));
+  const oldFlightPlan={...flightPlan};for(const key of ['extraSides','extraSalads','extraSidePriceCents','extraSaladPriceCents'])delete oldFlightPlan[key];assert.equal(eventTotals(parseEventPlan({...details,flightPlan:oldFlightPlan})).subtotal,base,'Older saved plans keep their existing totals');
   const withExtras=parseEventPlan({...details,flightPlan:extra});
   assert.equal(eventTotals(withExtras).subtotal,base+30*(500+800+600+300)+20000);
 }
 const dinner={...emptyFlightPlan(),packageId:'dinner',appetizers:['Hush Puppies','Hush Puppies','Loaded Tots'],entrees:['Herb-Roasted Chicken','Bourbon-Glazed Chicken'],sides:readyRoomMenu.sides.slice(0,2),salads:['Greek Salad']};
 const social=changeEventPackage(dinner,'social');assert.equal(social.appetizers.length,2);assert.equal(social.salads.length,0);assert.equal(social.entrees.length,0,'Changing package removes unavailable premium selections');
-const pizza={...dinner,pizzaExtra:true,pizzas:['Caprese']};
+const pizza={...dinner,extraEntrees:['Herb-Roasted Chicken','Herb-Roasted Chicken'],extraSides:['French Fries','French Fries'],extraSidePriceCents:300,extraSalads:['Caesar Salad'],extraSaladPriceCents:400,pizzaExtra:true,pizzas:['Caprese']};
 const pizzaPlan=parseEventPlan({...emptyEventPlan(),title:'<script>event</script>',date:'2026-11-14',guestCount:30,flightPlan:{...pizza,dietaryNeeds:'Peanut allergy',barMode:'Drink tickets',ticketCount:60,decorNotes:'Blue balloons'},internalNotes:'STAFF SECRET'});
-assert.equal(eventTotals(pizzaPlan).subtotal,30*(4400+800));
+assert.equal(eventTotals(pizzaPlan).subtotal,30*(4400+800+800*2+300*2+400));
 assert.throws(()=>parseEventPlan({...pizzaPlan,flightPlan:{...pizza,pizzas:[]}}));
 assert.throws(()=>parseEventPlan({...pizzaPlan,flightPlan:{...pizza,pizzas:readyRoomMenu.pizzas.slice(0,4)}}));
 assert.throws(()=>parseEventPlan({...pizzaPlan,flightPlan:{...pizza,pizzaExtra:false}}));
@@ -50,7 +61,7 @@ const summaryModule=await import(moduleUrl(`import {eventDateLabel,eventOrderIte
 const plan={id:'test',version:2,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),sourceInquiryId:null,details:pizzaPlan};
 for(const flight of [true,false]){
   const html=summaryModule.eventSummaryHtml(plan,true,'',flight);
-  for(const text of ['Herb-Roasted Chicken','Hush Puppies × 2','Greek Salad','Peanut allergy','Caprese','Blue balloons','Drink tickets','60','7.25%','PFB tax (1%)','$350.00','&lt;script&gt;event&lt;/script&gt;'])assert.ok(html.includes(text),text);
+  for(const text of ['Herb-Roasted Chicken','Hush Puppies × 2','Herb-Roasted Chicken × 2','French Fries × 2','Additional side: French Fries','Additional salad: Caesar Salad','Greek Salad','Peanut allergy','Caprese','Blue balloons','Drink tickets','60','7.25%','PFB tax (1%)','$350.00','&lt;script&gt;event&lt;/script&gt;'])assert.ok(html.includes(text),text);
   assert.ok(!html.includes('STAFF SECRET'));assert.ok(!html.includes('<script>event</script>'));
   assert.equal(html.includes('Customer printed name / signature'),flight);
 }
