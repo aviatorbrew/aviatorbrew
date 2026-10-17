@@ -51,20 +51,24 @@ def main():
     text_field(1, 'summary_selection_extras', [26.4, 86.4, 470.4, 99], readonly=True)
     text_field(2, 'extra_side', [33.6, 94.08, 43.2, 103.68])
     text_field(2, 'extra_salad', [178.56, 114.72, 188.16, 124.32])
-    # Put shrimp in its own premium appetizer section and remove regular beef brisket.
+    text_field(2, 'extra_premium_entree', [178.56, 94.08, 188.16, 103.68])
+    # Keep appetizers and entrees in separate columns, with dedicated premium groups.
     shrimp_ref = fields.pop('app_shrimp_cocktail', fields.get('premium_app_shrimp_cocktail'))
     shrimp = shrimp_ref.get_object()
     shrimp[NameObject('/T')] = TextStringObject('premium_app_shrimp_cocktail')
     shrimp[NameObject('/Rect')] = ArrayObject([FloatObject(n) for n in [33.6, 328.8, 43.2, 338.4]])
     fields['premium_app_shrimp_cocktail'] = shrimp_ref
-    if 'entree_brisket' in fields:
-        removed = fields.pop('entree_brisket')
+    for name in ['entree_brisket', 'entree_flat_iron', 'premium_country_chicken', 'premium_pulled_pork']:
+        if name not in fields:
+            continue
+        removed = fields.pop(name)
         for page in writer.pages:
             page[NameObject('/Annots')] = ArrayObject([ref for ref in page.get('/Annots', []) if ref != removed])
         acro[NameObject('/Fields')] = ArrayObject([ref for ref in acro['/Fields'] if ref != removed])
-    fields['entree_flat_iron'].get_object()[NameObject('/Rect')] = ArrayObject([FloatObject(n) for n in [257.76, 350.4, 267.36, 360]])
+    for name, x, y in [('premium_flat_iron', 33.6, 264), ('premium_brisket', 33.6, 242.4), ('premium_herb_chicken', 257.76, 264), ('premium_bourbon_chicken', 257.76, 242.4)]:
+        fields[name].get_object()[NameObject('/Rect')] = ArrayObject([FloatObject(n) for n in [x, y, x + 9.6, y + 9.6]])
     quantity_names = [name for name in fields if name.startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_'))]
-    quantity_names += ['pizza_included_entree', 'pizza_extra_entree', 'extra_hour', 'extra_app', 'extra_entree', 'extra_side', 'extra_salad', 'extra_dessert', 'extra_coffee']
+    quantity_names += ['pizza_included_entree', 'pizza_extra_entree', 'extra_hour', 'extra_app', 'extra_entree', 'extra_side', 'extra_salad', 'extra_dessert', 'extra_coffee', 'extra_premium_entree']
     validate_quantity = '''var value = String(event.value).replace(/^\\s+|\\s+$/g, "");
 if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
   event.rc = false; app.alert("Enter X for one selection, or a whole-number quantity from 0 to 99.");
@@ -77,6 +81,7 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
         field.setdefault(NameObject('/AA'), DictionaryObject())[NameObject('/V')] = action(validate_quantity)
     for name in ['extra_app', 'extra_entree', 'extra_side', 'extra_salad']:
         fields[name].get_object()[NameObject('/TU')] = TextStringObject('Optional TOTAL extra selections. Menu overages are already counted automatically; the larger total applies, without double-counting.')
+    fields['extra_premium_entree'].get_object()[NameObject('/TU')] = TextStringObject('Optional: how many selected premium entrees are extras, not replacements? Leave blank to fill included slots with regular entrees first; enter 0 if every premium entree is included or a replacement. This is part of the total extra entree count, not an additional count.')
     guest = fields['guest_count'].get_object()
     guest.setdefault(NameObject('/AA'), DictionaryObject())[NameObject('/V')] = action('var v=String(event.value).replace(/^\\s+|\\s+$/g, ""); if(v!=="" && (!/^\\d+$/.test(v) || Number(v)>10000)){event.rc=false;app.alert("Enter a whole-number guest count.");}')
     calculated = ['summary_selection_extras', 'summary_guests', 'summary_package_rate', 'summary_package_subtotal', 'summary_specialty_pizza', 'summary_food_extras', 'summary_event_hours', 'summary_subtotal', 'summary_tax', 'summary_pfb_tax', 'summary_balance']
@@ -113,21 +118,57 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
             text(26.4, 568, 'Enter X for one selection, or 2, 3... for repeated foods.', 9, (0.75, 0.82, 0.85))
             box(26.4, 524, 444, 24)
             text(26.4, 537, 'Selections beyond your package are charged automatically for every guest.', 7.8)
-            text(26.4, 526.5, 'Extra app $3 / guest | entree $5 | side $3 | salad $3. Premium shrimp adds $3 / guest.', 7.5)
-            box(26.4, 325.2, 214, 39.6)
+            text(26.4, 526.5, 'Extra app $3 / person | entree $5 | side $3 | salad $3. Premium upgrades listed below.', 7.5)
+            # Replace the combined raster heading and menu with clearly divided sections.
+            box(26.4, 211, 444, 311)
+            for x, width, heading in [(26.4, 214, 'APPETIZERS'), (251.5, 218.9, 'ENTREES')]:
+                box(x, 500, width, 22, (20 / 255, 54 / 255, 78 / 255))
+                text(x + 7.2, 507, heading, 11, PAPER, True)
+            c.setStrokeColorRGB(0.75, 0.77, 0.73)
+            c.setLineWidth(.6)
+            c.line(246, 324, 246, 522)
+
+            def menu_item(name, x, y, label, subtitle=''):
+                field = fields[name].get_object()
+                field[NameObject('/Rect')] = ArrayObject([FloatObject(n) for n in [x, y, x + 9.6, y + 9.6]])
+                c.setStrokeColorRGB(*INK)
+                c.setLineWidth(.7)
+                c.setFillColorRGB(*PAPER)
+                c.rect(x - .6, y - .6, 10.8, 10.8, fill=1, stroke=1)
+                text(x + 16, y + 2.5, label, 8.1, bold=True)
+                if subtitle:
+                    text(x + 16, y - 7.8, subtitle, 6.1)
+
+            for name, y, label, subtitle in [
+                ('app_hush_puppies', 480, 'Hush Puppies', ''),
+                ('app_loaded_tots', 458.4, 'Loaded Tots', ''),
+                ('app_chips_salsa', 436.8, 'Chips & Salsa', ''),
+                ('app_chicken_tenders', 415.2, 'Aviator Chicken Tenders', 'with Aviator Sauce'),
+                ('app_caprese_skewers', 393.6, 'Caprese Skewers', ''),
+                ('app_brisket_crostini', 372, 'Brisket Crostini', ''),
+            ]:
+                menu_item(name, 33.6, y, label, subtitle)
+            for name, y, label, subtitle in [
+                ('entree_pizza_bar', 480, 'Aviator Pizzeria Pizza Bar', 'Choose details on page 3'),
+                ('entree_pulled_pork', 458.4, 'Aviator Pulled Pork BBQ', ''),
+                ('entree_country_chicken', 436.8, 'Country Fried Chicken Cutlet', ''),
+                ('entree_meatloaf', 415.2, 'Bacon-Wrapped Meatloaf', ''),
+                ('entree_tenders', 393.6, 'Aviator Chicken Tenders', ''),
+                ('entree_wings', 372, 'Aviator Smoked Wings', 'Dry Rub, Aviator, Buffalo, BlackMamba or Monster'),
+            ]:
+                menu_item(name, 257.76, y, label, subtitle)
             box(26.4, 345.6, 214, 17, (20 / 255, 54 / 255, 78 / 255))
-            text(33.6, 350.6, 'PREMIUM APPETIZERS  +$3 / GUEST', 7.1, GOLD, True)
-            c.setStrokeColorRGB(*INK)
-            c.setLineWidth(.7)
-            c.setFillColorRGB(*PAPER)
-            c.rect(33, 328.2, 10.8, 10.8, fill=1, stroke=1)
-            text(49.6, 331, 'Shrimp Cocktail', 8.4, bold=True)
-            box(251.5, 315, 218.9, 49.8)
-            c.setStrokeColorRGB(*INK)
-            c.setFillColorRGB(*PAPER)
-            c.rect(257.16, 349.8, 10.8, 10.8, fill=1, stroke=1)
-            text(274, 352.8, 'Grilled Flat Iron Steak', 8.4, bold=True)
-            text(274, 342.3, 'collard green chimichurri', 6.4)
+            text(33.6, 350.6, 'PREMIUM APPETIZERS  +$3 / PERSON', 7, GOLD, True)
+            menu_item('premium_app_shrimp_cocktail', 33.6, 328.8, 'Shrimp Cocktail')
+            box(26.4, 284, 444, 22, (20 / 255, 54 / 255, 78 / 255))
+            text(33.6, 291, 'PREMIUM ENTREES', 11, PAPER, True)
+            text(322, 291, 'REPLACE +$2 / PERSON', 8.5, GOLD, True)
+            menu_item('premium_flat_iron', 33.6, 264, 'Grilled Flat Iron Steak', 'collard green chimichurri')
+            menu_item('premium_brisket', 33.6, 242.4, 'Aviator Beef Brisket')
+            menu_item('premium_herb_chicken', 257.76, 264, 'Herb-Roasted Chicken')
+            menu_item('premium_bourbon_chicken', 257.76, 242.4, 'Bourbon-Glazed Chicken')
+            text(26.4, 225, 'Replace an included regular entree: +$2 / person. Dinner includes two premium entrees.', 7.1)
+            text(26.4, 214.5, 'Additional premium entree: $7 / person total. Additional regular entree: $5 / person.', 7.1)
             box(26.4, 86.4, 444, 12.6, (0.91, 0.94, 0.95))
         if page_index == 2:
             # Clarify the mirrored Pizza Bar fields so an extra is not charged twice.
@@ -147,6 +188,7 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
                 ('extra_dessert', 178.56, 156, 'Dessert ($6 / guest)'),
                 ('extra_coffee', 178.56, 135.36, 'Coffee ($3 / guest)'),
                 ('extra_salad', 178.56, 114.72, 'Extra salads ($3 / guest)'),
+                ('extra_premium_entree', 178.56, 94.08, 'Of extra entrees: premium ($7)'),
             ]:
                 c.setStrokeColorRGB(*INK)
                 c.setLineWidth(.7)
@@ -154,14 +196,14 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
                 c.rect(x - .6, y - .6, 10.8, 10.8, fill=1, stroke=1)
                 text(x + 16, y + 2, label, 7.1, bold=True)
             # Explain optional food totals in the existing extra-quantities label.
-            box(26.4, 83, 214, 9)
-            text(32.64, 85.5, 'TOTAL EXTRAS: MENU COUNT OR NUMBER ABOVE, WHICHEVER IS GREATER', 4.7)
+            box(26.4, 82, 214, 10)
+            text(32.64, 85.5, 'OPTIONAL EXTRA NOTES / PREMIUM EXTRAS: BLANK = AUTO', 5.1)
         if page_index == 4:
             box(342, 500, 128.4, 20, (20 / 255, 54 / 255, 78 / 255))
             text(346, 507.8, "AUTOMATIC TOTALS", 6.8, GOLD, True)
             box(26.4, 524, 444, 24)
             text(26.4, 537, 'Blue fields recalculate automatically. Enter bar, other charges and deposit / credit manually.', 7.3)
-            text(26.4, 526.5, 'Food extras: apps $3, entrees $5, sides $3, salads $3 / guest. Shrimp premium +$3 per selection.', 7.3)
+            text(26.4, 526.5, 'Per person: app $3, regular entree $5, side / salad $3. Premium entree: replacement +$2 / extra $7.', 7)
             box(26.4, 343.2, 129, 19.2)
             text(26.4, 350.4, 'Food extras / premium / services', 7.2, bold=True)
         c.save()

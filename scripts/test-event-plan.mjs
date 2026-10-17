@@ -51,11 +51,26 @@ for(const pkg of readyRoomPackages){
   const withExtras=parseEventPlan({...details,flightPlan:extra});
   assert.equal(eventTotals(withExtras).subtotal,base+30*(300+300+500+600+300)+20000);
 }
+// Premium replacement versus additional pricing, including Dinner's included premium allowance.
+for (const pkg of readyRoomPackages) {
+  const premiumFlight={...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Hush Puppies'),entrees:['Aviator Beef Brisket','Aviator Pulled Pork BBQ'],sides:['Mac & Cheese','Potato Salad'],salads:pkg.salads?['Caesar Salad']:[]};
+  const p=parseEventPlan({...emptyEventPlan(),title:'Premium pricing',date:'2026-11-14',guestCount:55,flightPlan:premiumFlight});
+  const base=pkg.priceCents*55, upgrade=pkg.id==='dinner'?0:55*200;
+  assert.equal(eventTotals(p).subtotal,base+upgrade,'Included premium replacement adds $2, except Dinner');
+  const extra=parseEventPlan({...p,flightPlan:{...premiumFlight,extraEntrees:['Aviator Beef Brisket','Aviator Pulled Pork BBQ']}});
+  assert.equal(eventTotals(extra).subtotal,base+upgrade+55*(700+500),'Extra premium is $7 total and extra regular is $5');
+  assert.equal(eventOrderItems(extra).find(row=>row.name==='Additional premium entree: Aviator Beef Brisket').unitPriceCents,700);
+  const repeat=parseEventPlan({...p,flightPlan:{...premiumFlight,entrees:['Aviator Beef Brisket','Aviator Beef Brisket'],extraEntrees:['Aviator Beef Brisket','Aviator Beef Brisket']}});
+  assert.equal(eventTotals(repeat).subtotal,base+upgrade*2+55*700*2,'Repeated premium replacements and extras each have their own charge');
+}
+assert.ok(!readyRoomMenu.premiumEntrees.includes('Aviator Pulled Pork BBQ'));
+assert.ok(!readyRoomMenu.premiumEntrees.includes('Country Fried Chicken Cutlet'));
+assert.equal(new Set([...readyRoomMenu.entrees,...readyRoomMenu.premiumEntrees]).size,readyRoomMenu.entrees.length+readyRoomMenu.premiumEntrees.length,'Regular and premium lists must not duplicate foods');
 const dinner={...emptyFlightPlan(),packageId:'dinner',appetizers:['Hush Puppies','Hush Puppies','Loaded Tots'],entrees:['Herb-Roasted Chicken','Bourbon-Glazed Chicken'],sides:readyRoomMenu.sides.slice(0,2),salads:['Greek Salad']};
-const social=changeEventPackage(dinner,'social');assert.equal(social.appetizers.length,2);assert.equal(social.salads.length,0);assert.equal(social.entrees.length,0,'Changing package removes unavailable premium selections');
+const social=changeEventPackage(dinner,'social');assert.equal(social.appetizers.length,2);assert.equal(social.salads.length,0);assert.deepEqual(social.entrees,dinner.entrees,'Premium selections remain available as paid replacements when changing packages');
 const pizza={...dinner,extraEntrees:['Herb-Roasted Chicken','Herb-Roasted Chicken'],extraSides:['French Fries','French Fries'],extraSidePriceCents:300,extraSalads:['Caesar Salad'],extraSaladPriceCents:400,pizzaExtra:true,pizzas:['Caprese']};
 const pizzaPlan=parseEventPlan({...emptyEventPlan(),title:'<script>event</script>',date:'2026-11-14',guestCount:30,flightPlan:{...pizza,dietaryNeeds:'Peanut allergy',barMode:'Drink tickets',ticketCount:60,decorNotes:'Blue balloons'},internalNotes:'STAFF SECRET'});
-assert.equal(eventTotals(pizzaPlan).subtotal,30*(4400+500+500*2+300*2+400));
+assert.equal(eventTotals(pizzaPlan).subtotal,30*(4400+500+700*2+300*2+400));
 assert.throws(()=>parseEventPlan({...pizzaPlan,flightPlan:{...pizza,pizzas:[]}}));
 assert.throws(()=>parseEventPlan({...pizzaPlan,flightPlan:{...pizza,pizzas:readyRoomMenu.pizzas.slice(0,4)}}));
 assert.throws(()=>parseEventPlan({...pizzaPlan,flightPlan:{...pizza,pizzaExtra:false}}));

@@ -6,18 +6,19 @@ export const readyRoomPackages = [
   { id: "feast", name: "The Aviator Feast", priceCents: 3800, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
   { id: "dinner", name: "The Ready Room Dinner", priceCents: 4400, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
 ] as const;
-export const readyRoomExtraPrices = { appetizer: 300, entree: 500, side: 300, salad: 300, premiumAppetizer: 300 } as const;
+export const readyRoomExtraPrices = { appetizer: 300, entree: 500, side: 300, salad: 300, premiumAppetizer: 300, premiumEntree: 700, premiumEntreeUpgrade: 200 } as const;
 export const readyRoomMenu = {
   appetizers: ["Hush Puppies", "Loaded Tots", "Chips & Salsa", "Aviator Chicken Tenders with Aviator Sauce", "Caprese Skewers", "Brisket Crostini"],
   premiumAppetizers: ["Shrimp Cocktail"],
-  entrees: ["Aviator Pizzeria Pizza Bar", "Aviator Pulled Pork BBQ", "Country Fried Chicken Cutlet", "Bacon-Wrapped Meatloaf", "Aviator Chicken Tenders", "Aviator Smoked Wings", "Grilled Flat Iron Steak with Collard Green Chimichurri"],
-  premiumEntrees: ["Grilled Flat Iron Steak with Collard Green Chimichurri", "Aviator Beef Brisket", "Herb-Roasted Chicken", "Bourbon-Glazed Chicken", "Country Fried Chicken Cutlet", "Aviator Pulled Pork BBQ", "Aviator Pizzeria Pizza Bar"],
+  entrees: ["Aviator Pizzeria Pizza Bar", "Aviator Pulled Pork BBQ", "Country Fried Chicken Cutlet", "Bacon-Wrapped Meatloaf", "Aviator Chicken Tenders", "Aviator Smoked Wings"],
+  premiumEntrees: ["Grilled Flat Iron Steak with Collard Green Chimichurri", "Aviator Beef Brisket", "Herb-Roasted Chicken", "Bourbon-Glazed Chicken"],
   sides: ["Mac & Cheese", "Collard Greens", "Broccoli Salad", "Tomato Cucumber Salad", "Potato Salad", "French Fries", "Tater Tots"],
   salads: ["Caesar Salad", "Greek Salad", "Spinach Caprese Salad", "Chicken Cobb Salad"],
   pizzas: ["Just the Cheese", "Ultimate Pepperoni", "The Aviator", "Veggie", "MadBeach", "Hot Honey", "Buffalo", "Caprese", "Crash & Burn", "Meat-a-Palooza", "MadBeach Heat", "BBQ Chicken"],
   av: ["Big-screen setup", "House sound system", "Microphone"],
 };
 export const readyRoomAppetizers = [...readyRoomMenu.appetizers, ...readyRoomMenu.premiumAppetizers];
+export const readyRoomEntrees = [...readyRoomMenu.entrees, ...readyRoomMenu.premiumEntrees];
 export type FlightPlan = {
   packageId: string; appetizers: string[]; entrees: string[]; sides: string[]; salads: string[]; pizzas: string[];
   extraAppetizers: string[]; extraEntrees: string[]; extraSides: string[]; extraSalads: string[]; extraSidePriceCents: number | null; extraSaladPriceCents: number | null; extraHours: number; dessert: boolean; coffee: boolean; pizzaExtra: boolean;
@@ -31,7 +32,7 @@ export function emptyFlightPlan(): FlightPlan {
 }
 export function changeEventPackage(plan: FlightPlan, packageId: string): FlightPlan {
   const pkg = readyRoomPackages.find(p => p.id === packageId);
-  const entrees = packageId === "dinner" ? readyRoomMenu.premiumEntrees : readyRoomMenu.entrees;
+  const entrees = readyRoomEntrees;
   return { ...plan, packageId, appetizers: plan.appetizers.filter(Boolean).slice(0, pkg?.appetizers || 0), entrees: plan.entrees.filter(v => entrees.includes(v)).slice(0, pkg?.entrees || 0), sides: plan.sides.filter(Boolean).slice(0, pkg?.sides || 0), salads: plan.salads.filter(Boolean).slice(0, pkg?.salads || 0) };
 }
 export type EventPlanDetails = {
@@ -50,10 +51,11 @@ export function eventOrderItems(plan: EventPlanDetails): EventOrderItem[] {
   const add = (id: string, name: string, quantity: number, price: number, category: EventOrderItem["category"] = "Food") => { if (quantity) rows.push({ id: `package-${id}`, name, quantity, unitPriceCents: price, taxable: true, category, notes: "" }); };
   add("base", pkg.name + " / guest", plan.guestCount, pkg.priceCents);
   for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, readyRoomExtraPrices.appetizer);
-  for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional entree: ${name}`, plan.guestCount, readyRoomExtraPrices.entree);
+  for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional ${readyRoomMenu.premiumEntrees.includes(name) ? "premium " : ""}entree: ${name}`, plan.guestCount, readyRoomMenu.premiumEntrees.includes(name) ? readyRoomExtraPrices.premiumEntree : readyRoomExtraPrices.entree);
   for (const [i, name] of (f.extraSides || []).entries()) add(`side-${i}`, `Additional side: ${name}`, plan.guestCount, f.extraSidePriceCents ?? 0);
   for (const [i, name] of (f.extraSalads || []).entries()) add(`salad-${i}`, `Additional salad: ${name}`, plan.guestCount, f.extraSaladPriceCents ?? 0);
   for (const [i, name] of [...f.appetizers, ...f.extraAppetizers].entries()) if (readyRoomMenu.premiumAppetizers.includes(name)) add(`premium-app-${i}`, `Premium appetizer upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumAppetizer);
+  if (pkg.id !== "dinner") for (const [i, name] of f.entrees.entries()) if (readyRoomMenu.premiumEntrees.includes(name)) add(`premium-entree-${i}`, `Premium entree upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumEntreeUpgrade);
   if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, readyRoomExtraPrices.entree);
   if (f.dessert) add("dessert", "Dessert display", plan.guestCount, 600);
   if (f.coffee) add("coffee", "Coffee service", plan.guestCount, 300);
@@ -113,7 +115,7 @@ function parseFlightPlan(value: unknown, guestCount: number): FlightPlan | null 
   }
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
   if (f.packageId && !pkg) throw new Error("Choose a Ready Room package.");
-  const entrees = f.packageId === "dinner" ? readyRoomMenu.premiumEntrees : readyRoomMenu.entrees;
+  const entrees = readyRoomEntrees;
   const groups = { appetizers: readyRoomAppetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: readyRoomAppetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
   for (const key of Object.keys(groups) as (keyof typeof groups)[]) {
     const v = input[key] ?? [];

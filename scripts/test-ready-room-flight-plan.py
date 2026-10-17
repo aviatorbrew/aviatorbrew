@@ -39,6 +39,12 @@ for i in range(1, len(names), 2):
     data['documentScripts'].append(str(names[i].get_object()['/JS']))
 for page in reader.pages:
     assert 'VERSION ' + version in page.extract_text()
+menu_text = reader.pages[1].extract_text()
+for label in ('APPETIZERS', 'ENTREES', 'PREMIUM ENTREES', 'REPLACE +$2 / PERSON', 'Additional premium entree: $7 / person total.'):
+    assert label in menu_text, label
+assert '/TU' in fields['extra_premium_entree']
+assert 'app_pulled_pork' not in fields and 'premium_pulled_pork' not in fields
+assert fields['app_hush_puppies']['/Rect'][0] < fields['entree_pulled_pork']['/Rect'][0]
 result = subprocess.run(['node', str(ROOT / 'scripts/test-ready-room-flight-plan.mjs')], input=json.dumps(data), text=True, capture_output=True, check=True)
 report = json.loads(result.stdout)
 print(report['message'])

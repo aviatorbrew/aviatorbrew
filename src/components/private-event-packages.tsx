@@ -55,7 +55,6 @@ const menuGroups = [
       "Bacon-Wrapped Meatloaf",
       "Aviator Chicken Tenders",
       "Aviator Smoked Wings|Dry Rub, Aviator, Buffalo, BlackMamba or Monster",
-      "Grilled Flat Iron Steak with Collard Green Chimichurri|+$6 / guest",
     ],
   },
   {
@@ -65,8 +64,6 @@ const menuGroups = [
       "Aviator Beef Brisket",
       "Herb-Roasted Chicken",
       "Bourbon-Glazed Chicken",
-      "Country Fried Chicken Cutlet",
-      "Aviator Pulled Pork BBQ",
     ],
   },
   {
@@ -85,6 +82,7 @@ const specialtyPizzas = ["Hot Honey", "Buffalo", "Caprese", "Crash & Burn", "Mea
 function MenuGroup({ group }: { group: (typeof menuGroups)[number] }) {
   return <article className="private-event-menu-group">
     <h4>{group.name}</h4>
+    {group.name === "Premium entrees" ? <p>Replace an included regular entree for +$2 / guest. An additional premium entree is $7 / guest total. Two premium entrees are included in The Ready Room Dinner.</p> : null}
     <ul>{group.items.map((item) => {
       const [name, detail] = item.split("|");
       return <li key={item}><span>{name}</span>{detail ? <small>{detail}</small> : null}</li>;
@@ -118,6 +116,17 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
         </article>)}
       </div>
 
+      <aside className="private-event-order-form">
+        <div>
+          <p className="eyebrow">Fillable event order form</p>
+          <h3>Ready Room Event Flight Plan</h3>
+          <p>Organize your date, schedule, package, menu, Pizza Bar, bar setup, extras, totals, and signatures in one place. Fill it out digitally or print it for handwriting.</p>
+        </div>
+        <a className="button" href={readyRoomFlightPlanUrl} target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
+          Download Event Flight Plan v{readyRoomFlightPlanVersion} <ArrowUpRight />
+        </a>
+      </aside>
+
       <aside className="private-event-pizza-bar" id="pizza-bar">
         <div className="private-event-pizza-intro">
           <p className="eyebrow">Now boarding from Aviator Pizzeria</p>
@@ -150,6 +159,8 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
             <div><dt>Additional event hour</dt><dd>$100</dd></div>
             <div><dt>Additional appetizer</dt><dd>+$3 / guest</dd></div>
             <div><dt>Additional entree</dt><dd>+$5 / guest</dd></div>
+            <div><dt>Premium entree replacement</dt><dd>+$2 / guest</dd></div>
+            <div><dt>Additional premium entree</dt><dd>+$7 / guest total</dd></div>
             <div><dt>Additional side</dt><dd>+$3 / guest</dd></div>
             <div><dt>Additional salad</dt><dd>+$3 / guest</dd></div>
             <div><dt>Dessert display</dt><dd>+$6 / guest</dd></div>
@@ -185,16 +196,7 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
         <p className="private-event-decor-fine-print">All decorations require advance approval. Early access beyond the included hour requires coordinator approval. The host must remove all decorations within the 30-minute removal window and is responsible for damage or excessive cleaning.</p>
       </aside>
 
-      <aside className="private-event-order-form">
-        <div>
-          <p className="eyebrow">Fillable event order form</p>
-          <h3>Ready Room Event Flight Plan</h3>
-          <p>Organize your date, schedule, package, menu, Pizza Bar, bar setup, extras, totals, and signatures in one place. Fill it out digitally or print it for handwriting.</p>
-        </div>
-        <a className="button" href={readyRoomFlightPlanUrl} target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
-          Download Event Flight Plan v{readyRoomFlightPlanVersion} <ArrowUpRight />
-        </a>
-      </aside>
+
 
       <footer className="private-event-package-actions">
         <div><strong>Ready to choose a flight plan?</strong><span>Send your date, guest count, and package ideas to the Aviator events team.</span></div>

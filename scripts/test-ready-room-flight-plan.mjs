@@ -27,11 +27,35 @@ over.selectPackage('aviator_feast');assert.equal(over.text('package_brewery_soci
 // Individual X marks and a repeated quantity both count as menu selections.
 const marks=form();marks.edit('guest_count','40');marks.selectPackage('brewery_social');for(const name of ['app_hush_puppies','app_loaded_tots','app_chips_salsa','entree_pulled_pork','entree_tenders','entree_wings','side_mac_and_cheese','side_collard_greens','side_french_fries'])marks.edit(name,'X');assert.equal(marks.get('summary_food_extras'),440);
 marks.edit('side_french_fries','');assert.equal(marks.get('summary_food_extras'),320);marks.edit('app_chips_salsa','0');assert.equal(marks.get('summary_food_extras'),200);
-const premium=seed('ready_room_dinner');premium.edit('entree_pulled_pork','');premium.edit('premium_flat_iron','2');assert.equal(premium.get('summary_food_extras'),0);premium.edit('premium_bourbon_chicken','X');assert.equal(premium.get('summary_food_extras'),200);
+const premium=seed('ready_room_dinner');premium.edit('entree_pulled_pork','');premium.edit('premium_flat_iron','2');assert.equal(premium.get('summary_food_extras'),0);premium.edit('premium_bourbon_chicken','X');assert.equal(premium.get('summary_food_extras'),280);
 assert.equal(pdf.fields.entree_brisket,undefined,'Beef brisket only appears in premium entrees');assert.ok(pdf.fields.premium_brisket);assert.ok(pdf.fields.premium_app_shrimp_cocktail);
 for(const [pkg,apps]of[['brewery_social',2],['aviator_feast',3],['ready_room_dinner',3]]){
  const f=seed(pkg);f.edit('app_hush_puppies',String(apps-1));f.edit('premium_app_shrimp_cocktail','1');assert.equal(f.get('summary_food_extras'),120,'One included premium appetizer adds $3 per guest');f.edit('app_hush_puppies',String(apps-2));f.edit('premium_app_shrimp_cocktail','2');assert.equal(f.get('summary_food_extras'),240);f.edit('premium_app_shrimp_cocktail','3');assert.equal(f.get('summary_food_extras'),480,'Extra shrimp includes the premium upgrade plus any excess selection charge');
 }
+// Compare PDF calculations with the manager model's explicit included/extra choices.
+const ts=(await import('typescript')).default;
+const modelSource=ts.transpileModule(readFileSync(new URL('../src/lib/event-plan.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const model=await import('data:text/javascript;base64,'+Buffer.from(modelSource).toString('base64'));
+for(const [pdfPackage,pkgId]of[['brewery_social','social'],['aviator_feast','feast'],['ready_room_dinner','dinner']]){
+ const pkg=model.readyRoomPackages.find(p=>p.id===pkgId);
+ for(const [included,extra,premiumExtraCount]of[
+  [['Aviator Pulled Pork BBQ','Aviator Beef Brisket'],[],null],
+  [['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ'],['Aviator Beef Brisket'],null],
+  [['Aviator Beef Brisket','Aviator Beef Brisket'],['Aviator Beef Brisket'],null],
+  [['Aviator Beef Brisket','Aviator Beef Brisket'],['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ'],0],
+  [['Aviator Beef Brisket','Aviator Pulled Pork BBQ'],['Aviator Pulled Pork BBQ'],0],
+  [['Aviator Pulled Pork BBQ','Aviator Beef Brisket'],['Aviator Beef Brisket'],1],
+ ]){
+  const f=seed(pdfPackage,55);f.edit('app_hush_puppies',String(pkg.appetizers));f.edit('salad_caesar_salad',String(pkg.salads));
+  const all=[...included,...extra];f.edit('entree_pulled_pork',String(all.filter(n=>n==='Aviator Pulled Pork BBQ').length));f.edit('premium_brisket',String(all.filter(n=>n==='Aviator Beef Brisket').length));
+  if(premiumExtraCount!==null)f.edit('extra_premium_entree',String(premiumExtraCount));
+  const plan=model.parseEventPlan({...model.emptyEventPlan(),title:'PDF premium comparison',date:'2026-11-14',guestCount:55,flightPlan:{...model.emptyFlightPlan(),packageId:pkgId,appetizers:Array(pkg.appetizers).fill('Hush Puppies'),entrees:included,extraEntrees:extra,sides:['Mac & Cheese','Mac & Cheese'],salads:pkg.salads?['Caesar Salad']:[]}});
+  const expected=model.eventTotals(plan);
+  assert.equal(f.get('summary_subtotal'),expected.subtotal/100,`${pkgId}: premium replacements/extras must match manager`);
+  assert.equal(f.get('summary_tax'),expected.salesTax/100);assert.equal(f.get('summary_pfb_tax'),expected.pfbTax/100);
+ }
+}
+for(const name of ['entree_flat_iron','premium_country_chicken','premium_pulled_pork'])assert.equal(pdf.fields[name],undefined,'No regular/premium duplicates');
 // Pizza mirrored across pages counts once, including an explicitly identified extra entree.
 const pizza=seed();pizza.edit('entree_pulled_pork','1');pizza.edit('entree_pizza_bar','X');pizza.edit('pizza_included_entree','X');pizza.edit('pizza_hot_honey','X');assert.equal(pizza.get('summary_food_extras'),0);assert.equal(pizza.get('summary_specialty_pizza'),0);
 pizza.edit('pizza_included_entree','');pizza.edit('entree_pulled_pork','2');pizza.edit('pizza_extra_entree','X');assert.equal(pizza.get('summary_specialty_pizza'),200);assert.equal(pizza.get('summary_food_extras'),0);pizza.edit('extra_entree','1');assert.equal(pizza.get('summary_specialty_pizza'),200);assert.equal(pizza.get('summary_food_extras'),0);

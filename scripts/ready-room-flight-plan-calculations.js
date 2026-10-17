@@ -31,7 +31,9 @@ function aviFlightValue(doc, fieldName) {
   var guests = Math.max(0, Math.floor(amount("guest_count")));
   var apps = count(["app_hush_puppies", "app_loaded_tots", "app_chips_salsa", "app_chicken_tenders", "app_caprese_skewers", "app_brisket_crostini", "premium_app_shrimp_cocktail"]);
   var pizza = Math.max(quantity("entree_pizza_bar"), quantity("pizza_included_entree") + quantity("pizza_extra_entree"));
-  var entrees = pizza + count(["entree_pulled_pork", "entree_country_chicken", "entree_meatloaf", "entree_tenders", "entree_wings", "entree_flat_iron", "premium_flat_iron", "premium_brisket", "premium_herb_chicken", "premium_bourbon_chicken", "premium_country_chicken", "premium_pulled_pork"]);
+  var regularEntrees = pizza + count(["entree_pulled_pork", "entree_country_chicken", "entree_meatloaf", "entree_tenders", "entree_wings"]);
+  var premiumEntrees = count(["premium_flat_iron", "premium_brisket", "premium_herb_chicken", "premium_bourbon_chicken"]);
+  var entrees = regularEntrees + premiumEntrees;
   var sides = count(["side_mac_and_cheese", "side_collard_greens", "side_broccoli_salad", "side_tomato_cucumber_salad", "side_potato_salad", "side_french_fries", "side_tater_tots"]);
   var salads = count(["salad_caesar_salad", "salad_greek_salad", "salad_spinach_caprese_salad", "salad_chicken_cobb_salad"]);
   /* Page 3 specifies TOTAL extras, so marking an automatically counted extra again does not double-charge it. */
@@ -41,11 +43,17 @@ function aviFlightValue(doc, fieldName) {
   var extraSalads = pkg ? Math.max(0, salads - pkg.salads, quantity("extra_salad")) : 0;
   var pizzaExtras = Math.min(extraEntrees, quantity("pizza_extra_entree"));
   var premiumApps = quantity("premium_app_shrimp_cocktail");
-  var foodPerGuest = extraApps * 3 + (extraEntrees - pizzaExtras) * 5 + extraSides * 3 + extraSalads * 3 + premiumApps * 3 + quantity("extra_dessert") * 6 + quantity("extra_coffee") * 3;
-  var selectedFoodPerGuest = extraApps * 3 + extraEntrees * 5 + extraSides * 3 + extraSalads * 3 + premiumApps * 3;
+  /* Regular choices occupy included slots first. Page 3 can specify how many premium choices are extras. */
+  var automaticPremiumExtras = pkg ? Math.max(0, premiumEntrees - Math.max(0, pkg.entrees - regularEntrees)) : 0;
+  var premiumExtras = raw("extra_premium_entree").replace(/\s/g, "") === "" ? automaticPremiumExtras : quantity("extra_premium_entree");
+  premiumExtras = Math.min(premiumEntrees, extraEntrees, premiumExtras);
+  var premiumReplacements = pkg && pkg.field !== "package_ready_room_dinner" ? premiumEntrees - premiumExtras : 0;
+  var premiumUpgrades = premiumReplacements + premiumExtras;
+  var foodPerGuest = extraApps * 3 + (extraEntrees - pizzaExtras) * 5 + extraSides * 3 + extraSalads * 3 + premiumApps * 3 + premiumUpgrades * 2 + quantity("extra_dessert") * 6 + quantity("extra_coffee") * 3;
+  var selectedFoodPerGuest = extraApps * 3 + extraEntrees * 5 + extraSides * 3 + extraSalads * 3 + premiumApps * 3 + premiumUpgrades * 2;
   var ready = pkg && guests > 0;
   if (fieldName === "summary_selection_extras") {
-    return pkg ? "Extras: " + extraApps + " app(s), " + extraEntrees + " entree(s), " + extraSides + " side(s), " + extraSalads + " salad(s); shrimp premium: " + premiumApps + " x $3 = $" + money(selectedFoodPerGuest) + " / guest" : "Choose a package to calculate extra food selections.";
+    return pkg ? "Extras: " + extraApps + " app, " + extraEntrees + " entree, " + extraSides + " side, " + extraSalads + " salad | Shrimp " + premiumApps + " x $3; premium " + premiumUpgrades + " x $2 | +$" + money(selectedFoodPerGuest) + " / guest" : "Choose a package to calculate extra food selections.";
   }
   if (fieldName === "summary_guests") return guests > 0 ? String(guests) : "";
   if (fieldName === "summary_package_rate") return pkg ? money(pkg.rate) : "";
