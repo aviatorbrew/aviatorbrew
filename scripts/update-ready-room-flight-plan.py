@@ -115,7 +115,7 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
         box(195, 17, 160, 17, NAVY)
         c.setFont('Helvetica-Bold', 6.6)
         c.setFillColorRGB(*GOLD)
-        c.drawCentredString(248.4, 22, 'VERSION ' + VERSION)
+        c.drawCentredString(248.4, 22, 'v.' + VERSION)
         if page_index == 0:
             box(26.4, 48, 444, 17)
             text(26.4, 54.5, 'For automatic totals, open in Adobe Acrobat Reader. Click outside each field after entering a value.', 6.7)
@@ -227,11 +227,11 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
         names.get_object().pop('/JavaScript', None)
     names = writer._root_object.setdefault(NameObject('/Names'), DictionaryObject()).get_object()
     names[NameObject('/JavaScript')] = DictionaryObject({NameObject('/Names'): ArrayObject([TextStringObject('AviatorFlightPlanInit'), action('this.calculate = true; this.calculateNow();')])})
-    writer.add_metadata({'/Title': 'Ready Room Event Flight Plan v' + VERSION, '/Subject': 'Version ' + VERSION + ' - automatic package overages and quantity-based food extras', '/Creator': 'Aviator Brewing Company - scripts/update-ready-room-flight-plan.py'})
+    writer.add_metadata({'/Title': 'Ready Room Event Flight Plan v.' + VERSION, '/Subject': 'Version ' + VERSION + ' - automatic package overages and quantity-based food extras', '/Creator': 'Aviator Brewing Company - scripts/update-ready-room-flight-plan.py'})
     temporary = PDF.with_suffix('.updated.pdf')
     writer.write(temporary)
     temporary.replace(PDF)
-    print('Updated', PDF.relative_to(ROOT), 'v' + VERSION, '(' + str(len(fields)) + ' fields)')
+    print('Updated', PDF.relative_to(ROOT), 'v.' + VERSION, '(' + str(len(fields)) + ' fields)')
 
 
 if __name__ == '__main__':

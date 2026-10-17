@@ -123,7 +123,7 @@ export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventP
           <p>Organize your date, schedule, package, menu, Pizza Bar, bar setup, extras, totals, and signatures in one place. Fill it out digitally or print it for handwriting.</p>
         </div>
         <a className="button" href={readyRoomFlightPlanUrl} target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
-          Download Event Flight Plan v{readyRoomFlightPlanVersion} <ArrowUpRight />
+          Download Event Flight Plan v.{readyRoomFlightPlanVersion} <ArrowUpRight />
         </a>
       </aside>
 

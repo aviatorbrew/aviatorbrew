@@ -38,7 +38,7 @@ names = reader.trailer['/Root']['/Names']['/JavaScript']['/Names']
 for i in range(1, len(names), 2):
     data['documentScripts'].append(str(names[i].get_object()['/JS']))
 for page in reader.pages:
-    assert 'VERSION ' + version in page.extract_text()
+    assert 'v.' + version in page.extract_text()
 menu_text = reader.pages[1].extract_text()
 for label in ('APPETIZERS', 'ENTREES', 'PREMIUM ENTREES', 'REPLACE +$2 / PERSON', 'Additional premium entree: $7 / person total.'):
     assert label in menu_text, label
