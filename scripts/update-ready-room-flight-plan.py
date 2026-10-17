@@ -73,8 +73,9 @@ def main():
         acro[NameObject('/Fields')] = ArrayObject([ref for ref in acro['/Fields'] if ref != removed])
     for name, x, y in [('premium_flat_iron', 33.6, 264), ('premium_brisket', 33.6, 242.4), ('premium_herb_chicken', 257.76, 264), ('premium_bourbon_chicken', 257.76, 242.4)]:
         fields[name].get_object()[NameObject('/Rect')] = ArrayObject([FloatObject(n) for n in [x, y, x + 9.6, y + 9.6]])
-    quantity_names = [name for name in fields if name.startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_'))]
-    quantity_names += ['pizza_included_entree', 'pizza_extra_entree', 'extra_hour', 'extra_app', 'extra_entree', 'extra_side', 'extra_salad', 'extra_dessert', 'extra_coffee', 'extra_premium_entree']
+    menu_quantity_names = [name for name in fields if name.startswith(('app_', 'entree_', 'premium_', 'side_', 'salad_'))]
+    menu_quantity_names += ['pizza_included_entree', 'pizza_extra_entree']
+    quantity_names = menu_quantity_names + ['extra_hour', 'extra_app', 'extra_entree', 'extra_side', 'extra_salad', 'extra_dessert', 'extra_coffee', 'extra_premium_entree']
     validate_quantity = '''var value = String(event.value).replace(/^\\s+|\\s+$/g, "");
 if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
   event.rc = false; app.alert("Enter X for one selection, or a whole-number quantity from 0 to 99.");
@@ -85,6 +86,29 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
         field[NameObject('/DA')] = TextStringObject('/Helv 7 Tf 0 g')
         field[NameObject('/TU')] = TextStringObject('X = one selection; enter 2, 3, etc. for repeats. Quantities above the package allowance are charged per guest.')
         field.setdefault(NameObject('/AA'), DictionaryObject())[NameObject('/V')] = action(validate_quantity)
+    validate_menu_quantity = '''var value = String(event.value == null ? "" : event.value);
+if (value !== "" && !/^[1-9]$/.test(value)) {
+  event.rc = false;
+  app.alert("Enter a number from 1-9.");
+}'''
+    menu_keystroke = '''var value = String(event.value == null ? "" : event.value);
+var proposed = value;
+if (!event.willCommit && typeof event.change === "string") {
+  var change = event.fieldFull && typeof event.changeEx === "string" ? event.changeEx : event.change;
+  var prefix = event.selStart >= 0 ? value.substring(0, event.selStart) : "";
+  var suffix = event.selEnd >= 0 && event.selEnd <= value.length ? value.substring(event.selEnd) : "";
+  proposed = prefix + change + suffix;
+}
+if (proposed !== "" && !/^[1-9]$/.test(proposed)) {
+  event.rc = false;
+  app.alert("Enter a number from 1-9.");
+}'''
+    for name in menu_quantity_names:
+        field = fields[name].get_object()
+        field[NameObject('/MaxLen')] = NumberObject(1)
+        field[NameObject('/TU')] = TextStringObject('Enter a single number from 1-9. Leave blank for an unselected item. Quantities beyond the package allowance are charged per guest.')
+        field['/AA'][NameObject('/V')] = action(validate_menu_quantity)
+        field['/AA'][NameObject('/K')] = action(menu_keystroke)
     for name in ['extra_app', 'extra_entree', 'extra_side', 'extra_salad']:
         fields[name].get_object()[NameObject('/TU')] = TextStringObject('Optional TOTAL extra selections. Menu overages are already counted automatically; the larger total applies, without double-counting.')
     fields['extra_premium_entree'].get_object()[NameObject('/TU')] = TextStringObject('Optional: how many selected premium entrees are extras, not replacements? Leave blank to fill included slots with regular entrees first; enter 0 if every premium entree is included or a replacement. This is part of the total extra entree count, not an additional count.')
@@ -127,10 +151,10 @@ if (value !== "" && !/^[xX]$/.test(value) && !/^\\d{1,2}$/.test(value)) {
             text(26.4, 585, 'EVENT MENU PLANNING SHEET', 26, PAPER, True)
             text(26.4, 568, 'Choose your package, plan your menu, and confirm your event details.', 8.3, (0.75, 0.82, 0.85))
             box(26.4, 48, 444, 17)
-            text(26.4, 54.5, 'For automatic totals, open in Adobe Acrobat Reader. Click outside each field after entering a value.', 6.7)
+            text(26.4, 54.5, 'For totals and input checks, open in Adobe Acrobat Reader. Click outside each field after entering a value.', 6.7)
         if page_index == 1:
             box(26.4, 563, 444, 17, NAVY)
-            text(26.4, 568, 'Enter X for one selection, or 2, 3... for repeated foods.', 9, (0.75, 0.82, 0.85))
+            text(26.4, 568, 'Enter one digit (1-9) for each food quantity. Leave unused items blank.', 9, (0.75, 0.82, 0.85))
             box(26.4, 524, 444, 24)
             text(26.4, 537, 'Selections beyond your package are charged automatically for every guest.', 7.8)
             text(26.4, 526.5, 'Extra app $3 / person | entree $5 | side $3 | salad $3. Premium upgrades listed below.', 7.5)
