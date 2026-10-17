@@ -34,6 +34,17 @@ Last updated: 2026-07-29
 - Public keg/package page: /kegs
 - Public live music links should use https://aviatorlive.beer/live-music
 
+## Ready Room Google Calendar Sync
+
+- Render cron: aviatorbrew-ready-room-calendar-sync, `crn-db9sbfe1egvs738euefg`, Virginia.
+- Dashboard: https://dashboard.render.com/cron/crn-db9sbfe1egvs738euefg
+- Schedule: 8 a.m., noon and 3 p.m. America/New_York daily, including daylight saving changes.
+- UTC cron: `0 12,13,16,17,19,20 * * *`; start command: `node scripts/sync-ready-room-calendar.mjs --scheduled` (skips non-target Eastern hours).
+- Source: Event-ReadyRoom, calendar ID `6gltnsnhbqvekua18jof6ip7o8@group.calendar.google.com`.
+- Private feed URL is stored only in the cron's `READY_ROOM_CALENDAR_ICS_URL` secret environment variable. Never print or commit it.
+- Existing event-plan data is never overwritten by sync. Google changes/deletions/cancellations appear as manager warnings; saved orders and payments remain intact.
+- Operational details and dry-run command: `scripts/README-ready-room-calendar-sync.md`.
+
 ## Media And Data Storage
 - Website photo upload API: /api/website-photos
 - Website media uploads support images plus short videos: PNG, JPG, WEBP, MP4, WEBM, MOV, and M4V. Videos are gallery media only; featured location/brewery/private-event heroes stay image-only.
