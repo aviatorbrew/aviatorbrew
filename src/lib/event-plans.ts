@@ -106,7 +106,8 @@ export function eventSummaryHtml(plan: EventPlan, printable = false, message = "
 export async function eventUpdateHistory(id: string) {
   return withDatabase(async client => (await client.query("SELECT request_id,plan_version,recipient,subject,status,updated_at FROM website.private_event_updates WHERE plan_id=$1 ORDER BY updated_at DESC LIMIT 50", [id])).rows);
 }
-export async function emailEventUpdate(plan: EventPlan, input: { requestId: string; version: number; subject: string; message: string; includeSummary: boolean }) {
+export async function emailEventUpdate(plan: EventPlan, input: { requestId: string; version: number; subject: string; message: string; includeSummary: boolean; emailApproved?: boolean }) {
+  if (input.emailApproved !== true) throw new EventPlanError("Review and approve this customer email before sending.",403);
   if (input.version !== plan.version) throw new EventPlanError("The event changed. Reload the saved plan before sending its update.", 409);
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.requestId) || !input.subject.trim() || input.subject.length > 160 || /[\r\n]/.test(input.subject) || !input.message.trim() || input.message.length > 5000 || typeof input.includeSummary !== "boolean") throw new EventPlanError("Enter a subject and message (maximum 160 and 5,000 characters).");
   const catalog=(await getPrivateEventSettings()).catering;

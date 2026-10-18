@@ -70,7 +70,8 @@ export async function createProposal(planId:string,input:{version:number;expires
     return proposalRow(row);
   });
 }
-export async function sendProposal(planId:string,id:string,input:{availabilityApproved:boolean;capacityApproved:boolean}){
+export async function sendProposal(planId:string,id:string,input:{availabilityApproved:boolean;capacityApproved:boolean;emailApproved?:boolean}){
+  if(input.emailApproved!==true)throw new ProposalError("Review and approve this customer email before sending.",403);
   if(input.availabilityApproved!==true||input.capacityApproved!==true)throw new ProposalError("Confirm availability and capacity before approving and sending the proposal.");
   if(!isMailConfigured()&&process.env.MAIL_MODE!=="record")throw new ProposalError("Email delivery is not configured.",503);
   if(!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET)throw new ProposalError("Stripe Checkout and verified webhooks must both be configured before sending payment proposals.",503);

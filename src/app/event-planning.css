@@ -12,6 +12,15 @@
 .manager-private-events .event-plan-list>article,.manager-private-events .event-plan-editor{border:1px solid #fff;border-radius:4px}
 .manager-private-events .event-plan-editor>.event-editor-actions{justify-content:space-between;align-items:center}
 
-.manager-private-events .event-planning .event-day .event-calendar-entry.tentative{border:1px solid #fff;border-left-width:3px;border-radius:3px}
+.manager-private-events .event-planning .event-day .event-calendar-entry{border:1px solid #fff;border-left-width:3px;border-radius:3px}
+.manager-private-events .event-planning .event-day .event-calendar-entry.is-inquiry-event{border-color:#ffd54f}
 .manager-private-events .event-inquiry-archive,.manager-private-events .manager-catering-list>article{scroll-margin-top:7rem}
-.manager-private-events .manager-catering-list>article.is-calendar-inquiry{border:1px solid #fff}
+.manager-private-events .website-inquiries .manager-catering-list>article{border:1px solid #ffd54f}
+.manager-private-events .event-plan-list>article.is-inquiry-event,.manager-private-events .event-plan-editor.is-inquiry-event{border-color:#ffd54f}
+.manager-private-events .event-outline-legend{display:flex;flex-wrap:wrap;gap:.45rem;margin:.5rem 0;font-size:.72rem}
+.manager-private-events .event-outline-legend span{padding:.2rem .45rem;border:1px solid #fff;border-radius:3px}
+.manager-private-events .event-outline-legend span:last-child{border-color:#ffd54f}
+
+.manager-private-events .event-inquiry-header-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:.4rem 0}
+.manager-private-events .event-inquiry-header-actions .event-inquiry-plan{margin:0}
+.manager-private-events .event-inquiry-header-actions .is-danger{border-color:#de8976;color:#ffd0c5}

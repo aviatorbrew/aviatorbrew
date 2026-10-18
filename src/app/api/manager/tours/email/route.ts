@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
   try { input = await request.json(); }
   catch { return NextResponse.json({ error: "Provide a guest, subject, and message." }, { status: 400, headers }); }
   const body = input as Record<string, unknown> | null;
+  if(body?.emailApproved!==true)return NextResponse.json({error:"Review and approve this customer email before sending."},{status:403,headers});
   const signupId = typeof body?.signupId === "string" ? body.signupId.trim() : "";
   const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
   const message = typeof body?.message === "string" ? body.message.trim() : "";

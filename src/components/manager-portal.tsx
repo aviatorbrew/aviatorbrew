@@ -30,6 +30,7 @@ function TourManager() {
   const [signups, setSignups] = useState<Signup[]>([]);
   const [scheduledTours, setScheduledTours] = useState<ScheduledTour[]>([]);
   const [message, setMessage] = useState("");
+  const [addEmailApproved,setAddEmailApproved]=useState(false);
   const [cancelTarget, setCancelTarget] = useState<ScheduledTour | null>(null);
   const [busy, setBusy] = useState(false);
   const [tourSettingsLoaded, setTourSettingsLoaded] = useState(false);
@@ -53,10 +54,10 @@ function TourManager() {
     event.preventDefault(); setBusy(true);
     const form = event.currentTarget;
     const values = Object.fromEntries(new FormData(form).entries());
-    const r = await fetch("/api/manager/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...values, tickets: Number(values.tickets) }) });
+    const r = await fetch("/api/manager/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...values, tickets: Number(values.tickets),emailApproved:values.emailApproved==="yes" }) });
     const b = await r.json(); setBusy(false);
     if (!r.ok) { setMessage(b.error); return; }
-    applyData(b); form.reset(); setMessage("Guest added and notified.");
+    applyData(b); form.reset();setAddEmailApproved(false); setMessage(b.customerNotified?"Guest added; approved notification sent.":"Guest added. No customer email was sent.");
   }
 
   async function remove(id: string) {
@@ -70,7 +71,7 @@ function TourManager() {
     if (!window.confirm("Cancel this flight, send the message to every guest, and move them to future available flights?")) return;
     setBusy(true);
     const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const r = await fetch("/api/manager/tours", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ date: cancelTarget.date, time: cancelTarget.time, message: values.message }) });
+    const r = await fetch("/api/manager/tours", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ date: cancelTarget.date, time: cancelTarget.time, message: values.message,emailApproved:true }) });
     const b = await r.json(); setBusy(false);
     if (!r.ok) { setMessage(b.error); return; }
     applyData(b); setCancelTarget(null); setMessage(b.managerText || "Tour cancelled, guests rescheduled, and notifications sent.");
@@ -98,8 +99,8 @@ function TourManager() {
       <div><button className="button" disabled={busy}>{busy ? "Rescheduling..." : "Cancel, reschedule + send"}</button><button className="button button-outline" type="button" onClick={() => setCancelTarget(null)} disabled={busy}>Keep this tour</button></div>
     </form> : null}
     <div className="tour-signups-toolbar"><h3 className="tour-signups-heading">Guest signups ({signups.length})</h3><span>Newest first</span></div>
-    <details className="tour-add-panel"><summary>Add guest</summary><form onSubmit={add} className="manager-add-form">
-      <label>Name<input name="name" required /></label><label>Email<input name="email" type="email" required /></label><label>Tickets<input name="tickets" type="number" min="1" max="6" defaultValue="1" required /></label><button className="button" disabled={busy}>Add guest + notify</button>
+    <details className="tour-add-panel"><summary>Add guest</summary><form onSubmit={add} className="manager-add-form" onChange={event=>{if(event.target.getAttribute("name")!=="emailApproved")setAddEmailApproved(false);}}>
+      <label>Name<input name="name" required /></label><label>Email<input name="email" type="email" required /></label><label>Tickets<input name="tickets" type="number" min="1" max="6" defaultValue="1" required /></label><label className="manager-email-approval"><input type="checkbox" name="emailApproved" value="yes" checked={addEmailApproved} onChange={event=>setAddEmailApproved(event.target.checked)}/>I approve sending this guest their tour signup details by email.</label><button className="button" disabled={busy}>Add guest</button>
     </form></details>
     <ul className="coupon-manager-list tour-signups-list">{signups.length ? signups.map((item) => <li key={item.id}>
       <div className="tour-guest-details">

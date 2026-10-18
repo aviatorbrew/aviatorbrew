@@ -174,3 +174,6 @@ body:has(.manager-portal) > .beer-image-lightbox h2 { font-size: 1.25rem; line-h
   .manager-portal .newsletter-subscriber-row { grid-template-columns: minmax(0, 1fr) auto; }
   .manager-portal .newsletter-subscriber-row > span:first-child { grid-column: 1 / -1; }
 }
+
+.manager-portal label.manager-email-approval{display:flex;align-items:flex-start;gap:.45rem;font-size:.8rem;line-height:1.4}
+.manager-portal label.manager-email-approval input[type=checkbox]{width:1.05rem;height:1.05rem;flex:none;margin:.1rem 0 0}

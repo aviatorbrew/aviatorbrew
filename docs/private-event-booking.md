@@ -1,10 +1,16 @@
 # Private events: online menu, proposals and deposits
 
-The public entry point is `/private-events#build-menu`. It explains shared buffet service, displays the configured packages and a live example, and collects a menu and event request without paperwork or payment. `/api/inquiries` saves these requests as existing `website.form_inquiries` records with `kind=event`; totals, deposit settings, venue, taxes and extra side/salad prices are recalculated on the server. The old fillable form URL redirects to the builder. `/api/private-events/menu.pdf` is an optional current menu, generated from the same configuration.
+The public entry point is `/private-events#build-menu`. Customer package choices use accessible full-card radios and a five-step package/menu/details/review/submit interface. The existing catalog controls card names, prices, counts, premium eligibility, availability and guest minimums; card presentation adds no package records or pricing constants. It explains shared buffet service, displays the configured packages and a live example, and collects a menu and event request without paperwork or payment. `/api/inquiries` saves these requests as existing `website.form_inquiries` records with `kind=event`; totals, deposit settings, venue, taxes and extra side/salad prices are recalculated on the server. The old fillable form URL redirects to the builder. `/api/private-events/menu.pdf` is an optional current menu, generated from the same configuration.
 
 ## Existing manager workflow
 
-Use **Manager → Private Events**:
+Use **Manager → Private Events**. Open **Website Inquiry** for incoming requests. Pending inquiry plans have yellow outlines in the calendar, event list and editor; confirmed/completed events and manually entered events use white outlines. The original inquiry record stays yellow in the archive after its event is confirmed.
+
+The workflow is inquiry → staff planning/review → approved proposal → customer acceptance → required verified deposit → confirmed event. Merely saving a calendar draft does not confirm a date. For a manual booking, record the amount actually received under **Deposit / payments received ($)** and choose **Approve Event — No Email**. This uses the existing authorized manual-confirmation workflow, checks for overlapping bookings, retains the payment credit, and sends no customer email. No proposal or Stripe charge is required for that staff action. Each Website Inquiry has a **Delete Inquiry** button; deletion removes the original inquiry only, retaining the saved event plan, proposals and payments.
+
+Manager-sent customer updates, proposal sends/resends and confirmation retries require explicit email approval. Changing a message or included summary clears its approval. Draft saving, editing and kitchen printing send no email. The same explicit approval applies to manual tour messages/cancellation notifications and customer campaigns; manually adding a tour guest sends no customer email unless the notification checkbox is approved. Automatic customer-initiated inquiry acknowledgments and verified-payment confirmations retain their existing workflow.
+
+Use the existing controls as follows:
 
 1. Open **Website inquiries — start an event plan** and choose **Plan event**. The saved package, food selections, dates, contact details and special requests populate the existing editor. A linked inquiry reopens its existing event instead of making a duplicate.
 2. Review the menu, guest count, charges and requested date. Save the event. Its main status remains one of the existing Draft / Tentative / Confirmed / Completed / Cancelled values. The additional inquiry/proposal/payment label describes its booking progress.
@@ -47,5 +53,7 @@ EVENT_TEST_DATABASE_URL=postgres://test_user@127.0.0.1:5432/aviator_event_test_e
 ```
 
 The script refuses nonlocal databases and database names outside `aviator_event_test_*`. It uses actual schema migrations/services, simulated Stripe responses and a stub mail transport. It tests pricing, limits, disabled items, tampering, inquiries, immutable quotes, policy gates, acceptance metadata, concurrent/idempotent checkout, signed webhooks, duplicate notifications, email retry, deposit credits, PDF output, kitchen privacy, material revisions, conflicts, expired/failed/cancelled payments, and closing an older unpaid checkout. No real charge or external email is sent.
+
+Manager email-route regression: `node scripts/test-manager-email-approval.mjs` exercises blocked and approved paths with stub mail, data and authentication services; it makes no external requests or database writes.
 
 Related regressions: `npm run test:event-plans`, `npm run test:calendar-sync`, and `npm run test:tours`. Browser verification uses the same disposable local database, including real inquiry-to-event import, optional menu PDF, proposal review/acceptance, receipts, manager authorization and mobile layouts. Payment return parameters are tested independently of verified payment state.

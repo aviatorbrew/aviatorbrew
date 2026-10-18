@@ -105,3 +105,57 @@
 .manager-portal .event-catering-settings .event-check { display:flex; flex-direction:row; align-items:center; gap:.4rem; }
 .manager-portal .event-catering-settings input[type="checkbox"] { width:1rem; height:1rem; min-height:0; margin:0; padding:0; }
 .manager-portal .event-proposal-manager .event-fields > label { display:grid; gap:.25rem; }
+/* Live catalog packages, presented as full-card radio choices. */
+.online-catering .private-event-packages>.content-wrap>h2{max-width:23ch;font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-size:clamp(2.3rem,4.2vw,3.6rem);font-weight:700;line-height:1.02;text-transform:uppercase;letter-spacing:-.035em}
+.catering-package-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem;align-items:stretch;margin:1.8rem 0}
+.online-catering .catering-package-card{--package-base:#0b2237;--package-glow:#1b4b69;position:relative;isolation:isolate;display:flex;flex-direction:column;gap:0;min-width:0;min-height:38rem;margin:0;padding:1.65rem;border:2px solid #526572;background:linear-gradient(145deg,var(--package-glow),var(--package-base) 62%);color:#fff9ee;cursor:pointer;overflow:hidden;box-shadow:0 9px 20px #0003;transition:transform 180ms ease,border-color 180ms ease,box-shadow 180ms ease}
+.online-catering .package-tone-green{--package-base:#142b22;--package-glow:#304d37;border-color:#617364}
+.online-catering .package-tone-rust{--package-base:#35231e;--package-glow:#62402e;border-color:#80604c}
+.catering-package-card::before{position:absolute;z-index:-1;right:-7rem;bottom:9rem;width:19rem;height:19rem;border:1px solid #f3be6826;border-radius:50%;box-shadow:0 0 0 2.4rem #f3be6806,0 0 0 2.5rem #f3be6815,0 0 0 5rem #f3be6805;content:"";pointer-events:none}
+.catering-package-card::after{position:absolute;z-index:-1;inset:0;background-image:repeating-linear-gradient(0deg,#ffffff03 0 1px,transparent 1px 5px);content:"";pointer-events:none}
+.online-catering .catering-package-card:hover{transform:translateY(-3px);border-color:#d6c5a5;box-shadow:0 14px 28px #0005}
+.online-catering .catering-package-card.is-selected{transform:translateY(-3px);border-color:#f3be68;box-shadow:0 0 0 1px #f3be68,0 14px 30px #0006}
+.online-catering .catering-package-card:focus-within{outline:3px solid #f3be68;outline-offset:4px}
+.package-card-radio{position:absolute;width:1px;height:1px;opacity:0;clip-path:inset(50%);overflow:hidden}
+.package-card-top{display:flex;justify-content:space-between;align-items:center;gap:.7rem;margin-bottom:1.2rem}
+.package-card-number{color:#f3be68;font:700 2.1rem/1 "Courier New",monospace;letter-spacing:-.08em}
+.package-card-top-note{max-width:10rem;color:#f3d8a9;font:700 .62rem/1.5 "Courier New",monospace;letter-spacing:.08em;text-transform:uppercase;text-align:right}
+.package-card-description{display:block;min-height:2.8rem;margin-bottom:.8rem;color:#d7e0d8;font:400 .86rem/1.6 Arial,Helvetica,sans-serif}
+.package-card-name{display:block;min-height:2.1em;margin:0 0 1rem;color:#fff9ee;font:700 clamp(2.15rem,3.7vw,3.25rem)/.98 Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;letter-spacing:-.035em;text-transform:uppercase;overflow-wrap:anywhere}
+.package-card-name>span{display:block}
+.package-card-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:.55rem;margin:.25rem 0 1.35rem;color:#f3be68}
+.package-card-price strong{font:800 clamp(4.1rem,6vw,5.75rem)/.9 Arial,Helvetica,sans-serif;letter-spacing:-.07em}
+.package-card-price>span{font:700 .78rem/1.3 "Courier New",monospace;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.package-card-divider{display:block;height:1px;margin-bottom:1.2rem;background:#e8d9bc55}
+.package-card-choices{display:grid;align-content:start;gap:.7rem;margin:0 0 1.5rem;font:400 1rem/1.4 Arial,Helvetica,sans-serif}
+.package-card-choices>[role=listitem]{display:flex;gap:.65rem;align-items:baseline}
+.package-card-choices>[role=listitem]>span{color:#f3be68;font-size:.65rem}
+.package-card-footer{display:grid;gap:.5rem;margin-top:auto;padding-top:.75rem;color:#e3dfd2;font:700 .65rem/1.6 "Courier New",monospace;letter-spacing:.04em;text-transform:uppercase}
+.package-card-footer>span:last-child{font-size:.6rem;color:#c8d0ca}
+.package-card-select{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-top:1.2rem;padding:.85rem 1rem;border:1px solid #e8d9bc7a;color:#fff7e6;font:700 .76rem/1.3 "Courier New",monospace;text-transform:uppercase;letter-spacing:.06em}
+.is-selected .package-card-select{background:#f3be68;border-color:#f3be68;color:#102333}
+.catering-package-next{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;padding:1rem 1.2rem;margin:1rem 0 1.5rem;border-left:3px solid #f3be68;background:#102f48}
+.catering-package-next strong{color:#fff5e3;font-size:1rem}
+.catering-package-next p{margin:.25rem 0 0;color:#c5d5df;font-size:.85rem}
+.catering-package-next .button{white-space:normal;text-align:center}
+.catering-package-prompt{color:#c7d9e3;font-size:.9rem}
+.catering-package-summary{padding-bottom:1.1rem;margin-bottom:1.2rem;border-bottom:1px solid #f3be6866}
+.catering-package-summary>p:first-child{margin:0 0 .5rem;color:#f3be68;font:700 .65rem/1.3 "Courier New",monospace;text-transform:uppercase;letter-spacing:.1em}
+.catering-package-summary h3{margin:0 0 .55rem;color:#fff5e3}
+.catering-package-summary .package-summary-price{margin:0;color:#f3be68;font-size:1.65rem;font-weight:700}
+.package-summary-price span{font-size:.8rem;font-weight:400;color:#d3dee5}
+.catering-package-summary ul{display:grid;grid-template-columns:1fr 1fr;gap:.4rem .7rem;list-style:none;padding:0;margin:.8rem 0;color:#d5e1e7;font-size:.82rem}
+.catering-package-summary button{min-height:2.5rem;padding:.55rem .8rem;border:1px solid #a9bac4;background:transparent;color:#f3d3a0;font:700 .72rem/1.3 Arial,sans-serif;cursor:pointer;text-transform:uppercase}
+.catering-review dl{display:grid;gap:.7rem;margin:0}
+.catering-review dl>div{padding-bottom:.6rem;border-bottom:1px solid #426278}
+.catering-review dt{color:#f3be68;font-size:.78rem;font-weight:700}
+.catering-review dd{margin:.3rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.95rem}
+@media(max-width:1100px){.catering-package-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.online-catering .catering-package-card{min-height:36rem}.package-card-name{font-size:2.8rem}}
+@media(max-width:650px){.catering-package-cards{grid-template-columns:1fr;gap:1rem}.online-catering .catering-package-card{min-height:34rem;padding:1.35rem}.package-card-description{min-height:0}.package-card-name{font-size:clamp(2.5rem,10vw,3.2rem);min-height:0}.package-card-price strong{font-size:4.8rem}.package-card-choices{font-size:.98rem}.package-card-footer{margin-top:1rem}.catering-package-card::before{opacity:.5}.catering-package-next{align-items:stretch}.catering-package-next .button{width:100%}}
+@media(prefers-reduced-motion:reduce){.online-catering .catering-package-card{transition:none}.online-catering .catering-package-card:hover,.online-catering .catering-package-card.is-selected{transform:none}}
+
+.catering-package-mobile-summary{display:none}
+@media(max-width:900px){.catering-package-mobile-summary{display:block}.catering-package-mobile-summary .catering-package-summary{padding:.8rem;margin-bottom:1rem;border:1px solid #f3be6880;background:#0b263b}.catering-package-mobile-summary .catering-package-summary h3{font-size:1rem}.catering-package-mobile-summary .package-summary-price{font-size:1.2rem}.catering-package-mobile-summary .catering-package-summary ul{margin:.5rem 0}.catering-estimate>.catering-package-summary{display:none}}
+@media(min-width:651px){.package-card-name{min-height:3em}}
+.package-card-footer,.package-card-footer>span:last-child{font-size:.75rem;line-height:1.5}
+.package-card-top-note{font-size:.7rem}

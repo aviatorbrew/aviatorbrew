@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
-    const body = await request.json() as { action?: string; email?: string; name?: string; draft?: unknown; welcome?: unknown; testEmail?: string; subscribers?: { email?: string; name?: string }[] };
+    const body = await request.json() as { action?: string; emailApproved?: boolean; email?: string; name?: string; draft?: unknown; welcome?: unknown; testEmail?: string; subscribers?: { email?: string; name?: string }[] };
     if (body.action === "add") {
       await subscribeNewsletter({ email: body.email || "", name: body.name, source: "manager" });
       return NextResponse.json(await responseData());
@@ -213,6 +213,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.action !== "send-test" && body.action !== "send-all") return NextResponse.json({ error: "Unknown Flight Crew action." }, { status: 400 });
+    if(body.action==="send-all"&&body.emailApproved!==true)return NextResponse.json({error:"Approve this customer campaign before sending."},{status:403});
     if (!isMailConfigured() && process.env.MAIL_MODE !== "record") return NextResponse.json({ error: "Email delivery is not configured." }, { status: 503 });
     const draft = validateDraft(body.draft);
     const content = await getContent();

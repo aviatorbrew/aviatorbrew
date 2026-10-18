@@ -225,7 +225,7 @@ export function NewsletterManager() {
   async function send(action: "send-test" | "send-all") {
     if (action === "send-all" && !window.confirm(`Send "${draft.subject}" to ${data.confirmedCount} confirmed Flight Crew member${data.confirmedCount === 1 ? "" : "s"}?`)) return;
     try {
-      const body = await post({ action, draft });
+      const body = await post({ action, draft,emailApproved:action==="send-all" });
       setMessage(action === "send-test" ? `Test campaign sent to ${data.managerEmail}.` : `Campaign sent to ${body.sent} Flight Crew member${body.sent === 1 ? "" : "s"}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not send the campaign.");
