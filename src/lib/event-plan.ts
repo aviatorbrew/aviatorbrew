@@ -6,7 +6,7 @@ export const readyRoomPackages = [
   { id: "feast", name: "The Aviator Feast", priceCents: 3800, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
   { id: "dinner", name: "The Ready Room Dinner", priceCents: 4400, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
 ] as const;
-export const readyRoomExtraPrices = { appetizer: 300, entree: 500, side: 300, salad: 300, premiumAppetizer: 300, premiumEntree: 700, premiumEntreeUpgrade: 200 } as const;
+export const readyRoomExtraPrices = { appetizer: 300, entree: 500, side: 300, salad: 300, premiumAppetizer: 300, premiumEntree: 700, premiumEntreeUpgrade: 200, dessert: 600, coffee: 300, hour: 10000 } as const;
 export const readyRoomMenu = {
   appetizers: ["Hush Puppies", "Tater Tots", "Chips & Salsa", "Caprese Skewers", "Brewer Fries", "Sweet Potato Fries"],
   premiumAppetizers: ["Shrimp Cocktail", "Brisket Crostini"],
@@ -16,6 +16,17 @@ export const readyRoomMenu = {
   salads: ["Caesar Salad", "Greek Salad", "Spinach Caprese Salad", "Chicken Cobb Salad"],
   pizzas: ["Just the Cheese", "Ultimate Pepperoni", "The Aviator", "Veggie", "MadBeach", "Hot Honey", "Buffalo", "Caprese", "Crash & Burn", "Meat-a-Palooza", "MadBeach Heat", "BBQ Chicken"],
   av: ["Big-screen setup", "House sound system", "Microphone"],
+};
+export type CateringPackage = { id: string; name: string; priceCents: number; appetizers: number; entrees: number; sides: number; salads: number; enabled: boolean; premiumEntreesIncluded: boolean };
+export type CateringCatalog = {
+  packages: CateringPackage[]; menu: Record<keyof typeof readyRoomMenu, string[]>;
+  extraPrices: Record<keyof typeof readyRoomExtraPrices, number>; disabledItems: string[];
+  minimumGuests: number; maximumGuests: number; venue: string; salesTaxBps: number; pfbTaxBps: number;
+};
+export const defaultCateringCatalog: CateringCatalog = {
+  packages: readyRoomPackages.map(p => ({...p, enabled: true, premiumEntreesIncluded: p.id === "dinner"})),
+  menu: structuredClone(readyRoomMenu), extraPrices: {...readyRoomExtraPrices}, disabledItems: [],
+  minimumGuests: 30, maximumGuests: 70, venue: "Ready Room · 688 Brewing Drive, Fuquay-Varina", salesTaxBps: 725, pfbTaxBps: 100,
 };
 export const readyRoomAppetizers = [...readyRoomMenu.appetizers, ...readyRoomMenu.premiumAppetizers];
 // Keep existing bookings editable after menu changes; these are not offered for new selections.
@@ -32,7 +43,8 @@ export type FlightPlan = {
 export function emptyFlightPlan(): FlightPlan {
   return { packageId: "", appetizers: [], entrees: [], sides: [], salads: [], pizzas: [], extraAppetizers: [], extraEntrees: [], extraSides: [], extraSalads: [], extraSidePriceCents: readyRoomExtraPrices.side, extraSaladPriceCents: readyRoomExtraPrices.salad, extraHours: 0, dessert: false, coffee: false, pizzaExtra: false, glutenFreeCount: 0, pizzaTime: "", pizzaNotes: "", wingSauce: "", dietaryNeeds: "", foodNotes: "", eventType: "", organization: "", billingName: "", billingAddress: "", appetizerTime: "", outsideSeating: "", barMode: "", barCapCents: 0, ticketCount: 0, barContact: "", decorContact: "", decorPhone: "", decorCompany: "", decorNotes: "", av: [] };
 }
-export function changeEventPackage(plan: FlightPlan, packageId: string): FlightPlan {
+export function changeEventPackage(plan: FlightPlan, packageId: string, catalog = defaultCateringCatalog): FlightPlan {
+  const readyRoomPackages = catalog.packages, readyRoomEntrees = [...catalog.menu.entrees, ...catalog.menu.premiumEntrees];
   const pkg = readyRoomPackages.find(p => p.id === packageId);
   const entrees = readyRoomEntrees;
   return { ...plan, packageId, appetizers: plan.appetizers.filter(Boolean).slice(0, pkg?.appetizers || 0), entrees: plan.entrees.filter(v => entrees.includes(v)).slice(0, pkg?.entrees || 0), sides: plan.sides.filter(Boolean).slice(0, pkg?.sides || 0), salads: plan.salads.filter(Boolean).slice(0, pkg?.salads || 0) };
@@ -45,9 +57,10 @@ export type EventPlanDetails = {
   flightPlan?: FlightPlan | null; pfbTaxRateBps?: number; reservationDepositCents?: number;
 };
 export type EventCalendarSync = { status: "active" | "changed" | "removed" | "cancelled"; checkedAt: string; source?: { title: string; date: string; startTime: string; endTime: string; description: string; url: string } };
-export type EventPlan = { calendarSync?: EventCalendarSync | null; id: string; version: number; createdAt: string; updatedAt: string; sourceInquiryId: string | null; details: EventPlanDetails };
+export type EventPlan = { bookingStage?: string; calendarSync?: EventCalendarSync | null; id: string; version: number; createdAt: string; updatedAt: string; sourceInquiryId: string | null; details: EventPlanDetails };
 export function money(cents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100); }
-export function eventOrderItems(plan: EventPlanDetails): EventOrderItem[] {
+export function eventOrderItems(plan: EventPlanDetails, catalog = defaultCateringCatalog): EventOrderItem[] {
+  const readyRoomPackages = catalog.packages, readyRoomMenu = catalog.menu, readyRoomExtraPrices = catalog.extraPrices;
   const f = plan.flightPlan, pkg = readyRoomPackages.find(p => p.id === f?.packageId);
   if (!f || !pkg) return plan.items;
   const rows: EventOrderItem[] = [];
@@ -58,17 +71,18 @@ export function eventOrderItems(plan: EventPlanDetails): EventOrderItem[] {
   for (const [i, name] of (f.extraSides || []).entries()) add(`side-${i}`, `Additional side: ${name}`, plan.guestCount, f.extraSidePriceCents ?? 0);
   for (const [i, name] of (f.extraSalads || []).entries()) add(`salad-${i}`, `Additional salad: ${name}`, plan.guestCount, f.extraSaladPriceCents ?? 0);
   for (const [i, name] of [...f.appetizers, ...f.extraAppetizers].entries()) if (readyRoomMenu.premiumAppetizers.includes(name)) add(`premium-app-${i}`, `Premium appetizer upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumAppetizer);
-  if (pkg.id !== "dinner") for (const [i, name] of f.entrees.entries()) if (readyRoomMenu.premiumEntrees.includes(name)) add(`premium-entree-${i}`, `Premium entree upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumEntreeUpgrade);
+  if (!pkg.premiumEntreesIncluded) for (const [i, name] of f.entrees.entries()) if (readyRoomMenu.premiumEntrees.includes(name)) add(`premium-entree-${i}`, `Premium entree upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumEntreeUpgrade);
   if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, readyRoomExtraPrices.entree);
-  if (f.dessert) add("dessert", "Dessert display", plan.guestCount, 600);
-  if (f.coffee) add("coffee", "Coffee service", plan.guestCount, 300);
-  add("hours", "Additional event hour", f.extraHours, 10000, "Room");
+  if (f.dessert) add("dessert", "Dessert display", plan.guestCount, readyRoomExtraPrices.dessert);
+  if (f.coffee) add("coffee", "Coffee service", plan.guestCount, readyRoomExtraPrices.coffee);
+  add("hours", "Additional event hour", f.extraHours, readyRoomExtraPrices.hour, "Room");
   return [...rows, ...plan.items];
 }
 function foodSelections(selections: string[]) {
   return [...new Set(selections)].map(name => { const count = selections.filter(value => value === name).length; return count > 1 ? `${name} × ${count}` : name; }).join(", ");
 }
-export function flightPlanSelections(plan: EventPlanDetails): [string, string][] {
+export function flightPlanSelections(plan: EventPlanDetails, catalog = defaultCateringCatalog): [string, string][] {
+  const readyRoomPackages = catalog.packages;
   const f = plan.flightPlan;
   if (!f) return [];
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
@@ -79,8 +93,8 @@ export function flightPlanSelections(plan: EventPlanDetails): [string, string][]
     ["Pizza styles", f.pizzas.join(", ")], ["Pizza service", f.pizzaTime ? timeLabel(f.pizzaTime) : ""], ["Gluten-free pizzas", f.glutenFreeCount ? String(f.glutenFreeCount) : ""], ["Pizza notes", f.pizzaNotes], ["Wing sauce", f.wingSauce], ["Dietary needs", f.dietaryNeeds], ["Food notes", f.foodNotes],
   ].filter(([, value]) => Boolean(value)) as [string, string][];
 }
-export function eventTotals(plan: EventPlanDetails) {
-  const items = eventOrderItems(plan);
+export function eventTotals(plan: EventPlanDetails, catalog = defaultCateringCatalog) {
+  const items = eventOrderItems(plan, catalog);
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
   const taxable = items.filter((item) => item.taxable).reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
   const salesTax = Math.round(taxable * plan.taxRateBps / 10000), pfbTax = Math.round(taxable * (plan.pfbTaxRateBps || 0) / 10000);
@@ -98,7 +112,8 @@ export function timeLabel(time: string) {
   const [hour, minute] = time.split(":").map(Number);
   return `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
 }
-function parseFlightPlan(value: unknown, guestCount: number): FlightPlan | null {
+function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCatalog): FlightPlan | null {
+  const readyRoomPackages = catalog.packages, readyRoomMenu = catalog.menu, readyRoomAppetizers = [...catalog.menu.appetizers, ...catalog.menu.premiumAppetizers], readyRoomEntrees = [...catalog.menu.entrees, ...catalog.menu.premiumEntrees];
   if (value == null) return null;
   if (typeof value !== "object" || Array.isArray(value)) throw new Error("Check the Flight Plan.");
   const input = value as Record<string, unknown>, f = emptyFlightPlan();
@@ -134,7 +149,7 @@ function parseFlightPlan(value: unknown, guestCount: number): FlightPlan | null 
     f[key] = price as number | null;
   }
   if (pkg) {
-    if (guestCount < 30) throw new Error("Ready Room packages require at least 30 guests.");
+    if (guestCount < catalog.minimumGuests) throw new Error(`Ready Room packages require at least ${catalog.minimumGuests} guests.`);
     for (const key of ["appetizers", "entrees", "sides", "salads"] as const) if (f[key].length !== pkg[key]) throw new Error(`${pkg.name}: choose ${pkg[key]} ${key}.`);
     if (f.pizzaExtra && [...f.entrees, ...f.extraEntrees].includes("Aviator Pizzeria Pizza Bar")) throw new Error("Pizza Bar is already selected as an entree; do not add it twice.");
   } else if ([f.appetizers, f.entrees, f.sides, f.salads, f.extraAppetizers, f.extraEntrees, f.extraSides, f.extraSalads].some(v => v.length) || f.extraHours || f.dessert || f.coffee || f.pizzaExtra) throw new Error("Choose a package before its food selections and extras.");
@@ -146,7 +161,7 @@ function parseFlightPlan(value: unknown, guestCount: number): FlightPlan | null 
   if (!["", "Dry Rub", "Aviator", "Buffalo", "BlackMamba", "Monster"].includes(f.wingSauce)) throw new Error("Choose a wing sauce.");
   return f;
 }
-export function parseEventPlan(value: unknown): EventPlanDetails {
+export function parseEventPlan(value: unknown, catalog = defaultCateringCatalog): EventPlanDetails {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Provide event details.");
   const input = value as Record<string, unknown>;
   const text = (key: string, max: number, required = false) => {
@@ -183,5 +198,5 @@ export function parseEventPlan(value: unknown): EventPlanDetails {
   if (new Set(items.map((r) => r.id)).size !== items.length) throw new Error("Order rows must have distinct IDs.");
   const guestCount = integer("guestCount", 10000);
   const optionalInteger = (key: string, max: number) => input[key] == null ? 0 : integer(key, max);
-  return { title: text("title", 200, true), contactName: text("contactName", 200), contactEmail, phone: text("phone", 100), guestEmails, date, startTime, endTime, location: text("location", 300, true), guestCount, status: input.status as EventPlanDetails["status"], setupTime: time("setupTime"), foodTime: time("foodTime"), lastCall: time("lastCall"), items, taxRateBps: integer("taxRateBps", 10000), pfbTaxRateBps: optionalInteger("pfbTaxRateBps", 10000), reservationDepositCents: optionalInteger("reservationDepositCents", 100000000), paidCents: integer("paidCents", 1000000000), flightPlan: parseFlightPlan(input.flightPlan, guestCount), barDetails: text("barDetails", 5000), notes: text("notes", 5000), internalNotes: text("internalNotes", 5000) };
+  return { title: text("title", 200, true), contactName: text("contactName", 200), contactEmail, phone: text("phone", 100), guestEmails, date, startTime, endTime, location: text("location", 300, true), guestCount, status: input.status as EventPlanDetails["status"], setupTime: time("setupTime"), foodTime: time("foodTime"), lastCall: time("lastCall"), items, taxRateBps: integer("taxRateBps", 10000), pfbTaxRateBps: optionalInteger("pfbTaxRateBps", 10000), reservationDepositCents: optionalInteger("reservationDepositCents", 100000000), paidCents: integer("paidCents", 1000000000), flightPlan: parseFlightPlan(input.flightPlan, guestCount, catalog), barDetails: text("barDetails", 5000), notes: text("notes", 5000), internalNotes: text("internalNotes", 5000) };
 }

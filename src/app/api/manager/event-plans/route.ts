@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({error:"Unauthorized"},{status:401,headers});
   try {
     const plans = await listEventPlans(request.nextUrl.searchParams.get("month") || new Date().toISOString().slice(0,7));
-    return NextResponse.json({plans,calendarSyncStatus:await eventCalendarSyncStatus(),defaultRoomFeeCents:(await getPrivateEventSettings()).bookingFeeCents},{headers});
+    return NextResponse.json({catering:(await getPrivateEventSettings()).catering,plans,calendarSyncStatus:await eventCalendarSyncStatus(),defaultRoomFeeCents:(await getPrivateEventSettings()).bookingFeeCents},{headers});
   } catch(error) { return NextResponse.json({error:error instanceof EventPlanError ? error.message : "Could not load event plans."},{status:error instanceof EventPlanError ? error.status : 500,headers}); }
 }
 export async function POST(request: NextRequest) {

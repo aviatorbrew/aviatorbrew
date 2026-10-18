@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const body = await request.json() as { bookingFeeCents?: unknown; aviatorWayCopy?: unknown; aviatorWayCopyText?: unknown; inquiryCopy?: unknown; inquiryCopyText?: unknown };
-    const input = {
+    const body = await request.json() as { catering?: unknown; policyText?: unknown; policyVersion?: unknown; bookingFeeCents?: unknown; aviatorWayCopy?: unknown; aviatorWayCopyText?: unknown; inquiryCopy?: unknown; inquiryCopyText?: unknown };
+    const input = { catering: body.catering, policyText: body.policyText, policyVersion: body.policyVersion,
       ...(body.bookingFeeCents === undefined ? {} : { bookingFeeCents: Number(body.bookingFeeCents) }),
       ...(body.aviatorWayCopyText === undefined ? {} : { aviatorWayCopyText: body.aviatorWayCopyText }),
       ...(body.aviatorWayCopy === undefined || body.aviatorWayCopyText !== undefined ? {} : { aviatorWayCopy: body.aviatorWayCopy }),

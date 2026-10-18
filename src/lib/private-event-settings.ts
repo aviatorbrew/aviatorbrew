@@ -1,3 +1,5 @@
+import { defaultCateringCatalog, type CateringCatalog } from "@/lib/event-plan";
+import { parseCateringCatalog } from "@/lib/catering-catalog";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { databaseConfigured, withDatabase } from "@/lib/database";
@@ -13,8 +15,8 @@ export const DEFAULT_PRIVATE_EVENT_INQUIRY_COPY = [
 ];
 const SETTINGS_KEY = "private_event_settings";
 
-type PrivateEventSettingsInput = { bookingFeeCents?: number; aviatorWayCopy?: unknown; aviatorWayCopyText?: unknown; inquiryCopy?: unknown; inquiryCopyText?: unknown };
-export type PrivateEventSettings = { bookingFeeCents: number; aviatorWayCopy: string[]; inquiryCopy: string[] };
+type PrivateEventSettingsInput = { catering?: unknown; policyText?: unknown; policyVersion?: unknown; bookingFeeCents?: number; aviatorWayCopy?: unknown; aviatorWayCopyText?: unknown; inquiryCopy?: unknown; inquiryCopyText?: unknown };
+export type PrivateEventSettings = { catering: CateringCatalog; policyText: string; policyVersion: string; bookingFeeCents: number; aviatorWayCopy: string[]; inquiryCopy: string[] };
 
 function runtimeNumber(name: string) {
   const raw = process.env[name];
@@ -63,6 +65,8 @@ function configuredBookingFeeCents() {
 
 function settingsWithDefaults(value?: Partial<PrivateEventSettings>): PrivateEventSettings {
   return {
+    catering: value?.catering ? parseCateringCatalog(value.catering) : structuredClone(defaultCateringCatalog),
+    policyText: value?.policyText || "", policyVersion: value?.policyVersion || "",
     bookingFeeCents: value?.bookingFeeCents === undefined ? configuredBookingFeeCents() : validPrivateEventBookingFeeCents(value.bookingFeeCents),
     aviatorWayCopy: value?.aviatorWayCopy === undefined ? [...DEFAULT_PRIVATE_EVENT_AVIATOR_WAY_COPY] : validPrivateEventAviatorWayCopy(value.aviatorWayCopy),
     inquiryCopy: value?.inquiryCopy === undefined ? [...DEFAULT_PRIVATE_EVENT_INQUIRY_COPY] : validPrivateEventInquiryCopy(value.inquiryCopy),
@@ -125,6 +129,13 @@ export async function getPrivateEventSettings(): Promise<PrivateEventSettings> {
 
 export async function setPrivateEventSettings(input: PrivateEventSettingsInput) {
   const settings = await getPrivateEventSettings();
+  if (input.catering !== undefined) settings.catering = parseCateringCatalog(input.catering);
+  if (input.policyText !== undefined || input.policyVersion !== undefined) {
+    const text = input.policyText ?? settings.policyText, version = input.policyVersion ?? settings.policyVersion;
+    if (typeof text !== "string" || text.length > 20000 || typeof version !== "string" || version.length > 80 || /[<>\r\n]/.test(version)) throw new Error("Check policy text and version.");
+    if (text !== settings.policyText && text.trim() && (!version.trim() || version === settings.policyVersion)) throw new Error("Give revised policy text a new version.");
+    settings.policyText = text.trim(); settings.policyVersion = version.trim();
+  }
   if (input.bookingFeeCents !== undefined) {
     if (!Number.isInteger(input.bookingFeeCents) || input.bookingFeeCents < 100 || input.bookingFeeCents > 2000000) throw new Error("Room booking fee must be between $1.00 and $20,000.00.");
     settings.bookingFeeCents = input.bookingFeeCents;

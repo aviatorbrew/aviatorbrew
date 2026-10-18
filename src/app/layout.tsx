@@ -15,6 +15,7 @@ import "./tour-email.css";
 import "./tours.css";
 import "./event-planning.css";
 import "./manager.css";
+import "./online-catering.css";
 import packageInfo from "../../package.json";
 import { AnalyticsHooks } from "@/components/analytics";
 import { SiteFooter } from "@/components/site-footer";

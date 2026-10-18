@@ -1,4 +1,5 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { verifyStripeSignature } from "@/lib/stripe-webhook-signature";
+import { processProposalPayment, markProposalAttempt, ProposalError } from "@/lib/event-proposals";
 import { NextRequest, NextResponse } from "next/server";
 import { notifyPrivateEventPayment, type PrivateEventCheckoutSession } from "@/lib/private-event-payments";
 import { markTourPaid } from "@/lib/tours";
@@ -6,15 +7,8 @@ import { expireShopCheckout, markShopOrderPaid } from "@/lib/shop";
 
 export const runtime = "nodejs";
 
-function signedPayload(secret: string, header: string, body: string) {
-  const timestamp = header.split(",").find((part) => part.startsWith("t="))?.slice(2);
-  const signature = header.split(",").find((part) => part.startsWith("v1="))?.slice(3);
-  if (!timestamp || !signature || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
-  const expected = createHmac("sha256", secret).update(timestamp + "." + body).digest("hex");
-  return expected.length === signature.length && timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-}
-
 type StripeCheckoutEvent = {
+  id?: string;
   type?: string;
   data?: {
     object?: PrivateEventCheckoutSession & {
@@ -27,9 +21,21 @@ export async function POST(request: NextRequest) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) return NextResponse.json({ error: "Stripe webhook is not configured." }, { status: 503 });
   const raw = await request.text();
-  if (!signedPayload(secret, request.headers.get("stripe-signature") || "", raw)) return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
-  const event = JSON.parse(raw) as StripeCheckoutEvent;
+  if (!verifyStripeSignature(secret, request.headers.get("stripe-signature") || "", raw)) return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
+  let event: StripeCheckoutEvent;
+  try {event=JSON.parse(raw) as StripeCheckoutEvent;} catch {return NextResponse.json({error:"Invalid webhook JSON."},{status:400});}
   const session = event.data?.object;
+  if(session?.metadata?.item === "private-event-proposal") {
+    try {
+      if(!session.id || !event.id) return NextResponse.json({error:"Missing Stripe event or session reference."},{status:400});
+      if((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") && session.payment_status === "paid") {
+        if(!await processProposalPayment(session,event.id))return NextResponse.json({error:"Deposit recorded; confirmation delivery will retry."},{status:503});
+      }
+      if(event.type === "checkout.session.expired")await markProposalAttempt(session,"expired");
+      if(event.type === "checkout.session.async_payment_failed")await markProposalAttempt(session,"failed");
+      return NextResponse.json({received:true});
+    } catch(error) {return NextResponse.json({error:error instanceof ProposalError ? error.message : "Could not record the deposit; provider retry required."},{status:error instanceof ProposalError?error.status:503});}
+  }
   if (event.type === "checkout.session.expired" && session?.metadata?.item === "shop-new" && session.id) await expireShopCheckout(session.id);
   if (event.type === "checkout.session.completed" && session?.payment_status === "paid") {
     const signupId = session.metadata?.tourSignupId;

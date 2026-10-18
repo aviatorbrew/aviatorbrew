@@ -53,6 +53,7 @@ export async function applyCalendarSnapshot(client,snapshot,emptyEventPlan,{dryR
   await client.query('BEGIN');
   try {
     await client.query("SELECT pg_advisory_xact_lock(hashtext('aviator-ready-room-calendar-sync'))");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('aviator-private-event-booking'))");
     const rows=(await client.query("SELECT id,data,calendar_sync FROM website.private_event_plans WHERE calendar_sync->>'calendarId'=$1 OR (id LIKE 'gcal-%' AND data->>'internalNotes' LIKE 'Imported from Google Calendar: Event-ReadyRoom%')",[calendarId])).rows;
     const existing=new Map(rows.map(row=>[row.id,row]));
     const counts={added:0,existing:rows.length,removed:0,cancelled:0,changed:0};

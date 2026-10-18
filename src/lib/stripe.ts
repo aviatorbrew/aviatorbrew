@@ -97,6 +97,7 @@ export async function createCheckoutSession(input: CheckoutInput) {
 }
 
 type DynamicCheckoutInput = {
+  idempotencyKey?: string; expiresAt?: number; cardOnly?: boolean;
   name: string;
   description: string;
   unitAmount: number;
@@ -116,6 +117,8 @@ export async function createDynamicCheckoutSession(input: DynamicCheckoutInput) 
 
   const form = new URLSearchParams();
   form.set("mode", "payment");
+  if(input.expiresAt) form.set("expires_at",String(input.expiresAt));
+  if(input.cardOnly) form.set("payment_method_types[0]","card");
   form.set("success_url", input.origin + input.successPath);
   form.set("cancel_url", input.origin + input.cancelPath);
   form.set("line_items[0][price_data][currency]", "usd");
@@ -129,7 +132,7 @@ export async function createDynamicCheckoutSession(input: DynamicCheckoutInput) 
 
   const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
-    headers: { authorization: "Bearer " + secret, "content-type": "application/x-www-form-urlencoded", "Stripe-Version": "2026-02-25.clover" },
+    headers: { ...(input.idempotencyKey ? {"Idempotency-Key":input.idempotencyKey} : {}), authorization: "Bearer " + secret, "content-type": "application/x-www-form-urlencoded", "Stripe-Version": "2026-02-25.clover" },
     body: form,
   });
   if (!response.ok) {

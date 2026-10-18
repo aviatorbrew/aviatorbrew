@@ -1,210 +1,57 @@
-import { readyRoomFlightPlanUrl, readyRoomFlightPlanVersion } from "@/lib/ready-room-flight-plan";
-import { ArrowUpRight } from "@/components/icons";
+"use client";
 
-type PrivateEventPackagesProps = {
-  bookingFeeLabel: string;
-  menuUrl?: string;
-};
+import { useRef, useState, type FormEvent } from "react";
+import { changeEventPackage, emptyEventPlan, emptyFlightPlan, eventOrderItems, eventTotals, money, type CateringCatalog, type EventPlanDetails, type FlightPlan } from "@/lib/event-plan";
+import { availableCatalog } from "@/lib/catering-catalog";
+import { buffetExplanation, easternToday, inquiryAcknowledgement } from "@/lib/event-booking";
 
-const packages = [
-  {
-    name: "The Brewery Social",
-    price: 32,
-    note: "An easygoing spread for casual celebrations.",
-    includes: ["Choose 2 appetizers", "Choose 2 entrees", "Choose 2 sides"],
-    tone: "social",
-  },
-  {
-    name: "The Aviator Feast",
-    price: 38,
-    note: "More variety for a hungry crowd.",
-    includes: ["Choose 3 appetizers", "Choose 2 entrees", "Choose 1 salad", "Choose 2 sides"],
-    tone: "feast",
-  },
-  {
-    name: "The Ready Room Dinner",
-    price: 44,
-    note: "A premium buffet built for a big occasion.",
-    includes: ["Choose 3 appetizers", "Choose 2 premium entrees", "Choose 1 salad", "Choose 2 sides"],
-    tone: "dinner",
-  },
-] as const;
+type Props = { catalog: CateringCatalog; depositCents: number; policyText: string; policyVersion: string };
+type FoodGroup = "appetizers"|"entrees"|"sides"|"salads";
+const labels:Record<FoodGroup,string>={appetizers:"Appetizers",entrees:"Entrées",salads:"Salads",sides:"Sides"};
+const extraKeys={appetizers:"extraAppetizers",entrees:"extraEntrees",sides:"extraSides",salads:"extraSalads"} as const;
 
-const menuGroups = [
-  {
-    name: "Appetizers",
-    items: [
-      "Hush Puppies",
-      "Tater Tots",
-      "Chips & Salsa",
-      "Caprese Skewers",
-      "Brewer Fries",
-      "Sweet Potato Fries",
-    ],
-  },
-  {
-    name: "Premium appetizers",
-    items: ["Shrimp Cocktail|+$3 / guest premium upcharge; available with every package", "Brisket Crostini|+$3 / guest premium upcharge; available with every package"],
-  },
-  {
-    name: "Entrees",
-    items: [
-      "Aviator Pizzeria Pizza Bar|Choose up to 3 classic styles",
-      "Aviator Pulled Pork BBQ",
-      "Country Fried Chicken Cutlet",
-      "Bacon-Wrapped Meatloaf",
-      "Aviator Chicken Tenders",
-      "Aviator Smoked Wings|Dry Rub, Aviator, Buffalo, BlackMamba or Monster",
-    ],
-  },
-  {
-    name: "Premium entrees",
-    items: [
-      "Grilled Flat Iron Steak with Collard Green Chimichurri",
-      "Aviator Beef Brisket",
-      "Herb-Roasted Chicken",
-      "Bourbon-Glazed Chicken",
-    ],
-  },
-  {
-    name: "Sides",
-    items: ["Mac & Cheese", "Collard Greens", "Broccoli Salad", "Tomato Cucumber Salad", "Potato Salad", "French Fries", "Tater Tots"],
-  },
-  {
-    name: "Salads",
-    items: ["Caesar Salad", "Greek Salad", "Spinach Caprese Salad", "Chicken Cobb Salad"],
-  },
-] as const;
-
-const classicPizzas = ["Just the Cheese", "Ultimate Pepperoni", "The Aviator", "Veggie", "MadBeach"];
-const specialtyPizzas = ["Hot Honey", "Buffalo", "Caprese", "Crash & Burn", "Meat-a-Palooza", "MadBeach Heat", "BBQ Chicken"];
-
-function MenuGroup({ group }: { group: (typeof menuGroups)[number] }) {
-  return <article className="private-event-menu-group">
-    <h4>{group.name}</h4>
-    {group.name === "Premium entrees" ? <p>Replace an included regular entree for +$2 / guest. An additional premium entree is $7 / guest total. Two premium entrees are included in The Ready Room Dinner.</p> : null}
-    <ul>{group.items.map((item) => {
-      const [name, detail] = item.split("|");
-      return <li key={item}><span>{name}</span>{detail ? <small>{detail}</small> : null}</li>;
-    })}</ul>
-  </article>;
-}
-
-export function PrivateEventPackages({ bookingFeeLabel, menuUrl }: PrivateEventPackagesProps) {
-  return <section className="private-event-packages-section" id="packages" aria-labelledby="private-event-packages-title">
-    <div className="content-wrap">
-      <header className="private-event-packages-heading">
-        <div><p className="eyebrow">Ready Room packages</p><h2 id="private-event-packages-title">Pick the package. <em>We&apos;ll handle the rest.</em></h2></div>
-        <p>Every package includes buffet-style service, iced tea, soft drinks, water, and a dedicated bartender. Taxes and gratuity are additional.</p>
-      </header>
-
-      <div className="private-event-quick-facts" aria-label="Private event package details">
-        <span><strong>4 hours</strong> guest event time</span>
-        <span><strong>30</strong> guest minimum</span>
-        <span><strong>70</strong> indoor capacity</span>
-        <span><strong>{bookingFeeLabel}</strong> deposit applied to your bill</span>
-      </div>
-
-      <div className="private-event-package-grid">
-        {packages.map((item, index) => <article className={"private-event-package-card is-" + item.tone} key={item.name}>
-          <span className="private-event-package-number">0{index + 1}</span>
-          <p>{item.note}</p>
-          <h3>{item.name}</h3>
-          <div className="private-event-package-price"><strong><span aria-hidden="true">$</span>{item.price}</strong><span>/ guest</span></div>
-          <ul>{item.includes.map((line) => <li key={line}>{line}</li>)}</ul>
-          <footer>Tea, soft drinks &amp; water included · 30 guest minimum</footer>
-        </article>)}
-      </div>
-
-      <aside className="private-event-order-form">
-        <div>
-          <p className="eyebrow">Plan your event menu</p>
-          <h3>Ready Room Event Menu Planning Sheet</h3>
-          <p>Choose your package, appetizers, entrees, sides, and extras, then add your event details. Fill out the sheet digitally or print it, and email your completed menu to events@aviatorbrew.com.</p>
-        </div>
-        <a className="button" href={readyRoomFlightPlanUrl} target="_blank" rel="noreferrer" data-analytics="private_events_flight_plan_pdf">
-          Download Menu Planning Sheet v.{readyRoomFlightPlanVersion} <ArrowUpRight />
-        </a>
-      </aside>
-
-      <aside className="private-event-pizza-bar" id="pizza-bar">
-        <div className="private-event-pizza-intro">
-          <p className="eyebrow">Now boarding from Aviator Pizzeria</p>
-          <h3>Aviator Pizzeria <em>Pizza Bar</em></h3>
-          <p>Give the party a brick-oven upgrade without leaving the Ready Room package structure. Pizza can count as one included entree in The Brewery Social or The Aviator Feast.</p>
-          <ul>
-            <li><strong>Choose up to 3 styles</strong> for the buffet</li>
-            <li><strong>2 slices per guest</strong> when selected as an entree</li>
-            <li><strong>+$5 / guest</strong> to add a Pizza Bar as an extra entree</li>
-            <li><strong>Gluten-free pizzas</strong> available with advance notice</li>
-          </ul>
-        </div>
-        <div className="private-event-pizza-flights">
-          <article><span>Included flight</span><h4>Classic pizzas</h4><p>{classicPizzas.join(" · ")}</p></article>
-          <article><span>+$2 / guest</span><h4>Specialty flight</h4><p>{specialtyPizzas.join(" · ")}</p></article>
-          <small>Pizza selections and dietary accommodations are confirmed with your event coordinator. Pizzas are replenished in batches for a fresher buffet.</small>
-        </div>
-      </aside>
-
-      <div className="private-event-build-heading">
-        <div><p className="eyebrow">Build your package</p><h3>See every food choice.</h3></div>
-        <p>Start with a package above, then mix and match the selections that fit your crowd.</p>
-      </div>
-      <div className="private-event-menu-grid">{menuGroups.map((group) => <MenuGroup group={group} key={group.name} />)}</div>
-
-      <div className="private-event-extras-grid">
-        <article>
-          <p className="eyebrow">Event extras</p><h3>Make it yours.</h3>
-          <dl>
-            <div><dt>Additional event hour</dt><dd>$100</dd></div>
-            <div><dt>Additional appetizer</dt><dd>+$3 / guest</dd></div>
-            <div><dt>Additional entree</dt><dd>+$5 / guest</dd></div>
-            <div><dt>Premium entree replacement</dt><dd>+$2 / guest</dd></div>
-            <div><dt>Additional premium entree</dt><dd>+$7 / guest total</dd></div>
-            <div><dt>Additional side</dt><dd>+$3 / guest</dd></div>
-            <div><dt>Additional salad</dt><dd>+$3 / guest</dd></div>
-            <div><dt>Dessert display</dt><dd>+$6 / guest</dd></div>
-            <div><dt>Coffee service</dt><dd>+$3 / guest</dd></div>
-          </dl>
-        </article>
-        <article>
-          <p className="eyebrow">The bar</p><h3>Choose your setup.</h3>
-          <p>Keep it simple with a guest-paid bar, arrange a hosted tab with your event coordinator, or offer drink tickets. Aviator beer is on tap, with liquor and wine available. There is no required drink package.</p>
-          <p><strong>How drink tickets work:</strong> Choose the total number of tickets for your event and distribute them to your guests. Each ticket can be exchanged for one beer, glass of wine, or liquor drink.</p>
-          <p><strong>Billed at the actual drink price:</strong> The host pays the menu price of each drink redeemed, typically ranging from $6 to $17 depending on the selection. Tickets control the number of hosted drinks; your final bar total depends on what guests order.</p>
-          <p>For example, one $6 drink and one $17 cocktail use two tickets and add $23 to the host&apos;s bar tab. Taxes and gratuity are additional.</p>
-          <p><strong>Included with the room:</strong> big-screen presentation setup, house sound system, and microphone.</p>
-        </article>
-      </div>
-
-      <aside className="private-event-decor-policy" aria-labelledby="private-event-decor-title">
-        <div className="private-event-decor-intro">
-          <p className="eyebrow">Event timing + decorating</p>
-          <h3 id="private-event-decor-title">Four hours. One easy setup window.</h3>
-          <p>Each Ready Room booking includes four hours of guest event time, one hour of decorating access before the scheduled start, and 30 minutes afterward for decoration removal and room reset. Setup and removal time do not extend guest event time. Additional event time is &#36;100 per hour and must be arranged in advance.</p>
-        </div>
-        <div className="private-event-decor-rules">
-          <article>
-            <h4>Welcome aboard</h4>
-            <ul><li>Tabletop and freestanding decorations</li><li>Weighted balloons, florals, signs, and easels</li><li>Battery-operated candles</li><li>Approved decorators and vendors</li></ul>
-          </article>
-          <article>
-            <h4>Not permitted</h4>
-            <ul><li>Glitter, confetti, rice, or silly string</li><li>Open flames, smoke, or fog machines</li><li>Nails, screws, staples, tape, or wall adhesives</li><li>Items attached to ceilings, lights, sprinklers, or fixtures</li><li>Anything blocking exits, aisles, or safety equipment</li></ul>
-          </article>
-        </div>
-        <p className="private-event-decor-fine-print">All decorations require advance approval. Early access beyond the included hour requires coordinator approval. The host must remove all decorations within the 30-minute removal window and is responsible for damage or excessive cleaning.</p>
-      </aside>
-
-
-
-      <footer className="private-event-package-actions">
-        <div><strong>Ready to choose a flight plan?</strong><span>Send your date, guest count, and package ideas to the Aviator events team.</span></div>
-        <div>
-          <a className="button" href="#inquiry" data-analytics="private_events_packages_inquiry">Plan your event <ArrowUpRight /></a>
-          {menuUrl ? <a className="button button-outline" href={menuUrl} target="_blank" rel="noreferrer" data-analytics="private_events_packages_pdf">Download menu PDF <ArrowUpRight /></a> : null}
-        </div>
-      </footer>
-    </div>
-  </section>;
+export function PrivateEventPackages({catalog:rawCatalog,depositCents,policyText,policyVersion}:Props){
+  const catalog=availableCatalog(rawCatalog),prices=catalog.extraPrices;
+  const [draft,setDraft]=useState<EventPlanDetails>(()=>({...emptyEventPlan(depositCents),guestCount:Math.min(Math.max(50,catalog.minimumGuests),catalog.maximumGuests),location:catalog.venue,taxRateBps:catalog.salesTaxBps,pfbTaxRateBps:catalog.pfbTaxBps}));
+  const [step,setStep]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState(false),[done,setDone]=useState(false);
+  const requestId=useRef("");
+  const f=draft.flightPlan||emptyFlightPlan(),pkg=catalog.packages.find(p=>p.id===f.packageId),example=catalog.packages.find(p=>p.id==="feast")||catalog.packages[0];
+  const totals=eventTotals(draft,catalog),items=eventOrderItems(draft,catalog);
+  const pizza=[...f.entrees,...f.extraEntrees].includes("Aviator Pizzeria Pizza Bar")||f.pizzaExtra;
+  function patch(values:Partial<EventPlanDetails>){requestId.current="";setError("");setDraft(current=>({...current,...values}));}
+  function food(values:Partial<FlightPlan>){const next={...f,...values};if(![...next.entrees,...next.extraEntrees].includes("Aviator Pizzeria Pizza Bar")&&!next.pizzaExtra)Object.assign(next,{pizzas:[],glutenFreeCount:0,pizzaNotes:"",pizzaTime:""});patch({flightPlan:next});}
+  function selectPackage(id:string){const next=changeEventPackage(emptyFlightPlan(),id,catalog);next.extraSidePriceCents=prices.side;next.extraSaladPriceCents=prices.salad;patch({flightPlan:next});setStep(0);document.getElementById("build-menu")?.scrollIntoView({behavior:"smooth",block:"start"});}
+  function missing(){const errors:string[]=[];if(!Number.isInteger(draft.guestCount)||draft.guestCount<catalog.minimumGuests||draft.guestCount>catalog.maximumGuests)errors.push(`Choose ${catalog.minimumGuests}–${catalog.maximumGuests} guests.`);if(!pkg)errors.push("Choose a buffet package.");if(pkg)for(const key of Object.keys(labels) as FoodGroup[])if(f[key].filter(Boolean).length!==pkg[key])errors.push(`Choose ${pkg[key]} ${labels[key].toLowerCase()}.`);for(const key of Object.values(extraKeys))if(f[key].some(name=>!name))errors.push("Choose a food item for every added selection, or remove the empty extra.");if(pizza&&!f.pizzas.length)errors.push("Choose 1 to 3 Pizza Bar styles.");return errors;}
+  function next(){if(step===0&&(draft.guestCount<catalog.minimumGuests||draft.guestCount>catalog.maximumGuests||!Number.isInteger(draft.guestCount))){setError(`Choose ${catalog.minimumGuests}–${catalog.maximumGuests} guests.`);return;}if(step===1&&!pkg){setError("Choose a buffet package.");return;}if(step===2&&missing().length){setError(missing().join(" "));return;}setError("");setStep(Math.min(step+1,3));}
+  function options(key:FoodGroup,extra=false){
+    const names=key==="appetizers"?[...catalog.menu.appetizers,...catalog.menu.premiumAppetizers]:key==="entrees"?[...catalog.menu.entrees,...catalog.menu.premiumEntrees]:catalog.menu[key];
+    const render=(names:string[])=>names.map(name=>{let charge="";if(key==="appetizers"&&catalog.menu.premiumAppetizers.includes(name))charge=` (+${money(prices.premiumAppetizer)} / person premium upgrade)`;if(key==="entrees"&&catalog.menu.premiumEntrees.includes(name))charge=extra?` (${money(prices.premiumEntree)} / person total)`:pkg?.premiumEntreesIncluded?" (premium included)":` (+${money(prices.premiumEntreeUpgrade)} / person upgrade)`;return <option value={name} key={name} disabled={name==="Aviator Pizzeria Pizza Bar"&&f.pizzaExtra}>{name}{charge}</option>;});
+    if(key==="appetizers")return <><optgroup label="Appetizers">{render(catalog.menu.appetizers)}</optgroup><optgroup label="Premium appetizers">{render(catalog.menu.premiumAppetizers)}</optgroup></>;
+    if(key==="entrees")return <><optgroup label="Entrées">{render(catalog.menu.entrees)}</optgroup><optgroup label="Premium entrées">{render(catalog.menu.premiumEntrees)}</optgroup></>;
+    return render(names);
+  }
+  async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();if(busy)return;const errors=missing();if(errors.length){setError(errors.join(" "));setStep(2);return;}setBusy(true);setError("");requestId.current||=crypto.randomUUID();try{const values=new FormData(event.currentTarget);const response=await fetch("/api/inquiries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({kind:"event",cateringPlan:draft,requestId:requestId.current,humanCheck:values.get("humanCheck"),website:values.get("website")})});const body=await response.json();if(!response.ok)throw new Error(body.error||"Could not save your request. Please try again.");setDone(true);}catch(e){setError(e instanceof Error?e.message:"Could not save your request.");}finally{setBusy(false);}}
+  return <div className="online-catering">
+    <section className="section catering-how" aria-labelledby="catering-how-heading"><div className="content-wrap"><p className="eyebrow">One buffet. Your whole group.</p><h2 id="catering-how-heading">How our catering works</h2><ol className="catering-steps">{[
+      ["Choose Your Guest Count","Tell us how many people are attending."],["Choose Your Buffet Package","Choose a package based on your budget and the variety of food you want."],["Select Your Food","Choose the appetizers, entrées, salads, and sides for your group's buffet."],["Request Your Event","Aviator reviews your request, confirms availability, and sends a proposal for approval and deposit payment."],
+    ].map(([title,text],i)=><li key={title}><span>{i+1}</span><h3>{title}</h3><p>{text}</p></li>)}</ol><p className="catering-group-note"><strong>{buffetExplanation}</strong></p></div></section>
+    <section className="section private-event-packages" id="packages"><div className="content-wrap"><p className="eyebrow">Ready Room buffet packages</p><h2>Choose your variety. See your price.</h2><p>{catalog.minimumGuests}-guest minimum · Up to {catalog.maximumGuests} guests indoors · Buffet service for the guaranteed guest count.</p><div className="catering-package-cards">{catalog.packages.map(p=><article key={p.id} className={p.id==="feast"?"is-featured":""}>{p.id==="feast"?<p className="catering-badge">Great for Celebrations</p>:null}<h3>{p.name}</h3><p className="catering-card-price">{money(p.priceCents)} <span>/ person</span></p><ul><li>{p.appetizers} appetizers</li><li>{p.entrees} {p.premiumEntreesIncluded?"premium ":""}entrées</li>{p.salads?<li>{p.salads} salad{p.salads===1?"":"s"}</li>:null}<li>{p.sides} sides</li></ul><p className="catering-fine-print">Buffet service, iced tea, soft drinks, water &amp; a dedicated bartender included.</p><button className="button" type="button" onClick={()=>selectPackage(p.id)}>Build Your Menu</button></article>)}</div>
+    {example?<aside className="catering-example"><h3>Example buffet: 50 guests, {example.name.replace(/^The /,"")}</h3><p className="catering-example-price">50 × {money(example.priceCents)} = <strong>{money(example.priceCents*50)}</strong></p><p>Choose {example.appetizers} appetizers, {example.entrees} {example.premiumEntreesIncluded?"premium ":""}entrées{example.salads?`, ${example.salads} salad`:""} and {example.sides} sides for everyone to share. Aviator prepares appropriate buffet quantities for your guaranteed guest count. Two entrée selections mean two dishes on the buffet, not two full entrée portions for every guest.</p><p className="catering-fine-print">Base catering only. Upgrades, taxes and other itemized charges are additional; gratuity and bar consumption are excluded.</p></aside>:<p>Contact events@aviatorbrew.com for current buffet availability.</p>}</div></section>
+    <section className="section catering-builder-section" id="build-menu"><div className="content-wrap"><p className="eyebrow">Plan online, without paperwork</p><h2>Build your group's buffet</h2><p>{buffetExplanation}</p>
+      <div className="catering-builder-layout"><div className="catering-builder-main"><nav className="catering-builder-steps" aria-label="Catering builder steps">{["Guests","Package","Food & upgrades","Request event"].map((label,i)=><button type="button" key={label} aria-current={step===i?"step":undefined} disabled={busy||i>step} onClick={()=>{setStep(i);setError("");}}>{i+1}. {label}</button>)}</nav>
+      {done?<div className="catering-request-success" role="status"><h3>Event request received</h3><p>{inquiryAcknowledgement}</p><p>Questions? <a href="mailto:events@aviatorbrew.com">events@aviatorbrew.com</a></p></div>:<>
+      {step===0?<div className="catering-builder-panel"><h3>1. Choose your guest count</h3><label>Guest count<input type="number" min={catalog.minimumGuests} max={catalog.maximumGuests} step={1} value={draft.guestCount||""} onChange={e=>patch({guestCount:Number(e.target.value)})} /></label><p>{catalog.minimumGuests}–{catalog.maximumGuests} guests for this indoor buffet. Need other arrangements? Contact our events team before requesting a larger event.</p></div>:null}
+      {step===1?<div className="catering-builder-panel"><h3>2. Choose your buffet package</h3>{catalog.packages.map(p=><label className="catering-package-choice" key={p.id}><input type="radio" name="package" value={p.id} checked={f.packageId===p.id} onChange={()=>{const next=changeEventPackage(emptyFlightPlan(),p.id,catalog);food({...next,extraSidePriceCents:prices.side,extraSaladPriceCents:prices.salad});}} /><span><strong>{p.name} · {money(p.priceCents)} / person</strong><small>{p.appetizers} appetizers · {p.entrees} {p.premiumEntreesIncluded?"premium ":""}entrées · {p.salads} salads · {p.sides} sides</small></span></label>)}</div>:null}
+      {step===2&&pkg?<div className="catering-builder-panel"><h3>3. Select your food</h3><p>Use each included slot once. Add paid extras separately when you want more variety.</p><div className="catering-food-grid">{(Object.keys(labels) as FoodGroup[]).map(key=><fieldset key={key}><legend>{labels[key]} <span>{f[key].filter(Boolean).length} of {pkg[key]} selected</span></legend>{Array.from({length:pkg[key]},(_,i)=><label key={i}>{labels[key]} selection {i+1}<select value={f[key][i]||""} onChange={e=>{const values=Array.from({length:pkg[key]},(_,n)=>f[key][n]||"");values[i]=e.target.value;food({[key]:values});}}><option value="">Choose {labels[key].toLowerCase()}…</option>{options(key)}</select></label>)}<div className="catering-extras"><h4>Additional {labels[key].toLowerCase()}</h4><p>{money(prices[key==="appetizers"?"appetizer":key==="entrees"?"entree":key==="sides"?"side":"salad"])} / person per additional selection{key==="entrees"?`; premium ${money(prices.premiumEntree)} / person total`:key==="appetizers"?`; premium adds ${money(prices.premiumAppetizer)} / person`:""}.</p>{f[extraKeys[key]].map((name,i)=><div className="catering-extra-row" key={i}><label>Extra {labels[key].toLowerCase()} {i+1}<select value={name} onChange={e=>{const values=[...f[extraKeys[key]]];values[i]=e.target.value;food({[extraKeys[key]]:values});}}><option value="">Choose an extra…</option>{options(key,true)}</select></label><button type="button" aria-label={`Remove extra ${key} ${i+1}`} onClick={()=>food({[extraKeys[key]]:f[extraKeys[key]].filter((_,n)=>n!==i)})}>Remove</button></div>)}<button type="button" disabled={f[extraKeys[key]].length>=12} onClick={()=>food({[extraKeys[key]]:[...f[extraKeys[key]],""]})}>+ Add {labels[key].toLowerCase()}</button></div></fieldset>)}</div>
+        <fieldset><legend>Optional upgrades</legend><div className="catering-upgrade-options">{([["dessert","Dessert display",prices.dessert],["coffee","Coffee service",prices.coffee],["pizzaExtra","Additional Pizza Bar",prices.entree]] as const).map(([key,label,price])=><label className="catering-check" key={key}><input type="checkbox" checked={f[key]} disabled={key==="pizzaExtra"&&[...f.entrees,...f.extraEntrees].includes("Aviator Pizzeria Pizza Bar")} onChange={e=>food({[key]:e.target.checked})}/>{label} · {money(price)} / person</label>)}<label>Extended event hours · {money(prices.hour)} / additional hour per event<input type="number" min={0} max={24} step={1} value={f.extraHours} onChange={e=>food({extraHours:Number(e.target.value)})}/></label></div></fieldset>
+        {pizza?<fieldset><legend>Pizza Bar styles · {f.pizzas.length} of up to 3 selected</legend><div className="catering-pizza-styles">{catalog.menu.pizzas.map(name=><label className="catering-check" key={name}><input type="checkbox" checked={f.pizzas.includes(name)} disabled={f.pizzas.length>=3&&!f.pizzas.includes(name)} onChange={e=>food({pizzas:e.target.checked?[...f.pizzas,name]:f.pizzas.filter(v=>v!==name)})}/>{name}</label>)}</div></fieldset>:null}
+        <label>Allergies or dietary requests<textarea rows={2} maxLength={2000} value={f.dietaryNeeds} onChange={e=>food({dietaryNeeds:e.target.value})}/></label>
+      </div>:null}
+      {step===3?<form className="catering-event-request" onSubmit={submit}><h3>4. Request your event</h3><p>We will review availability and send a proposal. No deposit is charged when you submit this request.</p><input className="honeypot" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true"/><div className="catering-request-fields"><label>Name<input autoComplete="name" required maxLength={200} value={draft.contactName} onChange={e=>patch({contactName:e.target.value})}/></label><label>Email<input type="email" autoComplete="email" required maxLength={254} value={draft.contactEmail} onChange={e=>patch({contactEmail:e.target.value})}/></label><label>Phone<input type="tel" autoComplete="tel" required maxLength={100} value={draft.phone} onChange={e=>patch({phone:e.target.value})}/></label><label>Event name or occasion<input maxLength={200} value={draft.title} onChange={e=>patch({title:e.target.value})}/></label><label>Event date<input type="date" min={easternToday()} required value={draft.date} onChange={e=>patch({date:e.target.value})}/></label><label>Start time<input type="time" required value={draft.startTime} onChange={e=>patch({startTime:e.target.value})}/></label><label>End time<input type="time" required value={draft.endTime} onChange={e=>patch({endTime:e.target.value})}/></label><label>Venue<input value={catalog.venue} readOnly/></label></div><label>Special requests<textarea rows={3} maxLength={5000} value={draft.notes} onChange={e=>patch({notes:e.target.value})}/></label><label className="catering-check"><input name="humanCheck" type="checkbox" value="yes" required/>I am a real person submitting this event request.</label><button className="button" disabled={busy}>{busy?"Sending request…":"REQUEST MY EVENT"}</button></form>:null}
+      {error?<p className="catering-builder-error" role="alert">{error}</p>:null}<div className="catering-builder-navigation">{step>0?<button type="button" disabled={busy} onClick={()=>setStep(step-1)}>Back</button>:null}{step<3?<button className="button" type="button" onClick={next}>Continue</button>:null}</div>
+      </>}
+      </div><aside className="catering-estimate" aria-label="Your catering estimate"><h3>Your estimated pricing</h3><p><strong>{draft.guestCount||0} guests</strong>{pkg?` · ${pkg.name}`:" · Choose a package"}</p>{items.length?<dl>{items.map(item=><div key={item.id}><dt>{item.name}<small>{item.quantity} × {money(item.unitPriceCents)}</small></dt><dd>{money(item.quantity*item.unitPriceCents)}</dd></div>)}<div><dt>Catering subtotal</dt><dd>{money(totals.subtotal)}</dd></div><div><dt>Sales tax ({catalog.salesTaxBps/100}%)</dt><dd>{money(totals.salesTax)}</dd></div><div><dt>PFB tax ({catalog.pfbTaxBps/100}%)</dt><dd>{money(totals.pfbTax)}</dd></div><div className="catering-estimate-total"><dt>Estimated total</dt><dd>{money(totals.total)}</dd></div></dl>:null}<p className="catering-fine-print">Gratuity, bar consumption, and any unpriced room fees or services are excluded. Staff will confirm all charges in your proposal. Food upgrades above are per person; extended hours are per event. No tray quantities are implied.</p><p><strong>{money(depositCents)} reservation deposit after approval.</strong> Credited toward the event total, rather than added to it. No payment is requested with this inquiry.</p></aside></div>
+    </div></section>
+    <section className="section catering-inclusions" id="inquiry"><div className="content-wrap"><h2>What's included</h2><p>Buffet service, iced tea, soft drinks, water, and a dedicated bartender. The Ready Room includes a big-screen presentation setup, house sound system, and microphone. Beer, wine, and liquor are charged separately.</p><h3>Bar planning</h3><p>Choose guest-paid tabs, a hosted tab, or drink tickets with the events team. Each drink ticket covers one drink billed at its actual menu price, typically $6–$17. Your final bar charge depends on what guests order.</p><h3>Deposits, timing and policies</h3><p>Four hours of guest event time, one hour of decorating access before the start, and 30 minutes afterward for removal are included. Extra guest time is {money(prices.hour)} per hour and requires advance approval. Decorations require approval; no glitter, confetti, open flames, smoke, fog machines, wall adhesives, or attachments to fixtures. Keep exits clear.</p><p>Your reservation requires staff approval, available event space, and the required deposit. The deposit is credited toward the final bill. Review all applicable policies in your proposal before accepting.</p>{policyText?<details><summary>Current event policies · {policyVersion}</summary><p className="catering-policy-text">{policyText}</p></details>:null}<div className="catering-bottom-actions"><a className="button" href="#build-menu">Build your menu & request an event</a><a className="button button-outline" href="/api/private-events/menu.pdf" target="_blank" rel="noreferrer">View / Print Catering Menu PDF</a></div></div></section>
+  </div>;
 }

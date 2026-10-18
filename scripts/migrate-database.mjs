@@ -431,6 +431,28 @@ const schemaStatements = [
   )`,
   `ALTER TABLE IF EXISTS website.shop_ticket_purchases DROP CONSTRAINT IF EXISTS shop_ticket_purchases_party_size_check`,
   `ALTER TABLE IF EXISTS website.shop_ticket_purchases ADD CONSTRAINT shop_ticket_purchases_party_size_check CHECK (party_size BETWEEN 1 AND 1000)`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_proposals (
+    id text PRIMARY KEY, plan_id text NOT NULL REFERENCES website.private_event_plans(id), version integer NOT NULL,
+    number text NOT NULL UNIQUE, plan_version integer NOT NULL, material_hash text NOT NULL, snapshot jsonb NOT NULL,
+    state text NOT NULL DEFAULT 'draft', token_hash text UNIQUE, expires_at timestamptz NOT NULL,
+    approved_at timestamptz, approved_by text, sent_at timestamptz, accepted_at timestamptz, accepted_name text,
+    acceptance jsonb, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(plan_id,version)
+  )`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_checkout_attempts (
+    id text PRIMARY KEY, proposal_id text NOT NULL REFERENCES website.private_event_proposals(id), amount_cents integer NOT NULL CHECK(amount_cents>=100),
+    session_id text UNIQUE, checkout_url text, status text NOT NULL DEFAULT 'creating', expires_at timestamptz NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS private_event_active_checkout_idx ON website.private_event_checkout_attempts(proposal_id) WHERE status IN ('creating','open')`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_deposits (
+    session_id text PRIMARY KEY, payment_intent text NOT NULL UNIQUE, proposal_id text NOT NULL REFERENCES website.private_event_proposals(id),
+    plan_id text NOT NULL REFERENCES website.private_event_plans(id), amount_cents integer NOT NULL CHECK(amount_cents>0), currency text NOT NULL CHECK(currency='usd'),
+    stripe_event_id text NOT NULL, paid_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_deliveries (
+    key text PRIMARY KEY, proposal_id text NOT NULL REFERENCES website.private_event_proposals(id), recipient text NOT NULL,
+    subject text NOT NULL, message text NOT NULL, status text NOT NULL DEFAULT 'pending', updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
   `CREATE TABLE IF NOT EXISTS website.private_event_payment_notifications (
     session_id text PRIMARY KEY,
     notified_at timestamptz NOT NULL DEFAULT now(),

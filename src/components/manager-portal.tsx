@@ -17,6 +17,7 @@ import { ShopManager } from "@/components/shop-manager";
 import { CateringManager } from "@/components/catering-manager";
 import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
 import { TourGuestEmail } from "@/components/tour-guest-email";
+import { EventCateringSettings } from "@/components/event-catering-settings";
 import { EventPlanningManager } from "@/components/event-planning-manager";
 
 type Signup = { id: string; createdAt: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
@@ -653,6 +654,7 @@ function PrivateEventsManager() {
     <EventPlanningManager />
     <details className="event-website-settings"><summary>Website settings & room booking fee</summary>
     <section id="private-event-settings" className="coupon-manager tour-manager private-event-settings-manager"><p className="eyebrow">Private event settings</p><h2>Private Events</h2><p>Update the Ready Room booking fee and public Private Events copy.</p><p className="media-message" role="status">{message}</p><h3>Room booking fee</h3><form className="tour-threshold-form" onSubmit={saveBookingFee}><label>Room booking fee (USD)<input type="number" min="1" max="20000" step="0.01" value={bookingFee} onChange={(event) => setBookingFee(Number(event.target.value))} required disabled={!settingsLoaded || Boolean(busy)} /><small>Applied to each new room booking checkout session.</small></label><button className="button" disabled={Boolean(busy) || !settingsLoaded}>{busy === "bookingFee" ? "Saving..." : settingsLoaded ? "Save booking fee" : "Loading settings..."}</button></form><h3>Private Events page copy</h3><p>Shown on the public Private Events page. Separate paragraphs with a blank line.</p><form className="private-event-copy-form" onSubmit={saveCopy}><label>The Aviator Way copy<textarea rows={8} maxLength={2400} value={aviatorWayCopy} onChange={(event) => setAviatorWayCopy(event.target.value)} required disabled={!settingsLoaded || Boolean(busy)} /></label><label>Inquiry section copy<textarea rows={5} maxLength={1400} value={inquiryCopy} onChange={(event) => setInquiryCopy(event.target.value)} required disabled={!settingsLoaded || Boolean(busy)} /><small>Shown under Private Events / Let&apos;s get the details moving.</small></label><button className="button" disabled={Boolean(busy) || !settingsLoaded}>{busy === "copy" ? "Saving..." : settingsLoaded ? "Save private events copy" : "Loading settings..."}</button></form></section>
+    <EventCateringSettings />
     </details>
   </>;
 }

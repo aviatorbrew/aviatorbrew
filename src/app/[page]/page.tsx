@@ -4,13 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { InquiryForm } from "@/components/inquiry-form";
 import { ArrowUpRight, MapPin } from "@/components/icons";
-import { PrivateEventPaymentButton } from "@/components/private-event-payment-button";
 import { PrivateEventPackages } from "@/components/private-event-packages";
 import { getPrivateEventPaymentResult } from "@/lib/private-event-checkout";
 import { notifyPrivateEventPayment } from "@/lib/private-event-payments";
 import { getPrivateEventPhotos, type PrivateEventPhoto } from "@/lib/private-event-photos";
 import { DEFAULT_PRIVATE_EVENT_AVIATOR_WAY_COPY, DEFAULT_PRIVATE_EVENT_INQUIRY_COPY, formatPrivateEventBookingFee, getPrivateEventSettings } from "@/lib/private-event-settings";
-import { latestPublicMenu } from "@/lib/menu-files";
 import { pageContent } from "@/data/site";
 
 function PrivateEventGalleryMedia({ photo, alt, sizes }: { photo: PrivateEventPhoto; alt: string; sizes: string }) {
@@ -74,7 +72,6 @@ export default async function ContentPage({
     : false;
   const privateEventSettings = page === "private-events" ? await getPrivateEventSettings() : null;
   const privateEventBookingFeeLabel = privateEventSettings ? formatPrivateEventBookingFee(privateEventSettings.bookingFeeCents) : "$500.00";
-  const privateEventMenu = page === "private-events" ? await latestPublicMenu("catering-events", "food") : null;
   const privateEventAviatorWayCopy = privateEventSettings?.aviatorWayCopy || DEFAULT_PRIVATE_EVENT_AVIATOR_WAY_COPY;
   const privateEventInquiryCopy = privateEventSettings?.inquiryCopy || DEFAULT_PRIVATE_EVENT_INQUIRY_COPY;
   const privateEventPhotos = page === "private-events" ? await getPrivateEventPhotos() : [];
@@ -88,10 +85,9 @@ export default async function ContentPage({
         <div className="hero-actions">
           {page === "brewery" ? <Link className="button" href="/locations" data-analytics="brewery_locations">{content.action} <ArrowUpRight /></Link>
             : page === "shop" || page === "distillery" ? <a className="button" href="https://maps.google.com/?q=688+Brewing+Drive+Fuquay-Varina+NC+27526" target="_blank" rel="noreferrer" data-analytics={`${page}_directions`}><MapPin />{content.action}</a>
-              : <a className="button" href={formKind ? "#inquiry" : "/about"} data-analytics={`${page}_action`}>{content.action} <ArrowUpRight /></a>}
+              : <a className="button" href={page === "private-events" ? "#build-menu" : formKind ? "#inquiry" : "/about"} data-analytics={`${page}_action`}>{page === "private-events" ? "Plan Your Event" : content.action} <ArrowUpRight /></a>}
           {page === "private-events" ? <>
             <a className="button button-outline" href="#packages" data-analytics="private_events_packages">See Packages <ArrowUpRight /></a>
-            <PrivateEventPaymentButton bookingFeeLabel={privateEventBookingFeeLabel} />
           </> : null}
         </div>
         {verifiedPayment === "paid" ? <p className="private-event-payment-status success" role="status"><strong>Payment complete.</strong> Your {privateEventBookingFeeLabel} room booking fee was processed securely through Stripe. {paymentNotificationSent ? "The Aviator events team has been notified." : "Keep your Stripe receipt and contact the Aviator events team if you do not hear from us."}</p> : null}
@@ -101,7 +97,7 @@ export default async function ContentPage({
       </div>
     </section>
 
-    {page === "private-events" ? <PrivateEventPackages bookingFeeLabel={privateEventBookingFeeLabel} menuUrl={privateEventMenu?.url} /> : null}
+    {page === "private-events" ? <PrivateEventPackages catalog={privateEventSettings!.catering} depositCents={privateEventSettings!.bookingFeeCents} policyText={privateEventSettings!.policyText} policyVersion={privateEventSettings!.policyVersion} /> : null}
 
     <section className={page === "private-events" ? "section private-event-story" : "section"}>
       <div className="content-wrap split-content">
@@ -114,7 +110,7 @@ export default async function ContentPage({
     </section>
 
     {page === "faq" && <section className="section section-dark"><div className="content-wrap"><div className="story-timeline">{faqs.map(([question, answer]) => <div key={question}><strong>{question}</strong><span>{answer}</span></div>)}</div></div></section>}
-    {formKind && <section id="inquiry" className={page === "private-events" ? "section section-dark private-event-inquiry" : "section section-dark"}><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">{content.eyebrow}</p><h2>Let&apos;s get the <em>details moving.</em></h2>{page === "private-events" ? <div className="private-event-inquiry-copy">{privateEventInquiryCopy.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div> : null}</div></div><InquiryForm kind={formKind} /></div></section>}
+    {formKind && page !== "private-events" && <section id="inquiry" className={page === "private-events" ? "section section-dark private-event-inquiry" : "section section-dark"}><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">{content.eyebrow}</p><h2>Let&apos;s get the <em>details moving.</em></h2>{page === "private-events" ? <div className="private-event-inquiry-copy">{privateEventInquiryCopy.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div> : null}</div></div><InquiryForm kind={formKind} /></div></section>}
 
     {page === "private-events" && privateEventPhotos.length ? <section className="section private-event-gallery-band"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Ready Room photos</p><h2>See the room <em>set for the next event.</em></h2></div><p>Private event room photography is managed by the Aviator team and updated as the space changes.</p></div><div className="private-event-gallery brewery-gallery">{privateEventPhotos.slice(0, 6).map((photo, index) => <figure className={index === 0 ? "is-featured" : ""} key={photo.name}><PrivateEventGalleryMedia photo={photo} alt={"Aviator Ready Room private event view " + (index + 1)} sizes={index === 0 ? "(max-width: 700px) 100vw, 66vw" : "(max-width: 700px) 100vw, 33vw"} />{index === 0 ? <figcaption>Featured event room photo</figcaption> : null}</figure>)}</div></div></section> : null}
   </>;

@@ -89,7 +89,7 @@ const quote=parseEventPlan({...emptyEventPlan(),title:'Aviator Feast - 55 guests
 assert.deepEqual(eventTotals(quote),{subtotal:418000,salesTax:30305,pfbTax:4180,tax:34485,total:452485,paid:0,balance:452485});
 assert.equal(readyRoomMenu.entrees.includes('Aviator Beef Brisket'),false);assert.equal(readyRoomMenu.premiumEntrees.includes('Aviator Beef Brisket'),true);assert.equal(readyRoomMenu.appetizers.includes('Shrimp Cocktail'),false);assert.equal(readyRoomMenu.premiumAppetizers.includes('Shrimp Cocktail'),true);
 const summarySource=(await readFile(new URL('../src/lib/event-plans.ts',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'');
-const summaryModule=await import(moduleUrl(`import {eventDateLabel,eventOrderItems,eventTotals,flightPlanSelections,money,parseEventPlan,timeLabel} from ${JSON.stringify(planUrl)};\n${summarySource}`));
+const summaryModule=await import(moduleUrl(`import {defaultCateringCatalog,eventDateLabel,eventOrderItems,eventTotals,flightPlanSelections,money,parseEventPlan,timeLabel} from ${JSON.stringify(planUrl)};\n${summarySource}`));
 const plan={id:'test',version:2,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),sourceInquiryId:null,details:pizzaPlan};
 for(const flight of [true,false]){
   const html=summaryModule.eventSummaryHtml(plan,true,'',flight);

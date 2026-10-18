@@ -1,0 +1,51 @@
+# Private events: online menu, proposals and deposits
+
+The public entry point is `/private-events#build-menu`. It explains shared buffet service, displays the configured packages and a live example, and collects a menu and event request without paperwork or payment. `/api/inquiries` saves these requests as existing `website.form_inquiries` records with `kind=event`; totals, deposit settings, venue, taxes and extra side/salad prices are recalculated on the server. The old fillable form URL redirects to the builder. `/api/private-events/menu.pdf` is an optional current menu, generated from the same configuration.
+
+## Existing manager workflow
+
+Use **Manager → Private Events**:
+
+1. Open **Website inquiries — start an event plan** and choose **Plan event**. The saved package, food selections, dates, contact details and special requests populate the existing editor. A linked inquiry reopens its existing event instead of making a duplicate.
+2. Review the menu, guest count, charges and requested date. Save the event. Its main status remains one of the existing Draft / Tentative / Confirmed / Completed / Cancelled values. The additional inquiry/proposal/payment label describes its booking progress.
+3. In **Customer proposals & deposit payments**, choose an expiration and create a proposal draft. Preview, download or print its PDF. Creating and printing a draft do not send email.
+4. Check the calendar and venue capacity, then use **Approve & send proposal**. The server checks overlapping tentative/confirmed events, including the established one-hour setup and 30-minute removal windows. Approval holds the existing event as Tentative. The customer receives a secure link and optional attached PDF; the link can be resent. Resending replaces the previous access link.
+5. Customer acceptance records the proposal version, policy version, name, timestamp, user agent and a hash of the request IP. Payment uses the existing Stripe Checkout integration. No card details are collected by this application.
+6. Only a verified Stripe payment notification records a deposit. Session and Payment Intent uniqueness prevent duplicate payment records and credits. Confirmation requires approved, unchanged event terms, a matching payment and a final availability check. Changed, cancelled, expired or conflicting terms leave a recorded payment for staff review instead of falsely confirming a booking. Confirmation delivery failures remain retryable without repeating the payment credit.
+7. Refresh acceptance/payment status in the manager. Download a deposit receipt or open **Kitchen Production Sheet / Print**. Kitchen output requires a current approved proposal or an existing confirmed/completed event and manager authentication. It includes selected food, desserts/coffee, custom food rows and dietary/production notes. It excludes billing amounts, payment references, customer email/phone and general administrative notes. No yield data exists, so it does not invent production quantities or pan counts.
+
+Use the existing event status and guest-update controls to complete or cancel events, apply existing authorized manual booking exceptions, or send additional updates. Cancelling a plan never deletes payment history. Moving a previously approved plan back to Draft revokes its proposal approval; a late payment cannot confirm it. Declined or expired proposals are shown for review; staff can release a remaining tentative hold through the existing event status control.
+
+## Settings and activation dependency
+
+Extend the existing **Website settings & room booking fee** panel; there is no separate catering administration application. It now contains package names/prices/selection limits, premium eligibility, food choices/availability, upgrade prices, venue minimum/maximum and taxes. Disable dishes instead of deleting names used by saved events. Existing event data and legacy menu selections remain stored.
+
+**Approved cancellation, deposit/refund, and final guest-count policy text is not configured in the existing system.** No business terms were invented. Add the approved complete text and a policy version in **Customer acceptance policies**, then create a new proposal. Changing policy text requires a new version. Drafts created without policies cannot be sent, accepted or paid. Stripe Checkout, the signed webhook secret, and email delivery must also be configured before a payment proposal can be sent.
+
+The current configured Ready Room deposit is $350; it is loaded from existing settings, quoted in each proposal, and credited toward the event total. Recorded payments reduce any further deposit due. Neither a customer-supplied total nor a payment-return URL can mark an event paid or confirmed. Bar consumption, gratuity and unpriced services are explicitly excluded unless staff itemizes them.
+
+## Revisions, availability and access
+
+Issued proposals keep an immutable snapshot of menu selections, charges, taxes, deposit requirements and policy text/version. Configuration updates do not alter those snapshots. Material event changes invalidate the old acceptance for the changed terms. Create and send a revised proposal and obtain new acceptance. Existing payment credits carry forward; they are not charged again. Manual payment edits cannot remove verified Stripe credits, and recording a manual deposit closes an older unpaid checkout before a second payment can be taken. Before another version becomes payable, the app verifies and closes an older unpaid Stripe checkout. An unresolved or already-paid attempt blocks a second payment link until reconciled.
+
+Customer links contain a random 256-bit bearer token in the URL fragment; only its hash is stored on the server. The browser removes the fragment and keeps the token in session storage to resume after Stripe checkout. Tokens never enter page request URLs or analytics events. Customer API responses and PDFs are private/no-store, and the review page is noindex with no-referrer. Invalid, superseded or expired links cannot authorize payment. Staff retains authenticated access to historical proposals and receipts after customer links expire.
+
+Event plan writes and booking checks share a PostgreSQL advisory lock to serialize availability changes. Existing tentative/confirmed records remain authoritative; both the saved window and a changed Google source window block conflicting bookings until staff resolves the difference. imported Google bookings and manager-entered data are preserved. Only the Ready Room venue and capacity rules currently configured in this application are offered publicly. Larger/outdoor arrangements require staff review; no extra capacity or production yields were invented.
+
+## Database and integration
+
+Schema changes are additive and included in both existing migration paths. New related tables are `private_event_proposals`, `private_event_checkout_attempts`, `private_event_deposits`, and `private_event_deliveries`. Existing inquiry, event, tour, shop and payment records are not rewritten by the migration. No BrewOps integration or additional Render service is used.
+
+Stripe events are handled by the existing `/api/stripe/webhook` endpoint. It verifies the raw request signature, including timestamp tolerance and rotated signatures. The proposal branch supports Checkout completion, asynchronous success/failure and expiry; card Checkout is used for deposits. Stripe idempotency keys preserve a single checkout across retries. The existing shop and tour branches are retained.
+
+## Validation
+
+`npm run test:event-booking` requires a fresh, isolated local PostgreSQL database:
+
+```
+EVENT_TEST_DATABASE_URL=postgres://test_user@127.0.0.1:5432/aviator_event_test_example npm run test:event-booking
+```
+
+The script refuses nonlocal databases and database names outside `aviator_event_test_*`. It uses actual schema migrations/services, simulated Stripe responses and a stub mail transport. It tests pricing, limits, disabled items, tampering, inquiries, immutable quotes, policy gates, acceptance metadata, concurrent/idempotent checkout, signed webhooks, duplicate notifications, email retry, deposit credits, PDF output, kitchen privacy, material revisions, conflicts, expired/failed/cancelled payments, and closing an older unpaid checkout. No real charge or external email is sent.
+
+Related regressions: `npm run test:event-plans`, `npm run test:calendar-sync`, and `npm run test:tours`. Browser verification uses the same disposable local database, including real inquiry-to-event import, optional menu PDF, proposal review/acceptance, receipts, manager authorization and mobile layouts. Payment return parameters are tested independently of verified payment state.

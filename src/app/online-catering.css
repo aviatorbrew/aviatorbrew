@@ -1,0 +1,107 @@
+.online-catering { background:#0b2338; color:#edf5fa; }
+.online-catering .section { padding-block:2.5rem; }
+.online-catering h2 { margin:.3rem 0 .9rem; font:600 clamp(1.65rem,3vw,2.5rem)/1.2 Arial,Helvetica,sans-serif; text-transform:none; letter-spacing:0; }
+.online-catering h3 { margin:.3rem 0 .65rem; font:600 1.15rem/1.3 Arial,Helvetica,sans-serif; text-transform:none; }
+.online-catering h4 { margin:.3rem 0; font-size:.95rem; }
+.online-catering p { line-height:1.6; }
+.catering-steps { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; list-style:none; padding:0; margin:1.5rem 0; }
+.catering-steps li { padding:1.1rem; border:1px solid #46718a; background:#12344c; }
+.catering-steps li > span { display:grid; place-items:center; width:2rem; height:2rem; margin-bottom:.7rem; border-radius:50%; background:#efb45f; color:#0b2338; font-weight:700; }
+.catering-steps p { font-size:.9rem; margin:0; color:#c6d9e3; }
+.catering-group-note { padding:1rem 1.2rem; border-left:4px solid #efb45f; background:#12344c; }
+.online-catering .private-event-packages { background:#0e2a43; }
+.catering-package-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1.3rem 0; }
+.catering-package-cards article { display:flex; flex-direction:column; align-items:start; padding:1.35rem; border:1px solid #4d7790; background:#102f48; }
+.catering-package-cards article.is-featured { border:2px solid #efb45f; }
+.catering-package-cards article .button { margin-top:auto; width:100%; }
+.catering-badge { margin:0 0 .75rem; color:#efb45f; font-size:.8rem; font-weight:700; }
+.catering-card-price { margin:.3rem 0; font-size:2rem; font-weight:600; }
+.catering-card-price span { font-size:.9rem; font-weight:400; }
+.catering-package-cards ul { padding-left:1.2rem; margin:.8rem 0 1.2rem; line-height:1.9; }
+.catering-example { padding:1.2rem; border:1px solid #527990; background:#071e30; }
+.catering-example p { margin:.5rem 0; }
+.catering-example-price { color:#efb45f; font-size:1.3rem; }
+.catering-fine-print { font-size:.82rem; color:#c4d6e1; line-height:1.5; }
+.catering-builder-section { scroll-margin-top:7rem; }
+.catering-builder-layout { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(17rem,1fr); gap:1.5rem; align-items:start; margin-top:1.2rem; }
+.catering-builder-main { min-width:0; }
+.catering-builder-steps { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem; }
+.catering-builder-steps button, .catering-builder-navigation > button:not(.button), .catering-extras button, .catering-bottom-actions > button { padding:.6rem .8rem; border:1px solid #547c95; background:#102f48; color:#f1c27b; cursor:pointer; font:600 .85rem/1.3 Arial,sans-serif; }
+.catering-builder-steps button[aria-current="step"] { color:#081d2e; background:#efb45f; border-color:#efb45f; }
+.online-catering :disabled { opacity:.55; cursor:default; }
+.catering-builder-panel, .catering-event-request { display:grid; gap:.9rem; padding:1.2rem; background:#102f48; border:1px solid #4a718b; }
+.online-catering label, .proposal-accept > label { display:grid; gap:.4rem; font-size:.9rem; }
+.online-catering input:not([type="checkbox"]):not([type="radio"]), .online-catering select, .online-catering textarea, .proposal-accept input:not([type="checkbox"]) { width:100%; min-width:0; padding:.65rem; background:#071c2d; border:1px solid #68899f; color:#f3f8fb; font:400 .95rem/1.4 Arial,sans-serif; border-radius:3px; }
+.online-catering textarea { resize:vertical; }
+.catering-package-choice { display:flex!important; align-items:start; padding:.9rem; border:1px solid #587e96; cursor:pointer; }
+.catering-package-choice input { flex:none; margin-top:.2rem; }
+.catering-package-choice span { display:grid; gap:.3rem; }
+.catering-package-choice small { color:#c0d6e2; }
+.catering-food-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.online-catering fieldset { min-width:0; margin:0; padding:.8rem; border:1px solid #54798f; }
+.online-catering legend { padding:0 .3rem; font-weight:600; color:#efb45f; }
+.online-catering legend span { display:block; font-size:.8rem; font-weight:400; color:#c7dce6; }
+.catering-food-grid fieldset > label { margin:.6rem 0; }
+.catering-extras { border-top:1px solid #43657a; margin-top:.9rem; padding-top:.7rem; }
+.catering-extras p { margin:.35rem 0 .6rem; font-size:.78rem; }
+.catering-extra-row { display:flex; align-items:end; gap:.4rem; margin:.5rem 0; }
+.catering-extra-row > label { flex:1; min-width:0; }
+.catering-extra-row > button { padding:.6rem .4rem; font-size:.75rem; }
+.catering-upgrade-options, .catering-pizza-styles { display:grid; gap:.75rem; margin-top:.6rem; }
+.catering-pizza-styles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.catering-check { display:flex!important; flex-direction:row!important; align-items:start; gap:.6rem!important; line-height:1.5; }
+.catering-check input { flex:none; width:1.1rem; height:1.1rem; margin:.15rem 0 0; }
+.catering-request-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem; }
+.catering-builder-navigation { display:flex; justify-content:space-between; gap:1rem; margin-top:1rem; }
+.catering-builder-error, .proposal-error { padding:.85rem; color:#ffddd2; background:#452c35; border-left:3px solid #ed9a7e; }
+.catering-estimate { position:sticky; top:7rem; padding:1.2rem; border:1px solid #7096ae; background:#071e30; min-width:0; }
+.catering-estimate dl { margin:1rem 0; }
+.catering-estimate dl > div, .proposal-totals > div { display:flex; justify-content:space-between; gap:1rem; padding:.6rem 0; border-bottom:1px solid #426278; font-size:.9rem; }
+.catering-estimate dt { min-width:0; }
+.catering-estimate dt small { display:block; color:#b5cbd8; font-size:.76rem; margin-top:.2rem; }
+.catering-estimate dd, .proposal-totals dd { margin:0; white-space:nowrap; }
+.catering-estimate-total { font-weight:700; color:#efb45f; font-size:1rem!important; }
+.catering-request-success, .proposal-notice { padding:1rem; background:#123c3c; border:1px solid #82bfab; }
+.catering-policy-text, .proposal-policy { white-space:pre-wrap; overflow-wrap:anywhere; }
+.catering-bottom-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; margin-top:1.2rem; }
+.online-catering a:not(.button), .event-proposal-page a:not(.button) { color:#efb45f; }
+.online-catering :is(input,select,button,textarea,a):focus-visible, .event-proposal-page :is(input,button,a):focus-visible { outline:3px solid #efb45f; outline-offset:3px; }
+.event-proposal-page { background:#0c2940; }
+.event-proposal-page .content-wrap { max-width:1100px; }
+.event-proposal-page h1 { font-size:clamp(2rem,5vw,3rem); }
+.event-proposal-page h2 { margin:1.5rem 0 .7rem; font-size:1.3rem; }
+.event-proposal-page p { line-height:1.6; }
+.proposal-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-bottom:1px solid #567b92; }
+.proposal-header h2 { margin-top:.4rem; }
+.proposal-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.7rem; }
+.proposal-facts p, .proposal-menu > div { padding:.8rem; margin:0; background:#102f48; overflow-wrap:anywhere; }
+.proposal-menu > div { margin:.5rem 0; }
+.proposal-menu dt { color:#efb45f; font-weight:600; }
+.proposal-menu dd { margin:.25rem 0 0; }
+.proposal-table-wrap { max-width:100%; overflow-x:auto; }
+.proposal-table-wrap table { width:100%; border-collapse:collapse; }
+.proposal-table-wrap th, .proposal-table-wrap td { padding:.7rem; text-align:left; border-bottom:1px solid #476a82; }
+.proposal-table-wrap td small { display:block; }
+.proposal-totals { max-width:30rem; margin:1rem 0 1rem auto; }
+.proposal-policy { padding:1rem; border:1px solid #6a8a9f; background:#102f48; line-height:1.6; }
+.proposal-accept { display:grid; gap:1rem; padding:1.2rem; margin-top:1.5rem; border:1px solid #efb45f; }
+.proposal-paid { padding:1rem; border-left:4px solid #89bda4; }
+.manager-portal .event-proposal-manager, .manager-portal .event-catering-settings { margin:.8rem 0; padding:.75rem; border:1px solid #54778d; background:#0c2940; }
+.manager-portal .event-proposal-list { display:grid; gap:.65rem; }
+.manager-portal .event-proposal-list article { padding:.65rem; border:1px solid #54778d; overflow-wrap:anywhere; }
+.manager-portal .event-proposal-approval { margin:.7rem 0; }
+.manager-portal .event-proposal-manager .event-row-actions { align-items:center; }
+.manager-portal .event-proposal-manager a { color:#efb45f; font-size:.8rem; }
+.manager-portal .event-settings-packages, .manager-portal .event-settings-menu { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem; }
+.manager-portal .event-settings-packages > div { display:grid; gap:.4rem; padding:.55rem; border:1px solid #466c82; }
+.manager-portal .event-settings-menu { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.manager-portal .event-catering-settings fieldset { margin:.5rem 0; padding:.6rem; border:1px solid #54778d; }
+@media(max-width:900px){.catering-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.catering-builder-layout{grid-template-columns:1fr}.catering-estimate{position:static}.catering-package-cards{gap:.6rem}.catering-package-cards article{padding:1rem}.manager-portal .event-settings-packages{grid-template-columns:1fr}}
+@media(max-width:650px){.online-catering .section{padding-block:1.75rem}.catering-package-cards,.catering-food-grid,.catering-request-fields,.proposal-facts{grid-template-columns:1fr}.catering-builder-panel,.catering-event-request,.catering-estimate{padding:.8rem}.catering-steps{gap:.6rem}.catering-steps li{padding:.8rem}.catering-steps h3{font-size:1rem}.catering-card-price{font-size:1.7rem}.online-catering input:not([type="checkbox"]):not([type="radio"]),.online-catering select,.online-catering textarea,.proposal-accept input:not([type="checkbox"]){font-size:1rem}.catering-pizza-styles{grid-template-columns:1fr}.manager-portal .event-settings-menu{grid-template-columns:1fr}}
+@media print{.event-proposal-page button,.event-proposal-page .proposal-accept,.event-proposal-page .catering-bottom-actions{display:none}}
+.manager-portal .event-catering-settings form { display:grid; gap:.65rem; }
+.manager-portal .event-catering-settings label { display:grid; gap:.25rem; }
+.manager-portal .event-catering-settings :is(input:not([type="checkbox"]),textarea,select) { width:100%; min-width:0; border:1px solid #5883a0; background:#071d30; color:#f2f7fa; padding:.4rem .5rem; font:inherit; }
+.manager-portal .event-catering-settings .event-check { display:flex; flex-direction:row; align-items:center; gap:.4rem; }
+.manager-portal .event-catering-settings input[type="checkbox"] { width:1rem; height:1rem; min-height:0; margin:0; padding:0; }
+.manager-portal .event-proposal-manager .event-fields > label { display:grid; gap:.25rem; }

@@ -1,3 +1,4 @@
+import { inquiryBookingStages } from "@/lib/event-plans";
 import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
 import { databaseConfigured, withDatabase } from "@/lib/database";
@@ -44,9 +45,12 @@ export async function GET(request: NextRequest) {
     LIMIT $6
   `, [kind, search, start || null, end || null, searchPattern, rowLimit]));
 
+  const stages = kind === "event" ? await inquiryBookingStages(result.rows.map(row=>String(row.id))) : [];
   const inquiries = result.rows.map((row) => {
     const payload = row.payload || {};
     return {
+      bookingStage: stages.find(item=>item.inquiryId===String(row.id))?.stage || (kind==="event"?"Inquiry Received":undefined),
+      planId: stages.find(item=>item.inquiryId===String(row.id))?.planId,
       id: String(row.id), kind: row.kind, createdAt: row.created_at, source: row.source,
       name: row.name || payloadText(payload, "name"), email: row.email || payloadText(payload, "email"), phone: payloadText(payload, "phone"),
       pickupDate: payloadText(payload, "pickupDate"), pickupTime: payloadText(payload, "pickupTime"), guestCount: payloadText(payload, "guestCount"),

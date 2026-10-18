@@ -1,3 +1,4 @@
+import { submitCateringInquiry } from "@/lib/event-inquiries";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -123,6 +124,13 @@ async function recordInquiry(body: Record<string, string>) {
 export async function POST(request: Request) {
   try {
     const body = await request.json() as Record<string, string>;
+    if (body.kind === "event" && body.cateringPlan) {
+      try { return NextResponse.json(await submitCateringInquiry(body), {headers:{"Cache-Control":"no-store"}}); }
+      catch(error){
+        const unavailable=Boolean(error&&typeof error==="object"&&"code" in error)||error instanceof Error&&/DATABASE_URL|connect|timeout/i.test(error.message);
+        return NextResponse.json({error:unavailable?"We could not save your event request. Please retry or contact events@aviatorbrew.com.":error instanceof Error?error.message:"Could not save your event request."},{status:unavailable?503:400});
+      }
+    }
     if (!allowedKinds.has(body.kind) || body.website || !body.email || !/^\S+@\S+\.\S+$/.test(body.email)) return NextResponse.json({ error: "Please provide a valid email address." }, { status: 400 });
     if (captchaKinds.has(body.kind) && body.humanCheck !== "yes") return NextResponse.json({ error: "Please confirm you are a real person." }, { status: 400 });
     if (body.kind !== "newsletter" && (!body.name || (!body.message && body.kind !== "career"))) return NextResponse.json({ error: "Please complete the required fields." }, { status: 400 });
