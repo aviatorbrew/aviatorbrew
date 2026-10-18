@@ -32,7 +32,7 @@ export const primaryNav = [
   { label: "Shop", href: "/shop-new" },
   { label: "Sales", href: "/kegs" },
   { label: "Locations", href: "/locations" },
-  { label: "EVENTS", href: "/events", children: [{ label: "Events", href: "/events" }, { label: "Private Events", href: "/private-events" }, { label: "Catering To Go", href: "/catering-to-go" }] },
+  { label: "EVENTS", href: "/events", children: [{ label: "Brewery Events", href: "/events" }, { label: "Private Events", href: "/private-events" }, { label: "Catering To Go", href: "/catering-to-go" }] },
   { label: "Become a Pilot", href: "/become-a-pilot" },
   { label: "About", href: "/about" },
   { label: "Tours", href: "/about#brewery-tours" },
