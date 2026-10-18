@@ -75,3 +75,6 @@
 .manager-private-events .website-inquiries .inquiry-availability-alternatives ul{display:flex;flex-wrap:wrap;gap:.2rem;list-style:none;padding:0}
 .manager-private-events .website-inquiries .inquiry-availability-alternatives li{margin:0}
 .manager-private-events .website-inquiries .inquiry-close-actions{grid-column:1/-1;display:flex;padding:0;border:0;background:none;justify-content:flex-start}
+
+.manager-private-events .event-status-inquiry{--event-status-color:#ffd54f}
+.manager-private-events .event-status-label{display:inline-block;padding:.12rem .35rem;border:1px solid var(--event-status-color);border-radius:3px;color:var(--event-status-color);font:700 .75rem/1.3 Arial,sans-serif;vertical-align:middle;white-space:nowrap}

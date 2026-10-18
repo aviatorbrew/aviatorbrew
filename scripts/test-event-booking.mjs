@@ -222,6 +222,12 @@ try{
  const payableDelete=await approved(valid(future(170)));await proposals.acceptAndCheckout(payableDelete.token,acceptance(payableDelete.p));const payableSession=[...sessions.values()].at(-1),payablePlan=await plans.getEventPlan(payableDelete.plan.id);
  assert.equal((await deleteRequest(payablePlan)).status,200);assert.equal(payableSession.status,'expired','Deletion closes an unpaid checkout');assert.equal((await proposals.customerProposal(payableDelete.token)).canAccept,false);
  console.log('Passed inquiry availability/nearby weekend alternatives, own-event exclusion, Google moves, buffered conflicts, un-cancel with payment/menu retention, authorized idempotent event deletion, archived records, preserved inquiries/quotes/verified payments and checkout closure.');
+ // Inquiry pagination must include every row, including tied submission timestamps.
+ await connection.query("INSERT INTO website.form_inquiries (kind,name,email,payload,source,created_at) SELECT 'event','Inquiry pagination fixture','pagination@example.invalid','{}'::jsonb,'test', '2025-01-01'::timestamptz FROM generate_series(1,7)");
+ const inquiryPage1=await (await inquiryList('&q=Inquiry%20pagination%20fixture&limit=5')).json(),inquiryPage2=await (await inquiryList('&q=Inquiry%20pagination%20fixture&limit=5&offset=5')).json();
+ assert.equal(inquiryPage1.total,7);assert.equal(inquiryPage1.inquiries.length,5);assert.equal(inquiryPage2.inquiries.length,2);assert.equal(inquiryPage2.offset,5);assert.equal(new Set([...inquiryPage1.inquiries,...inquiryPage2.inquiries].map(item=>item.id)).size,7);
+ assert.equal((await (await inquiryList('&q=Inquiry%20pagination%20fixture&limit=5&offset=-1')).json()).offset,0);
+ assert.equal((await inquiryList('&offset=5',false)).status,401);
  // Confirmed inquiries leave the working list without losing the original record.
  const reportInquiry=await inquiries.submitCateringInquiry({requestId:randomUUID(),humanCheck:'yes',website:'',cateringPlan:{...valid(future(200)),title:'Confirmed inquiry report fixture'}});
  const reportPlan=await plans.saveEventPlan({...valid(future(200)),title:'Confirmed inquiry report fixture',status:'Confirmed'},undefined,undefined,reportInquiry.inquiryId);

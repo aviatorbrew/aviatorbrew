@@ -1,4 +1,11 @@
 export const eventStatuses = ["Draft", "Tentative", "Confirmed", "Completed", "Cancelled"] as const;
+export function eventStatusDisplay(status: typeof eventStatuses[number]) {
+  if(status==="Cancelled")return {className:"event-status-cancelled",label:"CANCELLED"};
+  if(status==="Confirmed")return {className:"event-status-confirmed",label:"CONFIRMED"};
+  if(status==="Completed")return {className:"event-status-completed",label:"COMPLETED"};
+  return {className:"event-status-review",label:"UNDER REVIEW"};
+}
+
 export const itemCategories = ["Food", "Drinks", "Room", "Other"] as const;
 export type EventOrderItem = { id: string; category: typeof itemCategories[number]; name: string; quantity: number; unitPriceCents: number; taxable: boolean; notes: string };
 export const readyRoomPackages = [

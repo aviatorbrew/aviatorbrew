@@ -39,6 +39,8 @@ export async function GET(request: NextRequest) {
   const filtered = Boolean(inquiryId || search || start || end);
   const rowLimit = limit(request.nextUrl.searchParams.get("limit"), filtered ? 200 : 5);
   const searchPattern = "%" + search + "%";
+  const rawOffset = Number(request.nextUrl.searchParams.get("offset") || 0);
+  const offset = Number.isSafeInteger(rawOffset) && rawOffset >= 0 ? Math.min(rawOffset, 1_000_000_000) : 0;
 
   const result = await withDatabase(async (client) => client.query(`
     SELECT id, kind, email, name, payload, source, created_at, count(*) OVER()::int AS total_count
@@ -49,9 +51,9 @@ export async function GET(request: NextRequest) {
       AND ($2::text = '' OR name ILIKE $5 OR email ILIKE $5 OR payload->>'phone' ILIKE $5 OR payload->>'orderSummary' ILIKE $5 OR payload->>'message' ILIKE $5 OR payload->>'eventType' ILIKE $5 OR payload->>'location' ILIKE $5)
       AND ($3::date IS NULL OR created_at >= $3::date OR NULLIF(payload->>'eventDate', '') >= $3::text OR NULLIF(payload->>'pickupDate', '') >= $3::text)
       AND ($4::date IS NULL OR created_at < ($4::date + interval '1 day') OR NULLIF(payload->>'eventDate', '') <= $4::text OR NULLIF(payload->>'pickupDate', '') <= $4::text)
-    ORDER BY created_at DESC
-    LIMIT $6
-  `, [kind, search, start || null, end || null, searchPattern, rowLimit, inquiryId]));
+    ORDER BY created_at DESC, id DESC
+    LIMIT $6 OFFSET $8
+  `, [kind, search, start || null, end || null, searchPattern, rowLimit, inquiryId, offset]));
 
   const stages = kind === "event" ? await inquiryBookingStages(result.rows.map(row=>String(row.id))) : [];
   const availability = kind === "event" ? await inquiryAvailability(result.rows.map(row=>{const schedule=stages.find(item=>item.inquiryId===String(row.id))?.schedule;return {id:String(row.id),payload:{...row.payload,...(schedule?{cateringPlan:{...row.payload?.cateringPlan,...schedule}}:{})}};})) : new Map();
@@ -71,7 +73,7 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({ inquiries, total: result.rows[0]?.total_count || 0, limit: rowLimit, filtered, ...(kind==="event"?{unreviewedCount:await unreviewedEventInquiries()}:{}) }, { headers: noStore });
+  return NextResponse.json({ inquiries, total: result.rows[0]?.total_count || 0, limit: rowLimit, offset, filtered, ...(kind==="event"?{unreviewedCount:await unreviewedEventInquiries()}:{}) }, { headers: noStore });
 }
 
 export async function DELETE(request: NextRequest) {
