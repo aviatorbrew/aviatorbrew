@@ -52,6 +52,15 @@ export async function listProposals(planId:string){return withDatabase(async cli
   return {proposals,deposits,deliveries};
 });}
 export async function getManagerProposal(planId:string,id:string){return withDatabase(async client=>{const row=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2",[id,planId])).rows[0];return row?proposalRow(row):null;});}
+export async function deleteProposalDraft(planId:string,id:string,version:number){return transaction(async client=>{
+  const p=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2 FOR UPDATE",[id,planId])).rows[0];
+  if(!p)throw new ProposalError("Proposal not found.",404);
+  if(p.version!==version)throw new ProposalError("Refresh the proposal before deleting it.",409);
+  if(p.sent_at||p.approved_at||p.accepted_at||p.token_hash||p.state!=='draft')throw new ProposalError("Sent, approved or retired proposals must be kept. Only unsent drafts can be deleted.",409);
+  const used=(await client.query("SELECT EXISTS(SELECT 1 FROM website.private_event_checkout_attempts WHERE proposal_id=$1) OR EXISTS(SELECT 1 FROM website.private_event_deposits WHERE proposal_id=$1) OR EXISTS(SELECT 1 FROM website.private_event_deliveries WHERE proposal_id=$1) AS used",[id])).rows[0].used;
+  if(used)throw new ProposalError("Proposals with payment or delivery history must be kept.",409);
+  await client.query("DELETE FROM website.private_event_proposals WHERE id=$1",[id]);return {deleted:true};
+});}
 export async function createProposal(planId:string,input:{version:number;expiresAt:string}){
   const settings=await getPrivateEventSettings();
   const expires=new Date(input.expiresAt);

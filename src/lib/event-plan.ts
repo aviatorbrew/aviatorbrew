@@ -58,6 +58,7 @@ export type EventPlanDetails = {
 };
 export type EventCalendarSync = { status: "active" | "changed" | "removed" | "cancelled"; checkedAt: string; source?: { title: string; date: string; startTime: string; endTime: string; description: string; url: string } };
 export type EventPlan = { bookingStage?: string; calendarSync?: EventCalendarSync | null; id: string; version: number; createdAt: string; updatedAt: string; sourceInquiryId: string | null; details: EventPlanDetails };
+export type EventReport = EventPlan & {deletedAt:string|null};
 export function money(cents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100); }
 export function eventOrderItems(plan: EventPlanDetails, catalog = defaultCateringCatalog): EventOrderItem[] {
   const readyRoomPackages = catalog.packages, readyRoomMenu = catalog.menu, readyRoomExtraPrices = catalog.extraPrices;

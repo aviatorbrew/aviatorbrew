@@ -46,3 +46,14 @@
 .manager-private-events .inquiry-availability-alternatives>strong{font-size:.75rem}
 .manager-private-events .inquiry-availability-alternatives ul{margin:.25rem 0;padding-left:1.2rem}
 .manager-private-events .inquiry-availability-alternatives li{margin:.2rem 0}
+.manager-private-events .event-report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:.6rem;align-items:end}
+.manager-private-events .event-report-filters label,.manager-private-events .inquiry-alternative-email>label{display:grid;gap:.3rem;font-size:.8rem}
+.manager-private-events .event-report-filters input,.manager-private-events .event-report-filters select,.manager-private-events .inquiry-alternative-email input:not([type=checkbox]),.manager-private-events .inquiry-alternative-email textarea{width:100%;min-width:0;padding:.45rem;background:#071827;color:#fff;border:1px solid #7891a2;font:inherit;color-scheme:dark}
+.manager-private-events .event-report-filters input[type=date]::-webkit-calendar-picker-indicator{filter:brightness(0) invert(1);opacity:1}
+.manager-private-events .event-report-results>article{padding:.7rem;margin:.6rem 0;border:1px solid #fff;border-radius:4px;background:#0b2337}
+.manager-private-events .event-report-results h3,.manager-private-events .event-report-results p{margin:.35rem 0}
+.manager-private-events .event-report-details dl{display:grid;grid-template-columns:1fr 1fr;gap:.4rem 1rem}
+.manager-private-events .event-report-details dt{font-weight:700;color:#efb45f}.manager-private-events .event-report-details dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.manager-private-events .inquiry-alternative-email{padding:.8rem;margin:1rem 0;border:1px solid #efb45f;background:#102d40;display:grid;gap:.6rem;scroll-margin-top:7rem}
+.manager-private-events .event-proposal-bottom-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+@media(max-width:700px){.manager-private-events .event-report-filters,.manager-private-events .event-report-details dl{grid-template-columns:1fr}.manager-private-events .inquiry-alternative-email{padding:.6rem}}

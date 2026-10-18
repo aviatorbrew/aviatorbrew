@@ -4,6 +4,8 @@ import { getPrivateEventSettings } from "@/lib/private-event-settings";
 import { createHash, randomUUID } from "node:crypto";
 import { withDatabase } from "@/lib/database";
 import { sendMail, isMailConfigured } from "@/lib/mail";
+import type { PoolClient } from "pg";
+import { eventStatuses, type EventReport } from "@/lib/event-plan";
 import { eventDateLabel, eventOrderItems, eventTotals, flightPlanSelections, money, parseEventPlan, timeLabel, defaultCateringCatalog, type CateringCatalog, type EventPlan, type EventPlanDetails } from "@/lib/event-plan";
 
 export class EventPlanError extends Error { constructor(message: string, public status = 400) { super(message); } }
@@ -15,7 +17,7 @@ const eventPlanSelect = `SELECT e.*, CASE WHEN p.id IS NULL THEN NULL ELSE jsonb
  LEFT JOIN LATERAL (SELECT * FROM website.private_event_proposals WHERE plan_id=e.id ORDER BY version DESC LIMIT 1) p ON true
  LEFT JOIN LATERAL (SELECT status FROM website.private_event_checkout_attempts WHERE proposal_id=p.id ORDER BY created_at DESC LIMIT 1) a ON true`;
 export async function inquiryBookingStages(ids:string[]) {
- return withDatabase(async client=>(await client.query(eventPlanSelect+" WHERE e.source_inquiry_id=ANY($1::bigint[])",[ids])).rows.map(row=>({inquiryId:String(row.source_inquiry_id),planId:String(row.id),stage:record(row).bookingStage})));
+ return withDatabase(async client=>(await client.query(eventPlanSelect+" WHERE e.source_inquiry_id=ANY($1::bigint[])",[ids])).rows.map(row=>{const d=row.data as EventPlanDetails;return {inquiryId:String(row.source_inquiry_id),planId:String(row.id),contactEmail:d.contactEmail,schedule:{date:d.date,startTime:d.startTime,endTime:d.endTime},stage:record(row).bookingStage};}));
 }
 export async function listEventPlans(month: string) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new EventPlanError("Choose a calendar month.");
@@ -27,10 +29,28 @@ export async function eventCalendarSyncStatus() {
 export async function getEventPlan(id: string) {
   return withDatabase(async (client) => { const result = await client.query(eventPlanSelect+" WHERE e.id=$1 AND e.deleted_at IS NULL", [id]); return result.rows[0] ? record(result.rows[0]) : null; });
 }
-export async function saveEventPlan(input: unknown, id?: string, version?: number, sourceInquiryId?: string) {
-  const details = parseEventPlan(input,(await getPrivateEventSettings()).catering);
-  return withDatabase(async (client) => {
-    await client.query("BEGIN");
+export async function searchEventReports(input:{q?:string;start?:string;end?:string;status?:string;includeDeleted?:boolean;offset?:number}) {
+  const date=(value:string|undefined)=>{if(!value)return null;if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value+"T12:00:00Z"))||new Date(value+"T12:00:00Z").toISOString().slice(0,10)!==value)throw new EventPlanError("Choose valid report dates.");return value;};
+  const start=date(input.start),end=date(input.end),status=input.status||"",q=(input.q||"").trim();
+  if(start&&end&&start>end)throw new EventPlanError("The report end date must follow the start date.");
+  if(status&&!eventStatuses.includes(status as typeof eventStatuses[number]))throw new EventPlanError("Choose a valid event status.");
+  if(q.length>200)throw new EventPlanError("Keep report searches under 200 characters.");
+  const offset=input.offset??0;if(!Number.isInteger(offset)||offset<0||offset>1000000)throw new EventPlanError("Choose a valid report page.");
+  const where=" WHERE ($1::date IS NULL OR e.event_date >= $1) AND ($2::date IS NULL OR e.event_date <= $2) AND ($3::text='' OR e.status=$3) AND ($4::text='' OR e.title ILIKE $5 OR e.data::text ILIKE $5) AND ($6::boolean OR e.deleted_at IS NULL)";
+  const values=[start,end,status,q,'%'+q+'%',Boolean(input.includeDeleted)];
+  return withDatabase(async client=>{
+    const total=Number((await client.query("SELECT count(*)::int AS count FROM website.private_event_plans e"+where,values)).rows[0].count);
+    const rows=(await client.query(eventPlanSelect+where+" ORDER BY e.event_date DESC,e.data->>'startTime' DESC,e.id LIMIT 50 OFFSET $7",[...values,offset])).rows;
+    return {events:rows.map(row=>({...record(row),deletedAt:row.deleted_at?new Date(row.deleted_at).toISOString():null})),total,limit:50,offset};
+  });
+}
+export async function getEventReport(id:string):Promise<EventReport|null> {
+  return withDatabase(async client=>{const row=(await client.query(eventPlanSelect+" WHERE e.id=$1",[id])).rows[0];return row?{...record(row),deletedAt:row.deleted_at?new Date(row.deleted_at).toISOString():null}:null;});
+}
+export async function saveEventPlan(input: unknown, id?: string, version?: number, sourceInquiryId?: string, transactionClient?:PoolClient, transactionCatalog?:CateringCatalog) {
+  const details = parseEventPlan(input,transactionCatalog||(await getPrivateEventSettings()).catering);
+  const work=async (client:PoolClient) => {
+    if(!transactionClient)await client.query("BEGIN");
     try {
       await client.query("SELECT pg_advisory_xact_lock(hashtext('aviator-private-event-booking'))");
       const existing = id ? (await client.query("SELECT data,status,deleted_at FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[id])).rows[0] : null;
@@ -69,9 +89,10 @@ export async function saveEventPlan(input: unknown, id?: string, version?: numbe
 
       };
       const saved=await save();
-      await client.query("COMMIT");return saved;
-    }catch(error){await client.query("ROLLBACK").catch(()=>undefined);throw error;}
-  });
+      if(!transactionClient)await client.query("COMMIT");return saved;
+    }catch(error){if(!transactionClient)await client.query("ROLLBACK").catch(()=>undefined);throw error;}
+  };
+  return transactionClient?work(transactionClient):withDatabase(work);
 }
 export async function deleteEventPlan(id:string,version:number) {
   return withDatabase(async client=>{

@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
     SELECT id, kind, email, name, payload, source, created_at, count(*) OVER()::int AS total_count
     FROM website.form_inquiries
     WHERE kind = $1
+      AND ($1 <> 'event' OR $7::text <> '' OR NOT EXISTS (SELECT 1 FROM website.private_event_plans e WHERE e.source_inquiry_id=website.form_inquiries.id AND e.deleted_at IS NULL AND e.status IN ('Confirmed','Completed','Cancelled')))
       AND ($7::text = '' OR id::text = $7)
       AND ($2::text = '' OR name ILIKE $5 OR email ILIKE $5 OR payload->>'phone' ILIKE $5 OR payload->>'orderSummary' ILIKE $5 OR payload->>'message' ILIKE $5 OR payload->>'eventType' ILIKE $5 OR payload->>'location' ILIKE $5)
       AND ($3::date IS NULL OR created_at >= $3::date OR NULLIF(payload->>'eventDate', '') >= $3::text OR NULLIF(payload->>'pickupDate', '') >= $3::text)
@@ -53,12 +54,13 @@ export async function GET(request: NextRequest) {
   `, [kind, search, start || null, end || null, searchPattern, rowLimit, inquiryId]));
 
   const stages = kind === "event" ? await inquiryBookingStages(result.rows.map(row=>String(row.id))) : [];
-  const availability = kind === "event" ? await inquiryAvailability(result.rows.map(row=>({id:String(row.id),payload:row.payload||{}}))) : new Map();
+  const availability = kind === "event" ? await inquiryAvailability(result.rows.map(row=>{const schedule=stages.find(item=>item.inquiryId===String(row.id))?.schedule;return {id:String(row.id),payload:{...row.payload,...(schedule?{cateringPlan:{...row.payload?.cateringPlan,...schedule}}:{})}};})) : new Map();
   const inquiries = result.rows.map((row) => {
     const payload = row.payload || {};
     return {
       bookingStage: stages.find(item=>item.inquiryId===String(row.id))?.stage || (kind==="event"?"Inquiry Received":undefined),
       planId: stages.find(item=>item.inquiryId===String(row.id))?.planId,
+      eventContactEmail:stages.find(item=>item.inquiryId===String(row.id))?.contactEmail,
       ...(kind==="event"?{availability:availability.get(String(row.id))}:{}),
       id: String(row.id), kind: row.kind, createdAt: row.created_at, source: row.source,
       name: row.name || payloadText(payload, "name"), email: row.email || payloadText(payload, "email"), phone: payloadText(payload, "phone"),

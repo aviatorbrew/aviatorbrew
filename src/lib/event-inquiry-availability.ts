@@ -1,6 +1,7 @@
 import { eventIsFuture, eventRecordConflicts } from "@/lib/event-booking";
 import { withDatabase } from "@/lib/database";
 import type { EventPlanDetails } from "@/lib/event-plan";
+import type { PoolClient } from "pg";
 
 type Schedule={date:string;startTime:string;endTime:string};
 type Inquiry={id:string;payload:Record<string,unknown>};
@@ -24,10 +25,11 @@ export function inquiryAlternativeDates(date:string) {
   const saturday=(6-new Date(date+"T12:00:00Z").getUTCDay()+7)%7||7;
   return [...new Set([-2,-1,1,2,saturday,saturday+1].map(days=>shift(date,days)))].sort();
 }
-export async function inquiryAvailability(inquiries:Inquiry[],now=new Date()):Promise<Map<string,InquiryAvailability>> {
+export async function inquiryAvailability(inquiries:Inquiry[],now=new Date(),client?:PoolClient):Promise<Map<string,InquiryAvailability>> {
   const schedules=new Map(inquiries.map(item=>[item.id,schedule(item)]));
   const dates=[...schedules.values()].filter((item):item is Schedule=>Boolean(item)).flatMap(item=>[item.date,...inquiryAlternativeDates(item.date)]).sort();
-  const bookings:Booking[]=dates.length?await withDatabase(async client=>(await client.query("SELECT source_inquiry_id,data,calendar_sync FROM website.private_event_plans WHERE deleted_at IS NULL AND status IN ('Tentative','Confirmed') AND (event_date BETWEEN $1::date-1 AND $2::date+1 OR calendar_sync->'source'->>'date' BETWEEN ($1::date-1)::text AND ($2::date+1)::text)",[dates[0],dates.at(-1)])).rows):[];
+  const query=async (connection:PoolClient)=>(await connection.query("SELECT source_inquiry_id,data,calendar_sync FROM website.private_event_plans WHERE deleted_at IS NULL AND status IN ('Tentative','Confirmed') AND (event_date BETWEEN $1::date-1 AND $2::date+1 OR calendar_sync->'source'->>'date' BETWEEN ($1::date-1)::text AND ($2::date+1)::text)",[dates[0],dates.at(-1)])).rows;
+  const bookings:Booking[]=dates.length?(client?await query(client):await withDatabase(query)):[];
   return new Map(inquiries.map((item):[string,InquiryAvailability]=>{
     const requested=schedules.get(item.id);
     if(!requested)return [item.id,{status:"incomplete",alternatives:[],reason:"Enter the requested date and start/end times to check availability."}];
