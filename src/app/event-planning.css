@@ -57,3 +57,21 @@
 .manager-private-events .inquiry-alternative-email{padding:.8rem;margin:1rem 0;border:1px solid #efb45f;background:#102d40;display:grid;gap:.6rem;scroll-margin-top:7rem}
 .manager-private-events .event-proposal-bottom-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
 @media(max-width:700px){.manager-private-events .event-report-filters,.manager-private-events .event-report-details dl{grid-template-columns:1fr}.manager-private-events .inquiry-alternative-email{padding:.6rem}}
+.manager-private-events .website-inquiries .manager-catering-stats{grid-template-columns:repeat(3,minmax(0,1fr));margin:.4rem 0}
+.manager-private-events .website-inquiries .manager-catering-stats article{padding:.3rem .45rem;gap:.1rem}
+.manager-private-events .website-inquiries .manager-catering-stats strong{font-size:1.05rem}
+.manager-private-events .website-inquiries .manager-catering-list{gap:.4rem;margin-top:.4rem}
+.manager-private-events .website-inquiries .manager-catering-list>article{padding:.4rem .55rem;gap:.3rem}
+.manager-private-events .website-inquiries .manager-catering-list header{gap:.4rem;flex-direction:row;flex-wrap:wrap}
+.manager-private-events .website-inquiries .manager-catering-list header strong{font-size:.88rem}
+.manager-private-events .website-inquiries .manager-catering-list>article>dl{display:flex;flex-wrap:wrap;gap:.3rem 1rem;border:0;background:none}
+.manager-private-events .website-inquiries .manager-catering-list>article>dl>div{display:flex;align-items:baseline;gap:.35rem;padding:0;background:none}
+.manager-private-events .website-inquiries .manager-catering-list>article>dl dd{margin:0;font-size:.75rem}
+.manager-private-events .website-inquiries .event-inquiry-header-actions{margin:.25rem 0;gap:.3rem}
+.manager-private-events .website-inquiries .manager-catering-actions{gap:.3rem}
+.manager-private-events .website-inquiries .manager-catering-actions button{padding:.3rem .5rem;font-size:.72rem}
+.manager-private-events .website-inquiries .inquiry-calendar-note{font-size:.72rem;margin:.3rem 0;color:#bfd1de}
+.manager-private-events .website-inquiries .inquiry-availability-alternatives{margin:.25rem 0}
+.manager-private-events .website-inquiries .inquiry-availability-alternatives ul{display:flex;flex-wrap:wrap;gap:.2rem;list-style:none;padding:0}
+.manager-private-events .website-inquiries .inquiry-availability-alternatives li{margin:0}
+.manager-private-events .website-inquiries .inquiry-close-actions{grid-column:1/-1;display:flex;padding:0;border:0;background:none;justify-content:flex-start}
