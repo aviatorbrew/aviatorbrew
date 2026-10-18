@@ -19,7 +19,7 @@ import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
 import { TourGuestEmail } from "@/components/tour-guest-email";
 import { EventPlanningManager } from "@/components/event-planning-manager";
 
-type Signup = { id: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
+type Signup = { id: string; createdAt: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
 type ScheduledTour = { date: string; displayDate: string; time: "4:00 PM" | "6:00 PM"; guests: number; tickets: number; confirmed: boolean };
 type DatabaseTable = { schema: string; name: string; type: string };
 type DatabaseHealth = { configured?: boolean; connected?: boolean; latencyMs?: number; summary?: { host?: string; port?: string | null; database?: string | null; ssl?: boolean } | null; server?: Record<string, unknown>; error?: string };
@@ -50,11 +50,12 @@ function TourManager() {
 
   async function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true);
-    const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const form = event.currentTarget;
+    const values = Object.fromEntries(new FormData(form).entries());
     const r = await fetch("/api/manager/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...values, tickets: Number(values.tickets) }) });
     const b = await r.json(); setBusy(false);
     if (!r.ok) { setMessage(b.error); return; }
-    applyData(b); event.currentTarget.reset(); setMessage("Guest added and notified.");
+    applyData(b); form.reset(); setMessage("Guest added and notified.");
   }
 
   async function remove(id: string) {
@@ -74,10 +75,39 @@ function TourManager() {
     applyData(b); setCancelTarget(null); setMessage(b.managerText || "Tour cancelled, guests rescheduled, and notifications sent.");
   }
 
-  return <section id="tours" className="coupon-manager tour-manager"><p className="eyebrow">Tour operations</p><h2>Scheduled tours</h2><p>Every upcoming flight is listed below. Set the launch threshold, ticket price, and booking cutoff below. Each flight can hold up to {TOUR_CAPACITY} guests; public copy, Stripe Checkout, and future email updates use these settings. Cancelling a flight moves every guest to the next available Saturday and emails the message you provide.</p><p className="media-message" role="status">{message}</p>
-    <form className="tour-threshold-form" onSubmit={saveSettings}><label>Guests required to launch a tour<input type="number" min="1" max={TOUR_CAPACITY} value={minimum} onChange={(event) => setMinimum(Number(event.target.value))} required disabled={!tourSettingsLoaded || busy} /></label><label>Tour ticket price (USD)<input type="number" min="1" max="1000" step="0.01" value={tourPrice} onChange={(event) => setTourPrice(Number(event.target.value))} required disabled={!tourSettingsLoaded || busy} /><small>Applied to each new Stripe Checkout session.</small></label><label>Booking cutoff before tour (hours)<input type="number" min="0" max="168" step="1" value={bookingCutoffHours} onChange={(event) => setBookingCutoffHours(Number(event.target.value))} required disabled={!tourSettingsLoaded || busy} /><small>Signups inside this many hours roll to the next Saturday.</small></label><button className="button" disabled={busy || !tourSettingsLoaded}>{busy ? "Saving..." : tourSettingsLoaded ? "Save tour settings" : "Loading settings..."}</button></form><div className="tour-schedule-grid">{scheduledTours.length ? scheduledTours.map((tour) => <article className="tour-schedule-card" key={tour.date + tour.time}><p className="eyebrow">{tour.confirmed ? "Tour is on" : "Tentatively set"}</p><h3>{tour.displayDate}</h3><strong>{tour.time}</strong><dl><div><dt>Guests</dt><dd>{tour.guests}</dd></div><div><dt>Tickets</dt><dd>{tour.tickets} / {TOUR_CAPACITY}</dd></div><div><dt>Status</dt><dd>{tour.confirmed ? minimum + "-guest minimum met" : Math.max(minimum - tour.tickets, 0) + " more needed"}</dd></div></dl><button className="tour-cancel-button" type="button" onClick={() => setCancelTarget(tour)} disabled={busy}>Cancel + notify guests</button></article>) : <p className="tour-schedule-empty">No scheduled tours yet.</p>}</div>
-    {cancelTarget ? <form className="tour-cancel-form" onSubmit={cancel}><p className="eyebrow">Cancel scheduled flight</p><h3>{cancelTarget.displayDate} at {cancelTarget.time}</h3><p>This will move {cancelTarget.guests} guest registration(s) to the next available Saturday flight(s) and send the following message to every guest.</p><label>Message to guests<textarea name="message" required rows={4} defaultValue={"We are sorry, but this brewery tour needs to be rescheduled. Your registration has been moved to the next available tour date."} /></label><div><button className="button" disabled={busy}>{busy ? "Rescheduling..." : "Cancel, reschedule + send"}</button><button className="button button-outline" type="button" onClick={() => setCancelTarget(null)} disabled={busy}>Keep this tour</button></div></form> : null}
-    <h3 className="tour-signups-heading">Individual signups</h3><form onSubmit={add} className="manager-add-form"><label>Name<input name="name" required /></label><label>Email<input name="email" type="email" required /></label><label>Tickets<input name="tickets" type="number" min="1" max="6" defaultValue="1" required /></label><button className="button" disabled={busy}>Add guest</button></form><ul className="coupon-manager-list tour-signups-list">{signups.length ? signups.map((item) => <li key={item.id}><div className="tour-guest-details"><strong>{item.name}</strong> - {item.tickets} ticket(s), {item.tourDate} {item.tourTime}<br />{item.email} · <em>{item.paymentStatus === "paid" ? "Paid via Stripe" : "Payment pending"}</em></div><button type="button" onClick={() => remove(item.id)}>Remove</button><TourGuestEmail signup={item} /></li>) : <li>No tour signups yet.</li>}</ul>
+  return <section id="tours" className="coupon-manager tour-manager">
+    <h2>Upcoming tours</h2>
+    <p className="tour-manager-intro">Upcoming tours only. Guest signups appear newest first. Each tour holds up to {TOUR_CAPACITY} guests.</p>
+    {message ? <p className="media-message" role="status">{message}</p> : null}
+    <form className="tour-threshold-form" onSubmit={saveSettings}>
+      <label>Minimum guests<input type="number" min="1" max={TOUR_CAPACITY} value={minimum} onChange={(event) => setMinimum(Number(event.target.value))} required disabled={!tourSettingsLoaded || busy} /></label>
+      <label>Ticket price ($)<input type="number" min="1" max="1000" step="0.01" value={tourPrice} onChange={(event) => setTourPrice(Number(event.target.value))} required disabled={!tourSettingsLoaded || busy} /></label>
+      <label>Booking cutoff (hours)<input type="number" min="0" max="168" step="1" value={bookingCutoffHours} onChange={(event) => setBookingCutoffHours(Number(event.target.value))} required disabled={!tourSettingsLoaded || busy} /></label>
+      <button className="button" disabled={busy || !tourSettingsLoaded}>{busy ? "Saving..." : tourSettingsLoaded ? "Save settings" : "Loading..."}</button>
+    </form>
+    <div className="tour-schedule-grid">{scheduledTours.length ? scheduledTours.map((tour) => <article className="tour-schedule-card" key={tour.date + tour.time}>
+      <div className="tour-schedule-when"><h3>{tour.displayDate}</h3><strong>{tour.time}</strong></div>
+      <dl><div><dt>Registrations</dt><dd>{tour.guests}</dd></div><div><dt>Tickets</dt><dd>{tour.tickets} / {TOUR_CAPACITY}</dd></div><div><dt>Status</dt><dd>{tour.confirmed ? "Confirmed" : Math.max(minimum - tour.tickets, 0) + " more guests needed"}</dd></div></dl>
+      <button className="tour-cancel-button" type="button" onClick={() => setCancelTarget(tour)} disabled={busy}>Cancel / reschedule</button>
+    </article>) : <p className="tour-schedule-empty">No upcoming tours booked.</p>}</div>
+    {cancelTarget ? <form className="tour-cancel-form" onSubmit={cancel}>
+      <h3>Cancel {cancelTarget.displayDate} at {cancelTarget.time}</h3>
+      <p>Move {cancelTarget.guests} registration(s) to the next available Saturday and email every guest.</p>
+      <label>Message to guests<textarea name="message" required rows={3} defaultValue="We are sorry, but this brewery tour needs to be rescheduled. Your registration has been moved to the next available tour date." /></label>
+      <div><button className="button" disabled={busy}>{busy ? "Rescheduling..." : "Cancel, reschedule + send"}</button><button className="button button-outline" type="button" onClick={() => setCancelTarget(null)} disabled={busy}>Keep this tour</button></div>
+    </form> : null}
+    <div className="tour-signups-toolbar"><h3 className="tour-signups-heading">Guest signups ({signups.length})</h3><span>Newest first</span></div>
+    <details className="tour-add-panel"><summary>Add guest</summary><form onSubmit={add} className="manager-add-form">
+      <label>Name<input name="name" required /></label><label>Email<input name="email" type="email" required /></label><label>Tickets<input name="tickets" type="number" min="1" max="6" defaultValue="1" required /></label><button className="button" disabled={busy}>Add guest + notify</button>
+    </form></details>
+    <ul className="coupon-manager-list tour-signups-list">{signups.length ? signups.map((item) => <li key={item.id}>
+      <div className="tour-guest-details">
+        <strong>{item.name}</strong><span>{item.tickets} ticket(s) · <time dateTime={item.tourDate}>{item.tourDate}</time> at {item.tourTime}</span>
+        <span>{item.email} · {item.paymentStatus === "paid" ? "Paid via Stripe" : "Payment pending"}</span>
+        <small>Signed up <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</time></small>
+      </div>
+      <button type="button" onClick={() => remove(item.id)}>Remove</button><TourGuestEmail signup={item} />
+    </li>) : <li>No upcoming tour signups.</li>}</ul>
   </section>;
 }
 
@@ -838,7 +868,7 @@ export function ManagerPortal({ section = "overview", editId, editType, returnTo
       </div>
       <button className="manager-top-signout" type="button" onClick={logout}>Sign out</button>
     </nav>
-    <div className={`content-wrap manager-page-shell${section === "private-events" ? " manager-private-events" : ""}`}>
+    <div className={`content-wrap manager-page-shell${section === "private-events" ? " manager-private-events" : section === "tours" ? " manager-tours" : ""}`}>
       <header className="manager-page-heading"><p className="eyebrow">Aviator operations</p><h1>{activeSection.label}</h1><p>{activeSection.description}</p></header>
       <div className="manager-route-content"><ManagerSectionContent section={section} editId={editId} editType={editType} returnTo={returnTo} /></div>
     </div>

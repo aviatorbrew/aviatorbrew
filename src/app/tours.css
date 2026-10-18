@@ -1,0 +1,86 @@
+.manager-tours { padding-top: 1rem; font-family: Arial, Helvetica, sans-serif; }
+.manager-tours .manager-page-heading { margin-bottom: .75rem; }
+.manager-tours .manager-page-heading h1 { margin: .2rem 0; font: 600 1.5rem/1.2 Arial, Helvetica, sans-serif; letter-spacing: 0; text-transform: none; }
+.manager-tours .manager-page-heading p { margin: .25rem 0; font-size: .85rem; line-height: 1.4; }
+.manager-tours .manager-page-heading .eyebrow { font-family: inherit; letter-spacing: 0; text-transform: none; }
+#tours { margin-top: 0; padding: 1rem; font-size: .875rem; line-height: 1.4; }
+#tours h2, #tours h3, #tours h4 { font-family: inherit; font-weight: 600; letter-spacing: 0; line-height: 1.3; text-transform: none; }
+#tours h2 { font-size: 1.15rem; }
+#tours h3, #tours h4 { font-size: .95rem; }
+#tours .tour-manager-intro { margin: .3rem 0 .65rem; color: #c2d7e3; font-size: .82rem; }
+#tours form { gap: .5rem; padding: .65rem; }
+#tours label { min-width: 0; gap: .2rem; font-size: .8rem; font-weight: 400; text-transform: none; }
+#tours input, #tours textarea { padding: .4rem .5rem; font-size: .875rem; }
+#tours button { font-family: inherit; font-size: .8rem; font-weight: 600; line-height: 1.3; letter-spacing: 0; text-transform: none; }
+#tours .button { min-height: 0; padding: .45rem .7rem; }
+#tours .tour-threshold-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; margin: .65rem 0; }
+#tours .tour-threshold-form input { width: 100%; }
+#tours .tour-schedule-grid { grid-template-columns: 1fr; gap: 1px; margin: .75rem 0; }
+#tours .tour-schedule-card { grid-template-columns: minmax(0, 1fr) minmax(18rem, 1.2fr) auto; gap: .75rem; align-items: center; padding: .65rem; }
+#tours .tour-schedule-when strong { color: #efb45e; font-size: .85rem; font-weight: 400; }
+#tours .tour-schedule-card dl { grid-template-columns: .8fr .8fr 1.4fr; margin: 0; border: 0; }
+#tours .tour-schedule-card dl div, #tours .tour-schedule-card dl div:last-child { padding: 0 .5rem; border: 0; }
+#tours .tour-schedule-card dt { font: 400 .75rem/1.3 Arial, Helvetica, sans-serif; letter-spacing: 0; text-transform: none; }
+#tours .tour-schedule-card dd { margin: .1rem 0 0; font-size: .85rem; }
+#tours .tour-cancel-button { padding: .4rem .5rem; }
+#tours .tour-schedule-empty { padding: .65rem; font-size: .85rem; }
+#tours .tour-cancel-form { margin: .75rem 0; }
+#tours .tour-cancel-form p { font-size: .82rem; }
+#tours .tour-cancel-form > div { gap: .5rem; }
+#tours .tour-signups-toolbar { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; margin: 1rem 0 .4rem; }
+#tours .tour-signups-heading { margin: 0; }
+#tours .tour-signups-toolbar > span { color: #a9bfce; font-size: .75rem; }
+#tours .tour-add-panel > summary { width: fit-content; color: #efb45e; font-size: .8rem; cursor: pointer; }
+#tours .manager-add-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 5rem auto; margin: .4rem 0; }
+#tours .tour-signups-list { gap: .35rem; margin: .5rem 0 0; }
+#tours .tour-signups-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: .35rem .75rem; padding: .5rem .65rem; font-size: .82rem; }
+#tours .tour-guest-details { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: .15rem .75rem; }
+#tours .tour-guest-details small { font-size: .75rem; color: #a9bfce; }
+#tours .tour-guest-email { display: contents; }
+#tours .tour-email-form, #tours .tour-email-notice { grid-column: 1 / -1; }
+#tours .tour-email-form { width: 100%; max-width: 42rem; margin: .25rem 0 0; }
+#tours .tour-email-form p { font-size: .8rem; line-height: 1.4; }
+#tours .tour-email-form textarea { min-height: 5rem; }
+#tours .tour-email-actions { gap: .65rem; }
+#tours .media-message { margin: .5rem 0; font-size: .82rem; }
+
+/* Keep the public tour signup compact and readable as well. */
+#brewery-tours { padding-top: 2rem; padding-bottom: 2rem; font-family: Arial, Helvetica, sans-serif; }
+#brewery-tours .brewery-tour-layout { gap: 2rem; }
+#brewery-tours h2, #brewery-tours h3, #brewery-tours h2 em, #brewery-tours h3 em { font-family: inherit; font-style: normal; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-transform: none; }
+#brewery-tours h2 { margin: .35rem 0 .7rem; font-size: 2rem; }
+#brewery-tours h3 { margin: .3rem 0 .75rem; font-size: 1.5rem; }
+#brewery-tours .brewery-tour-layout > div > p { font-size: .9rem; line-height: 1.5; }
+#brewery-tours .eyebrow, #brewery-tours dt, #brewery-tours .tour-availability strong, #brewery-tours .tour-confirmed strong, #brewery-tours .button { font-family: inherit; letter-spacing: 0; text-transform: none; }
+#brewery-tours .tour-specs { margin: .75rem 0; }
+#brewery-tours .tour-specs div { gap: .5rem; padding: .4rem 0; }
+#brewery-tours .tour-specs dt { font-size: .8rem; font-weight: 400; }
+#brewery-tours .tour-specs dd { font-size: .85rem; font-weight: 600; }
+#brewery-tours .tour-form-wrap { padding: 1rem; }
+#brewery-tours .inquiry-form { gap: .65rem; }
+#brewery-tours .inquiry-form label { gap: .25rem; font-size: .85rem; font-weight: 400; letter-spacing: 0; text-transform: none; }
+#brewery-tours .inquiry-form input, #brewery-tours .inquiry-form textarea { padding: .5rem; font-family: inherit; }
+#brewery-tours .inquiry-form label:has(input[name="tickets"]), #brewery-tours .tour-signup-note { grid-column: 1 / -1; }
+#brewery-tours input[name="tickets"] { max-width: 5rem; }
+#brewery-tours .tour-signup-note { margin: 0; font-size: .8rem; line-height: 1.4; }
+#brewery-tours .button { padding: .65rem .8rem; font-size: .85rem; }
+#brewery-tours .tour-confirmed { gap: .35rem; margin-top: .75rem; padding: .65rem; }
+
+@media (max-width: 1000px) {
+  #tours .tour-schedule-card { grid-template-columns: minmax(0, 1fr) auto; }
+  #tours .tour-schedule-card dl { grid-column: 1; grid-row: 2; }
+  #tours .tour-schedule-card dl div:first-child { padding-left: 0; }
+  #tours .tour-cancel-button { grid-column: 2; grid-row: 1 / 3; }
+}
+@media (max-width: 650px) {
+  #tours { padding: .65rem; }
+  #tours .tour-threshold-form, #tours .manager-add-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #tours .tour-guest-details { grid-template-columns: 1fr; }
+  #tours .tour-signups-list > li { grid-template-columns: minmax(0, 1fr) auto; gap: .35rem; }
+  #tours .tour-guest-details { grid-column: 1; grid-row: 1 / 3; }
+  #tours .tour-email-open { grid-column: 2; }
+  #tours .tour-schedule-card { gap: .5rem; }
+  #tours .tour-schedule-card dl { grid-column: 1 / -1; }
+  #tours .tour-cancel-button { grid-row: 1; }
+  #brewery-tours .brewery-tour-layout { gap: 1rem; }
+}

@@ -342,21 +342,26 @@ export async function notifyGuestOfSignup(result: Awaited<ReturnType<typeof crea
   return deliverTourEmail({ to: signup.email, subject: qualified ? "Your Aviator brewery tour is on" : "Your Aviator tour is tentatively set", text, html: tourEmailHtml({ title: qualified ? "Your tour is on!" : "Your tour is tentatively set", status, date, time: signup.tourTime, body, attendee: signup.name, tickets: signup.tickets, total: currentTotal, minimum, priceCents }), category: "tour-signup-status" });
 }
 
-export async function getTourManagerData() {
-  const store = await readStore();
-  const minimum = store.minimum;
-  const signups = [...store.signups].sort((a, b) => (a.tourDate + a.tourTime + a.createdAt).localeCompare(b.tourDate + b.tourTime + b.createdAt));
+export function getTourManagerSchedule(registrations: TourSignup[], minimum: number, cancelledTours: string[], now = new Date()) {
+  const signups = registrations
+    .filter((signup) => tourStart(signup.tourDate, signup.tourTime).getTime() >= now.getTime() && !cancelledTours.includes(signup.tourDate + "|" + signup.tourTime))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id));
   const groups = new Map<string, TourSignup[]>();
   for (const signup of signups) {
     const key = signup.tourDate + "|" + signup.tourTime;
     groups.set(key, [...(groups.get(key) || []), signup]);
   }
-  const scheduledTours = [...groups.entries()].filter(([key]) => !store.cancelledTours.includes(key)).map(([key, guests]) => {
+  const scheduledTours = [...groups.entries()].map(([key, guests]) => {
     const [date, time] = key.split("|") as [string, TourSlot];
     const tickets = guests.reduce((total, guest) => total + guest.tickets, 0);
     return { date, displayDate: formatTourDate(date), time, guests: guests.length, tickets, confirmed: tickets >= minimum };
   }).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  return { signups, scheduledTours, summary: await getTourSummary(), minimum, priceCents: store.priceCents, bookingCutoffHours: store.bookingCutoffHours };
+  return { signups, scheduledTours };
+}
+
+export async function getTourManagerData(now = new Date()) {
+  const store = await readStore();
+  return { ...getTourManagerSchedule(store.signups, store.minimum, store.cancelledTours, now), summary: await getTourSummary(now), minimum: store.minimum, priceCents: store.priceCents, bookingCutoffHours: store.bookingCutoffHours };
 }
 
 export async function setTourSettings(input: { minimum?: number; priceCents?: number; bookingCutoffHours?: number }) {

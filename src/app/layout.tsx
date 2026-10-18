@@ -12,6 +12,7 @@ import "./become-a-pilot.css";
 import "./site-header.css";
 import "./contact.css";
 import "./tour-email.css";
+import "./tours.css";
 import "./event-planning.css";
 import packageInfo from "../../package.json";
 import { AnalyticsHooks } from "@/components/analytics";
