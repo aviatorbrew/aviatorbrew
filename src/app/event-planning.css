@@ -32,3 +32,7 @@
 .manager-private-events .event-inquiry-header-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:.4rem 0}
 .manager-private-events .event-inquiry-header-actions .event-inquiry-plan{margin:0}
 .manager-private-events .event-inquiry-header-actions .is-danger{border-color:#de8976;color:#ffd0c5}
+.manager-private-events .event-section-title,.manager-private-events .event-inquiry-archive>summary,.manager-private-events .event-inquiry-archive>summary h2,.manager-private-events .event-website-settings>summary{font-size:1.5rem;font-weight:700;line-height:1.3;color:#fff}
+.manager-private-events .event-section-title,.manager-private-events .event-inquiry-archive>summary,.manager-private-events .event-website-settings>summary{padding:.6rem 0;margin:.5rem 0;border-bottom:1px solid #7891a2;width:100%}
+.manager-private-events .event-inquiry-archive>summary h2{display:inline;margin:0}
+.manager-private-events .event-unreviewed-count{display:inline-block;margin-left:.5rem;font-size:.65em;font-weight:400;color:#fff}

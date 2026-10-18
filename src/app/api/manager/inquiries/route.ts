@@ -20,6 +20,9 @@ function inquiryKind(request: NextRequest) {
   const kind = request.nextUrl.searchParams.get("kind") || "catering";
   return allowedKinds.has(kind) ? kind : "";
 }
+async function unreviewedEventInquiries() {
+  return withDatabase(async client=>Number((await client.query("SELECT count(*)::int AS count FROM website.form_inquiries i WHERE i.kind='event' AND NOT EXISTS (SELECT 1 FROM website.private_event_plans e WHERE e.source_inquiry_id=i.id)")).rows[0].count));
+}
 
 export async function GET(request: NextRequest) {
   if (!isManager(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStore });
@@ -63,7 +66,7 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({ inquiries, total: result.rows[0]?.total_count || 0, limit: rowLimit, filtered }, { headers: noStore });
+  return NextResponse.json({ inquiries, total: result.rows[0]?.total_count || 0, limit: rowLimit, filtered, ...(kind==="event"?{unreviewedCount:await unreviewedEventInquiries()}:{}) }, { headers: noStore });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -76,5 +79,5 @@ export async function DELETE(request: NextRequest) {
 
   const result = await withDatabase(async (client) => client.query("DELETE FROM website.form_inquiries WHERE id = $1 AND kind = $2 RETURNING id", [id, kind]));
   if (!result.rowCount) return NextResponse.json({ error: "Inquiry not found." }, { status: 404, headers: noStore });
-  return NextResponse.json({ ok: true, id: String(id) }, { headers: noStore });
+  return NextResponse.json({ ok: true, id: String(id), ...(kind==="event"?{unreviewedCount:await unreviewedEventInquiries()}:{}) }, { headers: noStore });
 }

@@ -28,6 +28,7 @@ const model=require(await compile(path.join(root,'src/lib/event-plan.ts'))),book
 const webhook=require(await compile(path.join(root,'src/app/api/stripe/webhook/route.ts'))),kitchenRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/kitchen/route.ts'))),inquiryRoute=require(await compile(path.join(root,'src/app/api/manager/inquiries/route.ts'))),{NextRequest}=require('next/server');
 const actualFetch=globalThis.fetch,sessions=new Map(),idempotency=new Map();let stripeCalls=0;
 async function kitchenResponse(id,authenticated=true){const cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');return kitchenRoute.GET(new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/kitchen',{headers:authenticated?{cookie}:{}}),{params:Promise.resolve({id})});}
+async function inquiryList(query='',authenticated=true){const cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');return inquiryRoute.GET(new NextRequest('https://aviatorbrew.com/api/manager/inquiries?kind=event'+query,{headers:authenticated?{cookie}:{}}));}
 globalThis.fetch=async (url,input={})=>{
  assert.ok(String(url).startsWith('https://api.stripe.com/v1/checkout/sessions'),'Tests must not make other external requests');stripeCalls++;
  if(input.method==='POST'&&String(url).endsWith('/expire')){const id=String(url).split('/').at(-2),session=sessions.get(id);if(!session||session.payment_status==='paid')return Response.json({error:'not expirable'},{status:400});session.status='expired';return Response.json(session);}
@@ -90,6 +91,9 @@ try{
  console.log('Passed menu validation, backend pricing, disabled items, guest limits and overnight availability');
  const req={requestId:randomUUID(),humanCheck:'yes',website:'',cateringPlan:original};
  const inquiry=await inquiries.submitCateringInquiry(req);await inquiries.submitCateringInquiry(req);
+ assert.equal((await inquiryList('',false)).status,401,'Inquiry counts require manager authorization');
+ assert.equal((await (await inquiryList()).json()).unreviewedCount,1);
+ const filteredCount=await (await inquiryList('&q=does-not-match-any-inquiry&limit=1')).json();assert.equal(filteredCount.inquiries.length,0);assert.equal(filteredCount.unreviewedCount,1,'Unreviewed count covers all dates and records, independent of visible filters');
  assert.equal(Number((await connection.query('SELECT count(*) FROM website.form_inquiries')).rows[0].count),1);
  assert.equal(globalThis.eventTestMail.length,2,'Duplicate inquiry does not repeat emails');
  assert.ok(globalThis.eventTestMail[0].html.includes('/manager/private-events?inquiry='+inquiry.inquiryId));
@@ -98,6 +102,7 @@ try{
  assert.equal((await connection.query('SELECT payload FROM website.form_inquiries')).rows[0].payload.cateringPlan.paidCents,0);
  assert.equal((await connection.query('SELECT payload FROM website.form_inquiries')).rows[0].payload.cateringPlan.foodTime,'18:00','Inquiry preserves food out time for manager planning');
  const sourcePlan=await plans.saveEventPlan(booking.validateCateringRequest(original,catalog,35000),undefined,undefined,inquiry.inquiryId);
+ assert.equal((await (await inquiryList()).json()).unreviewedCount,0,'A saved event plan takes its source inquiry out of the unreviewed count');
  const draft=await proposals.createProposal(sourcePlan.id,{version:sourcePlan.version,expiresAt:expiration()});
  assert.equal((await kitchenResponse(sourcePlan.id,false)).status,401,'Kitchen sheets remain manager-only');
  assert.equal((await kitchenResponse(randomUUID())).status,404);

@@ -11,7 +11,7 @@ export type ManagedInquiry = {
   estimatedSubtotal: string; estimatedTax: string; estimatedTotal: string; cateringMenu: string; menuScanSource: string; orderSummary: string; message: string;
 };
 export type InquiryFocusRequest = { id: string; sequence: number };
-type InquiryResponse = { inquiries?: ManagedInquiry[]; total?: number; filtered?: boolean; error?: string };
+type InquiryResponse = { inquiries?: ManagedInquiry[]; total?: number; filtered?: boolean; unreviewedCount?:number; error?: string };
 
 function dateTime(value: string) { return value ? new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : ""; }
 function csvValue(value: string) { return '"' + (value || "").replace(/"/g, '""') + '"'; }
@@ -37,7 +37,7 @@ function DetailFields({ item, kind }: { item: ManagedInquiry; kind: InquiryKind 
   return <dl className="manager-inquiry-fields">{fields.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || "Not set"}</dd></div>)}</dl>;
 }
 
-function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDeleted }: { kind: InquiryKind; title: string; eyebrow: string; copy: string; onPlan?: (item: ManagedInquiry) => void; focusRequest?: InquiryFocusRequest | null; onDeleted?: (id:string)=>void }) {
+function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDeleted, onUnreviewedCount, refreshKey=0, hideHeading=false }: { kind: InquiryKind; title: string; eyebrow: string; copy: string; onPlan?: (item: ManagedInquiry) => void; focusRequest?: InquiryFocusRequest | null; onDeleted?: (id:string)=>void; onUnreviewedCount?:(count:number)=>void; refreshKey?:number; hideHeading?:boolean }) {
   const section = useRef<HTMLElement>(null);
   const loadSequence = useRef(0);
   const [inquiries, setInquiries] = useState<ManagedInquiry[]>([]);
@@ -65,6 +65,7 @@ function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDe
       if (sequence !== loadSequence.current) return;
       if (!response.ok) throw new Error(body.error || "Could not load inquiries.");
       setInquiries(body.inquiries || []); setTotal(body.total || 0);
+      if(typeof body.unreviewedCount==="number")onUnreviewedCount?.(body.unreviewedCount);
       const shown = body.inquiries?.length || 0;
       setMessage(next.id ? (shown ? "Showing the original website inquiry for this calendar event. Use Plan event to open its event plan, or Last 5 to return to recent inquiries." : "The original website inquiry is no longer available. Open Edit plan in the event list to continue working with the saved event.") : body.filtered ? (shown ? "Showing " + shown + " of " + (body.total || 0) + " matched records." : "No records found for that filter.") : (shown ? "Showing the last " + shown + " records. Search by date or name to review older inquiries." : "No records stored yet."));
     } catch (error) { if (sequence === loadSequence.current) setMessage(error instanceof Error ? error.message : "Could not load inquiries."); }
@@ -72,6 +73,7 @@ function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDe
   }
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { if(refreshKey)load(focusRequest?{id:focusRequest.id}:{}); }, [refreshKey]);
   useEffect(() => {
     if (!focusRequest) return;
     setQuery(""); setStart(""); setEnd(""); setOpenId(focusRequest.id);
@@ -92,12 +94,13 @@ function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDe
     setDeletingId(item.id);
     try {
       const response = await fetch("/api/manager/inquiries?kind=" + encodeURIComponent(kind) + "&id=" + encodeURIComponent(item.id), { method: "DELETE" });
-      const body = await response.json() as { error?: string };
+      const body = await response.json() as { error?: string; unreviewedCount?:number };
       if (!response.ok) throw new Error(body.error || "Could not delete inquiry.");
       setInquiries((current) => current.filter((record) => record.id !== item.id));
       setTotal((current) => Math.max(0, current - 1));
       if (openId === item.id) setOpenId(null);
       onDeleted?.(item.id);
+      if(typeof body.unreviewedCount==="number")onUnreviewedCount?.(body.unreviewedCount);
       setMessage("Saved " + label + " deleted."+(kind==="event"?" Existing event plans, proposals and payments were kept. No email was sent.":""));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not delete inquiry.");
@@ -107,7 +110,7 @@ function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDe
   }
 
   return <section ref={section} id={kind === "catering" ? "catering" : "private-events"} className={"coupon-manager manager-inquiries"+(kind==="event"?" website-inquiries":"")}>
-    <p className="eyebrow">{eyebrow}</p><h2>{title}</h2><p>{copy}</p><p className="media-message" role="status">{message}</p>
+    <p className="eyebrow">{eyebrow}</p>{!hideHeading?<h2>{title}</h2>:null}<p>{copy}</p><p className="media-message" role="status">{message}</p>
     <div className="manager-catering-stats"><article><span>Total matched</span><strong>{total}</strong></article><article><span>Unique emails shown</span><strong>{marketingCount}</strong></article><article><span>Visible rows</span><strong>{inquiries.length}</strong></article></div>
     <form className="manager-catering-query" onSubmit={submit}><label>Search by name<input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Name, email, phone, item, notes" /></label><label>Start date<input type="date" value={start} onChange={(event) => setStart(event.currentTarget.value)} /></label><label>End date<input type="date" value={end} onChange={(event) => setEnd(event.currentTarget.value)} /></label><div><button className="button" disabled={busy}>{busy ? "Loading..." : "Search"}</button><button className="button button-outline" type="button" onClick={clearFilters} disabled={busy}>Last 5</button><button className="button button-outline" type="button" onClick={exportCsv} disabled={!inquiries.length}>Export CSV</button></div></form>
     <div className="manager-catering-list">{inquiries.length ? inquiries.map((item) => <article key={item.id} data-inquiry-id={item.id} tabIndex={-1} className={focusRequest?.id===item.id?"is-calendar-inquiry":undefined}><header><div><strong>{item.name || "Unnamed customer"}</strong>{kind === "event" ? <div className="event-inquiry-header-actions">{onPlan?<button className="event-inquiry-plan" type="button" onClick={() => onPlan(item)}>{item.planId?"Open event plan":"Plan event"}</button>:null}<button className="is-danger" type="button" onClick={()=>deleteInquiry(item)} disabled={deletingId===item.id}>{deletingId===item.id?"Deleting…":"Delete Inquiry"}</button></div> : null}<span>{kind==="event"?(item.bookingStage||"Inquiry Received")+" · ":""}{item.email}{item.phone ? " / " + item.phone : ""}</span></div><time>{dateTime(item.createdAt)}</time></header><dl>{kind === "catering" ? <><div><dt>Pickup</dt><dd>{item.pickupDate || "No date"} {item.pickupTime || ""}</dd></div><div><dt>Guests</dt><dd>{item.guestCount || "Not set"}</dd></div><div><dt>Total</dt><dd>{item.estimatedTotal || "Confirm"}</dd></div></> : <><div><dt>Event</dt><dd>{item.eventDate || "No date"} {item.eventTime || ""}</dd></div><div><dt>Type</dt><dd>{item.eventType || "Other"}</dd></div><div><dt>Guests</dt><dd>{item.guestCount || "Not set"}</dd></div></>}</dl><div className="manager-catering-actions"><button type="button" onClick={() => setOpenId(openId === item.id ? null : item.id)}>{openId === item.id ? "Hide details" : "Review details"}</button>{kind==="catering"?<button className="is-danger" type="button" onClick={() => deleteInquiry(item)} disabled={deletingId === item.id}>{deletingId === item.id ? "Deleting..." : "Delete"}</button>:null}</div>{openId === item.id ? <section className="manager-catering-details"><div><h3>{kind === "catering" ? "Order fields" : "Event fields"}</h3><DetailFields item={item} kind={kind} />{kind==="event"&&item.orderSummary?<><h3>Requested buffet & estimate</h3><pre>{item.orderSummary}</pre></>:null}{kind === "catering" ? <><h3>Food order</h3><pre>{item.orderSummary || "No structured order entered."}</pre></> : null}</div><div><h3>Customer notes</h3><p>{item.message || "No notes."}</p>{kind === "catering" ? <><h3>Totals</h3><p>Subtotal {item.estimatedSubtotal || "$0.00"} / Tax {item.estimatedTax || "$0.00"} / Total {item.estimatedTotal || "$0.00"}</p>{item.cateringMenu ? <p><a href={item.cateringMenu} target="_blank" rel="noreferrer">Open submitted menu source</a></p> : null}</> : null}</div></section> : null}</article>) : <p className="tour-schedule-empty">No records found.</p>}</div>
@@ -115,4 +118,4 @@ function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDe
 }
 
 export function CateringManager() { return <InquiryManager kind="catering" eyebrow="Catering operations" title="Catering To Go orders" copy="The last 5 Catering To Go submissions are shown first. Search by date, name, email, phone, order item, or notes to review older records and export follow-up lists." />; }
-export function PrivateEventsInquiryManager({ onPlan, focusRequest, onDeleted }: { onPlan?: (item: ManagedInquiry) => void; focusRequest?: InquiryFocusRequest | null; onDeleted?: (id:string)=>void } = {}) { return <InquiryManager onPlan={onPlan} focusRequest={focusRequest} onDeleted={onDeleted} kind="event" eyebrow="Online event requests" title="Website Inquiry" copy="Review a website request, choose Plan event, then save it to the calendar. A saved draft is not a confirmed booking. The last 5 inquiries are shown first; search to find older requests." />; }
+export function PrivateEventsInquiryManager({ onPlan, focusRequest, onDeleted, onUnreviewedCount, refreshKey, hideHeading }: { onPlan?: (item: ManagedInquiry) => void; focusRequest?: InquiryFocusRequest | null; onDeleted?: (id:string)=>void; onUnreviewedCount?:(count:number)=>void; refreshKey?:number; hideHeading?:boolean } = {}) { return <InquiryManager onPlan={onPlan} focusRequest={focusRequest} onDeleted={onDeleted} onUnreviewedCount={onUnreviewedCount} refreshKey={refreshKey} hideHeading={hideHeading} kind="event" eyebrow="Online event requests" title="Website Inquiry" copy="Review a website request, choose Plan event, then save it to the calendar. A saved draft is not a confirmed booking. The last 5 inquiries are shown first; search to find older requests." />; }
