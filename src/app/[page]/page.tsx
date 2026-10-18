@@ -82,14 +82,11 @@ export default async function ContentPage({
         <p className="eyebrow">{content.eyebrow}</p>
         <h1>{content.title}</h1>
         <p>{content.description}</p>
-        <div className="hero-actions">
+        {page !== "private-events" ? <div className="hero-actions">
           {page === "brewery" ? <Link className="button" href="/locations" data-analytics="brewery_locations">{content.action} <ArrowUpRight /></Link>
             : page === "shop" || page === "distillery" ? <a className="button" href="https://maps.google.com/?q=688+Brewing+Drive+Fuquay-Varina+NC+27526" target="_blank" rel="noreferrer" data-analytics={`${page}_directions`}><MapPin />{content.action}</a>
-              : <a className="button" href={page === "private-events" ? "#build-menu" : formKind ? "#inquiry" : "/about"} data-analytics={`${page}_action`}>{page === "private-events" ? "Plan Your Event" : content.action} <ArrowUpRight /></a>}
-          {page === "private-events" ? <>
-            <a className="button button-outline" href="#packages" data-analytics="private_events_packages">See Packages <ArrowUpRight /></a>
-          </> : null}
-        </div>
+              : <a className="button" href={formKind ? "#inquiry" : "/about"} data-analytics={`${page}_action`}>{content.action} <ArrowUpRight /></a>}
+        </div> : null}
         {verifiedPayment === "paid" ? <p className="private-event-payment-status success" role="status"><strong>Payment complete.</strong> Your {privateEventBookingFeeLabel} room booking fee was processed securely through Stripe. {paymentNotificationSent ? "The Aviator events team has been notified." : "Keep your Stripe receipt and contact the Aviator events team if you do not hear from us."}</p> : null}
         {verifiedPayment === "pending" ? <p className="private-event-payment-status" role="status">Stripe is still confirming your payment. Keep your Stripe receipt; the Aviator events team will follow up after processing completes.</p> : null}
         {paymentStatus === "success" && verifiedPayment === "invalid" ? <p className="private-event-payment-status cancel" role="alert">This link does not verify a completed {privateEventBookingFeeLabel} room booking payment. Please return to secure checkout or contact the Aviator events team.</p> : null}
