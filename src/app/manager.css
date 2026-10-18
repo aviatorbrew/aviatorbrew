@@ -1,0 +1,176 @@
+/* Shared office styling. Scope overrides to the manager and its artwork dialogs. */
+:is(.manager-portal, .manager-access),
+:is(.manager-portal, .manager-access) *,
+body:has(.manager-portal) > .beer-image-lightbox,
+body:has(.manager-portal) > .beer-image-lightbox * {
+  font-family: Arial, Helvetica, sans-serif !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+:is(.manager-portal, .manager-access) { font-size: .875rem; line-height: 1.4; }
+:is(.manager-portal, .manager-access) :is(h1, h2, h3, h4, h5, h6) { font-weight: 600; font-style: normal; line-height: 1.3; }
+:is(.manager-portal, .manager-access) h1 { font-size: 1.5rem !important; }
+:is(.manager-portal, .manager-access) h2 { font-size: 1.15rem !important; }
+:is(.manager-portal, .manager-access) h3 { font-size: .95rem !important; }
+:is(.manager-portal, .manager-access) :is(h4, h5, h6) { font-size: .875rem !important; }
+.manager-portal :is(p, dl) { margin-top: .35rem; margin-bottom: .5rem; line-height: 1.4; }
+.manager-portal :is(strong, b) { font-weight: 600; }
+.manager-portal .eyebrow { margin: 0 0 .25rem; font-size: .75rem; font-weight: 600; }
+.manager-portal .media-message:empty { display: none; }
+.manager-portal .media-message { margin: .5rem 0; font-size: .82rem; }
+.manager-portal .manager-page-shell { padding-top: 1rem; padding-bottom: 2rem; }
+.manager-portal .manager-page-heading h1 { margin: .2rem 0; }
+.manager-portal .manager-page-heading > p:last-child { margin: .25rem 0 0; font-size: .85rem; line-height: 1.4; }
+.manager-portal .manager-route-content { margin-top: .75rem; }
+.manager-portal .manager-route-content :is(section, article, form, fieldset, div) { min-width: 0; }
+.manager-portal .manager-page-shell :is(.coupon-manager, .manager-overview) { margin-top: .75rem; padding: .8rem; }
+.manager-portal .manager-route-content > .coupon-manager,
+.manager-portal .manager-route-content > #coupons > .coupon-manager { margin-top: 0; }
+.manager-portal .manager-page-shell .tour-signups-heading { margin: .9rem 0 .45rem; }
+
+/* Compact navigation and dashboard. */
+.manager-portal .manager-top-menu { min-height: 3.1rem; }
+.manager-portal .manager-top-brand { min-width: 8rem; padding: .5rem .8rem; font-size: 1rem; line-height: 1.15; }
+.manager-portal .manager-top-brand span { font-size: .75rem; font-weight: 400; }
+.manager-portal .manager-top-group summary { min-height: 3.1rem; padding: .4rem .6rem; }
+.manager-portal .manager-top-group summary strong { font-size: .75rem; line-height: 1.2; }
+.manager-portal .manager-top-group summary small { font-size: .7rem; font-weight: 400; line-height: 1.2; }
+.manager-portal .manager-top-links a { padding: .5rem .7rem; font-size: .8rem; font-weight: 400; }
+.manager-portal .manager-top-signout { padding: .4rem .65rem; font-size: .8rem; }
+.manager-portal .manager-overview-groups { gap: .85rem; margin-top: .75rem; }
+.manager-portal .manager-overview-grid { margin-top: .4rem; }
+.manager-portal .manager-overview-grid a { min-height: 4.5rem; gap: .25rem; padding: .65rem; }
+.manager-portal .manager-overview-grid strong { font-size: .875rem; }
+.manager-portal .manager-overview-grid span { font-size: .8rem; line-height: 1.35; }
+
+/* Preserve each form's field layout while reducing controls and spacing. */
+.manager-portal form { gap: .5rem; padding: .65rem; }
+.manager-portal :is(label, legend) { font-size: .8rem; font-weight: 400; line-height: 1.35; }
+.manager-portal label { min-width: 0; gap: .25rem; }
+.manager-portal :is(input, select, textarea) { max-width: 100%; font-size: .85rem; font-weight: 400; line-height: 1.35; }
+.manager-portal input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="color"]),
+.manager-portal select { min-width: 0; min-height: 2rem; padding: .35rem .45rem; }
+.manager-portal textarea { padding: .4rem .5rem; resize: vertical; }
+.manager-portal :is(input[type="checkbox"], input[type="radio"]) { flex-shrink: 0; }
+.manager-portal :is(button, .button) { font-size: .8rem; font-weight: 600; line-height: 1.3; }
+.manager-portal .manager-page-shell button:not(.beer-image-trigger):not(.beyond-beer-image-trigger):not(.shop-image-trigger):not(.event-calendar-entry):not(.event-day-number),
+.manager-portal .manager-page-shell .button { min-height: 0; height: auto; padding: .4rem .6rem; }
+.manager-portal .manager-page-shell :is(form, fieldset) { gap: .5rem; }
+.manager-portal .manager-page-shell :is(.manager-event-form, .manager-beer-form, .manager-beer-edit, .manager-keg-upload, .manager-keg-status, .branding-manager-layout) { margin-top: .75rem; }
+.manager-portal .manager-page-shell :is(.manager-event-form, .manager-beer-form, .manager-beer-inline-form, .manager-keg-upload, .manager-keg-status) { gap: .5rem; padding: .65rem; }
+.manager-portal :is(.manager-events-heading, .manager-beverage-heading, .manager-beer-edit-actions, .manager-beer-inline-actions, .manager-beer-list footer) { gap: .5rem; }
+.manager-portal .manager-event-content { grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr); gap: .5rem !important; }
+.manager-portal .manager-events-list article { padding: .65rem; gap: .6rem; }
+.manager-portal .manager-beer-list article { min-height: 0; grid-template-columns: 4rem minmax(0, 1fr) auto; padding: .55rem; gap: .65rem; }
+.manager-portal .manager-beer-list article.is-editing { grid-template-columns: 4rem minmax(0, 1fr); align-items: start; }
+.manager-portal .manager-beer-list article > :is(img, .manager-beer-thumb, .manager-beverage-thumb, .manager-beer-pdf) { width: 4rem; height: 4.5rem; }
+.manager-portal .manager-beer-list article > div { gap: .15rem; }
+.manager-portal .manager-beer-list p:not(.eyebrow) { font-size: .82rem; }
+.manager-portal :is(.manager-keg-status, .branding-manager-layout, .manager-test-actions, .manager-database-browser) { gap: .65rem; }
+.manager-portal :is(.manager-test-actions article, .manager-database-status article, .manager-database-browser aside, .manager-database-browser > section, .branding-preview) { padding: .65rem; }
+.manager-portal :is(.manager-database-actions, .manager-database-status, .manager-test-actions) { margin: .65rem 0; gap: .5rem; }
+.manager-portal .manager-database-table-wrap :is(th, td) { padding: .35rem .5rem; }
+.manager-portal .manager-database-table-wrap { max-width: 100%; }
+.manager-portal .manager-payment-test-summary, .manager-portal .manager-payment-test-status { padding: .8rem; }
+.manager-portal .manager-payment-test-warning { margin: .75rem 0; padding: .65rem; }
+.manager-portal .manager-payment-test-status dl { margin: .75rem 0; }
+.manager-portal .manager-payment-test-status dl div { padding: .5rem; }
+
+/* Menus, branding, and photo libraries. */
+.manager-portal .manager-media-route { gap: .75rem; }
+.manager-portal .manager-media-route > .media-library > .content-wrap { width: 100%; padding: .8rem; }
+.manager-portal .media-library-heading { margin-bottom: .75rem; gap: .75rem; }
+.manager-portal .website-photo-library, .manager-portal .media-library .website-photo-library { margin-top: .75rem; padding: .75rem; }
+.manager-portal .website-photo-heading { gap: .5rem; }
+.manager-portal .website-photo-heading h2 { margin: .2rem 0; }
+.manager-portal .website-photo-drop { margin: .65rem 0; padding: .75rem; }
+.manager-portal .website-photo-drop small { margin-top: .25rem; }
+.manager-portal .website-photo-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr)); }
+.manager-portal .website-photo-card > div { padding: .5rem; }
+.manager-portal .website-photo-card strong { font-size: .8rem; }
+.manager-portal .website-photo-actions { margin-top: .4rem; gap: .35rem; }
+.manager-portal .menu-library-grid { gap: .75rem; }
+.manager-portal .menu-folder { box-shadow: none; }
+.manager-portal .menu-folder-head { padding: .6rem .75rem; }
+.manager-portal .menu-folder-head h2 { margin: .2rem 0 0; }
+.manager-portal .menu-folder-section h3 { margin: .2rem .65rem; }
+.manager-portal .menu-folder-section .menu-dropzone { margin: .4rem .6rem .6rem; padding: .65rem; }
+.manager-portal .menu-folder ul { min-height: 0; padding: 0 .6rem .6rem; gap: .35rem; }
+.manager-portal .menu-folder li { padding: .4rem; overflow-wrap: anywhere; }
+
+/* Shop catalogs, options, orders, and ticket rosters. */
+.manager-portal :is(.manager-shop-layout, .manager-shop-main, .manager-shop-products, .manager-shop-variant-editor) { gap: .65rem; }
+.manager-portal :is(.manager-shop-catalogs, .manager-shop-product-toolbar, .manager-shop-settings-panel, .manager-shop-orders, .manager-shop-ticket-rosters, .manager-shop-variant-editor) { padding: .65rem; }
+.manager-portal :is(.manager-shop-catalog-heading, .manager-shop-filter) { margin-bottom: .6rem; }
+.manager-portal .manager-shop-products > article { padding: .55rem; gap: .6rem; }
+.manager-portal .manager-shop-products h4 { margin: .2rem 0 .35rem; }
+.manager-portal .manager-shop-form-heading { align-items: center; }
+.manager-portal .manager-shop-product-form textarea { min-height: 4rem; }
+.manager-portal .manager-shop-variant-row > header { padding: .5rem .65rem; gap: .5rem; }
+.manager-portal .manager-shop-variant-section { padding: .65rem; gap: .65rem; }
+.manager-portal :is(.manager-shop-variant-fields, .manager-shop-variant-section-body, .manager-shop-ticket-fields, .manager-shop-settings) { gap: .5rem; }
+.manager-portal .manager-shop-variant-toggles > label { min-height: 0; padding: .45rem; gap: .4rem; }
+.manager-portal .manager-shop-order-list { gap: .5rem; }
+.manager-portal .manager-shop-order-list > article, .manager-portal .manager-shop-ticket-roster > header { padding: .6rem; }
+.manager-portal .manager-shop-ticket-table :is(th, td) { padding: .35rem .5rem; }
+
+/* Newsletter controls and guest inquiry lists. */
+.manager-portal .newsletter-manager-heading { gap: .75rem; }
+.manager-portal .newsletter-audience-count strong { font-size: 1.4rem; line-height: 1.2; }
+.manager-portal .newsletter-tabs { margin-top: .75rem; }
+.manager-portal :is(.newsletter-compose, .newsletter-list, .newsletter-preview-workspace) { gap: .65rem; margin-top: .75rem; }
+.manager-portal :is(.newsletter-compose-grid, .newsletter-template-picker, .newsletter-content-selector) { gap: .65rem; }
+.manager-portal .newsletter-template-picker button { min-height: 0; gap: .3rem; padding: .65rem; }
+.manager-portal :is(.newsletter-content-selector, .newsletter-preview-note, .newsletter-send-bar) { padding: .65rem; }
+.manager-portal .newsletter-content-selector { max-height: 34rem; overflow-y: auto; align-content: start; }
+.manager-portal .newsletter-content-section > label { padding: .5rem; gap: .45rem; }
+.manager-portal .newsletter-subscriber-head span, .manager-portal .newsletter-subscriber-row > span { padding: .45rem .6rem; }
+.manager-portal .newsletter-subscriber-head, .manager-portal .newsletter-subscriber-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) 4.5rem; }
+.manager-portal :is(.newsletter-subscriber-row, .manager-shop-products, .manager-catering-list) { overflow-wrap: anywhere; }
+.manager-portal .manager-catering-stats { margin: .65rem 0; }
+.manager-portal .manager-catering-stats article { padding: .55rem; }
+.manager-portal .manager-catering-stats strong { font-size: 1.3rem; line-height: 1.2; }
+.manager-portal .manager-catering-list { gap: .5rem; margin-top: .65rem; }
+.manager-portal .manager-catering-list > article { padding: .65rem; gap: .5rem; }
+.manager-portal .manager-catering-list dl div, .manager-portal .manager-inquiry-fields div { padding: .45rem; }
+.manager-portal .manager-catering-details > div { padding: .55rem; }
+.manager-portal .manager-catering-list pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Retain the smaller fields and seven-column calendar in event planning. */
+.manager-portal .event-planning-heading { gap: .65rem; }
+.manager-portal .event-plan-editor .event-flight-wrapper { padding: 0; margin: 0; border: 0; }
+.manager-portal .event-plan-editor fieldset { padding: .5rem .6rem; margin: .5rem 0; }
+.manager-portal .event-calendar-toolbar { gap: .5rem; margin: .65rem 0; }
+.manager-portal .event-email-composer { padding: .8rem; gap: .5rem; }
+
+/* Login and reset screens use the same type scale and compact controls. */
+.manager-access { padding: 1rem; }
+.manager-access > section { gap: .65rem; padding: 1rem; box-shadow: none; }
+.manager-access :is(h1, p) { margin: 0; }
+.manager-access form { display: grid; gap: .65rem; }
+.manager-access label { gap: .25rem; font-size: .85rem; }
+.manager-access input { padding: .45rem .55rem; font-size: .875rem; }
+.manager-access .button { padding: .5rem .7rem; font-size: .8rem; }
+body:has(.manager-portal) > .beer-image-lightbox h2 { font-size: 1.25rem; line-height: 1.3; }
+
+@media (max-width: 1100px) {
+  .manager-portal .manager-catering-query { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .manager-portal .manager-catering-query > div { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .manager-portal .manager-page-shell { padding-top: .75rem; }
+  .manager-portal .manager-page-shell :is(.coupon-manager, .manager-overview) { padding: .65rem; }
+  .manager-portal .manager-beer-list article, .manager-portal .manager-beer-list article.is-editing { grid-template-columns: 3.25rem minmax(0, 1fr); gap: .5rem; }
+  .manager-portal .manager-beer-list article > :is(img, .manager-beer-thumb, .manager-beverage-thumb, .manager-beer-pdf) { width: 3.25rem; height: 3.75rem; }
+  .manager-portal .manager-beer-list footer { grid-column: 1 / -1; }
+  .manager-portal .manager-beer-inline-form { padding: .4rem; }
+  .manager-portal .manager-top-group summary { padding: .35rem .5rem; }
+  .manager-portal .manager-top-group-items { min-width: min(15rem, 85vw); }
+  .manager-portal .manager-shop-variant-row > header { flex-wrap: wrap; }
+  .manager-portal .manager-shop-variant-section { grid-template-columns: 1fr; }
+  .manager-portal .website-photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .manager-portal .manager-catering-query { grid-template-columns: 1fr; }
+  .manager-portal .newsletter-subscriber-head { display: none; }
+  .manager-portal .newsletter-subscriber-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .manager-portal .newsletter-subscriber-row > span:first-child { grid-column: 1 / -1; }
+}
