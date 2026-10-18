@@ -27,10 +27,12 @@ export async function GET(request: NextRequest) {
 
   const kind = inquiryKind(request);
   if (!kind) return NextResponse.json({ error: "Unknown inquiry type." }, { status: 400, headers: noStore });
+  const inquiryId = request.nextUrl.searchParams.get("id") || "";
+  if (inquiryId && !/^[1-9]\d{0,18}$/.test(inquiryId)) return NextResponse.json({ error: "Choose a valid inquiry." }, { status: 400, headers: noStore });
   const search = (request.nextUrl.searchParams.get("q") || "").trim();
   const start = isoDate(request.nextUrl.searchParams.get("start"));
   const end = isoDate(request.nextUrl.searchParams.get("end"));
-  const filtered = Boolean(search || start || end);
+  const filtered = Boolean(inquiryId || search || start || end);
   const rowLimit = limit(request.nextUrl.searchParams.get("limit"), filtered ? 200 : 5);
   const searchPattern = "%" + search + "%";
 
@@ -38,12 +40,13 @@ export async function GET(request: NextRequest) {
     SELECT id, kind, email, name, payload, source, created_at, count(*) OVER()::int AS total_count
     FROM website.form_inquiries
     WHERE kind = $1
+      AND ($7::text = '' OR id::text = $7)
       AND ($2::text = '' OR name ILIKE $5 OR email ILIKE $5 OR payload->>'phone' ILIKE $5 OR payload->>'orderSummary' ILIKE $5 OR payload->>'message' ILIKE $5 OR payload->>'eventType' ILIKE $5 OR payload->>'location' ILIKE $5)
       AND ($3::date IS NULL OR created_at >= $3::date OR NULLIF(payload->>'eventDate', '') >= $3::text OR NULLIF(payload->>'pickupDate', '') >= $3::text)
       AND ($4::date IS NULL OR created_at < ($4::date + interval '1 day') OR NULLIF(payload->>'eventDate', '') <= $4::text OR NULLIF(payload->>'pickupDate', '') <= $4::text)
     ORDER BY created_at DESC
     LIMIT $6
-  `, [kind, search, start || null, end || null, searchPattern, rowLimit]));
+  `, [kind, search, start || null, end || null, searchPattern, rowLimit, inquiryId]));
 
   const stages = kind === "event" ? await inquiryBookingStages(result.rows.map(row=>String(row.id))) : [];
   const inquiries = result.rows.map((row) => {

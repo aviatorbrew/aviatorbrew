@@ -2,11 +2,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { EventProposalManager } from "@/components/event-proposal-manager";
 import { EventFlightPlanFields } from "@/components/event-flight-plan-fields";
-import { PrivateEventsInquiryManager, type ManagedInquiry } from "@/components/catering-manager";
+import { PrivateEventsInquiryManager, type ManagedInquiry, type InquiryFocusRequest } from "@/components/catering-manager";
 import { defaultCateringCatalog, type CateringCatalog, emptyEventPlan, eventDateLabel, eventStatuses, eventTotals, itemCategories, money, parseEventPlan, readyRoomPackages, timeLabel, type EventOrderItem, type EventPlan, type EventPlanDetails } from "@/lib/event-plan";
 
 type Update = { recipient: string; subject: string; status: string; updated_at: string; plan_version: number };
 function today() { return new Intl.DateTimeFormat("en-CA", {timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()); }
+function tentativeCalendarEvent(plan: EventPlan) { return plan.details.status === "Tentative" || Boolean(plan.sourceInquiryId && plan.details.status === "Draft"); }
 function cents(value: string) { return Math.round(Number(value || 0) * 100); }
 async function result(response: Response) { const body = await response.json(); if (!response.ok) throw new Error(body.error || "The request failed."); return body; }
 const summaryUrl = (id: string, flightPlan = false) => `/api/manager/event-plans/${encodeURIComponent(id)}/summary${flightPlan ? "?view=flight-plan" : ""}`;
@@ -35,6 +36,7 @@ export function EventPlanningManager() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const errorNotice = useRef<HTMLParagraphElement>(null);
   const [selected, setSelected] = useState<EventPlan | null>(null);
   const [draft, setDraft] = useState<EventPlanDetails | null>(null);
   const [source, setSource] = useState<string | null>(null);
@@ -47,6 +49,8 @@ export function EventPlanningManager() {
   const [emailError, setEmailError] = useState("");
   const requestId = useRef("");
   const editor = useRef<HTMLDivElement>(null);
+  const inquiryArchive = useRef<HTMLDetailsElement>(null);
+  const [inquiryFocus,setInquiryFocus] = useState<InquiryFocusRequest|null>(null);
   const dirty = Boolean(draft && (!selected || JSON.stringify(draft) !== JSON.stringify(selected.details)));
   const totals = draft ? eventTotals(draft,catalog) : null;
 
@@ -55,6 +59,7 @@ export function EventPlanningManager() {
     fetch(`/api/manager/event-plans?month=${month}`, {signal:controller.signal,cache:"no-store"}).then(result).then(body => {setPlans(body.plans);setCatalog(body.catering||structuredClone(defaultCateringCatalog));setDefaultFee(body.defaultRoomFeeCents);setCalendarSyncStatus(body.calendarSyncStatus||null);}).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return ()=>controller.abort();
   },[month]);
+  useEffect(() => { if(error) errorNotice.current?.scrollIntoView({block:"center"}); }, [error]);
   useEffect(() => {
     if (!emailPlan) return;
     const previous = document.body.style.overflow;
@@ -73,7 +78,7 @@ export function EventPlanningManager() {
   function patch<K extends keyof EventPlanDetails>(key: K, value: EventPlanDetails[K]) { setDraft(current => current ? {...current,[key]:value} : current); }
   function patchItem(id: string, values: Partial<EventOrderItem>) { setDraft(current=>current ? {...current,items:current.items.map(row=>row.id===id ? {...row,...values}:row)} : current); }
   function discardOkay() { return !dirty || window.confirm("Discard your unsaved event changes?"); }
-  function focusEditor() { window.setTimeout(()=>editor.current?.scrollIntoView({behavior:"smooth",block:"start"}),50); }
+  function focusEditor() { window.setTimeout(()=>{ const target=editor.current; if(target){target.scrollIntoView({behavior:"instant",block:"start"});target.focus({preventScroll:true});} },50); }
   function newPlan(date = "", inquiry?: ManagedInquiry) {
     if (!discardOkay()) return;
     if(inquiry?.planId){getExistingInquiryPlan(inquiry.planId);return;}
@@ -123,6 +128,14 @@ export function EventPlanningManager() {
       if(selected?.id===emailPlan.id){const history=await result(await fetch(`/api/manager/event-plans/${emailPlan.id}`,{cache:"no-store"}));setUpdates(history.updates);}
     }catch(e){setEmailError(e instanceof Error?e.message:"Could not send. Your draft is still here.");}finally{setBusy(false);}
   }
+  function openCalendarEvent(plan: EventPlan) {
+    if (!plan.sourceInquiryId) { openPlan(plan); return; }
+    if (inquiryArchive.current) {
+      inquiryArchive.current.open = true;
+      inquiryArchive.current.scrollIntoView({behavior:"instant",block:"start"});
+    }
+    setInquiryFocus(current=>({id:plan.sourceInquiryId!,sequence:(current?.sequence||0)+1}));
+  }
   function changeMonth(delta: number) {const [year,m]=month.split("-").map(Number);const d=new Date(Date.UTC(year,m-1+delta,1));setMonth(d.toISOString().slice(0,7));}
   const first=new Date(month+"-01T12:00:00Z");
   const days=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+1,0)).getUTCDate();
@@ -130,12 +143,12 @@ export function EventPlanningManager() {
   return <section className="coupon-manager event-planning" id="event-planning">
     <div className="event-planning-heading"><div><p className="eyebrow">Private event operations</p><h2>Event planning</h2><p>Review online buffet requests or enter manual event orders. Recalculate summaries, issue proposals, track deposits and print kitchen sheets here.</p></div><button className="button" type="button" disabled={loading||busy} onClick={()=>newPlan()}>+ New event</button></div>
     {calendarSyncStatus?<p className="event-calendar-sync-status">Google Calendar sync: 8 a.m., noon and 3 p.m. Eastern. Last checked: {new Date(calendarSyncStatus.checkedAt).toLocaleString("en-US",{timeZone:"America/New_York"})}. Existing plans are preserved.</p>:null}
-    {notice?<p role="status" className="event-plan-notice">{notice}</p>:null}{error?<p role="alert" className="event-plan-error">{error}</p>:null}
+    {notice?<p role="status" className="event-plan-notice">{notice}</p>:null}{error?<p ref={errorNotice} role="alert" className="event-plan-error">{error}</p>:null}
     <div className="event-calendar-toolbar"><button type="button" aria-label="Previous month" onClick={()=>changeMonth(-1)}>←</button><label>Calendar month<input type="month" value={month} required onChange={e=>{if(e.target.value)setMonth(e.target.value);}} /></label><button type="button" aria-label="Next month" onClick={()=>changeMonth(1)}>→</button><button type="button" onClick={()=>setMonth(today().slice(0,7))}>This month</button><span>{loading?"Loading events…":`${plans.length} event(s)`}</span></div>
-    <div className="event-calendar" aria-label="Private event calendar">{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(day=><div className="event-weekday" key={day}>{day}</div>)}{Array.from({length:first.getUTCDay()},(_,i)=><div className="event-day empty" key={`empty-${i}`} />)}{Array.from({length:days},(_,i)=>{const date=`${month}-${String(i+1).padStart(2,"0")}`;return <div className={`event-day${date===today()?" today":""}`} key={date}><button type="button" className="event-day-number" aria-label={`New event on ${date}`} disabled={busy||loading} onClick={()=>newPlan(date)}>{i+1}</button>{plans.filter(p=>p.details.date===date).map(p=><button type="button" className={"event-calendar-entry "+p.details.status.toLowerCase()} key={p.id} disabled={busy} onClick={()=>openPlan(p)} title={`${p.details.title} · ${p.details.status}`}><span>{p.details.startTime?timeLabel(p.details.startTime):"Time TBD"}</span>{p.details.title}{p.calendarSync?.status&&p.calendarSync.status!=="active"?<span className="event-calendar-source-tag">Google: {p.calendarSync.status==="removed"?"deleted":p.calendarSync.status}</span>:null}</button>)}</div>;})}{Array.from({length:(7-((first.getUTCDay()+days)%7))%7},(_,i)=><div className="event-day empty" key={`trailing-${i}`} />)}</div>
+    <div className="event-calendar" aria-label="Private event calendar">{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(day=><div className="event-weekday" key={day}>{day}</div>)}{Array.from({length:first.getUTCDay()},(_,i)=><div className="event-day empty" key={`empty-${i}`} />)}{Array.from({length:days},(_,i)=>{const date=`${month}-${String(i+1).padStart(2,"0")}`;return <div className={`event-day${date===today()?" today":""}`} key={date}><button type="button" className="event-day-number" aria-label={`New event on ${date}`} disabled={busy||loading} onClick={()=>newPlan(date)}>{i+1}</button>{plans.filter(p=>p.details.date===date).map(p=><button type="button" className={"event-calendar-entry "+(tentativeCalendarEvent(p)?"tentative":p.details.status.toLowerCase())} key={p.id} disabled={busy} onClick={()=>openCalendarEvent(p)} title={`${tentativeCalendarEvent(p)?"Tentative: ":""}${p.details.title} · ${p.sourceInquiryId?"Open website inquiry":"Open event plan"}`}><span>{p.details.startTime?timeLabel(p.details.startTime):"Time TBD"}</span>{tentativeCalendarEvent(p)?"Tentative: ":""}{p.details.title}{p.calendarSync?.status&&p.calendarSync.status!=="active"?<span className="event-calendar-source-tag">Google: {p.calendarSync.status==="removed"?"deleted":p.calendarSync.status}</span>:null}</button>)}</div>;})}{Array.from({length:(7-((first.getUTCDay()+days)%7))%7},(_,i)=><div className="event-day empty" key={`trailing-${i}`} />)}</div>
     <label className="event-list-search">Find an event in this month<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Event name, contact, or email" /></label>
     <div className="event-plan-list">{visible.map(plan=><article key={plan.id}><div className="event-plan-row-title"><button type="button" onClick={()=>openPlan(plan)} disabled={busy}><strong>{plan.details.title}</strong></button><button type="button" className="event-print-button" onClick={()=>print(plan)} disabled={busy}>Order Summary / Print</button><button type="button" onClick={()=>print(plan,true)} disabled={busy}>Menu Planning Sheet / PDF</button><KitchenSheetLink plan={plan} disabled={busy||(selected?.id===plan.id&&dirty)}/></div><p>{eventDateLabel(plan.details.date)} · {timeLabel(plan.details.startTime)} · {plan.bookingStage||plan.details.status} · {plan.details.guestCount} guests</p><p>{plan.details.contactName} {plan.details.contactEmail?`· ${plan.details.contactEmail}`:""} · {money(eventTotals(plan.details,catalog).total)}</p><CalendarSourceNotice plan={plan}/><div className="event-row-actions"><button type="button" onClick={()=>openPlan(plan)} disabled={busy}>Edit plan</button><button type="button" onClick={()=>compose(plan)} disabled={busy}>Write guest update</button></div></article>)}{!loading&&!visible.length?<p>No event plans for this month. Choose a date or add an event from an inquiry below.</p>:null}</div>
-    {draft?<div className="event-plan-editor" ref={editor}><div className="event-editor-actions"><h3>{selected?`Edit ${selected.details.title}`:"New event plan"}</h3><KitchenSheetLink plan={selected} disabled={busy||dirty}/></div><p>{!selected||dirty?"Save the event and any menu changes to enable kitchen printing. ":""}Kitchen production sheets use the saved menu for approved or confirmed events.</p>{selected?<CalendarSourceNotice plan={selected}/>:null}<p>Saving and printing do not send email. Use “Write guest update” separately when you want to contact guests.</p><form onSubmit={save}>
+    {draft?<div className="event-plan-editor" ref={editor} tabIndex={-1}><div className="event-editor-actions"><h3>{selected?`Edit ${selected.details.title}`:"New event plan"}</h3><KitchenSheetLink plan={selected} disabled={busy||dirty}/></div><p>{!selected||dirty?"Save the event and any menu changes to enable kitchen printing. ":""}Kitchen production sheets use the saved menu for approved or confirmed events.</p>{selected?<CalendarSourceNotice plan={selected}/>:null}<p>Saving and printing do not send email. Use “Write guest update” separately when you want to contact guests.</p><form onSubmit={save}>
       <fieldset disabled={busy}><legend>Event & contact</legend><div className="event-fields">
         <label className="event-field-span2">Event name<input value={draft.title} maxLength={200} required onChange={e=>patch("title",e.target.value)} /></label><label>Status<select value={draft.status} onChange={e=>patch("status",e.target.value as EventPlanDetails["status"])}>{eventStatuses.map(s=><option key={s}>{s}</option>)}</select></label>
         <label>Date<input type="date" value={draft.date} required onChange={e=>patch("date",e.target.value)} /></label><label>Start time<input type="time" value={draft.startTime} onChange={e=>patch("startTime",e.target.value)} /></label><label>End time<input type="time" title="An earlier end time means the next day." value={draft.endTime} onChange={e=>patch("endTime",e.target.value)} /></label>
@@ -154,6 +167,6 @@ export function EventPlanningManager() {
     </div>:null}
     {selected?<EventProposalManager plan={selected} dirty={dirty} onRefresh={()=>getExistingInquiryPlan(selected.id)}/>:null}
     {emailPlan?<div className="event-email-overlay" role="dialog" aria-modal="true" aria-labelledby="event-email-heading"><form className="event-email-composer" onSubmit={sendUpdate}><h3 id="event-email-heading">Guest update: {emailPlan.details.title}</h3><p>To: {[emailPlan.details.contactEmail,...emailPlan.details.guestEmails].filter(Boolean).join(", ") || "No guest email saved"}</p><p>Replies go to events@aviatorbrew.com. Each recipient receives a separate message.</p><label>Subject<input autoFocus value={subject} required maxLength={160} disabled={busy} onChange={e=>{setSubject(e.target.value);requestId.current=crypto.randomUUID();}} /></label><label>Message<textarea rows={4} value={emailMessage} required maxLength={5000} disabled={busy} onChange={e=>{setEmailMessage(e.target.value);requestId.current=crypto.randomUUID();}} /></label><label className="event-check"><input type="checkbox" checked={includeSummary} disabled={busy} onChange={e=>{setIncludeSummary(e.target.checked);requestId.current=crypto.randomUUID();}} />Include the saved order summary (revision {emailPlan.version})</label>{emailResult?<p role="status">{emailResult}</p>:null}{emailError?<p role="alert" className="event-plan-error">{emailError}</p>:null}<div className="event-editor-actions"><button className="button" disabled={busy||![emailPlan.details.contactEmail,...emailPlan.details.guestEmails].some(Boolean)}>{busy?"Sending…":"Send update"}</button><button className="button button-outline" type="button" disabled={busy} onClick={()=>setEmailPlan(null)}>Skip / Close — don’t send</button></div></form></div>:null}
-    <details className="event-inquiry-archive"><summary>Website inquiries — start an event plan</summary><PrivateEventsInquiryManager onPlan={item=>newPlan("",item)} /></details>
+    <details className="event-inquiry-archive" ref={inquiryArchive}><summary>Website inquiries — start an event plan</summary><PrivateEventsInquiryManager focusRequest={inquiryFocus} onPlan={item=>newPlan("",item)} /></details>
   </section>;
 }

@@ -11,3 +11,7 @@
 .event-calendar-sync-status{font-size:.75rem;color:#bfd2de;line-height:1.4}.event-calendar-source-notice{margin:.4rem 0;padding:.45rem .6rem;border:1px solid #dca45b;background:rgba(134,79,20,.15);font-size:.75rem;line-height:1.4}.event-calendar-source-notice summary{cursor:pointer;font-weight:700;color:#efb45f}.event-calendar-source-notice .preserve{white-space:pre-wrap}.event-calendar-source-tag{display:block;color:#ffd69b;font-size:.65rem}
 .manager-private-events .event-plan-list>article,.manager-private-events .event-plan-editor{border:1px solid #fff;border-radius:4px}
 .manager-private-events .event-plan-editor>.event-editor-actions{justify-content:space-between;align-items:center}
+
+.manager-private-events .event-planning .event-day .event-calendar-entry.tentative{border:1px solid #fff;border-left-width:3px;border-radius:3px}
+.manager-private-events .event-inquiry-archive,.manager-private-events .manager-catering-list>article{scroll-margin-top:7rem}
+.manager-private-events .manager-catering-list>article.is-calendar-inquiry{border:1px solid #fff}
