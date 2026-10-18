@@ -10,6 +10,5 @@ export async function GET(request:NextRequest,context:{params:Promise<{id:string
  if(!isManager(request))return NextResponse.json({error:'Unauthorized'},{status:401,headers});
  const plan=await getEventPlan((await context.params).id);if(!plan)return NextResponse.json({error:'Event not found.'},{status:404,headers});
  const {proposals}=await listProposals(plan.id),approved=proposals.some(p=>p.approved_at&&p.material_hash===materialHash(plan.details)&&!['superseded','cancelled','declined'].includes(p.state));
- if(plan.details.status==='Cancelled'||!approved&&!['Confirmed','Completed'].includes(plan.details.status))return NextResponse.json({error:'Approve the current event proposal before generating a kitchen production sheet.'},{status:409,headers});
- return new Response(kitchenSheetHtml(plan,(await getPrivateEventSettings()).catering),{headers:{...headers,'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"}});
+ return new Response(kitchenSheetHtml(plan,(await getPrivateEventSettings()).catering,approved),{headers:{...headers,'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"}});
 }

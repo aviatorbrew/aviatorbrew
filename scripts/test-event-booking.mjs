@@ -12,7 +12,7 @@ const database=process.env.EVENT_TEST_DATABASE_URL;
 if(!database||!['localhost','127.0.0.1'].includes(new URL(database).hostname)||!new URL(database).pathname.startsWith('/aviator_event_test_'))throw new Error('Set EVENT_TEST_DATABASE_URL to a disposable local aviator_event_test_* database. Never use production.');
 const connection=new pg.Client({connectionString:database});await connection.connect();
 assert.equal(Number((await connection.query("SELECT count(*) FROM pg_tables WHERE schemaname='website'")).rows[0].count),0,'Use a fresh test database');
-Object.assign(process.env,{DATABASE_URL:database,POSTGRES_SSL:'false',MAIL_MODE:'record',STRIPE_SECRET_KEY:'sk_test_fixture_only',STRIPE_WEBHOOK_SECRET:'whsec_fixture_only',NEXT_PUBLIC_SITE_URL:'https://aviatorbrew.com'});
+Object.assign(process.env,{DATABASE_URL:database,POSTGRES_SSL:'false',MAIL_MODE:'record',STRIPE_SECRET_KEY:'sk_test_fixture_only',STRIPE_WEBHOOK_SECRET:'whsec_fixture_only',MANAGER_PORTAL_KEY:'kitchen_test_fixture_only',NEXT_PUBLIC_SITE_URL:'https://aviatorbrew.com'});
 globalThis.eventTestMail=[];globalThis.eventTestFailMail=false;
 const temp=await mkdtemp(path.join(tmpdir(),'aviator-booking-modules-')),modules=new Map();
 async function compile(file){
@@ -25,8 +25,9 @@ async function compile(file){
  await writeFile(destination,source);return destination;
 }
 const model=require(await compile(path.join(root,'src/lib/event-plan.ts'))),booking=require(await compile(path.join(root,'src/lib/event-booking.ts'))),proposals=require(await compile(path.join(root,'src/lib/event-proposals.ts'))),settings=require(await compile(path.join(root,'src/lib/private-event-settings.ts'))),plans=require(await compile(path.join(root,'src/lib/event-plans.ts'))),inquiries=require(await compile(path.join(root,'src/lib/event-inquiries.ts'))),documents=require(await compile(path.join(root,'src/lib/event-documents.ts'))),signature=require(await compile(path.join(root,'src/lib/stripe-webhook-signature.ts')));
-const webhook=require(await compile(path.join(root,'src/app/api/stripe/webhook/route.ts'))),{NextRequest}=require('next/server');
+const webhook=require(await compile(path.join(root,'src/app/api/stripe/webhook/route.ts'))),kitchenRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/kitchen/route.ts'))),{NextRequest}=require('next/server');
 const actualFetch=globalThis.fetch,sessions=new Map(),idempotency=new Map();let stripeCalls=0;
+async function kitchenResponse(id,authenticated=true){const cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');return kitchenRoute.GET(new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/kitchen',{headers:authenticated?{cookie}:{}}),{params:Promise.resolve({id})});}
 globalThis.fetch=async (url,input={})=>{
  assert.ok(String(url).startsWith('https://api.stripe.com/v1/checkout/sessions'),'Tests must not make other external requests');stripeCalls++;
  if(input.method==='POST'&&String(url).endsWith('/expire')){const id=String(url).split('/').at(-2),session=sessions.get(id);if(!session||session.payment_status==='paid')return Response.json({error:'not expirable'},{status:400});session.status='expired';return Response.json(session);}
@@ -71,11 +72,19 @@ try{
  assert.equal((await connection.query('SELECT payload FROM website.form_inquiries')).rows[0].payload.cateringPlan.paidCents,0);
  const sourcePlan=await plans.saveEventPlan(booking.validateCateringRequest(original,catalog,35000),undefined,undefined,inquiry.inquiryId);
  const draft=await proposals.createProposal(sourcePlan.id,{version:sourcePlan.version,expiresAt:expiration()});
+ assert.equal((await kitchenResponse(sourcePlan.id,false)).status,401,'Kitchen sheets remain manager-only');
+ assert.equal((await kitchenResponse(randomUUID())).status,404);
+ const draftKitchenResponse=await kitchenResponse(sourcePlan.id);assert.equal(draftKitchenResponse.status,200,'Saved drafts print without a proposal approval or configured policies');
+ const draftKitchen=await draftKitchenResponse.text();assert.ok(draftKitchen.includes('DRAFT — NOT APPROVED FOR PRODUCTION'));assert.ok(draftKitchen.includes('Fixture peanut allergy'));assert.ok(!draftKitchen.includes('fixture@example.com'));assert.ok(!draftKitchen.includes('PAYMENT ADMIN NOTES'));assert.ok(!draftKitchen.includes('$350'));assert.equal((await plans.getEventPlan(sourcePlan.id)).details.status,'Draft','Printing does not approve or confirm the event');await writeFile('/tmp/aviator-kitchen-draft.html',draftKitchen);
+ assert.ok(documents.kitchenSheetHtml({...sourcePlan,details:{...sourcePlan.details,status:'Tentative'}},catalog).includes('DRAFT — NOT APPROVED FOR PRODUCTION'));
+ assert.ok(documents.kitchenSheetHtml({...sourcePlan,details:{...sourcePlan.details,status:'Completed'}},catalog).includes('COMPLETED EVENT — REFERENCE COPY'));
+
  await assert.rejects(()=>proposals.sendProposal(sourcePlan.id,draft.id,{availabilityApproved:true,capacityApproved:true}),/polic/);
  await settings.setPrivateEventSettings({policyText:'TEST FIXTURE ONLY: approved cancellation, deposit and event policy placeholder. Never publish these terms.',policyVersion:'fixture-1'});
  const p=await proposals.createProposal(sourcePlan.id,{version:sourcePlan.version,expiresAt:expiration()});
  await assert.rejects(()=>proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:false,capacityApproved:true}));
  await proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:true,capacityApproved:true});
+ const approvedKitchen=await kitchenResponse(sourcePlan.id);assert.equal(approvedKitchen.status,200);assert.ok((await approvedKitchen.text()).includes('APPROVED PROPOSAL — TENTATIVE EVENT'));
  const token=globalThis.eventTestMail.at(-1).text.match(/#token=([a-f0-9]{64})/)[1],access=await proposals.customerProposal(token);
  assert.equal(access.status,'Proposal Sent');assert.equal(access.proposal.snapshot.totals.total,205675);assert.ok(!JSON.stringify(access).includes('DO NOT EXPOSE'));assert.ok(!('token_hash' in access.proposal));
  const savedRaw=(await connection.query('SELECT token_hash,material_hash FROM website.private_event_proposals WHERE id=$1',[p.id])).rows[0];assert.notEqual(savedRaw.token_hash,token);assert.equal(savedRaw.material_hash,proposals.materialHash((await plans.getEventPlan(sourcePlan.id)).details));
@@ -89,13 +98,14 @@ try{
  globalThis.eventTestFailMail=true;
  const paid={...attempt,payment_status:'paid'};assert.equal((await notify(paid,'evt_paid')).status,503,'Paid ledger survives notification failure');
  const paidPlan=await plans.getEventPlan(sourcePlan.id);assert.equal(paidPlan.details.status,'Confirmed');assert.equal(paidPlan.details.paidCents,35000);
+ assert.ok((await (await kitchenResponse(sourcePlan.id)).text()).includes('CONFIRMED EVENT'));
  globalThis.eventTestFailMail=false;assert.equal((await notify(paid,'evt_paid_retry')).status,200);await Promise.all([notify(paid,'evt_replay_1'),notify(paid,'evt_replay_2')]);
  assert.equal((await plans.getEventPlan(sourcePlan.id)).details.paidCents,35000);assert.equal(Number((await connection.query('SELECT count(*) FROM website.private_event_deposits')).rows[0].count),1);assert.equal(Number((await connection.query("SELECT count(*) FROM website.private_event_deliveries WHERE status='sent'")).rows[0].count),2);
  const customer=await proposals.customerProposal(token);assert.equal(customer.status,'Confirmed');assert.equal(customer.remainingCents,170675);
  const pdf=await documents.proposalPdf(p);assert.equal(Buffer.from(pdf).subarray(0,5).toString(),'%PDF-');await writeFile('/tmp/aviator-test-proposal.pdf',pdf);
  const kitchen=documents.kitchenSheetHtml(await plans.getEventPlan(sourcePlan.id),catalog);assert.ok(kitchen.includes('Fixture peanut allergy'));assert.ok(kitchen.includes('No yield data'));assert.ok(!kitchen.includes('PAYMENT ADMIN NOTES'));assert.ok(!kitchen.includes('205675'));assert.ok(!kitchen.includes('fixture@example.com'));
  await settings.setPrivateEventSettings({catering:repriced});assert.equal((await proposals.customerProposal(token)).proposal.snapshot.totals.subtotal,190000,'Issued prices never change with menu configuration');
- console.log('Passed inquiries, immutable quotes, policy gates, concurrent checkout, verified payment, duplicate notifications, deposit credits, email retry, proposal PDF and private kitchen sheet');
+ console.log('Passed inquiries, immutable quotes, policy gates, concurrent checkout, verified payment, duplicate notifications, deposit credits, email retry, proposal PDF and manager-only draft/approved/confirmed/canceled kitchen sheets');
  // A material change after acceptance must not turn a late deposit into a confirmed changed booking.
  const late=await approved(valid(future(65)));await proposals.acceptAndCheckout(late.token,acceptance(late.p));const lateSession=[...sessions.values()].at(-1);
  const beforeChange=await plans.getEventPlan(late.plan.id);await plans.saveEventPlan({...beforeChange.details,guestCount:55},beforeChange.id,beforeChange.version);
@@ -106,6 +116,7 @@ try{
  const expiring=await approved(valid(future(70)));await connection.query("UPDATE website.private_event_proposals SET expires_at=now()-interval '1 second' WHERE id=$1",[expiring.p.id]);await assert.rejects(()=>proposals.customerProposal(expiring.token),/expired/);await assert.rejects(()=>proposals.acceptAndCheckout(expiring.token,acceptance(expiring.p)),/expired/);
  const failed=await approved(valid(future(75)));await proposals.acceptAndCheckout(failed.token,acceptance(failed.p));const failedSession=[...sessions.values()].at(-1);await proposals.markProposalAttempt(failedSession,'failed');assert.match((await proposals.customerProposal(failed.token)).status,/Failed/);assert.equal((await plans.getEventPlan(failed.plan.id)).details.paidCents,0);
  const canceled=await approved(valid(future(80)));await proposals.acceptAndCheckout(canceled.token,acceptance(canceled.p));const cancelSession=[...sessions.values()].at(-1),cancelPlan=await plans.getEventPlan(canceled.plan.id);await plans.saveEventPlan({...cancelPlan.details,status:'Cancelled'},cancelPlan.id,cancelPlan.version);await notify({...cancelSession,payment_status:'paid'},'evt_cancelled');assert.equal((await plans.getEventPlan(canceled.plan.id)).details.status,'Cancelled');
+ const canceledKitchen=await kitchenResponse(canceled.plan.id);assert.equal(canceledKitchen.status,200);assert.ok((await canceledKitchen.text()).includes('CANCELED EVENT — DO NOT PRODUCE'));
  const unpaid=await approved(valid(future(85)));await proposals.acceptAndCheckout(unpaid.token,acceptance(unpaid.p));const unpaidSession=[...sessions.values()].at(-1);const unpaidPlan=await plans.getEventPlan(unpaid.plan.id);const changedUnpaid=await plans.saveEventPlan({...unpaidPlan.details,guestCount:52},unpaidPlan.id,unpaidPlan.version);const replacement=await proposals.createProposal(changedUnpaid.id,{version:changedUnpaid.version,expiresAt:expiration()});await proposals.sendProposal(changedUnpaid.id,replacement.id,{availabilityApproved:true,capacityApproved:true});assert.equal(sessions.get(unpaidSession.id).status,'expired','An older unpaid checkout is closed before a revised proposal becomes payable');
  const manual=await approved(valid(future(87)));await proposals.acceptAndCheckout(manual.token,acceptance(manual.p));const manualSession=[...sessions.values()].at(-1),manualPlan=await plans.getEventPlan(manual.plan.id);await plans.saveEventPlan({...manualPlan.details,paidCents:35000},manualPlan.id,manualPlan.version);assert.equal(sessions.get(manualSession.id).status,'expired','A recorded manual deposit closes an older unpaid checkout');const checkoutsBeforeCredit=idempotency.size;await proposals.acceptAndCheckout(manual.token,acceptance(manual.p));assert.equal(idempotency.size,checkoutsBeforeCredit);assert.equal((await plans.getEventPlan(manual.plan.id)).details.paidCents,35000);
  const protectedPaid=await plans.getEventPlan(sourcePlan.id);await assert.rejects(()=>plans.saveEventPlan({...protectedPaid.details,paidCents:0},protectedPaid.id,protectedPaid.version),/Verified Stripe/);
