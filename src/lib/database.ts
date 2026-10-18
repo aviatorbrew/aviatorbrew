@@ -291,6 +291,7 @@ const schemaStatements = [
   )`,
   `CREATE INDEX IF NOT EXISTS private_event_plans_date_idx ON website.private_event_plans (event_date)`,
   `ALTER TABLE website.private_event_plans ADD COLUMN IF NOT EXISTS calendar_sync jsonb NOT NULL DEFAULT '{}'::jsonb`,
+  `ALTER TABLE website.private_event_plans ADD COLUMN IF NOT EXISTS deleted_at timestamptz`,
   `CREATE TABLE IF NOT EXISTS website.private_event_updates (
     id bigserial PRIMARY KEY,
     plan_id text NOT NULL REFERENCES website.private_event_plans(id) ON DELETE CASCADE,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isManager } from "@/lib/manager-auth";
-import { EventPlanError, getEventPlan, saveEventPlan, eventUpdateHistory } from "@/lib/event-plans";
+import { EventPlanError, getEventPlan, saveEventPlan, deleteEventPlan, eventUpdateHistory } from "@/lib/event-plans";
+import { ProposalError } from "@/lib/event-proposals";
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store" };
 type Context = { params: Promise<{id:string}> };
@@ -16,4 +17,11 @@ export async function PUT(request: NextRequest, context: Context) {
     const body = await request.json();
     return NextResponse.json({plan:await saveEventPlan(body.details,(await context.params).id,body.version)},{headers});
   } catch(error) { return NextResponse.json({error:error instanceof Error ? error.message : "Could not save event."},{status:error instanceof EventPlanError ? error.status : 400,headers}); }
+}
+export async function DELETE(request:NextRequest,context:Context) {
+  if(!isManager(request))return NextResponse.json({error:"Unauthorized"},{status:401,headers});
+  try{
+    const body=await request.json();
+    return NextResponse.json(await deleteEventPlan((await context.params).id,body.version),{headers});
+  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Could not delete event."},{status:error instanceof EventPlanError||error instanceof ProposalError?error.status:400,headers});}
 }

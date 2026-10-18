@@ -1,10 +1,14 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { getManagerJson, readManagerResponse } from "@/lib/manager-fetch";
+import type { InquiryAvailability } from "@/lib/event-inquiry-availability";
+import { eventDateLabel, timeLabel } from "@/lib/event-plan";
 
 type InquiryKind = "catering" | "event";
 export type ManagedInquiry = {
   bookingStage?: string; planId?: string;
+  availability?:InquiryAvailability;
   payload?: {cateringPlan?: import("@/lib/event-plan").EventPlanDetails};
   id: string; kind: InquiryKind; createdAt: string; source: string; name: string; email: string; phone: string;
   pickupDate: string; pickupTime: string; guestCount: string; eventDate: string; eventTime: string; eventType: string; location: string;
@@ -14,6 +18,10 @@ export type InquiryFocusRequest = { id: string; sequence: number };
 type InquiryResponse = { inquiries?: ManagedInquiry[]; total?: number; filtered?: boolean; unreviewedCount?:number; error?: string };
 
 function dateTime(value: string) { return value ? new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : ""; }
+function InquiryAvailabilityLabel({availability}:{availability?:InquiryAvailability}) {
+  if(!availability)return null;
+  return <div className="inquiry-availability"><span className={`inquiry-availability-label is-${availability.status}`}>{availability.status==="available"?"Date and Time Available":availability.status==="unavailable"?"Date/Time Not Available":"Date/time needed"}</span>{availability.reason?<small>{availability.reason}</small>:null}{availability.status==="unavailable"?<div className="inquiry-availability-alternatives"><strong>Available alternatives</strong>{availability.alternatives.length?<ul>{availability.alternatives.map(option=><li key={option.date}>{eventDateLabel(option.date)} · {timeLabel(option.startTime)}{option.endTime?`–${timeLabel(option.endTime)}`:" (4-hour event)"} Eastern</li>)}</ul>:<p>No open alternatives within ±2 days or the following weekend. Review the calendar for other dates.</p>}</div>:null}<small>Based on the current calendar. Staff approval and the required deposit are still needed.</small></div>;
+}
 function csvValue(value: string) { return '"' + (value || "").replace(/"/g, '""') + '"'; }
 function csv(inquiries: ManagedInquiry[], kind: InquiryKind) {
   const headers = kind === "catering"
@@ -60,10 +68,8 @@ function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDe
     if (q) params.set("q", q); if (startDate) params.set("start", startDate); if (endDate) params.set("end", endDate);
     params.set("limit", q || startDate || endDate ? "200" : "5");
     try {
-      const response = await fetch("/api/manager/inquiries?" + params.toString(), { cache: "no-store" });
-      const body = await response.json() as InquiryResponse;
+      const body = await getManagerJson("/api/manager/inquiries?" + params.toString()) as InquiryResponse;
       if (sequence !== loadSequence.current) return;
-      if (!response.ok) throw new Error(body.error || "Could not load inquiries.");
       setInquiries(body.inquiries || []); setTotal(body.total || 0);
       if(typeof body.unreviewedCount==="number")onUnreviewedCount?.(body.unreviewedCount);
       const shown = body.inquiries?.length || 0;
@@ -94,8 +100,7 @@ function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDe
     setDeletingId(item.id);
     try {
       const response = await fetch("/api/manager/inquiries?kind=" + encodeURIComponent(kind) + "&id=" + encodeURIComponent(item.id), { method: "DELETE" });
-      const body = await response.json() as { error?: string; unreviewedCount?:number };
-      if (!response.ok) throw new Error(body.error || "Could not delete inquiry.");
+      const body = await readManagerResponse(response) as { unreviewedCount?:number };
       setInquiries((current) => current.filter((record) => record.id !== item.id));
       setTotal((current) => Math.max(0, current - 1));
       if (openId === item.id) setOpenId(null);
@@ -113,7 +118,7 @@ function InquiryManager({ kind, title, eyebrow, copy, onPlan, focusRequest, onDe
     <p className="eyebrow">{eyebrow}</p>{!hideHeading?<h2>{title}</h2>:null}<p>{copy}</p><p className="media-message" role="status">{message}</p>
     <div className="manager-catering-stats"><article><span>Total matched</span><strong>{total}</strong></article><article><span>Unique emails shown</span><strong>{marketingCount}</strong></article><article><span>Visible rows</span><strong>{inquiries.length}</strong></article></div>
     <form className="manager-catering-query" onSubmit={submit}><label>Search by name<input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Name, email, phone, item, notes" /></label><label>Start date<input type="date" value={start} onChange={(event) => setStart(event.currentTarget.value)} /></label><label>End date<input type="date" value={end} onChange={(event) => setEnd(event.currentTarget.value)} /></label><div><button className="button" disabled={busy}>{busy ? "Loading..." : "Search"}</button><button className="button button-outline" type="button" onClick={clearFilters} disabled={busy}>Last 5</button><button className="button button-outline" type="button" onClick={exportCsv} disabled={!inquiries.length}>Export CSV</button></div></form>
-    <div className="manager-catering-list">{inquiries.length ? inquiries.map((item) => <article key={item.id} data-inquiry-id={item.id} tabIndex={-1} className={focusRequest?.id===item.id?"is-calendar-inquiry":undefined}><header><div><strong>{item.name || "Unnamed customer"}</strong>{kind === "event" ? <div className="event-inquiry-header-actions">{onPlan?<button className="event-inquiry-plan" type="button" onClick={() => onPlan(item)}>{item.planId?"Open event plan":"Plan event"}</button>:null}<button className="is-danger" type="button" onClick={()=>deleteInquiry(item)} disabled={deletingId===item.id}>{deletingId===item.id?"Deleting…":"Delete Inquiry"}</button></div> : null}<span>{kind==="event"?(item.bookingStage||"Inquiry Received")+" · ":""}{item.email}{item.phone ? " / " + item.phone : ""}</span></div><time>{dateTime(item.createdAt)}</time></header><dl>{kind === "catering" ? <><div><dt>Pickup</dt><dd>{item.pickupDate || "No date"} {item.pickupTime || ""}</dd></div><div><dt>Guests</dt><dd>{item.guestCount || "Not set"}</dd></div><div><dt>Total</dt><dd>{item.estimatedTotal || "Confirm"}</dd></div></> : <><div><dt>Event</dt><dd>{item.eventDate || "No date"} {item.eventTime || ""}</dd></div><div><dt>Type</dt><dd>{item.eventType || "Other"}</dd></div><div><dt>Guests</dt><dd>{item.guestCount || "Not set"}</dd></div></>}</dl><div className="manager-catering-actions"><button type="button" onClick={() => setOpenId(openId === item.id ? null : item.id)}>{openId === item.id ? "Hide details" : "Review details"}</button>{kind==="catering"?<button className="is-danger" type="button" onClick={() => deleteInquiry(item)} disabled={deletingId === item.id}>{deletingId === item.id ? "Deleting..." : "Delete"}</button>:null}</div>{openId === item.id ? <section className="manager-catering-details"><div><h3>{kind === "catering" ? "Order fields" : "Event fields"}</h3><DetailFields item={item} kind={kind} />{kind==="event"&&item.orderSummary?<><h3>Requested buffet & estimate</h3><pre>{item.orderSummary}</pre></>:null}{kind === "catering" ? <><h3>Food order</h3><pre>{item.orderSummary || "No structured order entered."}</pre></> : null}</div><div><h3>Customer notes</h3><p>{item.message || "No notes."}</p>{kind === "catering" ? <><h3>Totals</h3><p>Subtotal {item.estimatedSubtotal || "$0.00"} / Tax {item.estimatedTax || "$0.00"} / Total {item.estimatedTotal || "$0.00"}</p>{item.cateringMenu ? <p><a href={item.cateringMenu} target="_blank" rel="noreferrer">Open submitted menu source</a></p> : null}</> : null}</div></section> : null}</article>) : <p className="tour-schedule-empty">No records found.</p>}</div>
+    <div className="manager-catering-list">{inquiries.length ? inquiries.map((item) => <article key={item.id} data-inquiry-id={item.id} tabIndex={-1} className={focusRequest?.id===item.id?"is-calendar-inquiry":undefined}><header><div><div className="inquiry-name-line"><strong>{item.name || "Unnamed customer"}</strong>{kind==="event"?<InquiryAvailabilityLabel availability={item.availability}/>:null}</div>{kind === "event" ? <div className="event-inquiry-header-actions">{onPlan?<button className="event-inquiry-plan" type="button" onClick={() => onPlan(item)}>{item.planId?"Open event plan":"Plan event"}</button>:null}<button className="is-danger" type="button" onClick={()=>deleteInquiry(item)} disabled={deletingId===item.id}>{deletingId===item.id?"Deleting…":"Delete Inquiry"}</button></div> : null}<span>{kind==="event"?(item.bookingStage||"Inquiry Received")+" · ":""}{item.email}{item.phone ? " / " + item.phone : ""}</span></div><time>{dateTime(item.createdAt)}</time></header><dl>{kind === "catering" ? <><div><dt>Pickup</dt><dd>{item.pickupDate || "No date"} {item.pickupTime || ""}</dd></div><div><dt>Guests</dt><dd>{item.guestCount || "Not set"}</dd></div><div><dt>Total</dt><dd>{item.estimatedTotal || "Confirm"}</dd></div></> : <><div><dt>Event</dt><dd>{item.eventDate || "No date"} {item.eventTime || ""}</dd></div><div><dt>Type</dt><dd>{item.eventType || "Other"}</dd></div><div><dt>Guests</dt><dd>{item.guestCount || "Not set"}</dd></div></>}</dl><div className="manager-catering-actions"><button type="button" onClick={() => setOpenId(openId === item.id ? null : item.id)}>{openId === item.id ? "Hide details" : "Review details"}</button>{kind==="catering"?<button className="is-danger" type="button" onClick={() => deleteInquiry(item)} disabled={deletingId === item.id}>{deletingId === item.id ? "Deleting..." : "Delete"}</button>:null}</div>{openId === item.id ? <section className="manager-catering-details"><div><h3>{kind === "catering" ? "Order fields" : "Event fields"}</h3><DetailFields item={item} kind={kind} />{kind==="event"&&item.orderSummary?<><h3>Requested buffet & estimate</h3><pre>{item.orderSummary}</pre></>:null}{kind === "catering" ? <><h3>Food order</h3><pre>{item.orderSummary || "No structured order entered."}</pre></> : null}</div><div><h3>Customer notes</h3><p>{item.message || "No notes."}</p>{kind === "catering" ? <><h3>Totals</h3><p>Subtotal {item.estimatedSubtotal || "$0.00"} / Tax {item.estimatedTax || "$0.00"} / Total {item.estimatedTotal || "$0.00"}</p>{item.cateringMenu ? <p><a href={item.cateringMenu} target="_blank" rel="noreferrer">Open submitted menu source</a></p> : null}</> : null}</div></section> : null}</article>) : <p className="tour-schedule-empty">No records found.</p>}</div>
   </section>;
 }
 

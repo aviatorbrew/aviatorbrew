@@ -26,6 +26,7 @@ async function compile(file){
 }
 const model=require(await compile(path.join(root,'src/lib/event-plan.ts'))),booking=require(await compile(path.join(root,'src/lib/event-booking.ts'))),proposals=require(await compile(path.join(root,'src/lib/event-proposals.ts'))),settings=require(await compile(path.join(root,'src/lib/private-event-settings.ts'))),plans=require(await compile(path.join(root,'src/lib/event-plans.ts'))),inquiries=require(await compile(path.join(root,'src/lib/event-inquiries.ts'))),documents=require(await compile(path.join(root,'src/lib/event-documents.ts'))),signature=require(await compile(path.join(root,'src/lib/stripe-webhook-signature.ts')));
 const webhook=require(await compile(path.join(root,'src/app/api/stripe/webhook/route.ts'))),kitchenRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/kitchen/route.ts'))),inquiryRoute=require(await compile(path.join(root,'src/app/api/manager/inquiries/route.ts'))),{NextRequest}=require('next/server');
+const planRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/route.ts'))),availability=require(await compile(path.join(root,'src/lib/event-inquiry-availability.ts')));
 const actualFetch=globalThis.fetch,sessions=new Map(),idempotency=new Map();let stripeCalls=0;
 async function kitchenResponse(id,authenticated=true){const cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');return kitchenRoute.GET(new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/kitchen',{headers:authenticated?{cookie}:{}}),{params:Promise.resolve({id})});}
 async function inquiryList(query='',authenticated=true){const cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');return inquiryRoute.GET(new NextRequest('https://aviatorbrew.com/api/manager/inquiries?kind=event'+query,{headers:authenticated?{cookie}:{}}));}
@@ -179,6 +180,47 @@ try{
  assert.equal((await inquiryRoute.DELETE(new NextRequest(deleteUrl,{method:'DELETE',headers:{cookie:inquiryCookie}}))).status,200);
  const deletionPlanAfter=await plans.getEventPlan(sourcePlan.id);assert.equal(deletionPlanAfter.sourceInquiryId,null);assert.deepEqual(deletionPlanAfter.details,deletionPlanBefore.details);assert.deepEqual(await proposals.listProposals(sourcePlan.id),historyBefore);assert.equal(globalThis.eventTestMail.length,deleteMailBefore);
  console.log('Passed explicit customer-email approval, duplicate-send protection, direct manual event approval without mail/checkout, conflict checks and inquiry-only deletion preserving events/proposals/payments.');
+ // Availability labels and alternatives use the same buffered calendar conflicts as booking approval.
+ const requestId='900001',scheduleInput={id:requestId,payload:{cateringPlan:valid(future(120))}};
+ let available=(await availability.inquiryAvailability([scheduleInput])).get(requestId);
+ assert.equal(available.status,'unavailable');assert.ok(available.alternatives.length>0);
+ const alternatives=availability.inquiryAlternativeDates(future(120));
+ assert.ok(available.alternatives.every(item=>alternatives.includes(item.date)));
+ const nextDayBooking=await plans.saveEventPlan({...valid(future(121)),status:'Confirmed'});
+ available=(await availability.inquiryAvailability([scheduleInput])).get(requestId);assert.ok(!available.alternatives.some(item=>item.date===nextDayBooking.details.date),'Occupied alternatives are omitted');
+ assert.ok(available.alternatives.every(item=>item.startTime==='17:00'&&item.endTime==='21:00'));
+ assert.equal((await availability.inquiryAvailability([{id:'900002',payload:{eventDate:future(120)}}])).get('900002').status,'incomplete');
+ assert.equal((await availability.inquiryAvailability([{id:'900003',payload:{eventDate:future(120),eventTime:'5:00 PM',endTime:'9:00 PM'}}])).get('900003').status,'unavailable');
+ assert.equal((await availability.inquiryAvailability([{id:'900004',payload:{eventDate:future(120),eventTime:'21:45',endTime:'22:30'}}])).get('900004').status,'unavailable','Setup and cleanup buffers are included');
+ assert.equal((await availability.inquiryAvailability([{id:'900005',payload:{cateringPlan:valid(future(112))}}])).get('900005').status,'unavailable','Moved Google source dates still block availability');
+ const linkedRequest=await inquiries.submitCateringInquiry({requestId:randomUUID(),humanCheck:'yes',website:'',cateringPlan:valid(future(160))});
+ const linked=await plans.saveEventPlan({...valid(future(160)),status:'Confirmed',paidCents:35000},undefined,undefined,linkedRequest.inquiryId);
+ assert.equal((await (await inquiryList('&id='+linkedRequest.inquiryId)).json()).inquiries[0].availability.status,'available','The inquiry does not conflict with its own saved event');
+ // Un-cancelling retains the menu/payments and checks availability before placing a tentative hold.
+ const cancelled=await plans.saveEventPlan({...linked.details,status:'Cancelled'},linked.id,linked.version);
+ const reopenMail=globalThis.eventTestMail.length;
+ const reopened=await plans.saveEventPlan({...cancelled.details,status:'Tentative'},cancelled.id,cancelled.version);
+ assert.deepEqual(reopened.details,{...cancelled.details,status:'Tentative'});assert.equal(globalThis.eventTestMail.length,reopenMail);
+ const blockedCancel=await plans.saveEventPlan({...cashConflict.details,status:'Cancelled'},cashConflict.id,cashConflict.version);
+ await assert.rejects(()=>plans.saveEventPlan({...blockedCancel.details,status:'Tentative'},blockedCancel.id,blockedCancel.version),/overlap/);
+ // Delete archives rather than destroying event, proposal or payment records.
+ const deleteRequest=(plan,authenticated=true,version=plan.version)=>planRoute.DELETE(new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+plan.id,{method:'DELETE',headers:{'content-type':'application/json',...(authenticated?{cookie:inquiryCookie}:{})},body:JSON.stringify({version})}),{params:Promise.resolve({id:plan.id})});
+ assert.equal((await deleteRequest(reopened,false)).status,401);
+ assert.equal((await deleteRequest(reopened,true,reopened.version-1)).status,409);
+ const deletedQuote=await proposals.createProposal(reopened.id,{version:reopened.version,expiresAt:expiration()}),deletedHistory=await proposals.listProposals(reopened.id),deletedMail=globalThis.eventTestMail.length;
+ assert.equal((await deleteRequest(reopened)).status,200);assert.equal(await plans.getEventPlan(reopened.id),null);
+ assert.ok(!(await plans.listEventPlans(reopened.details.date.slice(0,7))).some(item=>item.id===reopened.id));
+ const retained=(await connection.query('SELECT * FROM website.private_event_plans WHERE id=$1',[reopened.id])).rows[0];
+ assert.ok(retained.deleted_at);assert.equal(retained.status,'Cancelled');assert.equal(retained.data.paidCents,35000);assert.equal(String(retained.data.deletedSourceInquiryId),linkedRequest.inquiryId);assert.equal(retained.source_inquiry_id,null);
+ assert.deepEqual(await proposals.listProposals(reopened.id),deletedHistory);assert.ok(deletedHistory.proposals.some(item=>item.id===deletedQuote.id));
+ assert.equal(globalThis.eventTestMail.length,deletedMail);await assert.rejects(()=>plans.saveEventPlan(reopened.details,reopened.id,reopened.version),/deleted/);
+ assert.equal((await deleteRequest(reopened)).status,200,'Repeated deletion is idempotent');
+ const remainingInquiry=(await (await inquiryList('&id='+linkedRequest.inquiryId)).json()).inquiries[0];assert.ok(!remainingInquiry.planId,'The preserved inquiry can start a new plan');
+ const paidArchived=await plans.getEventPlan(sourcePlan.id),ledgerBefore=(await connection.query('SELECT * FROM website.private_event_deposits WHERE plan_id=$1',[paidArchived.id])).rows;
+ assert.equal((await deleteRequest(paidArchived)).status,200);assert.deepEqual((await connection.query('SELECT * FROM website.private_event_deposits WHERE plan_id=$1',[paidArchived.id])).rows,ledgerBefore,'Verified payment references survive event deletion');
+ const payableDelete=await approved(valid(future(170)));await proposals.acceptAndCheckout(payableDelete.token,acceptance(payableDelete.p));const payableSession=[...sessions.values()].at(-1),payablePlan=await plans.getEventPlan(payableDelete.plan.id);
+ assert.equal((await deleteRequest(payablePlan)).status,200);assert.equal(payableSession.status,'expired','Deletion closes an unpaid checkout');assert.equal((await proposals.customerProposal(payableDelete.token)).canAccept,false);
+ console.log('Passed inquiry availability/nearby weekend alternatives, own-event exclusion, Google moves, buffered conflicts, un-cancel with payment/menu retention, authorized idempotent event deletion, archived records, preserved inquiries/quotes/verified payments and checkout closure.');
  // Leave only safe current catalog settings for the separate local browser fixture.
  await settings.setPrivateEventSettings({catering:catalog});
  const browserFixture=await approved(valid(future(95)));

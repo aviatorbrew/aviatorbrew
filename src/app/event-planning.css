@@ -36,3 +36,13 @@
 .manager-private-events .event-section-title,.manager-private-events .event-inquiry-archive>summary,.manager-private-events .event-website-settings>summary{padding:.6rem 0;margin:.5rem 0;border-bottom:1px solid #7891a2;width:100%}
 .manager-private-events .event-inquiry-archive>summary h2{display:inline;margin:0}
 .manager-private-events .event-unreviewed-count{display:inline-block;margin-left:.5rem;font-size:.65em;font-weight:400;color:#fff}
+.manager-private-events .inquiry-name-line{display:flex;align-items:start;gap:.5rem 1rem;flex-wrap:wrap}
+.manager-private-events .inquiry-availability{max-width:36rem;font-size:.75rem}
+.manager-private-events .inquiry-availability .inquiry-availability-label{display:inline-block;margin:0;padding:.2rem .4rem;border:1px solid currentColor;font-weight:700;color:#d1dce4}
+.manager-private-events .inquiry-availability .is-available{color:#87e6a5}
+.manager-private-events .inquiry-availability .is-unavailable{color:#ffaaaa}
+.manager-private-events .inquiry-availability small{display:block;color:#bfd1de;margin:.25rem 0}
+.manager-private-events .inquiry-availability-alternatives{margin:.4rem 0}
+.manager-private-events .inquiry-availability-alternatives>strong{font-size:.75rem}
+.manager-private-events .inquiry-availability-alternatives ul{margin:.25rem 0;padding-left:1.2rem}
+.manager-private-events .inquiry-availability-alternatives li{margin:.2rem 0}

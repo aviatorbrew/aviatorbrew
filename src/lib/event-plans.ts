@@ -19,13 +19,13 @@ export async function inquiryBookingStages(ids:string[]) {
 }
 export async function listEventPlans(month: string) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new EventPlanError("Choose a calendar month.");
-  return withDatabase(async (client) => (await client.query(eventPlanSelect+" WHERE e.event_date >= $1::date AND e.event_date < $1::date + interval '1 month' ORDER BY e.event_date, e.data->>'startTime', e.title", [month + "-01"])).rows.map(record));
+  return withDatabase(async (client) => (await client.query(eventPlanSelect+" WHERE e.deleted_at IS NULL AND e.event_date >= $1::date AND e.event_date < $1::date + interval '1 month' ORDER BY e.event_date, e.data->>'startTime', e.title", [month + "-01"])).rows.map(record));
 }
 export async function eventCalendarSyncStatus() {
   return withDatabase(async client => (await client.query("SELECT value FROM website.settings WHERE key='private_event_calendar_sync'")).rows[0]?.value || null);
 }
 export async function getEventPlan(id: string) {
-  return withDatabase(async (client) => { const result = await client.query(eventPlanSelect+" WHERE e.id=$1", [id]); return result.rows[0] ? record(result.rows[0]) : null; });
+  return withDatabase(async (client) => { const result = await client.query(eventPlanSelect+" WHERE e.id=$1 AND e.deleted_at IS NULL", [id]); return result.rows[0] ? record(result.rows[0]) : null; });
 }
 export async function saveEventPlan(input: unknown, id?: string, version?: number, sourceInquiryId?: string) {
   const details = parseEventPlan(input,(await getPrivateEventSettings()).catering);
@@ -33,7 +33,8 @@ export async function saveEventPlan(input: unknown, id?: string, version?: numbe
     await client.query("BEGIN");
     try {
       await client.query("SELECT pg_advisory_xact_lock(hashtext('aviator-private-event-booking'))");
-      const existing = id ? (await client.query("SELECT data,status FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[id])).rows[0] : null;
+      const existing = id ? (await client.query("SELECT data,status,deleted_at FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[id])).rows[0] : null;
+      if(id&&(!existing||existing.deleted_at))throw new EventPlanError("This event was deleted or is no longer available.",404);
       const old=existing?.data as EventPlanDetails|undefined;
       if(id){
         if(old&&details.status==="Draft"&&old.status!=="Draft")await client.query("UPDATE website.private_event_proposals SET approved_at=NULL WHERE plan_id=$1",[id]);
@@ -69,6 +70,22 @@ export async function saveEventPlan(input: unknown, id?: string, version?: numbe
       };
       const saved=await save();
       await client.query("COMMIT");return saved;
+    }catch(error){await client.query("ROLLBACK").catch(()=>undefined);throw error;}
+  });
+}
+export async function deleteEventPlan(id:string,version:number) {
+  return withDatabase(async client=>{
+    await client.query("BEGIN");
+    try{
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('aviator-private-event-booking'))");
+      const plan=(await client.query("SELECT version,deleted_at FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[id])).rows[0];
+      if(!plan)throw new EventPlanError("Event not found.",404);
+      if(!plan.deleted_at){
+        if(!Number.isInteger(version)||version!==plan.version)throw new EventPlanError("This event changed in another window. Reload it before deleting.",409);
+        await closeUnpaidEventCheckouts(client,id);
+        await client.query("UPDATE website.private_event_plans SET deleted_at=now(),status='Cancelled',data=data||jsonb_build_object('status','Cancelled','deletedOriginalStatus',status,'deletedSourceInquiryId',source_inquiry_id),source_inquiry_id=NULL,version=version+1,updated_at=now() WHERE id=$1",[id]);
+      }
+      await client.query("COMMIT");return {id,deleted:true};
     }catch(error){await client.query("ROLLBACK").catch(()=>undefined);throw error;}
   });
 }
