@@ -41,7 +41,7 @@ globalThis.fetch=async (url,input={})=>{
 };
 const future=days=>new Date(Date.now()+days*86400000).toISOString().slice(0,10),expiration=()=>new Date(Date.now()+14*86400000).toISOString();
 function valid(date=future(60)){
- const p={...model.emptyEventPlan(),title:'Isolated test event',contactName:'Fixture Customer',contactEmail:'fixture@example.com',phone:'919-555-0100',date,startTime:'17:00',endTime:'21:00',guestCount:50,internalNotes:'DO NOT EXPOSE PAYMENT ADMIN NOTES'};
+ const p={...model.emptyEventPlan(),title:'Isolated test event',contactName:'Fixture Customer',contactEmail:'fixture@example.com',phone:'919-555-0100',date,startTime:'17:00',foodTime:'18:00',endTime:'21:00',guestCount:50,internalNotes:'DO NOT EXPOSE PAYMENT ADMIN NOTES'};
  p.flightPlan={...model.emptyFlightPlan(),packageId:'feast',appetizers:['Hush Puppies','Tater Tots','Brewer Fries'],entrees:['Aviator Pulled Pork BBQ','Aviator Chicken Tenders'],sides:['Mac & Cheese','Potato Salad'],salads:['Caesar Salad'],dietaryNeeds:'Fixture peanut allergy',foodNotes:'Fixture service notes'};return p;
 }
 async function approved(details=valid()){
@@ -52,6 +52,29 @@ const acceptance=p=>({name:'Fixture Customer',agreed:true,proposalVersion:p.vers
 async function notify(session,eventId='evt_'+randomUUID(),validSignature=true){const raw=JSON.stringify({id:eventId,type:'checkout.session.completed',data:{object:session}}),t=Math.floor(Date.now()/1000),signed=createHmac('sha256',process.env.STRIPE_WEBHOOK_SECRET).update(t+'.'+raw).digest('hex');return webhook.POST(new NextRequest('https://aviatorbrew.com/api/stripe/webhook',{method:'POST',headers:{'stripe-signature':`t=${t},v1=${validSignature?signed:'0'.repeat(64)}`},body:raw}));}
 try{
  const catalog=structuredClone(model.defaultCateringCatalog),original=valid();
+ const inquiryEmail=require(await compile(path.join(root,'src/lib/event-inquiry-email.ts')));
+ const customerCopy=inquiryEmail.buildEventInquiryEmail(original,catalog,'123','customer');
+ const teamCopy=inquiryEmail.buildEventInquiryEmail(original,catalog,'123','internal');
+ for(const copy of [customerCopy,teamCopy]){
+  assert.ok(copy.html.includes('cid:aviator-logo'));
+  for(const heading of ['Event details','Contact information','Your buffet menu','Estimated pricing','What happens next'])assert.ok(copy.html.includes(heading));
+  assert.ok(copy.html.includes('<ul')&&copy.html.includes('<ol'));
+  assert.ok(copy.html.includes('Food out time')&&copy.text.includes('Food out time: 6:00 PM'));
+  assert.ok(copy.html.includes('$1,900.00')&&copy.html.includes('$2,056.75'));
+  assert.ok(copy.text.includes('not confirmed')&&copy.text.includes('pay your deposit online'));
+  assert.ok(!copy.html.includes('DO NOT EXPOSE PAYMENT ADMIN NOTES'));
+ }
+ assert.ok(teamCopy.html.includes('https://aviatorbrew.com/manager/private-events?inquiry=123'));
+ assert.ok(teamCopy.text.includes('Review Request in Manager Portal'.toUpperCase()));
+ assert.ok(!customerCopy.html.includes('/manager/')&&!customerCopy.text.includes('/manager/'));
+ const unsafe=inquiryEmail.buildEventInquiryEmail({...original,title:'<script>alert(1)</script>',contactName:'<img src=x onerror=alert(2)>',notes:'<a href="javascript:alert(3)">Unsafe</a>',flightPlan:{...original.flightPlan,appetizers:['Hush Puppies','Hush Puppies','Brewer Fries']}},catalog,'123','customer');
+ assert.ok(!unsafe.html.includes('<script>')&&!unsafe.html.includes('<img src=x')&&!unsafe.html.includes('<a href="javascript:'));
+ assert.ok(unsafe.html.includes('&lt;script&gt;')&&unsafe.html.includes('Hush Puppies × 2'));
+ const emailCatalog=structuredClone(catalog);emailCatalog.packages[1].priceCents=4150;
+ assert.ok(inquiryEmail.buildEventInquiryEmail(original,emailCatalog,'123','customer').html.includes('$2,075.00'),'Emails use current backend prices');
+ await writeFile('/tmp/aviator-event-inquiry-email-customer.html',customerCopy.html);
+ await writeFile('/tmp/aviator-event-inquiry-email-team.html',teamCopy.html);
+ console.log('Passed branded HTML/plain inquiry emails, accurate prices, food lists, duplicate selections, safe escaping, internal-only manager links and private-note protection');
  assert.equal(model.eventTotals(original,catalog).subtotal,190000);
  for(const guests of [0,29,71,1.5])assert.throws(()=>booking.validateCateringRequest({...original,guestCount:guests},catalog,35000));
  assert.throws(()=>booking.validateCateringRequest({...original,flightPlan:{...original.flightPlan,appetizers:['Hush Puppies']}},catalog,35000));
@@ -61,7 +84,7 @@ try{
  disabled.disabledItems=[];disabled.packages[1].enabled=false;assert.throws(()=>booking.validateCateringRequest(original,disabled,35000));
  const repriced=structuredClone(catalog);repriced.packages[1].priceCents=4000;repriced.extraPrices.side=400;
  const canonical=booking.validateCateringRequest({...original,paidCents:999999,taxRateBps:0,items:[{name:'fake'}],flightPlan:{...original.flightPlan,extraSides:['French Fries'],extraSidePriceCents:0}},repriced,42000);
- assert.equal(canonical.paidCents,0);assert.equal(canonical.items.length,0);assert.equal(canonical.reservationDepositCents,42000);assert.equal(model.eventTotals(canonical,repriced).subtotal,220000);
+ assert.equal(canonical.foodTime,'18:00','Food out time survives backend validation');assert.throws(()=>booking.validateCateringRequest({...original,foodTime:'25:00'},catalog,35000));assert.equal(canonical.paidCents,0);assert.equal(canonical.items.length,0);assert.equal(canonical.reservationDepositCents,42000);assert.equal(model.eventTotals(canonical,repriced).subtotal,220000);
  assert.equal(booking.eventWindowsOverlap({date:'2027-01-01',startTime:'22:00',endTime:'02:00'},{date:'2027-01-02',startTime:'01:00',endTime:'04:00'}),true);
  assert.equal(proposals.materialHash(original),proposals.materialHash(Object.fromEntries(Object.entries(original).reverse())),'Material comparisons ignore JSON object key order');
  console.log('Passed menu validation, backend pricing, disabled items, guest limits and overnight availability');
@@ -69,7 +92,11 @@ try{
  const inquiry=await inquiries.submitCateringInquiry(req);await inquiries.submitCateringInquiry(req);
  assert.equal(Number((await connection.query('SELECT count(*) FROM website.form_inquiries')).rows[0].count),1);
  assert.equal(globalThis.eventTestMail.length,2,'Duplicate inquiry does not repeat emails');
+ assert.ok(globalThis.eventTestMail[0].html.includes('/manager/private-events?inquiry='+inquiry.inquiryId));
+ assert.ok(globalThis.eventTestMail[1].html.includes('Your event request is in!'));
+ assert.ok(!globalThis.eventTestMail[1].html.includes('/manager/'),'Customer copy excludes internal manager links');
  assert.equal((await connection.query('SELECT payload FROM website.form_inquiries')).rows[0].payload.cateringPlan.paidCents,0);
+ assert.equal((await connection.query('SELECT payload FROM website.form_inquiries')).rows[0].payload.cateringPlan.foodTime,'18:00','Inquiry preserves food out time for manager planning');
  const sourcePlan=await plans.saveEventPlan(booking.validateCateringRequest(original,catalog,35000),undefined,undefined,inquiry.inquiryId);
  const draft=await proposals.createProposal(sourcePlan.id,{version:sourcePlan.version,expiresAt:expiration()});
  assert.equal((await kitchenResponse(sourcePlan.id,false)).status,401,'Kitchen sheets remain manager-only');

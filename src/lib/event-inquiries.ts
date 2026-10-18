@@ -4,6 +4,7 @@ import { getPrivateEventSettings } from "@/lib/private-event-settings";
 import { cateringSummary, inquiryAcknowledgement, validateCateringRequest } from "@/lib/event-booking";
 import { eventTotals, money } from "@/lib/event-plan";
 import { sendMail } from "@/lib/mail";
+import { buildEventInquiryEmail } from "@/lib/event-inquiry-email";
 
 export async function submitCateringInquiry(body: Record<string, unknown>) {
   if (body.website || body.humanCheck !== "yes" || typeof body.requestId !== "string" || !/^[a-f0-9-]{36}$/i.test(body.requestId)) throw new Error("Confirm you are a real person and submit a valid request.");
@@ -22,8 +23,10 @@ export async function submitCateringInquiry(body: Record<string, unknown>) {
     }catch(error){await client.query("ROLLBACK");throw error;}
   });
   if(result.created){
-    const text=[inquiryAcknowledgement,"",details.title,details.date+" "+details.startTime+"–"+details.endTime,details.location,details.contactName,details.contactEmail,details.phone,"",summary,"",details.notes].join("\n");
-    const messages=[{to:process.env.PRIVATE_EVENT_INQUIRY_RECIPIENT_EMAIL||"events@aviatorbrew.com",subject:"New online private event request #"+result.id,text,replyTo:details.contactEmail},{to:details.contactEmail,subject:"We received your Aviator event request #"+result.id,text,replyTo:"events@aviatorbrew.com"}];
+    const messages=[
+      {to:process.env.PRIVATE_EVENT_INQUIRY_RECIPIENT_EMAIL||"events@aviatorbrew.com",subject:"New online private event request #"+result.id,replyTo:details.contactEmail,fromName:"Aviator Events",...buildEventInquiryEmail(details,settings.catering,String(result.id),"internal")},
+      {to:details.contactEmail,subject:"We received your Aviator event request #"+result.id,replyTo:"events@aviatorbrew.com",fromName:"Aviator Events",...buildEventInquiryEmail(details,settings.catering,String(result.id),"customer")},
+    ];
     const sent=await Promise.allSettled(messages.map(message=>sendMail(message)));
     if(sent.some(r=>r.status==="rejected"||!r.value))console.error("private_event.inquiry_email_delivery_failed",{inquiryId:String(result.id)});
   }

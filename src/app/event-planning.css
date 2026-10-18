@@ -19,7 +19,15 @@
 .manager-private-events .event-plan-list>article.is-inquiry-event,.manager-private-events .event-plan-editor.is-inquiry-event{border-color:#ffd54f}
 .manager-private-events .event-outline-legend{display:flex;flex-wrap:wrap;gap:.45rem;margin:.5rem 0;font-size:.72rem}
 .manager-private-events .event-outline-legend span{padding:.2rem .45rem;border:1px solid #fff;border-radius:3px}
-.manager-private-events .event-outline-legend span:last-child{border-color:#ffd54f}
+.manager-private-events .event-status-review{--event-status-color:#ffd54f}
+.manager-private-events .event-status-confirmed,.manager-private-events .event-status-completed{--event-status-color:#70dc98}
+.manager-private-events .event-status-cancelled{--event-status-color:#ff7777}
+.manager-private-events .event-plan-list>article,.manager-private-events .event-plan-editor{border-left:8px solid var(--event-status-color,#ffd54f)}
+.manager-private-events .event-planning .event-day .event-calendar-entry{border-left:5px solid var(--event-status-color,#ffd54f)}
+.manager-private-events .event-outline-legend span{border-left:6px solid var(--event-status-color)}
+.manager-private-events .event-planning .event-cancel-button{border-color:#ff7777;color:#ffb6b6}
+.manager-private-events .event-planning input:is([type="date"],[type="time"],[type="month"]){color-scheme:dark}
+.manager-private-events .event-planning input:is([type="date"],[type="time"],[type="month"])::-webkit-calendar-picker-indicator{filter:brightness(0) invert(1);opacity:1}
 
 .manager-private-events .event-inquiry-header-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:.4rem 0}
 .manager-private-events .event-inquiry-header-actions .event-inquiry-plan{margin:0}
