@@ -27,6 +27,7 @@ async function compile(file){
 const model=require(await compile(path.join(root,'src/lib/event-plan.ts'))),booking=require(await compile(path.join(root,'src/lib/event-booking.ts'))),proposals=require(await compile(path.join(root,'src/lib/event-proposals.ts'))),settings=require(await compile(path.join(root,'src/lib/private-event-settings.ts'))),plans=require(await compile(path.join(root,'src/lib/event-plans.ts'))),inquiries=require(await compile(path.join(root,'src/lib/event-inquiries.ts'))),documents=require(await compile(path.join(root,'src/lib/event-documents.ts'))),signature=require(await compile(path.join(root,'src/lib/stripe-webhook-signature.ts')));
 const webhook=require(await compile(path.join(root,'src/app/api/stripe/webhook/route.ts'))),kitchenRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/kitchen/route.ts'))),inquiryRoute=require(await compile(path.join(root,'src/app/api/manager/inquiries/route.ts'))),{NextRequest}=require('next/server');
 const planRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/route.ts'))),availability=require(await compile(path.join(root,'src/lib/event-inquiry-availability.ts')));
+const proposalCollection=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/proposals/route.ts')));
 const reportRoute=require(await compile(path.join(root,'src/app/api/manager/event-reports/route.ts'))),alternativeRoute=require(await compile(path.join(root,'src/app/api/manager/inquiries/[id]/alternative/route.ts'))),proposalRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/proposals/[proposalId]/route.ts')));
 const actualFetch=globalThis.fetch,sessions=new Map(),idempotency=new Map();let stripeCalls=0;
 async function kitchenResponse(id,authenticated=true){const cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');return kitchenRoute.GET(new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/kitchen',{headers:authenticated?{cookie}:{}}),{params:Promise.resolve({id})});}
@@ -125,7 +126,22 @@ try{
  const p=await proposals.createProposal(sourcePlan.id,{version:sourcePlan.version,expiresAt:expiration()});
  await assert.rejects(()=>proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:true,capacityApproved:true}),/approve.*email/);
  await assert.rejects(()=>proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:false,capacityApproved:true,emailApproved:true}));
- await proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true});
+ const reviewCookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');
+ const reviewPatch=(id,body,authenticated=true)=>proposalCollection.PATCH(new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/proposals',{method:'PATCH',headers:{'content-type':'application/json',...(authenticated?{cookie:reviewCookie}:{})},body:JSON.stringify(body)}),{params:Promise.resolve({id})});
+ let approval=(await proposals.listProposals(sourcePlan.id)).review;assert.equal(approval.emailApproved,false);
+ const allApproved={...approval,availabilityApproved:true,capacityApproved:true,emailApproved:true},reviewMailBefore=globalThis.eventTestMail.length;
+ assert.equal((await reviewPatch(sourcePlan.id,allApproved,false)).status,401);
+ assert.equal((await reviewPatch(sourcePlan.id,{...allApproved,emailApproved:'yes'})).status,400);
+ assert.equal((await reviewPatch(sourcePlan.id,{...allApproved,context:'stale'})).status,409);
+ assert.equal((await reviewPatch(sourcePlan.id,allApproved)).status,200);
+ assert.equal((await proposals.listProposals(sourcePlan.id)).review.emailApproved,true);
+ assert.equal((await plans.getEventPlan(sourcePlan.id)).version,sourcePlan.version,'Approval saving does not change the event revision');
+ assert.equal(globalThis.eventTestMail.length,reviewMailBefore,'Checking approvals does not send email');
+ await proposals.saveProposalReview(sourcePlan.id,{...allApproved,emailApproved:false});
+ await assert.rejects(()=>proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true,reviewContext:approval.context}),/approvals changed/);
+ await proposals.saveProposalReview(sourcePlan.id,allApproved);
+ await proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true,reviewContext:approval.context});
+ assert.equal((await proposals.listProposals(sourcePlan.id)).review.emailApproved,true,'Approvals survive sending and the automatic tentative status');
  const approvedKitchen=await kitchenResponse(sourcePlan.id);assert.equal(approvedKitchen.status,200);assert.ok((await approvedKitchen.text()).includes('APPROVED PROPOSAL — TENTATIVE EVENT'));
  const token=globalThis.eventTestMail.at(-1).text.match(/#token=([a-f0-9]{64})/)[1],access=await proposals.customerProposal(token);
  assert.equal(access.status,'Proposal Sent');assert.equal(access.proposal.snapshot.totals.total,205675);assert.ok(!JSON.stringify(access).includes('DO NOT EXPOSE'));assert.ok(!('token_hash' in access.proposal));
@@ -213,7 +229,7 @@ try{
  assert.ok(!(await plans.listEventPlans(reopened.details.date.slice(0,7))).some(item=>item.id===reopened.id));
  const retained=(await connection.query('SELECT * FROM website.private_event_plans WHERE id=$1',[reopened.id])).rows[0];
  assert.ok(retained.deleted_at);assert.equal(retained.status,'Cancelled');assert.equal(retained.data.paidCents,35000);assert.equal(String(retained.data.deletedSourceInquiryId),linkedRequest.inquiryId);assert.equal(retained.source_inquiry_id,null);
- assert.deepEqual(await proposals.listProposals(reopened.id),deletedHistory);assert.ok(deletedHistory.proposals.some(item=>item.id===deletedQuote.id));
+ const archivedHistory=await proposals.listProposals(reopened.id);for(const key of ['proposals','deposits','deliveries'])assert.deepEqual(archivedHistory[key],deletedHistory[key]);assert.equal(archivedHistory.review.emailApproved,false);assert.ok(deletedHistory.proposals.some(item=>item.id===deletedQuote.id));
  assert.equal(globalThis.eventTestMail.length,deletedMail);await assert.rejects(()=>plans.saveEventPlan(reopened.details,reopened.id,reopened.version),/deleted/);
  assert.equal((await deleteRequest(reopened)).status,200,'Repeated deletion is idempotent');
  const remainingInquiry=(await (await inquiryList('&id='+linkedRequest.inquiryId)).json()).inquiries[0];assert.ok(!remainingInquiry.planId,'The preserved inquiry can start a new plan');
@@ -275,6 +291,30 @@ try{
  const failingSentPlan=await plans.saveEventPlan(valid(future(240))),failingSentProposal=await proposals.createProposal(failingSentPlan.id,{version:failingSentPlan.version,expiresAt:expiration()});globalThis.eventTestFailMail=true;
  await assert.rejects(()=>proposals.sendProposal(failingSentPlan.id,failingSentProposal.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true}),/email was not delivered/);globalThis.eventTestFailMail=false;assert.equal((await deleteDraft(failingSentPlan.id,failingSentProposal)).status,409,'In-flight or failed approved sends cannot race draft deletion');
  await connection.query("UPDATE website.private_event_proposals SET state='superseded',approved_at=NULL,token_hash=NULL WHERE id=$1",[failingSentProposal.id]);assert.equal((await deleteDraft(failingSentPlan.id,failingSentProposal)).status,409,'Withdrawing approval and superseding an attempted send cannot enable deletion');
+ // Stored review belongs to the current terms and exact proposal, not an event revision number.
+ let reviewPlan=await plans.saveEventPlan(valid(future(260)));
+ const approveReview=async()=>{const r=(await proposals.listProposals(reviewPlan.id)).review;return proposals.saveProposalReview(reviewPlan.id,{...r,availabilityApproved:true,capacityApproved:true,emailApproved:true});};
+ await approveReview();const firstReviewDraft=await proposals.createProposal(reviewPlan.id,{version:reviewPlan.version,expiresAt:expiration()});
+ assert.equal((await proposals.listProposals(reviewPlan.id)).review.emailApproved,false,'A new draft clears all review approvals');
+ const firstReview=await approveReview();
+ reviewPlan=await plans.saveEventPlan({...reviewPlan.details,internalNotes:'Changed internal office note'},reviewPlan.id,reviewPlan.version);
+ assert.equal((await proposals.listProposals(reviewPlan.id)).review.emailApproved,true,'Internal notes do not change the reviewed customer terms');
+ reviewPlan=await plans.saveEventPlan(reviewPlan.details,reviewPlan.id,reviewPlan.version);
+ assert.equal((await proposals.listProposals(reviewPlan.id)).review.capacityApproved,true,'Saving unchanged terms preserves approvals');
+ reviewPlan=await plans.saveEventPlan({...reviewPlan.details,guestCount:51},reviewPlan.id,reviewPlan.version);
+ assert.equal((await proposals.listProposals(reviewPlan.id)).review.emailApproved,false);
+ await assert.rejects(()=>proposals.saveProposalReview(reviewPlan.id,firstReview),/changed/);
+ reviewPlan=await plans.saveEventPlan({...reviewPlan.details,guestCount:50},reviewPlan.id,reviewPlan.version);
+ assert.equal((await proposals.listProposals(reviewPlan.id)).review.emailApproved,false,'Reverting terms cannot restore an old approval');
+ for(const change of [{contactEmail:'revised@example.invalid'},{paidCents:1000},{date:future(261)},{status:'Cancelled'},{status:'Tentative'}]){
+   await approveReview();reviewPlan=await plans.saveEventPlan({...reviewPlan.details,...change},reviewPlan.id,reviewPlan.version);
+   const r=(await proposals.listProposals(reviewPlan.id)).review;assert.equal(r.emailApproved,false);assert.equal(r.availabilityApproved,false);assert.equal(r.capacityApproved,false);
+ }
+ const secondReviewDraft=await proposals.createProposal(reviewPlan.id,{version:reviewPlan.version,expiresAt:expiration()});const secondReview=await approveReview();
+ await assert.rejects(()=>proposals.sendProposal(reviewPlan.id,firstReviewDraft.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true,reviewContext:secondReview.context}),/approvals changed/);
+ await proposals.deleteProposalDraft(reviewPlan.id,secondReviewDraft.id,secondReviewDraft.version);
+ assert.equal((await proposals.listProposals(reviewPlan.id)).review.emailApproved,false,'Deleting a draft does not restore approval of an older version');
+ console.log('Passed authorized persistent staff approvals, unchanged-term refresh/save/send persistence, explicit revocation, stale-context blocking, exact proposal binding, new-draft/deletion/material-change reset and internal-note preservation.');
  console.log('Passed confirmed inquiry filtering, preserved audit links, protected historical reports/search/pagination, alternative-date approval and conflict checks, tentative scheduling, contact-only mail, failed-send retry idempotence, unchanged quote snapshots, and unsent-only proposal deletion.');
  // Leave only safe current catalog settings for the separate local browser fixture.
  await settings.setPrivateEventSettings({catering:catalog});

@@ -1,4 +1,4 @@
-import { closeUnpaidEventCheckouts } from "@/lib/event-proposals";
+import { closeUnpaidEventCheckouts, materialHash } from "@/lib/event-proposals";
 import { eventRecordConflicts, eventBookingStage } from "@/lib/event-booking";
 import { getPrivateEventSettings } from "@/lib/private-event-settings";
 import { createHash, randomUUID } from "node:crypto";
@@ -56,6 +56,7 @@ export async function saveEventPlan(input: unknown, id?: string, version?: numbe
       const existing = id ? (await client.query("SELECT data,status,deleted_at FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[id])).rows[0] : null;
       if(id&&(!existing||existing.deleted_at))throw new EventPlanError("This event was deleted or is no longer available.",404);
       const old=existing?.data as EventPlanDetails|undefined;
+      if(old&&(materialHash(old)!==materialHash(details)||old.paidCents!==details.paidCents||old.status!==details.status))await client.query("UPDATE website.private_event_plans SET proposal_review='{}'::jsonb WHERE id=$1",[id]);
       if(id){
         if(old&&details.status==="Draft"&&old.status!=="Draft")await client.query("UPDATE website.private_event_proposals SET approved_at=NULL WHERE plan_id=$1",[id]);
         const verifiedPaid=Number((await client.query("SELECT COALESCE(sum(amount_cents),0)::int AS paid FROM website.private_event_deposits WHERE plan_id=$1",[id])).rows[0].paid);

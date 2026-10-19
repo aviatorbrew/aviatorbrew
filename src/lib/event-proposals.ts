@@ -45,11 +45,43 @@ export async function closeUnpaidEventCheckouts(client:PoolClient,planId:string,
     }
 
 }
+export type ProposalReview = {context:string;proposalId:string|null;availabilityApproved:boolean;capacityApproved:boolean;emailApproved:boolean};
+function proposalReview(plan: {data:EventPlanDetails;proposal_review?:Record<string,unknown>}, latest?: {id:string;version:number;expires_at:unknown}):ProposalReview {
+  const context=createHash('sha256').update(JSON.stringify(stable({terms:materialHash(plan.data),paidCents:plan.data.paidCents,closed:['Cancelled','Completed'].includes(plan.data.status)?plan.data.status:null,proposal:latest?{id:latest.id,version:latest.version,expiresAt:iso(latest.expires_at)}:null}))).digest('hex');
+  const saved=plan.proposal_review?.context===context?plan.proposal_review:{};
+  return {context,proposalId:latest?.id||null,availabilityApproved:saved.availabilityApproved===true,capacityApproved:saved.capacityApproved===true,emailApproved:saved.emailApproved===true};
+}
+async function currentProposalReview(client:PoolClient,planId:string,plan?:{data:EventPlanDetails;proposal_review?:Record<string,unknown>}) {
+  plan ||= (await client.query('SELECT data,proposal_review FROM website.private_event_plans WHERE id=$1',[planId])).rows[0];
+  if(!plan)throw new ProposalError('Event not found.',404);
+  const latest=(await client.query('SELECT id,version,expires_at FROM website.private_event_proposals WHERE plan_id=$1 ORDER BY version DESC LIMIT 1',[planId])).rows[0];
+  return proposalReview(plan,latest);
+}
+export async function saveProposalReview(planId:string,input:ProposalReview) {
+  if(!input||typeof input.context!=='string'||['availabilityApproved','capacityApproved','emailApproved'].some(key=>typeof input[key as keyof ProposalReview]!=='boolean'))throw new ProposalError('Check the staff approval selections.');
+  return transaction(async client=>{
+    const plan=(await client.query('SELECT data,proposal_review FROM website.private_event_plans WHERE id=$1 AND deleted_at IS NULL FOR UPDATE',[planId])).rows[0];
+    if(!plan)throw new ProposalError('Event not found.',404);
+    const current=await currentProposalReview(client,planId,plan);
+    if(current.context!==input.context)throw new ProposalError('The event or proposal changed. Refresh it and review the approvals again.',409);
+    const review={...current,availabilityApproved:input.availabilityApproved,capacityApproved:input.capacityApproved,emailApproved:input.emailApproved};
+    await client.query('UPDATE website.private_event_plans SET proposal_review=$1::jsonb WHERE id=$2',[JSON.stringify({...review,updatedAt:new Date().toISOString()}),planId]);
+    return review;
+  });
+}
+export async function requireSavedProposalReview(planId:string,proposalId:string,context:string,availability=false,client?:PoolClient,plan?:{data:EventPlanDetails;proposal_review?:Record<string,unknown>}) {
+  const check=async(connection:PoolClient)=>{
+    const review=await currentProposalReview(connection,planId,plan);
+    if(review.context!==context||review.proposalId!==proposalId||!review.emailApproved||(availability&&(!review.availabilityApproved||!review.capacityApproved)))throw new ProposalError('The event, proposal or staff approvals changed. Refresh and review the approvals before sending.',409);
+  };
+  return client?check(client):withDatabase(check);
+}
 export async function listProposals(planId:string){return withDatabase(async client=>{
   const proposals=(await client.query("SELECT * FROM website.private_event_proposals WHERE plan_id=$1 ORDER BY version DESC",[planId])).rows.map(proposalRow);
   const deposits=(await client.query("SELECT session_id,payment_intent,proposal_id,amount_cents,paid_at FROM website.private_event_deposits WHERE plan_id=$1 ORDER BY paid_at",[planId])).rows;
   const deliveries=(await client.query("SELECT recipient,subject,status,updated_at FROM website.private_event_deliveries WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1)",[planId])).rows;
-  return {proposals,deposits,deliveries};
+  const review=await currentProposalReview(client,planId);
+  return {proposals,deposits,deliveries,review};
 });}
 export async function getManagerProposal(planId:string,id:string){return withDatabase(async client=>{const row=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2",[id,planId])).rows[0];return row?proposalRow(row):null;});}
 export async function deleteProposalDraft(planId:string,id:string,version:number){return transaction(async client=>{
@@ -59,7 +91,7 @@ export async function deleteProposalDraft(planId:string,id:string,version:number
   if(p.sent_at||p.approved_at||p.accepted_at||p.token_hash||p.state!=='draft')throw new ProposalError("Sent, approved or retired proposals must be kept. Only unsent drafts can be deleted.",409);
   const used=(await client.query("SELECT EXISTS(SELECT 1 FROM website.private_event_checkout_attempts WHERE proposal_id=$1) OR EXISTS(SELECT 1 FROM website.private_event_deposits WHERE proposal_id=$1) OR EXISTS(SELECT 1 FROM website.private_event_deliveries WHERE proposal_id=$1) AS used",[id])).rows[0].used;
   if(used)throw new ProposalError("Proposals with payment or delivery history must be kept.",409);
-  await client.query("DELETE FROM website.private_event_proposals WHERE id=$1",[id]);return {deleted:true};
+  await client.query("DELETE FROM website.private_event_proposals WHERE id=$1",[id]);await client.query("UPDATE website.private_event_plans SET proposal_review='{}'::jsonb WHERE id=$1",[planId]);return {deleted:true};
 });}
 export async function createProposal(planId:string,input:{version:number;expiresAt:string}){
   const settings=await getPrivateEventSettings();
@@ -75,11 +107,12 @@ export async function createProposal(planId:string,input:{version:number;expires
     const version=Number((await client.query("SELECT COALESCE(max(version),0)+1 AS version FROM website.private_event_proposals WHERE plan_id=$1",[planId])).rows[0].version);
     const id=randomUUID(),number=`AVI-${details.date.slice(0,4)}-${planId.slice(0,8).toUpperCase()}-${version}`;
     const snapshot=proposalSnapshot(details,settings.catering,settings.bookingFeeCents,settings.policyText,settings.policyVersion);
+    await client.query("UPDATE website.private_event_plans SET proposal_review='{}'::jsonb WHERE id=$1",[planId]);
     const row=(await client.query("INSERT INTO website.private_event_proposals(id,plan_id,version,number,plan_version,material_hash,snapshot,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8) RETURNING *",[id,planId,version,number,plan.version,materialHash(details),JSON.stringify(snapshot),expires.toISOString()])).rows[0];
     return proposalRow(row);
   });
 }
-export async function sendProposal(planId:string,id:string,input:{availabilityApproved:boolean;capacityApproved:boolean;emailApproved?:boolean}){
+export async function sendProposal(planId:string,id:string,input:{availabilityApproved:boolean;capacityApproved:boolean;emailApproved?:boolean;reviewContext?:string}){
   if(input.emailApproved!==true)throw new ProposalError("Review and approve this customer email before sending.",403);
   if(input.availabilityApproved!==true||input.capacityApproved!==true)throw new ProposalError("Confirm availability and capacity before approving and sending the proposal.");
   if(!isMailConfigured()&&process.env.MAIL_MODE!=="record")throw new ProposalError("Email delivery is not configured.",503);
@@ -89,6 +122,7 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
     const p=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2 FOR UPDATE",[id,planId])).rows[0];
     const plan=(await client.query("SELECT * FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[planId])).rows[0];
     if(!p||!plan)throw new ProposalError("Proposal not found.",404);
+    if(input.reviewContext!==undefined)await requireSavedProposalReview(planId,id,input.reviewContext,true,client,plan);
     if(p.state==="superseded"||p.state==="declined"||p.state==="cancelled"||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError("Create a revised proposal before sending a new link.",409);
     if(materialHash(plan.data)!==p.material_hash)throw new ProposalError("The event terms changed. Create a revised proposal.",409);
     const s=p.snapshot as ProposalSnapshot;
