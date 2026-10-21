@@ -64,6 +64,8 @@ export async function GET(request: NextRequest) {
       planId: stages.find(item=>item.inquiryId===String(row.id))?.planId,
       ...(kind==="event"?{reviewed:Boolean(row.reviewed_at||stages.some(item=>item.inquiryId===String(row.id))),reviewedAt:row.reviewed_at?new Date(row.reviewed_at).toISOString():null}:{}),
       eventContactEmail:stages.find(item=>item.inquiryId===String(row.id))?.contactEmail,
+      eventContactName:stages.find(item=>item.inquiryId===String(row.id))?.contactName,
+      eventTitle:stages.find(item=>item.inquiryId===String(row.id))?.title,
       ...(kind==="event"?{availability:availability.get(String(row.id))}:{}),
       id: String(row.id), kind: row.kind, createdAt: row.created_at, source: row.source,
       name: row.name || payloadText(payload, "name"), email: row.email || payloadText(payload, "email"), phone: payloadText(payload, "phone"),

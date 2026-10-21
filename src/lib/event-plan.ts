@@ -6,7 +6,7 @@ export function eventDisplayName(details:{title:string;contactName:string}) {
   let subject=title;
   if(title.toLowerCase().startsWith(name.toLowerCase())&&/^[\s:—–-]/.test(title.slice(name.length)))subject=title.slice(name.length).replace(/^[\s:—–-]+/,"");
   else if(title.toLowerCase().endsWith(name.toLowerCase())&&/[\s:—–-]$/.test(title.slice(0,-name.length)))subject=title.slice(0,-name.length).replace(/[\s:—–-]+$/,"");
-  return name+" — "+(subject||"Private event");
+  return name+": "+(subject||"Private event");
 }
 export function eventStatusDisplay(status: typeof eventStatuses[number]) {
   if(status==="Cancelled")return {className:"event-status-cancelled",label:"CANCELLED"};

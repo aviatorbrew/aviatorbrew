@@ -17,11 +17,15 @@ const eventPlanSelect = `SELECT e.*, CASE WHEN p.id IS NULL THEN NULL ELSE jsonb
  LEFT JOIN LATERAL (SELECT * FROM website.private_event_proposals WHERE plan_id=e.id ORDER BY version DESC LIMIT 1) p ON true
  LEFT JOIN LATERAL (SELECT status FROM website.private_event_checkout_attempts WHERE proposal_id=p.id ORDER BY created_at DESC LIMIT 1) a ON true`;
 export async function inquiryBookingStages(ids:string[]) {
- return withDatabase(async client=>(await client.query(eventPlanSelect+" WHERE e.source_inquiry_id=ANY($1::bigint[])",[ids])).rows.map(row=>{const d=row.data as EventPlanDetails;return {inquiryId:String(row.source_inquiry_id),planId:String(row.id),contactEmail:d.contactEmail,schedule:{date:d.date,startTime:d.startTime,endTime:d.endTime},stage:record(row).bookingStage};}));
+ return withDatabase(async client=>(await client.query(eventPlanSelect+" WHERE e.source_inquiry_id=ANY($1::bigint[])",[ids])).rows.map(row=>{const d=row.data as EventPlanDetails;return {inquiryId:String(row.source_inquiry_id),planId:String(row.id),contactEmail:d.contactEmail,contactName:d.contactName,title:d.title,schedule:{date:d.date,startTime:d.startTime,endTime:d.endTime},stage:record(row).bookingStage};}));
 }
 export async function listEventPlans(month: string) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new EventPlanError("Choose a calendar month.");
   return withDatabase(async (client) => (await client.query(eventPlanSelect+" WHERE e.deleted_at IS NULL AND e.event_date >= $1::date AND e.event_date < $1::date + interval '1 month' ORDER BY e.event_date, e.data->>'startTime', e.title", [month + "-01"])).rows.map(record));
+}
+export async function listManagerEvents(search="") {
+  const q=search.trim();if(q.length>200)throw new EventPlanError("Keep event searches under 200 characters.");
+  return withDatabase(async client=>(await client.query(eventPlanSelect+" WHERE e.deleted_at IS NULL AND ($1::text<>'' OR e.event_date>=(now() AT TIME ZONE 'America/New_York')::date) AND ($1::text='' OR e.title ILIKE $2 OR e.data->>'contactName' ILIKE $2 OR e.data->>'contactEmail' ILIKE $2 OR e.event_date::text ILIKE $2) ORDER BY e.event_date,e.data->>'startTime',e.id",[q,'%'+q+'%'])).rows.map(record));
 }
 export async function eventCalendarSyncStatus() {
   return withDatabase(async client => (await client.query("SELECT value FROM website.settings WHERE key='private_event_calendar_sync'")).rows[0]?.value || null);

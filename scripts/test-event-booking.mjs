@@ -249,9 +249,9 @@ try{
  const reviewResult=await (await reviewInquiry()).json();assert.equal(reviewResult.reviewed,true);assert.equal(reviewResult.unreviewedCount,countBeforeReview-1);assert.ok(reviewResult.reviewedAt);
  assert.equal((await (await reviewInquiry()).json()).reviewedAt,reviewResult.reviewedAt,'Starting the same plan twice preserves the first review time');
  const reviewedAfter=(await (await inquiryList('&id='+reviewedId)).json()).inquiries[0];assert.equal(reviewedAfter.reviewed,true);assert.equal(reviewedAfter.planId,undefined);assert.equal(globalThis.eventTestMail.length,mailBeforeReview);
- assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Amedisys Hospice Christmas Party'}),'Morgan Roberts — Amedisys Hospice Christmas Party');
- assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Private event — Morgan Roberts'}),'Morgan Roberts — Private event');
- assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Morgan Roberts — Celebration'}),'Morgan Roberts — Celebration');
+ assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Amedisys Hospice Christmas Party'}),'Morgan Roberts: Amedisys Hospice Christmas Party');
+ assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Private event — Morgan Roberts'}),'Morgan Roberts: Private event');
+ assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Morgan Roberts: Celebration'}),'Morgan Roberts: Celebration');
  // Inquiry pagination must include every row, including tied submission timestamps.
  await connection.query("INSERT INTO website.form_inquiries (kind,name,email,payload,source,created_at) SELECT 'event','Inquiry pagination fixture','pagination@example.invalid','{}'::jsonb,'test', '2025-01-01'::timestamptz FROM generate_series(1,7)");
  const inquiryPage1=await (await inquiryList('&q=Inquiry%20pagination%20fixture&limit=5')).json(),inquiryPage2=await (await inquiryList('&q=Inquiry%20pagination%20fixture&limit=5&offset=5')).json();
@@ -264,6 +264,10 @@ try{
  assert.ok(!(await (await inquiryList()).json()).inquiries.some(item=>item.id===reportInquiry.inquiryId));
  assert.equal((await (await inquiryList('&id='+reportInquiry.inquiryId)).json()).inquiries[0].id,reportInquiry.inquiryId,'Direct audit links retain the original inquiry');
  const past=await plans.saveEventPlan({...valid('2020-06-10'),title:'Historical report fixture',status:'Completed',internalNotes:'Searchable archived office detail',paidCents:35000});
+ const easternDate=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),yesterdayDate=new Date(new Date(easternDate+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10),nextMonthDate=new Date(Date.UTC(Number(easternDate.slice(0,4)),Number(easternDate.slice(5,7)),1)).toISOString().slice(0,10);
+ const timelineToday=await plans.saveEventPlan({...valid(easternDate),title:'Manager timeline fixture today'}),timelinePast=await plans.saveEventPlan({...valid(yesterdayDate),title:'Manager timeline fixture past'}),timelineNext=await plans.saveEventPlan({...valid(nextMonthDate),title:'Manager timeline fixture next month'});
+ const upcoming=await plans.listManagerEvents();assert.ok(upcoming.some(p=>p.id===timelineToday.id),'Today remains visible');assert.ok(upcoming.some(p=>p.id===timelineNext.id),'Later months are included');assert.ok(!upcoming.some(p=>p.id===timelinePast.id),'Past events are absent by default');
+ assert.equal((await plans.listManagerEvents('Manager timeline fixture')).length,3);assert.ok((await plans.listManagerEvents(yesterdayDate)).some(p=>p.id===timelinePast.id));await assert.rejects(()=>plans.listManagerEvents('x'.repeat(201)),/under 200/);
  const reportRequest=(query='',authenticated=true)=>reportRoute.GET(new NextRequest('https://aviatorbrew.com/api/manager/event-reports?'+query,{headers:authenticated?{cookie:inquiryCookie}:{}}));
  assert.equal((await reportRequest('',false)).status,401);
  const pastSearch=await (await reportRequest('q=archived+office+detail&start=2020-01-01&end=2020-12-31&status=Completed')).json();assert.equal(pastSearch.total,1);assert.equal(pastSearch.events[0].id,past.id);assert.equal(pastSearch.events[0].details.foodTime,'18:00');assert.equal(pastSearch.events[0].details.paidCents,35000);
