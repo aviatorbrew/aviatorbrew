@@ -43,10 +43,10 @@ export function newEventDetails(source,emptyEventPlan) {
 export function sourceState(row,source,now) {
   const previous=row.calendar_sync||{};
   if(!source)return {...previous,calendarId,eventId:previous.eventId||row.data.internalNotes?.match(/Google event ID: ([^\n]+)/)?.[1],status:'removed',checkedAt:now,removedAt:previous.removedAt||now};
-  const scheduleDiff=['title','date','startTime','endTime'].some(key=>String(row.data[key]||'')!==String(source[key]||''));
+  const scheduleDiff=['date','startTime','endTime'].some(key=>String(row.data[key]||'')!==String(source[key]||''))||String((previous.linkedFromPlanId?previous.source?.title:row.data.title)||'')!==String(source.title||'');
   const previousSource=previous.source;
   const detailDiff=Boolean(previousSource&&['description','location'].some(key=>previousSource[key]!==source[key]));
-  return {calendarId,eventId:source.id,status:source.cancelled?'cancelled':scheduleDiff||detailDiff||previous.reviewRequired?'changed':'active',reviewRequired:scheduleDiff||detailDiff||Boolean(previous.reviewRequired),source,checkedAt:now,lastSeenAt:now};
+  return {...previous,calendarId,eventId:source.id,status:source.cancelled?'cancelled':scheduleDiff||detailDiff||previous.reviewRequired?'changed':'active',reviewRequired:scheduleDiff||detailDiff||Boolean(previous.reviewRequired),source,checkedAt:now,lastSeenAt:now};
 }
 export async function applyCalendarSnapshot(client,snapshot,emptyEventPlan,{dryRun=false,now=new Date()}={}) {
   const timestamp=now.toISOString();
@@ -56,8 +56,10 @@ export async function applyCalendarSnapshot(client,snapshot,emptyEventPlan,{dryR
     await client.query("SELECT pg_advisory_xact_lock(hashtext('aviator-private-event-booking'))");
     const rows=(await client.query("SELECT id,data,calendar_sync FROM website.private_event_plans WHERE calendar_sync->>'calendarId'=$1 OR (id LIKE 'gcal-%' AND data->>'internalNotes' LIKE 'Imported from Google Calendar: Event-ReadyRoom%')",[calendarId])).rows;
     const existing=new Map(rows.map(row=>[row.id,row]));
-    const counts={added:0,existing:rows.length,removed:0,cancelled:0,changed:0};
-    for(const row of rows) {
+    const activeRows=rows.filter(row=>!row.calendar_sync?.linkedToPlanId);
+    const existingSources=new Set(activeRows.map(row=>row.calendar_sync?.eventId).filter(Boolean));
+    const counts={added:0,existing:activeRows.length,removed:0,cancelled:0,changed:0};
+    for(const row of activeRows) {
       const id=row.calendar_sync?.eventId||row.data.internalNotes?.match(/Google event ID: ([^\n]+)/)?.[1];
       if(!id)throw Error('Imported event is missing its Google identity; no events changed.');
       const source=snapshot.events.get(id);
@@ -70,7 +72,7 @@ export async function applyCalendarSnapshot(client,snapshot,emptyEventPlan,{dryR
     }
     for(const source of snapshot.events.values()) {
       const id=eventPlanId(source.id);
-      if(existing.has(id)||source.cancelled||source.date<snapshot.importFrom||source.date>snapshot.importTo)continue;
+      if(existing.has(id)||existingSources.has(source.id)||source.cancelled||source.date<snapshot.importFrom||source.date>snapshot.importTo)continue;
       const data=newEventDetails(source,emptyEventPlan);
       const state=sourceState({data},source,timestamp);
       const result=await client.query('INSERT INTO website.private_event_plans(id,title,event_date,status,data,calendar_sync) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb) ON CONFLICT(id) DO NOTHING',[id,data.title,data.date,data.status,JSON.stringify(data),JSON.stringify(state)]);

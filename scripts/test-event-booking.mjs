@@ -231,7 +231,7 @@ try{
  assert.ok(!(await plans.listEventPlans(reopened.details.date.slice(0,7))).some(item=>item.id===reopened.id));
  const retained=(await connection.query('SELECT * FROM website.private_event_plans WHERE id=$1',[reopened.id])).rows[0];
  assert.ok(retained.deleted_at);assert.equal(retained.status,'Cancelled');assert.equal(retained.data.paidCents,35000);assert.equal(String(retained.data.deletedSourceInquiryId),linkedRequest.inquiryId);assert.equal(retained.source_inquiry_id,null);
- const archivedHistory=await proposals.listProposals(reopened.id);for(const key of ['proposals','deposits','deliveries'])assert.deepEqual(archivedHistory[key],deletedHistory[key]);assert.equal(archivedHistory.review.emailApproved,false);assert.ok(deletedHistory.proposals.some(item=>item.id===deletedQuote.id));
+ const archivedHistory=await proposals.listProposals(reopened.id);for(const key of ['proposals','deposits','deliveries']){const stored=rows=>key==='proposals'?rows.map(({termsCurrent,...quote})=>quote):rows;assert.deepEqual(stored(archivedHistory[key]),stored(deletedHistory[key]));}assert.equal(archivedHistory.review.emailApproved,false);assert.ok(deletedHistory.proposals.some(item=>item.id===deletedQuote.id));
  assert.equal(globalThis.eventTestMail.length,deletedMail);await assert.rejects(()=>plans.saveEventPlan(reopened.details,reopened.id,reopened.version),/deleted/);
  assert.equal((await deleteRequest(reopened)).status,200,'Repeated deletion is idempotent');
  const remainingInquiry=(await (await inquiryList('&id='+linkedRequest.inquiryId)).json()).inquiries[0];assert.ok(!remainingInquiry.planId,'The preserved inquiry can start a new plan');
@@ -334,6 +334,60 @@ try{
  assert.equal((await proposals.listProposals(reviewPlan.id)).review.emailApproved,false,'Deleting a draft does not restore approval of an older version');
  console.log('Passed authorized persistent staff approvals, unchanged-term refresh/save/send persistence, explicit revocation, stale-context blocking, exact proposal binding, new-draft/deletion/material-change reset and internal-note preservation.');
  console.log('Passed confirmed inquiry filtering, preserved audit links, protected historical reports/search/pagination, alternative-date approval and conflict checks, tentative scheduling, contact-only mail, failed-send retry idempotence, unchanged quote snapshots, and unsent-only proposal deletion.');
+ // Linking a Google duplicate is an explicit manager action, never an availability bypass.
+ const calendarMatches=require(await compile(path.join(root,'src/lib/event-calendar-matches.ts')));
+ const calendarMatchRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/calendar-match/route.ts')));
+ const calendarSync=await import('./ready-room-calendar-sync.mjs');
+ const calendarFixture=async(date,title='Amedisys x-mas party',startTime='18:00')=>{
+   const id=randomUUID(),source={id:'fixture-google-'+id,title,date,startTime,endTime:'21:00',description:'Preserved Google notes',url:'https://calendar.google.com/fixture',location:catalog.venue,cancelled:false,recurring:false};
+   const data={...model.emptyEventPlan(),title,date,startTime,endTime:'21:00',status:'Confirmed',internalNotes:'Preserved original calendar notes'};
+   await connection.query('INSERT INTO website.private_event_plans(id,title,event_date,status,data,calendar_sync) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb)',[id,title,date,'Confirmed',JSON.stringify(data),JSON.stringify({calendarId:calendarSync.calendarId,eventId:source.id,status:'active',source,checkedAt:new Date().toISOString()})]);
+   return {id,source};
+ };
+ const managerCookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');
+ const matchRequest=(id,body,authenticated=true)=>new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/calendar-match',{method:body?'POST':'GET',headers:{...(authenticated?{cookie:managerCookie}:{}),'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+ const linkFixturePlan=await plans.saveEventPlan({...valid(future(320)),title:'Amedisys Hospice Christmas Party'}),googleFixture=await calendarFixture(future(321));
+ const beforeLinkDraft=await proposals.createProposal(linkFixturePlan.id,{version:linkFixturePlan.version,expiresAt:expiration()});
+ const linkContext={params:Promise.resolve({id:linkFixturePlan.id})};
+ assert.equal((await calendarMatchRoute.GET(matchRequest(linkFixturePlan.id,undefined,false),linkContext)).status,401);
+ const matches=(await (await calendarMatchRoute.GET(matchRequest(linkFixturePlan.id),linkContext)).json()).matches;assert.equal(matches.length,1);assert.equal(matches[0].id,googleFixture.id);
+ const linkInput={sameEvent:true,version:linkFixturePlan.version,matchId:matches[0].id,matchVersion:matches[0].version,fingerprint:matches[0].fingerprint};
+ assert.equal((await calendarMatchRoute.POST(matchRequest(linkFixturePlan.id,linkInput,false),linkContext)).status,401);
+ assert.equal((await calendarMatchRoute.POST(matchRequest(linkFixturePlan.id,{...linkInput,sameEvent:false}),linkContext)).status,403);
+ assert.equal((await calendarMatchRoute.POST(matchRequest(linkFixturePlan.id,{...linkInput,version:999}),linkContext)).status,409);
+ assert.equal((await calendarMatchRoute.POST(matchRequest(linkFixturePlan.id,{...linkInput,fingerprint:'stale'}),linkContext)).status,409);
+ const mailBeforeLink=globalThis.eventTestMail.length;
+ const linkedResponse=await calendarMatchRoute.POST(matchRequest(linkFixturePlan.id,linkInput),linkContext);assert.equal(linkedResponse.status,200);
+ const linkedBody=await linkedResponse.json(),linkedPlan=linkedBody.plan;assert.equal(linkedBody.scheduleChanged,true);assert.equal(linkedPlan.details.date,googleFixture.source.date);assert.equal(linkedPlan.details.startTime,'18:00');assert.equal(linkedPlan.details.status,'Tentative','Keep the existing calendar hold while customer booking remains under review');
+ assert.deepEqual(linkedPlan.details.flightPlan,linkFixturePlan.details.flightPlan);assert.equal(linkedPlan.details.contactEmail,linkFixturePlan.details.contactEmail);assert.equal(linkedPlan.details.internalNotes,linkFixturePlan.details.internalNotes);assert.equal(globalThis.eventTestMail.length,mailBeforeLink,'Linking must not send any customer email');
+ assert.equal(await plans.getEventPlan(googleFixture.id),null);const archivedGoogle=await plans.getEventReport(googleFixture.id);assert.ok(archivedGoogle.deletedAt);assert.equal(archivedGoogle.calendarSync.linkedToPlanId,linkedPlan.id);assert.equal(archivedGoogle.details.internalNotes,'Preserved original calendar notes');
+ const linkedProposals=await proposals.listProposals(linkedPlan.id);assert.equal(linkedProposals.proposals[0].termsCurrent,false);assert.equal(linkedProposals.review.emailApproved,false);assert.equal(linkedProposals.proposals[0].snapshot.details.date,beforeLinkDraft.snapshot.details.date,'Issued snapshots must never change');
+ assert.equal((await calendarMatches.getCalendarEventMatches(linkedPlan.id)).matches.length,0);
+ await assert.rejects(()=>plans.saveEventPlan({...valid(googleFixture.source.date),status:'Confirmed'}),/overlap/,'Linking retains the existing calendar hold');
+ assert.equal((await calendarMatchRoute.POST(matchRequest(linkFixturePlan.id,linkInput),linkContext)).status,409,'A repeated link cannot archive another event');
+ const syncNow=new Date(),syncSnapshot={events:new Map([[googleFixture.source.id,googleFixture.source]]),from:new Date(syncNow-32*86400000),to:new Date(syncNow.getTime()+730*86400000),importFrom:booking.easternToday(),importTo:future(730)};
+ await calendarSync.applyCalendarSnapshot(connection,syncSnapshot,model.emptyEventPlan);
+ assert.equal(Number((await connection.query("SELECT count(*) FROM website.private_event_plans WHERE calendar_sync->>'eventId'=$1 AND deleted_at IS NULL",[googleFixture.source.id])).rows[0].count),1,'Scheduled sync cannot recreate the duplicate');
+ assert.equal((await plans.getEventPlan(linkedPlan.id)).calendarSync.status,'active');
+ // Matching the exact schedule preserves staff review and allows the normal send checks to run.
+ const exactPlan=await plans.saveEventPlan({...valid(future(330)),title:'Amedisys website event'}),exactGoogle=await calendarFixture(future(330),'Amedisys Google event','17:00');
+ const exactDraft=await proposals.createProposal(exactPlan.id,{version:exactPlan.version,expiresAt:expiration()}),exactReview=(await proposals.listProposals(exactPlan.id)).review;
+ await proposals.saveProposalReview(exactPlan.id,{...exactReview,emailApproved:true});
+ const exactMatch=(await calendarMatches.getCalendarEventMatches(exactPlan.id)).matches.find(m=>m.id===exactGoogle.id);
+ const exactResult=await calendarMatches.linkCalendarEvent(exactPlan.id,{sameEvent:true,version:exactPlan.version,matchId:exactMatch.id,matchVersion:exactMatch.version,fingerprint:exactMatch.fingerprint});assert.equal(exactResult.scheduleChanged,false);
+ const afterExact=await proposals.listProposals(exactPlan.id);assert.equal(afterExact.proposals[0].termsCurrent,true);assert.equal(afterExact.review.emailApproved,true);
+ await proposals.sendProposal(exactPlan.id,exactDraft.id,{emailApproved:true,reviewContext:afterExact.review.context});
+ // A separate overlapping booking remains a conflict and rolls the entire link back.
+ const conflictPlan=await plans.saveEventPlan({...valid(future(340)),title:'Amedisys fixture'}),conflictGoogle=await calendarFixture(future(340));await calendarFixture(future(340),'Unrelated separate booking');
+ const conflictMatch=(await calendarMatches.getCalendarEventMatches(conflictPlan.id)).matches.find(m=>m.id===conflictGoogle.id);
+ await assert.rejects(()=>calendarMatches.linkCalendarEvent(conflictPlan.id,{sameEvent:true,version:conflictPlan.version,matchId:conflictMatch.id,matchVersion:conflictMatch.version,fingerprint:conflictMatch.fingerprint}),/separate booking/);
+ assert.ok(await plans.getEventPlan(conflictGoogle.id));assert.equal((await plans.getEventPlan(conflictPlan.id)).calendarSync?.eventId,undefined);
+ const protectedPlan=await plans.saveEventPlan({...valid(future(350)),title:'Amedisys protected fixture'}),protectedGoogle=await calendarFixture(future(350));
+ const protectedInitial=await plans.getEventPlan(protectedGoogle.id),protectedImported=await plans.saveEventPlan({...protectedInitial.details,contactName:'Fixture Customer',contactEmail:'fixture@example.invalid'},protectedInitial.id,protectedInitial.version);await proposals.createProposal(protectedImported.id,{version:protectedImported.version,expiresAt:expiration()});
+ const protectedMatch=(await calendarMatches.getCalendarEventMatches(protectedPlan.id)).matches.find(m=>m.id===protectedGoogle.id);
+ await assert.rejects(()=>calendarMatches.linkCalendarEvent(protectedPlan.id,{sameEvent:true,version:protectedPlan.version,matchId:protectedMatch.id,matchVersion:protectedMatch.version,fingerprint:protectedMatch.fingerprint}),/proposal or payment history/);
+ assert.ok(await plans.getEventPlan(protectedGoogle.id));
+ console.log('Passed authenticated explicit Google duplicate matching/linking, stale-review protection, adopted schedule, preserved menus/contact/quote snapshots/history, silent linking, revised-proposal requirements, exact-schedule approval preservation, normal sending after linking, sync identity and real-conflict rollback.');
  // Leave only safe current catalog settings for the separate local browser fixture.
  await settings.setPrivateEventSettings({catering:catalog});
  const browserFixture=await approved(valid(future(95)));

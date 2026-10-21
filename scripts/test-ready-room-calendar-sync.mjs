@@ -45,4 +45,16 @@ const missing=await parseCalendar(wrap(event('two')),now);report=await applyCale
 report=await applyCalendarSnapshot(db,missing,model.emptyEventPlan,{now});assert.equal(report.added,0);assert.equal(db.rows().length,2,'Repeated sync must not duplicate events');
 await applyCalendarSnapshot(db,snapshot,model.emptyEventPlan,{now});assert.equal(db.rows()[0].calendar_sync.status,'changed','Reappearing Google event clears deletion flag');assert.deepEqual(db.rows()[0].data,original);
 const prior=structuredClone(db.rows());await applyCalendarSnapshot(db,await parseCalendar(wrap(event('three')),now),model.emptyEventPlan,{now,dryRun:true});assert.deepEqual(db.rows(),prior,'Dry run rolls back all writes');
+// A staff-confirmed match keeps the website plan as the single calendar owner.
+const linked={id:'website-plan-fixture',data:{...details,title:'Customer: Test celebration',paidCents:35000},calendar_sync:{calendarId:'6gltnsnhbqvekua18jof6ip7o8@group.calendar.google.com',eventId:'one',linkedFromPlanId:eventPlanId('one'),linkedAt:now.toISOString(),source}};
+const archived={...saved,calendar_sync:{eventId:'one',linkedToPlanId:linked.id,linkedAt:now.toISOString()}};
+const linkedDb=database([archived,linked]),linkedOriginal=structuredClone(linked.data);
+report=await applyCalendarSnapshot(linkedDb,snapshot,model.emptyEventPlan,{now});
+assert.equal(report.added,0);assert.equal(report.existing,1);assert.equal(linkedDb.rows().length,2);
+assert.equal(linkedDb.rows()[1].calendar_sync.status,'active','Different customer and Google titles alone do not create a false change warning');
+assert.equal(linkedDb.rows()[1].calendar_sync.linkedFromPlanId,archived.id);assert.deepEqual(linkedDb.rows()[1].data,linkedOriginal);
+const moved={...snapshot,events:new Map([['one',{...source,date:'2026-10-26'}]])};
+await applyCalendarSnapshot(linkedDb,moved,model.emptyEventPlan,{now});assert.equal(linkedDb.rows()[1].calendar_sync.status,'changed');assert.equal(linkedDb.rows()[1].data.date,details.date);
+await applyCalendarSnapshot(linkedDb,{...snapshot,events:new Map()},model.emptyEventPlan,{now});assert.equal(linkedDb.rows()[1].calendar_sync.status,'removed');assert.ok(linkedDb.rows()[1].calendar_sync.linkedFromPlanId);assert.equal(linkedDb.rows()[0].calendar_sync.linkedToPlanId,linked.id);
+const mappedDb=database([linked]);report=await applyCalendarSnapshot(mappedDb,snapshot,model.emptyEventPlan,{now});assert.equal(report.added,0,'Google identity remains attached even when the owner has a website UUID rather than a generated Google ID');
 console.log('Calendar sync passed: Eastern schedule/DST, recurring events, exclusions, all-day dates, identity, malformed-feed rejection, saved-order/payment preservation, deletion detection, reappearance, idempotency and dry-run rollback.');

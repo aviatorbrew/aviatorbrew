@@ -72,7 +72,7 @@ export type EventPlanDetails = {
   items: EventOrderItem[]; taxRateBps: number; paidCents: number; barDetails: string; notes: string; internalNotes: string;
   flightPlan?: FlightPlan | null; pfbTaxRateBps?: number; reservationDepositCents?: number;
 };
-export type EventCalendarSync = { status: "active" | "changed" | "removed" | "cancelled"; checkedAt: string; source?: { title: string; date: string; startTime: string; endTime: string; description: string; url: string } };
+export type EventCalendarSync = { status: "active" | "changed" | "removed" | "cancelled"; checkedAt: string; calendarId?:string; eventId?:string; linkedFromPlanId?:string; linkedToPlanId?:string; linkedAt?:string; source?: { title: string; date: string; startTime: string; endTime: string; description: string; url: string } };
 export type EventPlan = { bookingStage?: string; calendarSync?: EventCalendarSync | null; id: string; version: number; createdAt: string; updatedAt: string; sourceInquiryId: string | null; details: EventPlanDetails };
 export type EventReport = EventPlan & {deletedAt:string|null};
 export function money(cents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100); }

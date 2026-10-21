@@ -13,7 +13,7 @@ import { publicSiteUrl } from "@/lib/site-url";
 import { sendMail, isMailConfigured } from "@/lib/mail";
 
 export class ProposalError extends Error { constructor(message: string, public status=400){super(message);} }
-export type EventProposal = { id:string; plan_id:string; version:number; number:string; plan_version:number; material_hash:string; snapshot:ProposalSnapshot; state:string; expires_at:string; approved_at:string|null; sent_at:string|null; accepted_at:string|null; accepted_name:string|null; created_at:string };
+export type EventProposal = { id:string; plan_id:string; version:number; number:string; plan_version:number; material_hash:string; termsCurrent?:boolean; snapshot:ProposalSnapshot; state:string; expires_at:string; approved_at:string|null; sent_at:string|null; accepted_at:string|null; accepted_name:string|null; created_at:string };
 const iso=(v: unknown)=>v instanceof Date?v.toISOString():v as string;
 function proposalRow(row: Record<string,unknown>): EventProposal { const {token_hash,acceptance,approved_by,...safe}=row; void token_hash;void acceptance;void approved_by;return {...safe,expires_at:iso(row.expires_at),approved_at:iso(row.approved_at),sent_at:iso(row.sent_at),accepted_at:iso(row.accepted_at),created_at:iso(row.created_at)} as EventProposal; }
 function stable(value: unknown): unknown { if(Array.isArray(value))return value.map(stable); if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,stable(v)])); return value; }
@@ -77,7 +77,10 @@ export async function requireSavedProposalReview(planId:string,proposalId:string
   return client?check(client):withDatabase(check);
 }
 export async function listProposals(planId:string){return withDatabase(async client=>{
-  const proposals=(await client.query("SELECT * FROM website.private_event_proposals WHERE plan_id=$1 ORDER BY version DESC",[planId])).rows.map(proposalRow);
+  const plan=(await client.query('SELECT data FROM website.private_event_plans WHERE id=$1',[planId])).rows[0];
+  if(!plan)throw new ProposalError('Event not found.',404);
+  const currentHash=materialHash(plan.data);
+  const proposals=(await client.query("SELECT * FROM website.private_event_proposals WHERE plan_id=$1 ORDER BY version DESC",[planId])).rows.map(row=>({...proposalRow(row),termsCurrent:row.material_hash===currentHash}));
   const deposits=(await client.query("SELECT session_id,payment_intent,proposal_id,amount_cents,paid_at FROM website.private_event_deposits WHERE plan_id=$1 ORDER BY paid_at",[planId])).rows;
   const deliveries=(await client.query("SELECT proposal_id,recipient,subject,status,updated_at FROM website.private_event_deliveries WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1)",[planId])).rows;
   const attempts=(await client.query("SELECT proposal_id,status,expires_at,created_at FROM website.private_event_checkout_attempts WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY created_at DESC",[planId])).rows;
