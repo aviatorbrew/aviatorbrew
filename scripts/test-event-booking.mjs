@@ -125,11 +125,10 @@ try{
  await settings.setPrivateEventSettings({policyText:'TEST FIXTURE ONLY: approved cancellation, deposit and event policy placeholder. Never publish these terms.',policyVersion:'fixture-1'});
  const p=await proposals.createProposal(sourcePlan.id,{version:sourcePlan.version,expiresAt:expiration()});
  await assert.rejects(()=>proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:true,capacityApproved:true}),/approve.*email/);
- await assert.rejects(()=>proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:false,capacityApproved:true,emailApproved:true}));
  const reviewCookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');
  const reviewPatch=(id,body,authenticated=true)=>proposalCollection.PATCH(new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/proposals',{method:'PATCH',headers:{'content-type':'application/json',...(authenticated?{cookie:reviewCookie}:{})},body:JSON.stringify(body)}),{params:Promise.resolve({id})});
  let approval=(await proposals.listProposals(sourcePlan.id)).review;assert.equal(approval.emailApproved,false);
- const allApproved={...approval,availabilityApproved:true,capacityApproved:true,emailApproved:true},reviewMailBefore=globalThis.eventTestMail.length;
+ const allApproved={...approval,availabilityApproved:false,capacityApproved:false,emailApproved:true},reviewMailBefore=globalThis.eventTestMail.length;
  assert.equal((await reviewPatch(sourcePlan.id,allApproved,false)).status,401);
  assert.equal((await reviewPatch(sourcePlan.id,{...allApproved,emailApproved:'yes'})).status,400);
  assert.equal((await reviewPatch(sourcePlan.id,{...allApproved,context:'stale'})).status,409);
@@ -140,8 +139,9 @@ try{
  await proposals.saveProposalReview(sourcePlan.id,{...allApproved,emailApproved:false});
  await assert.rejects(()=>proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true,reviewContext:approval.context}),/approvals changed/);
  await proposals.saveProposalReview(sourcePlan.id,allApproved);
- await proposals.sendProposal(sourcePlan.id,p.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true,reviewContext:approval.context});
+ await proposals.sendProposal(sourcePlan.id,p.id,{emailApproved:true,reviewContext:approval.context});
  assert.equal((await proposals.listProposals(sourcePlan.id)).review.emailApproved,true,'Approvals survive sending and the automatic tentative status');
+ assert.ok(globalThis.eventTestMail.at(-1).html.includes('<strong>Proposal expires:</strong>'));assert.ok(globalThis.eventTestMail.at(-1).html.includes('Eastern'));assert.ok(globalThis.eventTestMail.at(-1).text.includes('Proposal expires:'));assert.equal((await proposals.listProposals(sourcePlan.id)).review.availabilityApproved,false);assert.equal((await proposals.listProposals(sourcePlan.id)).review.capacityApproved,false);
  const approvedKitchen=await kitchenResponse(sourcePlan.id);assert.equal(approvedKitchen.status,200);assert.ok((await approvedKitchen.text()).includes('APPROVED PROPOSAL — TENTATIVE EVENT'));
  const token=globalThis.eventTestMail.at(-1).text.match(/#token=([a-f0-9]{64})/)[1],access=await proposals.customerProposal(token);
  assert.equal(access.status,'Proposal Sent');assert.equal(access.proposal.snapshot.totals.total,205675);assert.ok(!JSON.stringify(access).includes('DO NOT EXPOSE'));assert.ok(!('token_hash' in access.proposal));
@@ -151,6 +151,7 @@ try{
  const checkout=await Promise.all(Array.from({length:4},()=>proposals.acceptAndCheckout(token,acceptance(p))));assert.equal(new Set(checkout.map(r=>r.url)).size,1);assert.equal(idempotency.size,1,'One Stripe session across concurrent retries');
  const attempt=sessions.values().next().value;assert.equal(attempt.amount_total,35000);assert.equal((await plans.getEventPlan(sourcePlan.id)).details.status,'Tentative');assert.equal((await plans.getEventPlan(sourcePlan.id)).details.paidCents,0);
  const acceptanceRow=(await connection.query('SELECT accepted_name,acceptance,accepted_at FROM website.private_event_proposals WHERE id=$1',[p.id])).rows[0];assert.equal(acceptanceRow.acceptance.policyVersion,'fixture-1');assert.ok(acceptanceRow.accepted_at);assert.equal(acceptanceRow.accepted_name,'Fixture Customer');
+ const pendingLedger=await proposals.listProposals(sourcePlan.id);assert.equal(pendingLedger.attempts[0].status,'open');assert.equal(pendingLedger.deposits.length,0);assert.equal(pendingLedger.attempts[0].proposal_id,p.id);assert.ok(!('checkout_url' in pendingLedger.attempts[0]));
  assert.equal((await notify({...attempt,payment_status:'paid'},'evt_invalid',false)).status,400);assert.equal(Number((await connection.query('SELECT count(*) FROM website.private_event_deposits')).rows[0].count),0);
  assert.equal((await notify({...attempt,payment_status:'paid',amount_total:1},'evt_wrong_amount')).status,400);
  globalThis.eventTestFailMail=true;
@@ -159,6 +160,7 @@ try{
  assert.ok((await (await kitchenResponse(sourcePlan.id)).text()).includes('CONFIRMED EVENT'));
  globalThis.eventTestFailMail=false;assert.equal((await notify(paid,'evt_paid_retry')).status,200);await Promise.all([notify(paid,'evt_replay_1'),notify(paid,'evt_replay_2')]);
  assert.equal((await plans.getEventPlan(sourcePlan.id)).details.paidCents,35000);assert.equal(Number((await connection.query('SELECT count(*) FROM website.private_event_deposits')).rows[0].count),1);assert.equal(Number((await connection.query("SELECT count(*) FROM website.private_event_deliveries WHERE status='sent'")).rows[0].count),2);
+ const paidLedger=await proposals.listProposals(sourcePlan.id);assert.equal(paidLedger.attempts[0].status,'paid');assert.equal(paidLedger.deposits[0].proposal_id,p.id);assert.equal(paidLedger.deposits[0].amount_cents,35000);
  const customer=await proposals.customerProposal(token);assert.equal(customer.status,'Confirmed');assert.equal(customer.remainingCents,170675);
  const pdf=await documents.proposalPdf(p);assert.equal(Buffer.from(pdf).subarray(0,5).toString(),'%PDF-');await writeFile('/tmp/aviator-test-proposal.pdf',pdf);
  const kitchen=documents.kitchenSheetHtml(await plans.getEventPlan(sourcePlan.id),catalog);assert.ok(kitchen.includes('Fixture peanut allergy'));assert.ok(kitchen.includes('No yield data'));assert.ok(!kitchen.includes('PAYMENT ADMIN NOTES'));assert.ok(!kitchen.includes('205675'));assert.ok(!kitchen.includes('fixture@example.com'));

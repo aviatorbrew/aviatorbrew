@@ -69,19 +69,20 @@ export async function saveProposalReview(planId:string,input:ProposalReview) {
     return review;
   });
 }
-export async function requireSavedProposalReview(planId:string,proposalId:string,context:string,availability=false,client?:PoolClient,plan?:{data:EventPlanDetails;proposal_review?:Record<string,unknown>}) {
+export async function requireSavedProposalReview(planId:string,proposalId:string,context:string,client?:PoolClient,plan?:{data:EventPlanDetails;proposal_review?:Record<string,unknown>}) {
   const check=async(connection:PoolClient)=>{
     const review=await currentProposalReview(connection,planId,plan);
-    if(review.context!==context||review.proposalId!==proposalId||!review.emailApproved||(availability&&(!review.availabilityApproved||!review.capacityApproved)))throw new ProposalError('The event, proposal or staff approvals changed. Refresh and review the approvals before sending.',409);
+    if(review.context!==context||review.proposalId!==proposalId||!review.emailApproved)throw new ProposalError('The event, proposal or staff approvals changed. Refresh and review the approvals before sending.',409);
   };
   return client?check(client):withDatabase(check);
 }
 export async function listProposals(planId:string){return withDatabase(async client=>{
   const proposals=(await client.query("SELECT * FROM website.private_event_proposals WHERE plan_id=$1 ORDER BY version DESC",[planId])).rows.map(proposalRow);
   const deposits=(await client.query("SELECT session_id,payment_intent,proposal_id,amount_cents,paid_at FROM website.private_event_deposits WHERE plan_id=$1 ORDER BY paid_at",[planId])).rows;
-  const deliveries=(await client.query("SELECT recipient,subject,status,updated_at FROM website.private_event_deliveries WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1)",[planId])).rows;
+  const deliveries=(await client.query("SELECT proposal_id,recipient,subject,status,updated_at FROM website.private_event_deliveries WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1)",[planId])).rows;
+  const attempts=(await client.query("SELECT proposal_id,status,expires_at,created_at FROM website.private_event_checkout_attempts WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY created_at DESC",[planId])).rows;
   const review=await currentProposalReview(client,planId);
-  return {proposals,deposits,deliveries,review};
+  return {proposals,deposits,deliveries,review,attempts};
 });}
 export async function getManagerProposal(planId:string,id:string){return withDatabase(async client=>{const row=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2",[id,planId])).rows[0];return row?proposalRow(row):null;});}
 export async function deleteProposalDraft(planId:string,id:string,version:number){return transaction(async client=>{
@@ -112,9 +113,8 @@ export async function createProposal(planId:string,input:{version:number;expires
     return proposalRow(row);
   });
 }
-export async function sendProposal(planId:string,id:string,input:{availabilityApproved:boolean;capacityApproved:boolean;emailApproved?:boolean;reviewContext?:string}){
+export async function sendProposal(planId:string,id:string,input:{availabilityApproved?:boolean;capacityApproved?:boolean;emailApproved?:boolean;reviewContext?:string}){
   if(input.emailApproved!==true)throw new ProposalError("Review and approve this customer email before sending.",403);
-  if(input.availabilityApproved!==true||input.capacityApproved!==true)throw new ProposalError("Confirm availability and capacity before approving and sending the proposal.");
   if(!isMailConfigured()&&process.env.MAIL_MODE!=="record")throw new ProposalError("Email delivery is not configured.",503);
   if(!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET)throw new ProposalError("Stripe Checkout and verified webhooks must both be configured before sending payment proposals.",503);
   const token=randomBytes(32).toString("hex");
@@ -122,7 +122,7 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
     const p=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2 FOR UPDATE",[id,planId])).rows[0];
     const plan=(await client.query("SELECT * FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[planId])).rows[0];
     if(!p||!plan)throw new ProposalError("Proposal not found.",404);
-    if(input.reviewContext!==undefined)await requireSavedProposalReview(planId,id,input.reviewContext,true,client,plan);
+    if(input.reviewContext!==undefined)await requireSavedProposalReview(planId,id,input.reviewContext,client,plan);
     if(p.state==="superseded"||p.state==="declined"||p.state==="cancelled"||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError("Create a revised proposal before sending a new link.",409);
     if(materialHash(plan.data)!==p.material_hash)throw new ProposalError("The event terms changed. Create a revised proposal.",409);
     const s=p.snapshot as ProposalSnapshot;
@@ -137,11 +137,12 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
     return proposalRow((await client.query("UPDATE website.private_event_proposals SET token_hash=$1,approved_at=COALESCE(approved_at,now()),approved_by='manager-session',state=CASE WHEN accepted_at IS NULL THEN 'sent' ELSE state END WHERE id=$2 RETURNING *",[tokenHash(token),id])).rows[0]);
   });
   const link=publicSiteUrl()+"/event-proposal#token="+token;
+  const expirationLabel=new Date(proposal.expires_at).toLocaleString("en-US",{timeZone:"America/New_York",dateStyle:"long",timeStyle:"short"})+" Eastern";
   const attachment=path.join(os.tmpdir(),'aviator-proposal-'+randomUUID()+'.pdf');
   let sent=false;
   try {
     await fs.writeFile(attachment,await proposalPdf(proposal));
-    sent=await sendMail({to:proposal.snapshot.details.contactEmail,fromName:"Aviator Events",replyTo:"events@aviatorbrew.com",subject:`Review your Aviator event proposal ${proposal.number}`,attachments:[{filename:proposal.number+".pdf",path:attachment,contentType:"application/pdf"}],html:`<div style="font:16px/1.6 Arial,sans-serif;color:#172b3b"><img src="cid:aviator-logo" alt="Aviator Brewing Company" width="110"><h1>Your Aviator event proposal</h1><p>Review the quoted menu, prices and policies in proposal ${proposal.number}.</p><p><a href="${link}" style="display:inline-block;padding:12px 18px;background:#efb45f;color:#102b3e">Review Your Aviator Event Proposal</a></p><p>The attached PDF is an optional printable copy. Accept the proposal and pay the deposit using the secure link. Your booking requires staff approval, availability verification and the required deposit.</p><p>Questions? Reply to events@aviatorbrew.com.</p></div>`,text:["Review Your Aviator Event Proposal",proposal.number,link,`For ${eventDateLabel(proposal.snapshot.details.date)} at ${timeLabel(proposal.snapshot.details.startTime)}.`,"Review the exact menu, prices and event policies, then accept and pay the required deposit through Stripe.",`Link expires: ${proposal.expires_at}`,"Your event is confirmed only after approved availability and verified deposit payment.","Questions? events@aviatorbrew.com"].join("\n")});
+    sent=await sendMail({to:proposal.snapshot.details.contactEmail,fromName:"Aviator Events",replyTo:"events@aviatorbrew.com",subject:`Review your Aviator event proposal ${proposal.number}`,attachments:[{filename:proposal.number+".pdf",path:attachment,contentType:"application/pdf"}],html:`<div style="font:16px/1.6 Arial,sans-serif;color:#172b3b"><img src="cid:aviator-logo" alt="Aviator Brewing Company" width="110"><h1>Your Aviator event proposal</h1><p>Review the quoted menu, prices and policies in proposal ${proposal.number}.</p><p><a href="${link}" style="display:inline-block;padding:12px 18px;background:#efb45f;color:#102b3e">Review Your Aviator Event Proposal</a></p><p><strong>Proposal expires:</strong> ${expirationLabel}. Please accept the proposal and complete the required deposit before this deadline.</p><p>The attached PDF is an optional printable copy. Accept the proposal and pay the deposit using the secure link. Your booking requires staff approval, availability verification and the required deposit.</p><p>Questions? Reply to events@aviatorbrew.com.</p></div>`,text:["Review Your Aviator Event Proposal",proposal.number,link,`For ${eventDateLabel(proposal.snapshot.details.date)} at ${timeLabel(proposal.snapshot.details.startTime)}.`,"Review the exact menu, prices and event policies, then accept and pay the required deposit through Stripe.",`Proposal expires: ${expirationLabel}`,"Your event is confirmed only after approved availability and verified deposit payment.","Questions? events@aviatorbrew.com"].join("\n")});
   }finally{await fs.unlink(attachment).catch(()=>undefined);}
   if(!sent)throw new ProposalError("The proposal was approved, but email was not delivered. Use Resend proposal link to retry.",503);
   await withDatabase(client=>client.query("UPDATE website.private_event_proposals SET sent_at=now() WHERE id=$1",[id]));

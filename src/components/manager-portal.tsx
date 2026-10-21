@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Eye, EyeOff } from "@/components/icons";
 import { DEFAULT_TOUR_BOOKING_CUTOFF_HOURS, DEFAULT_TOUR_MINIMUM, DEFAULT_TOUR_PRICE_CENTS, TOUR_CAPACITY } from "@/lib/tour-config";
 import { managerSectionGroups, managerSections, type ManagerSection } from "@/lib/manager-sections";
 import { CouponManager } from "@/components/coupons";
@@ -816,6 +817,7 @@ export function ManagerPortal({ section = "overview", editId, editType, returnTo
   const [ready, setReady] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [resetBusy, setResetBusy] = useState(false);
   const [openMenuGroup, setOpenMenuGroup] = useState<string | null>(null);
@@ -835,6 +837,7 @@ export function ManagerPortal({ section = "overview", editId, editType, returnTo
     }
     setAuthenticated(true);
     setPassword("");
+    setShowPassword(false);
   }
 
   async function requestPasswordReset() {
@@ -849,10 +852,11 @@ export function ManagerPortal({ section = "overview", editId, editType, returnTo
   async function logout() {
     await fetch("/api/manager/session", { method: "DELETE" });
     setAuthenticated(false);
+    setShowPassword(false);
   }
 
   if (!ready) return <main className="coupon-validator manager-access"><section><p>Checking manager access...</p></section></main>;
-  if (!authenticated) return <main className="coupon-validator manager-access"><section><p className="eyebrow">Aviator operations</p><h1>Manager login</h1><p>Manage tours, Flight Crew communications, special events, beers, beverages, coupons, and website media.</p><form className="manager-login-form" onSubmit={login}><label>Manager password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label><div className="manager-login-actions"><button className="button">Open manager portal</button><button className="manager-reset-button" type="button" onClick={requestPasswordReset} disabled={resetBusy}>{resetBusy ? "Sending reset email..." : "Reset password"}</button></div></form>{message ? <p className="coupon-validation-message" role="status">{message}</p> : null}</section></main>;
+  if (!authenticated) return <main className="coupon-validator manager-access"><section><p className="eyebrow">Aviator operations</p><h1>Manager login</h1><p>Manage tours, Flight Crew communications, special events, beers, beverages, coupons, and website media.</p><form className="manager-login-form" onSubmit={login}><label htmlFor="manager-login-password">Manager password</label><div className="manager-password-field"><input id="manager-login-password" type={showPassword?"text":"password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /><button type="button" className="manager-password-toggle" aria-label={showPassword?"Hide password":"Show password"} aria-controls="manager-login-password" aria-pressed={showPassword} title={showPassword?"Hide password":"Show password"} onClick={()=>setShowPassword(current=>!current)}>{showPassword?<EyeOff/>:<Eye/>}</button></div><div className="manager-login-actions"><button className="button">Open manager portal</button><button className="manager-reset-button" type="button" onClick={requestPasswordReset} disabled={resetBusy}>{resetBusy ? "Sending reset email..." : "Reset password"}</button></div></form>{message ? <p className="coupon-validation-message" role="status">{message}</p> : null}</section></main>;
 
   const activeSection = managerSections.find((item) => item.id === section) || managerSections[0];
 

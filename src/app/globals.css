@@ -2336,3 +2336,10 @@ body {
 .manager-inquiry-fields dt { color: #efb45f; font-family: "Courier New", monospace; font-size: .62rem; font-weight: 900; letter-spacing: .08em; text-transform: none; }
 .manager-inquiry-fields dd { margin: .22rem 0 0; color: #f2f8fa; font-size: .85rem; overflow-wrap: anywhere; }
 @media (max-width: 900px) { .manager-inquiry-fields { grid-template-columns: 1fr; } }
+
+.manager-password-field{position:relative;margin-top:.4rem;min-width:0}
+.manager-password-field input{width:100%;min-width:0;box-sizing:border-box;padding-right:3.3rem}
+.manager-password-toggle{position:absolute;top:0;right:0;bottom:0;width:3rem;display:grid;place-items:center;border:0;background:transparent;color:#efb45f;cursor:pointer}
+.manager-password-toggle svg{width:1.4rem;height:1.4rem}
+.manager-password-toggle:focus-visible{outline:2px solid #efb45f;outline-offset:-4px}
+.manager-password-toggle:hover{color:#fff}
