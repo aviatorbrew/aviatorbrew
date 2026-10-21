@@ -6,7 +6,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withDatabase } from "@/lib/database";
 import { getPrivateEventSettings } from "@/lib/private-event-settings";
-import { eventRecordConflicts, proposalSnapshot, type ProposalSnapshot, easternToday, eventIsFuture } from "@/lib/event-booking";
+import { activeEventBookingSql, eventRecordConflicts, proposalSnapshot, type ProposalSnapshot, easternToday, eventIsFuture } from "@/lib/event-booking";
 import { eventDateLabel, money, parseEventPlan, timeLabel, type EventPlanDetails } from "@/lib/event-plan";
 import { createDynamicCheckoutSession } from "@/lib/stripe";
 import { publicSiteUrl } from "@/lib/site-url";
@@ -22,7 +22,7 @@ function tokenHash(token:string){if(!/^[a-f0-9]{64}$/.test(token))throw new Prop
 async function lockBookings(client:PoolClient){await client.query("SELECT pg_advisory_xact_lock(hashtext('aviator-private-event-booking'))");}
 async function availability(client:PoolClient,planId:string,details:EventPlanDetails){
   if(!eventIsFuture(details))throw new ProposalError("This event date has passed. Ask the events team for a revised proposal.",409);
-  const others=await client.query("SELECT id,data,calendar_sync FROM website.private_event_plans WHERE id<>$1 AND (event_date BETWEEN $2::date-1 AND $2::date+1 OR calendar_sync->'source'->>'date' BETWEEN ($2::date-1)::text AND ($2::date+1)::text) AND status IN ('Tentative','Confirmed')",[planId,details.date]);
+  const others=await client.query("SELECT id,data,calendar_sync FROM website.private_event_plans WHERE id<>$1 AND (event_date BETWEEN $2::date-1 AND $2::date+1 OR calendar_sync->'source'->>'date' BETWEEN ($2::date-1)::text AND ($2::date+1)::text) AND "+activeEventBookingSql,[planId,details.date]);
   if(others.rows.some(row=>eventRecordConflicts(details,row)))throw new ProposalError("The requested event time is no longer available. Please contact the events team.",409);
 }
 async function transaction<T>(work:(client:PoolClient)=>Promise<T>){return withDatabase(async client=>{await client.query("BEGIN");try{await lockBookings(client);const result=await work(client);await client.query("COMMIT");return result;}catch(error){await client.query("ROLLBACK").catch(()=>undefined);throw error;}});}

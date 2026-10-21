@@ -1,10 +1,8 @@
 import {createHash} from "node:crypto";
 import type {PoolClient} from "pg";
 import {withDatabase} from "@/lib/database";
-import {eventIsFuture,eventRecordConflicts,eventWindowsOverlap} from "@/lib/event-booking";
-import {EventPlanError,getEventPlan,saveEventPlan} from "@/lib/event-plans";
-import {closeUnpaidEventCheckouts} from "@/lib/event-proposals";
-import {getPrivateEventSettings} from "@/lib/private-event-settings";
+import {activeEventBookingSql,eventIsFuture,eventRecordConflicts,eventWindowsOverlap} from "@/lib/event-booking";
+import {EventPlanError,getEventPlan} from "@/lib/event-plans";
 import type {EventCalendarSync,EventPlanDetails} from "@/lib/event-plan";
 
 type Row={id:string;version:number;data:EventPlanDetails;calendar_sync:EventCalendarSync;status:string;deleted_at:string|null;source_inquiry_id:string|null};
@@ -39,7 +37,6 @@ export async function getCalendarEventMatches(planId:string){return withDatabase
 export async function linkCalendarEvent(planId:string,input:{sameEvent?:boolean;version:number;matchId:string;matchVersion:number;fingerprint:string}){
  if(!input||typeof input!=='object'||input.sameEvent!==true)throw new EventPlanError('Confirm that this is the same event before linking it.',403);
  if(!Number.isInteger(input.version)||!Number.isInteger(input.matchVersion)||typeof input.matchId!=='string'||typeof input.fingerprint!=='string')throw new EventPlanError('Refresh and review the Google Calendar match.');
- const settings=await getPrivateEventSettings();
  const result=await withDatabase(async client=>{
   await client.query('BEGIN');
   try{
@@ -53,19 +50,17 @@ export async function linkCalendarEvent(planId:string,input:{sameEvent?:boolean;
    if(!match||match.fingerprint!==input.fingerprint)throw new EventPlanError('The Google Calendar booking changed. Refresh and review the match again.',409);
    const history=(await client.query("SELECT EXISTS(SELECT 1 FROM website.private_event_proposals WHERE plan_id=$1) OR EXISTS(SELECT 1 FROM website.private_event_deposits WHERE plan_id=$1) AS used",[imported.id])).rows[0].used;
    if(imported.source_inquiry_id||imported.data.paidCents>0||history)throw new EventPlanError('The Google event already has an inquiry, proposal or payment history. Open that event plan to resolve the duplicate without losing its records.',409);
-   const scheduleChanged=['date','startTime','endTime'].some(key=>plan.data[key as keyof EventPlanDetails]!==match[key as keyof CalendarEventMatch]);
-   if(scheduleChanged)await closeUnpaidEventCheckouts(client,planId);
-   const details={...plan.data,date:match.date,startTime:match.startTime,endTime:match.endTime,status:plan.status==='Draft'?'Tentative':plan.data.status};
-   const others=(await client.query("SELECT data,calendar_sync FROM website.private_event_plans WHERE id<>ALL($1::text[]) AND deleted_at IS NULL AND status IN ('Tentative','Confirmed') AND (event_date BETWEEN $2::date-1 AND $2::date+1 OR calendar_sync->'source'->>'date' BETWEEN ($2::date-1)::text AND ($2::date+1)::text)",[[planId,imported.id],details.date])).rows;
-   if(others.some(row=>eventRecordConflicts(details,row)))throw new EventPlanError('Another separate booking still overlaps the Google event. Resolve that conflict before linking.',409);
+   const googleScheduleDiffers=['date','startTime','endTime'].some(key=>plan.data[key as keyof EventPlanDetails]!==match[key as keyof CalendarEventMatch]);
+   const details=plan.data;
+   const others=(await client.query("SELECT data,calendar_sync FROM website.private_event_plans WHERE id<>ALL($1::text[]) AND deleted_at IS NULL AND "+activeEventBookingSql+" AND (event_date BETWEEN $2::date-1 AND $2::date+1 OR calendar_sync->'source'->>'date' BETWEEN ($2::date-1)::text AND ($2::date+1)::text)",[[planId,imported.id],details.date])).rows;
+   if(others.some(row=>eventRecordConflicts(details,row)))throw new EventPlanError('Another separate booking still overlaps the website event. Resolve that conflict before linking.',409);
    const linkedAt=new Date().toISOString();
    await client.query("UPDATE website.private_event_plans SET deleted_at=now(),status='Cancelled',data=data||jsonb_build_object('status','Cancelled','deletedOriginalStatus',status),calendar_sync=calendar_sync||$1::jsonb,version=version+1,updated_at=now() WHERE id=$2",[JSON.stringify({linkedToPlanId:planId,linkedAt}),imported.id]);
-   // Retain the imported calendar hold without confirming the customer booking.
-   await client.query("UPDATE website.private_event_plans SET calendar_sync=$1::jsonb,status=$3,data=jsonb_set(data,'{status}',to_jsonb($3::text)) WHERE id=$2",[JSON.stringify({...imported.calendar_sync,linkedFromPlanId:imported.id,linkedAt}),planId,details.status]);
-   const saved=await saveEventPlan(details,planId,plan.version,undefined,client,settings.catering);
+   // Link metadata only: never reparse, reprice or overwrite any website event details.
+   await client.query("UPDATE website.private_event_plans SET calendar_sync=$1::jsonb,version=version+1,updated_at=now() WHERE id=$2",[JSON.stringify({...imported.calendar_sync,linkedFromPlanId:imported.id,linkedAt,...(googleScheduleDiffers?{status:'changed',reviewRequired:true}:{})}),planId]);
    if(plan.source_inquiry_id)await client.query("UPDATE website.form_inquiries SET reviewed_at=COALESCE(reviewed_at,now()),payload=payload||jsonb_build_object('calendarLinkedPlanId',$1::text,'calendarLinkedAt',$2::text) WHERE id=$3",[planId,linkedAt,plan.source_inquiry_id]);
-   await client.query('COMMIT');return {id:saved.id,archivedId:imported.id,scheduleChanged};
+   await client.query('COMMIT');return {id:planId,archivedId:imported.id,googleScheduleDiffers};
   }catch(error){await client.query('ROLLBACK').catch(()=>undefined);throw error;}
  });
- return {plan:await getEventPlan(result.id),archivedId:result.archivedId,scheduleChanged:result.scheduleChanged};
+ return {plan:await getEventPlan(result.id),archivedId:result.archivedId,googleScheduleDiffers:result.googleScheduleDiffers};
 }

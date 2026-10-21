@@ -16,8 +16,11 @@ export function eventWindow(p: Pick<EventPlanDetails,"date"|"startTime"|"endTime
   return {start:start-60,end:end+30};
 }
 export function eventWindowsOverlap(a: Parameters<typeof eventWindow>[0], b: Parameters<typeof eventWindow>[0]) { const x=eventWindow(a),y=eventWindow(b); return x.start < y.end && y.start < x.end; }
-export function eventRecordConflicts(details:Pick<EventPlanDetails,"date"|"startTime"|"endTime">,record:{data:EventPlanDetails;calendar_sync?:{status?:string;source?:{date:string;startTime:string;endTime:string}}}){
- return eventWindowsOverlap(details,record.data)||Boolean(record.calendar_sync?.status==="changed"&&record.calendar_sync.source&&eventWindowsOverlap(details,record.calendar_sync.source));
+// A linked draft retains the reservation hold while staff completes the website event.
+export const activeEventBookingSql="(status IN ('Tentative','Confirmed') OR (status='Draft' AND calendar_sync->>'linkedFromPlanId' IS NOT NULL))";
+export function hasEventBookingHold(status:string,sync?:{linkedFromPlanId?:string}){return ['Tentative','Confirmed'].includes(status)||status==='Draft'&&Boolean(sync?.linkedFromPlanId);}
+export function eventRecordConflicts(details:Pick<EventPlanDetails,"date"|"startTime"|"endTime">,record:{data:EventPlanDetails;calendar_sync?:{status?:string;linkedFromPlanId?:string;source?:{date:string;startTime:string;endTime:string}}}){
+ return eventWindowsOverlap(details,record.data)||Boolean(!record.calendar_sync?.linkedFromPlanId&&record.calendar_sync?.status==="changed"&&record.calendar_sync.source&&eventWindowsOverlap(details,record.calendar_sync.source));
 }
 export function validateCateringRequest(value: unknown, catalog: CateringCatalog, depositCents: number, now = new Date()): EventPlanDetails {
   if (!value || typeof value !== "object") throw new Error("Build your catering menu first.");

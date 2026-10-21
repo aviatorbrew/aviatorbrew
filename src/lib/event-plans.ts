@@ -1,5 +1,5 @@
 import { closeUnpaidEventCheckouts, materialHash } from "@/lib/event-proposals";
-import { eventRecordConflicts, eventBookingStage } from "@/lib/event-booking";
+import { activeEventBookingSql, hasEventBookingHold, eventRecordConflicts, eventBookingStage } from "@/lib/event-booking";
 import { getPrivateEventSettings } from "@/lib/private-event-settings";
 import { createHash, randomUUID } from "node:crypto";
 import { withDatabase } from "@/lib/database";
@@ -57,7 +57,7 @@ export async function saveEventPlan(input: unknown, id?: string, version?: numbe
     if(!transactionClient)await client.query("BEGIN");
     try {
       await client.query("SELECT pg_advisory_xact_lock(hashtext('aviator-private-event-booking'))");
-      const existing = id ? (await client.query("SELECT data,status,deleted_at FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[id])).rows[0] : null;
+      const existing = id ? (await client.query("SELECT data,status,deleted_at,calendar_sync FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[id])).rows[0] : null;
       if(id&&(!existing||existing.deleted_at))throw new EventPlanError("This event was deleted or is no longer available.",404);
       const old=existing?.data as EventPlanDetails|undefined;
       if(old&&(materialHash(old)!==materialHash(details)||old.paidCents!==details.paidCents||old.status!==details.status))await client.query("UPDATE website.private_event_plans SET proposal_review='{}'::jsonb WHERE id=$1",[id]);
@@ -68,8 +68,8 @@ export async function saveEventPlan(input: unknown, id?: string, version?: numbe
         if(old&&details.paidCents>old.paidCents)await closeUnpaidEventCheckouts(client,id);
       }
       const changed=!old||old.date!==details.date||old.startTime!==details.startTime||old.endTime!==details.endTime||old.location!==details.location||existing.status!==details.status;
-      if(changed&&["Tentative","Confirmed"].includes(details.status)){
-        const conflicts=(await client.query("SELECT data,calendar_sync FROM website.private_event_plans WHERE id<>$1 AND (event_date BETWEEN $2::date-1 AND $2::date+1 OR calendar_sync->'source'->>'date' BETWEEN ($2::date-1)::text AND ($2::date+1)::text) AND status IN ('Tentative','Confirmed')",[id||"",details.date])).rows;
+      if(changed&&hasEventBookingHold(details.status,existing?.calendar_sync)){
+        const conflicts=(await client.query("SELECT data,calendar_sync FROM website.private_event_plans WHERE id<>$1 AND (event_date BETWEEN $2::date-1 AND $2::date+1 OR calendar_sync->'source'->>'date' BETWEEN ($2::date-1)::text AND ($2::date+1)::text) AND "+activeEventBookingSql,[id||"",details.date])).rows;
         if(conflicts.some(row=>eventRecordConflicts(details,row)))throw new EventPlanError("Another tentative or confirmed event overlaps this time, including setup and removal. Choose another time or resolve the conflicting event.",409);
       }
       const save = async () => {
