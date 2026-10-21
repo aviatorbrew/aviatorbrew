@@ -214,7 +214,7 @@ try{
  assert.equal((await availability.inquiryAvailability([{id:'900005',payload:{cateringPlan:valid(future(112))}}])).get('900005').status,'unavailable','Moved Google source dates still block availability');
  const linkedRequest=await inquiries.submitCateringInquiry({requestId:randomUUID(),humanCheck:'yes',website:'',cateringPlan:valid(future(160))});
  const linked=await plans.saveEventPlan({...valid(future(160)),status:'Confirmed',paidCents:35000},undefined,undefined,linkedRequest.inquiryId);
- assert.equal((await (await inquiryList('&id='+linkedRequest.inquiryId)).json()).inquiries[0].availability.status,'available','The inquiry does not conflict with its own saved event');
+ assert.equal((await (await inquiryList('&id='+linkedRequest.inquiryId)).json()).inquiries[0].availability.status,'available','The inquiry does not conflict with its own saved event');assert.equal((await (await inquiryList('&id='+linkedRequest.inquiryId)).json()).inquiries[0].reviewed,true,'Existing linked events automatically show Reviewed');
  // Un-cancelling retains the menu/payments and checks availability before placing a tentative hold.
  const cancelled=await plans.saveEventPlan({...linked.details,status:'Cancelled'},linked.id,linked.version);
  const reopenMail=globalThis.eventTestMail.length;
@@ -240,6 +240,18 @@ try{
  const payableDelete=await approved(valid(future(170)));await proposals.acceptAndCheckout(payableDelete.token,acceptance(payableDelete.p));const payableSession=[...sessions.values()].at(-1),payablePlan=await plans.getEventPlan(payableDelete.plan.id);
  assert.equal((await deleteRequest(payablePlan)).status,200);assert.equal(payableSession.status,'expired','Deletion closes an unpaid checkout');assert.equal((await proposals.customerProposal(payableDelete.token)).canAccept,false);
  console.log('Passed inquiry availability/nearby weekend alternatives, own-event exclusion, Google moves, buffered conflicts, un-cancel with payment/menu retention, authorized idempotent event deletion, archived records, preserved inquiries/quotes/verified payments and checkout closure.');
+ // Starting a plan marks only the inquiry reviewed; it does not book or email anyone.
+ const reviewedFixture=(await connection.query("INSERT INTO website.form_inquiries(kind,name,email,payload,source) VALUES('event','Reviewed inquiry fixture','reviewed@example.invalid','{}'::jsonb,'test') RETURNING id")).rows[0];
+ const reviewedId=String(reviewedFixture.id),reviewedBefore=(await (await inquiryList('&id='+reviewedId)).json()).inquiries[0],countBeforeReview=(await (await inquiryList()).json()).unreviewedCount,mailBeforeReview=globalThis.eventTestMail.length;
+ assert.equal(reviewedBefore.reviewed,false);assert.equal(reviewedBefore.reviewedAt,null);
+ const reviewInquiry=(authenticated=true,kind='event',body={action:'review'})=>inquiryRoute.PATCH(new NextRequest('https://aviatorbrew.com/api/manager/inquiries?kind='+kind+'&id='+reviewedId,{method:'PATCH',headers:{'content-type':'application/json',...(authenticated?{cookie:inquiryCookie}:{})},body:JSON.stringify(body)}));
+ assert.equal((await reviewInquiry(false)).status,401);assert.equal((await reviewInquiry(true,'catering')).status,400);assert.equal((await reviewInquiry(true,'event',{action:'confirm'})).status,400);
+ const reviewResult=await (await reviewInquiry()).json();assert.equal(reviewResult.reviewed,true);assert.equal(reviewResult.unreviewedCount,countBeforeReview-1);assert.ok(reviewResult.reviewedAt);
+ assert.equal((await (await reviewInquiry()).json()).reviewedAt,reviewResult.reviewedAt,'Starting the same plan twice preserves the first review time');
+ const reviewedAfter=(await (await inquiryList('&id='+reviewedId)).json()).inquiries[0];assert.equal(reviewedAfter.reviewed,true);assert.equal(reviewedAfter.planId,undefined);assert.equal(globalThis.eventTestMail.length,mailBeforeReview);
+ assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Amedisys Hospice Christmas Party'}),'Morgan Roberts — Amedisys Hospice Christmas Party');
+ assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Private event — Morgan Roberts'}),'Morgan Roberts — Private event');
+ assert.equal(model.eventDisplayName({contactName:'Morgan Roberts',title:'Morgan Roberts — Celebration'}),'Morgan Roberts — Celebration');
  // Inquiry pagination must include every row, including tied submission timestamps.
  await connection.query("INSERT INTO website.form_inquiries (kind,name,email,payload,source,created_at) SELECT 'event','Inquiry pagination fixture','pagination@example.invalid','{}'::jsonb,'test', '2025-01-01'::timestamptz FROM generate_series(1,7)");
  const inquiryPage1=await (await inquiryList('&q=Inquiry%20pagination%20fixture&limit=5')).json(),inquiryPage2=await (await inquiryList('&q=Inquiry%20pagination%20fixture&limit=5&offset=5')).json();

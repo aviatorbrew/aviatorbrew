@@ -278,6 +278,7 @@ const schemaStatements = [
     source text NOT NULL DEFAULT 'aviatorbrew.com',
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
+  `ALTER TABLE website.form_inquiries ADD COLUMN IF NOT EXISTS reviewed_at timestamptz`,
   `CREATE TABLE IF NOT EXISTS website.private_event_plans (
     id text PRIMARY KEY,
     source_inquiry_id bigint UNIQUE REFERENCES website.form_inquiries(id) ON DELETE SET NULL,
