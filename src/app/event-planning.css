@@ -109,3 +109,5 @@
 
 .manager-private-events .event-plan-list>.event-list-month{color:#fff;font-size:1.15rem;font-weight:700;margin:.75rem 0 .1rem;padding:.4rem 0;border-bottom:1px solid #8da5b5}
 .manager-private-events .event-list-scope{font-size:.8rem;color:#c7d9e3;display:flex;align-items:center;flex-wrap:wrap;gap:.6rem}
+
+.manager-private-events .event-plan-list .event-list-date{font-size:.9rem;font-weight:700;color:#fff}
