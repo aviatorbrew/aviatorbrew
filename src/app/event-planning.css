@@ -83,6 +83,19 @@
 .manager-private-events .event-proposal-send-help.is-ready{border-left-color:#70dc98}
 .manager-private-events .event-proposal-send-help p{margin:.2rem 0;overflow-wrap:anywhere}
 .manager-private-events .event-proposal-send-help ul{margin:.25rem 0;padding-left:1.2rem}
+.manager-private-events .event-proposal-send-help [role=alert]{color:#ffd5cf}
+.proposal-send-dialog{width:min(36rem,calc(100vw - 2rem));max-height:calc(100dvh - 2rem);overflow:auto;margin:auto;padding:1.25rem;border:1px solid #efb45f;border-radius:4px;background:#0c2940;color:#fff;font:400 .875rem/1.5 Arial,sans-serif;box-shadow:0 20px 70px #0009}
+.proposal-send-dialog::backdrop{background:#03101ed9}
+.proposal-send-dialog h2{margin:0 0 .5rem;color:#fff;font:700 1.25rem/1.25 Arial,sans-serif}
+.proposal-send-dialog p{margin:.65rem 0}
+.proposal-send-dialog dl{display:grid;grid-template-columns:8rem minmax(0,1fr);gap:.4rem .75rem;margin:1rem 0}
+.proposal-send-dialog dt{color:#bcd0dc}
+.proposal-send-dialog dd{margin:0;overflow-wrap:anywhere}
+.proposal-send-dialog-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.6rem;margin-top:1rem}
+.proposal-send-dialog button{min-height:44px;padding:.55rem .75rem;border:1px solid #94b3c6;background:#163c55;color:#fff;font:700 .85rem/1.3 Arial,sans-serif;cursor:pointer}
+.proposal-send-dialog button:last-child{border-color:#efb45f;background:#efb45f;color:#102536}
+.proposal-send-dialog button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media(max-width:480px){.proposal-send-dialog{padding:1rem}.proposal-send-dialog dl{grid-template-columns:1fr;gap:.1rem}.proposal-send-dialog dd{margin-bottom:.45rem}.proposal-send-dialog-actions button{width:100%}}
 
 .manager-private-events .event-proposal-activity{padding:.4rem .6rem;border:1px solid #688fa6;margin:.4rem 0;font-size:.8rem;line-height:1.45;overflow-wrap:anywhere}
 .manager-private-events .event-proposal-activity p{margin:.25rem 0}
