@@ -50,7 +50,7 @@ function valid(date=future(60)){
 }
 async function approved(details=valid()){
  const plan=await plans.saveEventPlan(details),p=await proposals.createProposal(plan.id,{version:plan.version,expiresAt:expiration()});await proposals.sendProposal(plan.id,p.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true});
- const email=globalThis.eventTestMail.at(-1),token=email.text.match(/#token=([a-f0-9]{64})/)[1];return {plan,p,token};
+ const email=globalThis.eventTestMail.at(-1);assert.equal(email.cc,'events@aviatorbrew.com','Every proposal copies the events team');const token=email.text.match(/#token=([a-f0-9]{64})/)[1];return {plan,p,token};
 }
 const acceptance=p=>({name:'Fixture Customer',agreed:true,proposalVersion:p.version,policyVersion:p.snapshot.policyVersion,userAgent:'Fixture browser',ip:'127.0.0.1'});
 async function notify(session,eventId='evt_'+randomUUID(),validSignature=true){const raw=JSON.stringify({id:eventId,type:'checkout.session.completed',data:{object:session}}),t=Math.floor(Date.now()/1000),signed=createHmac('sha256',process.env.STRIPE_WEBHOOK_SECRET).update(t+'.'+raw).digest('hex');return webhook.POST(new NextRequest('https://aviatorbrew.com/api/stripe/webhook',{method:'POST',headers:{'stripe-signature':`t=${t},v1=${validSignature?signed:'0'.repeat(64)}`},body:raw}));}
