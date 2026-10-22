@@ -92,6 +92,26 @@ try{
  assert.equal(booking.eventWindowsOverlap({date:'2027-01-01',startTime:'22:00',endTime:'02:00'},{date:'2027-01-02',startTime:'01:00',endTime:'04:00'}),true);
  assert.equal(booking.eventRecordConflicts({date:'2027-01-03',startTime:'17:00',endTime:'21:00'},{data:{...original,date:'2027-01-01'},calendar_sync:{status:'changed',linkedFromPlanId:'google-duplicate',source:{date:'2027-01-03',startTime:'17:00',endTime:'21:00'}}}),false,'Linked Google changes are review metadata, never a second booking');
  assert.equal(proposals.materialHash(original),proposals.materialHash(Object.fromEntries(Object.entries(original).reverse())),'Material comparisons ignore JSON object key order');
+ const catalogVisibility=require(await compile(path.join(root,'src/lib/catering-catalog.ts')));
+ const publicCatalog=catalogVisibility.availableCatalog(catalog);
+ for(const name of ['Chicken Fingers','Loaded Tots']){
+   assert.ok(catalog.menu.appetizers.includes(name));assert.ok(catalog.managerOnlyItems.includes(name));assert.ok(!JSON.stringify(publicCatalog).includes(name),'Manager-only names are not serialized to customers');
+   assert.throws(()=>booking.validateCateringRequest({...original,flightPlan:{...original.flightPlan,appetizers:[name,...original.flightPlan.appetizers.slice(1)]}},catalog,35000));
+   assert.throws(()=>booking.validateCateringRequest({...original,flightPlan:{...original.flightPlan,extraAppetizers:[name]}},catalog,35000),'Customers cannot submit manager-only extras directly');
+ }
+ const staffFood={...original,flightPlan:{...original.flightPlan,appetizers:['Chicken Fingers','Loaded Tots','Hush Puppies'],extraAppetizers:['Chicken Fingers','Loaded Tots']}};
+ const staffParsed=model.parseEventPlan(staffFood,catalog);assert.equal(model.eventTotals(staffParsed,catalog).subtotal,190000+50*300*2);
+ assert.ok(!model.eventOrderItems(staffParsed,catalog).some(row=>row.name.startsWith('Premium appetizer')));
+ const premiumFood={...original,flightPlan:{...original.flightPlan,appetizers:['Pulled Pork Nachos','BBQ Meatballs','Hush Puppies'],extraAppetizers:['Pulled Pork Nachos','BBQ Meatballs']}};
+ const premiumParsed=booking.validateCateringRequest(premiumFood,catalog,35000);assert.equal(model.eventTotals(premiumParsed,catalog).subtotal,190000+50*(300*2+(300+300)*2));
+ assert.equal(model.eventOrderItems(premiumParsed,catalog).filter(row=>row.name.startsWith('Premium appetizer upgrade:')).length,4);
+ const changedAppPrices=structuredClone(catalog);changedAppPrices.extraPrices.appetizer=425;changedAppPrices.extraPrices.premiumAppetizer=350;
+ assert.equal(model.eventTotals(staffParsed,changedAppPrices).subtotal,190000+50*425*2,'Manager-only dishes use the configured regular extra-app price');
+ assert.equal(model.eventTotals(premiumParsed,changedAppPrices).subtotal,190000+50*(350*2+(425+350)*2),'Premium items use configured extra and premium prices');
+ const legacyCatalog=structuredClone(catalog);delete legacyCatalog.managerOnlyItems;assert.deepEqual(catalogVisibility.parseCateringCatalog(legacyCatalog).managerOnlyItems,[]);
+ assert.throws(()=>catalogVisibility.parseCateringCatalog({...catalog,managerOnlyItems:'Chicken Fingers'}));assert.throws(()=>catalogVisibility.parseCateringCatalog({...catalog,managerOnlyItems:null}));
+ await writeFile('/tmp/aviator-public-catering-menu-hidden-apps.pdf',await documents.cateringMenuPdf(catalog,'Visibility fixture'));
+ console.log('Passed manager-only appetizer visibility, blocked direct customer submissions, normal included/extra pricing, new premium appetizer upgrades/extras, backend-controlled prices and legacy settings compatibility');
  console.log('Passed menu validation, backend pricing, disabled items, guest limits and overnight availability');
  const req={requestId:randomUUID(),humanCheck:'yes',website:'',cateringPlan:original};
  const inquiry=await inquiries.submitCateringInquiry(req);await inquiries.submitCateringInquiry(req);
@@ -396,6 +416,13 @@ try{
  console.log('Passed authenticated explicit Google duplicate matching/linking, stale-review protection, authoritative website details and schedule, preserved menus/contact/prices/notes/status/quote snapshots/history, silent linking, website-only calendar holds, approval preservation, normal sending after linking, sync identity and real-conflict rollback.');
  // Leave only safe current catalog settings for the separate local browser fixture.
  await settings.setPrivateEventSettings({catering:catalog});
+ const managerAppEvent=await approved({...staffFood,date:future(365)}),managerAppCustomer=await proposals.customerProposal(managerAppEvent.token);
+ assert.deepEqual(managerAppCustomer.proposal.snapshot.details.flightPlan.appetizers,staffFood.flightPlan.appetizers,'Selected dishes remain on the actual customer quote');
+ assert.ok(!managerAppCustomer.proposal.snapshot.catalog.menu.appetizers.includes('Chicken Fingers'),'Unused manager choices stay private in customer proposal data');
+ assert.equal(managerAppCustomer.proposal.snapshot.totals.subtotal,190000+50*300*2);
+ const managerAppSaved=await plans.getEventPlan(managerAppEvent.plan.id),managerAppKitchen=documents.kitchenSheetHtml(managerAppSaved,catalog,true);
+ assert.ok(managerAppKitchen.includes('Chicken Fingers')&&managerAppKitchen.includes('Loaded Tots'),'Kitchen production sheets retain the staff-selected foods');
+ assert.ok((await settings.getPrivateEventSettings()).catering.managerOnlyItems.includes('Loaded Tots'),'Manager visibility settings round-trip through the existing backend');
  const browserFixture=await approved(valid(future(95)));
  await writeFile('/tmp/aviator-event-proposal-browser-fixture.json',JSON.stringify({token:browserFixture.token,planId:browserFixture.plan.id,proposalId:browserFixture.p.id,paidToken:token,paidPlanId:sourcePlan.id}),{mode:0o600});
 }finally{globalThis.fetch=actualFetch;await connection.end();process.exitCode||=0;setTimeout(()=>process.exit(process.exitCode),50).unref();}

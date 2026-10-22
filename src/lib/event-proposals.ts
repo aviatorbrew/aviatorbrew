@@ -11,6 +11,7 @@ import { eventDateLabel, money, parseEventPlan, timeLabel, type EventPlanDetails
 import { createDynamicCheckoutSession } from "@/lib/stripe";
 import { publicSiteUrl } from "@/lib/site-url";
 import { sendMail, isMailConfigured } from "@/lib/mail";
+import { availableCatalog } from "@/lib/catering-catalog";
 
 export class ProposalError extends Error { constructor(message: string, public status=400){super(message);} }
 export type EventProposal = { id:string; plan_id:string; version:number; number:string; plan_version:number; material_hash:string; termsCurrent?:boolean; snapshot:ProposalSnapshot; state:string; expires_at:string; approved_at:string|null; sent_at:string|null; accepted_at:string|null; accepted_name:string|null; created_at:string };
@@ -164,7 +165,7 @@ export async function customerProposal(token:string){return withDatabase(async c
   const current=plan&&materialHash(plan.data)===p.material_hash&&!['Cancelled','Completed'].includes(plan.status)&&!['superseded','cancelled','declined'].includes(p.state);
   const lastAttempt=(await client.query("SELECT status FROM website.private_event_checkout_attempts WHERE proposal_id=$1 ORDER BY created_at DESC LIMIT 1",[p.id])).rows[0];
   const status=plan?.status==='Cancelled'?'Canceled':plan?.status==='Completed'?'Completed':!current?'Revised proposal required':p.state==='paid_review'?'Deposit paid — staff review required':!p.approved_at?'Under Review':p.accepted_at&&plan?.status==='Confirmed'?'Confirmed':p.accepted_at?(lastAttempt?.status==='failed'?'Payment Failed / Pending':'Awaiting Deposit'):p.sent_at?'Proposal Sent':'Under Review';
-  return {proposal:p,status,canAccept:Boolean(current&&p.approved_at&&p.snapshot.policyText&&p.snapshot.policyVersion),payments,recordedPaidCents:Number(plan?.data.paidCents||0),remainingCents:p.snapshot.totals.total-Number(plan?.data.paidCents||0)};
+  return {proposal:{...p,snapshot:{...p.snapshot,catalog:availableCatalog(p.snapshot.catalog)}},status,canAccept:Boolean(current&&p.approved_at&&p.snapshot.policyText&&p.snapshot.policyVersion),payments,recordedPaidCents:Number(plan?.data.paidCents||0),remainingCents:p.snapshot.totals.total-Number(plan?.data.paidCents||0)};
 });}
 export async function acceptAndCheckout(token:string,input:{name:unknown;agreed:unknown;proposalVersion:unknown;policyVersion:unknown;userAgent?:string;ip?:string}){
   const name=typeof input.name==='string'?input.name.trim():'';

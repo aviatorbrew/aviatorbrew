@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { InquiryForm } from "@/components/inquiry-form";
 import { ArrowUpRight, MapPin } from "@/components/icons";
 import { PrivateEventPackages } from "@/components/private-event-packages";
+import { availableCatalog } from "@/lib/catering-catalog";
 import { getPrivateEventPaymentResult } from "@/lib/private-event-checkout";
 import { notifyPrivateEventPayment } from "@/lib/private-event-payments";
 import { getPrivateEventPhotos, type PrivateEventPhoto } from "@/lib/private-event-photos";
@@ -94,7 +95,7 @@ export default async function ContentPage({
       </div>
     </section>
 
-    {page === "private-events" ? <PrivateEventPackages catalog={privateEventSettings!.catering} depositCents={privateEventSettings!.bookingFeeCents} policyText={privateEventSettings!.policyText} policyVersion={privateEventSettings!.policyVersion} /> : null}
+    {page === "private-events" ? <PrivateEventPackages catalog={availableCatalog(privateEventSettings!.catering)} depositCents={privateEventSettings!.bookingFeeCents} policyText={privateEventSettings!.policyText} policyVersion={privateEventSettings!.policyVersion} /> : null}
 
     <section className={page === "private-events" ? "section private-event-story" : "section"}>
       <div className="content-wrap split-content">

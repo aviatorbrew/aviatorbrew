@@ -25,7 +25,7 @@ export const readyRoomPackages = [
 export const readyRoomExtraPrices = { appetizer: 300, entree: 500, side: 300, salad: 300, premiumAppetizer: 300, premiumEntree: 700, premiumEntreeUpgrade: 200, dessert: 600, coffee: 300, hour: 10000 } as const;
 export const readyRoomMenu = {
   appetizers: ["Hush Puppies", "Tater Tots", "Chips & Salsa", "Caprese Skewers", "Brewer Fries", "Sweet Potato Fries"],
-  premiumAppetizers: ["Shrimp Cocktail", "Brisket Crostini"],
+  premiumAppetizers: ["Shrimp Cocktail", "Brisket Crostini", "Pulled Pork Nachos", "BBQ Meatballs"],
   entrees: ["Aviator Pizzeria Pizza Bar", "Aviator Pulled Pork BBQ", "Country Fried Chicken Cutlet", "Bacon-Wrapped Meatloaf", "Aviator Chicken Tenders", "Aviator Smoked Wings"],
   premiumEntrees: ["Grilled Flat Iron Steak with Collard Green Chimichurri", "Aviator Beef Brisket", "Herb-Roasted Chicken", "Bourbon-Glazed Chicken"],
   sides: ["Mac & Cheese", "Collard Greens", "Broccoli Salad", "Tomato Cucumber Salad", "Potato Salad", "French Fries", "Tater Tots"],
@@ -36,12 +36,12 @@ export const readyRoomMenu = {
 export type CateringPackage = { id: string; name: string; priceCents: number; appetizers: number; entrees: number; sides: number; salads: number; enabled: boolean; premiumEntreesIncluded: boolean };
 export type CateringCatalog = {
   packages: CateringPackage[]; menu: Record<keyof typeof readyRoomMenu, string[]>;
-  extraPrices: Record<keyof typeof readyRoomExtraPrices, number>; disabledItems: string[];
+  extraPrices: Record<keyof typeof readyRoomExtraPrices, number>; disabledItems: string[]; managerOnlyItems?: string[];
   minimumGuests: number; maximumGuests: number; venue: string; salesTaxBps: number; pfbTaxBps: number;
 };
 export const defaultCateringCatalog: CateringCatalog = {
   packages: readyRoomPackages.map(p => ({...p, enabled: true, premiumEntreesIncluded: p.id === "dinner"})),
-  menu: structuredClone(readyRoomMenu), extraPrices: {...readyRoomExtraPrices}, disabledItems: [],
+  menu: {...structuredClone(readyRoomMenu),appetizers:[...readyRoomMenu.appetizers,"Chicken Fingers","Loaded Tots"]}, extraPrices: {...readyRoomExtraPrices}, disabledItems: [], managerOnlyItems:["Chicken Fingers","Loaded Tots"],
   minimumGuests: 30, maximumGuests: 70, venue: "Ready Room · 688 Brewing Drive, Fuquay-Varina", salesTaxBps: 725, pfbTaxBps: 100,
 };
 export const readyRoomAppetizers = [...readyRoomMenu.appetizers, ...readyRoomMenu.premiumAppetizers];

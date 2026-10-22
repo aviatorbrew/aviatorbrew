@@ -16,8 +16,11 @@ export function parseCateringCatalog(value: unknown): CateringCatalog {
   }
   for (const key of Object.keys(defaultCateringCatalog.extraPrices) as (keyof CateringCatalog["extraPrices"])[]) if (!integer(c.extraPrices?.[key])) throw new Error(`Check ${key} upgrade price.`);
   if (!Array.isArray(c.disabledItems) || c.disabledItems.length > 500 || c.disabledItems.some(s => !text(s))) throw new Error("Check unavailable food items.");
+  if(c.managerOnlyItems===undefined)c.managerOnlyItems=[];
+  if (!Array.isArray(c.managerOnlyItems) || c.managerOnlyItems.length > 500 || c.managerOnlyItems.some(s => !text(s)) || new Set(c.managerOnlyItems).size !== c.managerOnlyItems.length) throw new Error("Check manager-only food items.");
   return c;
 }
 export function availableCatalog(catalog: CateringCatalog): CateringCatalog {
-  return {...catalog, packages: catalog.packages.filter(p => p.enabled), menu: Object.fromEntries(Object.entries(catalog.menu).map(([key, values]) => [key, values.filter(name => !catalog.disabledItems.includes(name))])) as CateringCatalog["menu"]};
+  const hidden=new Set([...catalog.disabledItems,...(catalog.managerOnlyItems||[])]);
+  return {...catalog, disabledItems:[], managerOnlyItems:[], packages: catalog.packages.filter(p => p.enabled), menu: Object.fromEntries(Object.entries(catalog.menu).map(([key, values]) => [key, values.filter(name => !hidden.has(name))])) as CateringCatalog["menu"]};
 }

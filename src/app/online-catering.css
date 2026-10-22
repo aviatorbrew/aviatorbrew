@@ -163,3 +163,5 @@
 @media(min-width:651px){.package-card-name{min-height:3em}}
 .package-card-footer,.package-card-footer>span:last-child{font-size:.75rem;line-height:1.5}
 .package-card-top-note{font-size:.7rem}
+
+.manager-portal .event-settings-menu-item{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .8rem}
