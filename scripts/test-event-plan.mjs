@@ -51,6 +51,23 @@ for(const pkg of readyRoomPackages){
   const withExtras=parseEventPlan({...details,flightPlan:extra});
   assert.equal(eventTotals(withExtras).subtotal,base+30*(300+300+500+600+300)+20000);
 }
+// Manager per-event appetizer and entree prices preserve defaults, duplicates and premium rules.
+for (const pkg of readyRoomPackages) {
+ const f={...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Hush Puppies'),entrees:['Aviator Pulled Pork BBQ','Aviator Chicken Tenders'],sides:['Mac & Cheese','Potato Salad'],salads:pkg.salads?['Caesar Salad']:[],extraAppetizers:['Hush Puppies','Shrimp Cocktail'],extraEntrees:['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ','Aviator Beef Brisket'],extraAppetizerPriceCents:225,extraEntreePriceCents:450,extraPremiumEntreePriceCents:650};
+ const p=parseEventPlan({...emptyEventPlan(),title:'Manager extra prices',date:'2027-04-10',guestCount:50,flightPlan:f});
+ assert.equal(eventTotals(p).subtotal,pkg.priceCents*50+50*(225*2+300+450*2+650));
+ assert.equal(eventTotals({...p,guestCount:60}).subtotal,pkg.priceCents*60+60*(225*2+300+450*2+650));
+ assert.equal(eventOrderItems(p).find(row=>row.name==='Additional premium entree: Aviator Beef Brisket').unitPriceCents,650);
+ const free=parseEventPlan({...p,flightPlan:{...f,extraAppetizerPriceCents:0,extraEntreePriceCents:0,extraPremiumEntreePriceCents:0}});
+ assert.equal(eventTotals(free).subtotal,pkg.priceCents*50+50*300,'Zero-price extras retain only the configured premium appetizer upgrade');
+ const old={...f};for(const key of ['extraAppetizerPriceCents','extraEntreePriceCents','extraPremiumEntreePriceCents'])delete old[key];
+ const parsedOld=parseEventPlan({...p,flightPlan:old});
+ for(const key of ['extraAppetizerPriceCents','extraEntreePriceCents','extraPremiumEntreePriceCents'])assert.ok(!Object.hasOwn(parsedOld.flightPlan,key),'Legacy proposal terms do not acquire new price overrides');
+ assert.equal(eventTotals(parsedOld).subtotal,pkg.priceCents*50+50*(300*2+300+500*2+700));
+ for(const key of ['extraAppetizerPriceCents','extraEntreePriceCents','extraPremiumEntreePriceCents'])for(const value of [null,-1,1.5,'300',NaN,Infinity,10000001])assert.throws(()=>parseEventPlan({...p,flightPlan:{...f,[key]:value}}));
+ const pizza=parseEventPlan({...p,flightPlan:{...f,pizzaExtra:true,pizzas:['Caprese']}});
+ assert.equal(eventTotals(pizza).subtotal,eventTotals(p).subtotal+50*450,'Additional Pizza Bar uses the recorded regular entree price');
+}
 // Premium replacement versus additional pricing, including Dinner's included premium allowance.
 for (const pkg of readyRoomPackages) {
   const premiumFlight={...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Hush Puppies'),entrees:['Aviator Beef Brisket','Aviator Pulled Pork BBQ'],sides:['Mac & Cheese','Potato Salad'],salads:pkg.salads?['Caesar Salad']:[]};

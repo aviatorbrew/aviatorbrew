@@ -112,6 +112,19 @@ try{
  assert.throws(()=>catalogVisibility.parseCateringCatalog({...catalog,managerOnlyItems:'Chicken Fingers'}));assert.throws(()=>catalogVisibility.parseCateringCatalog({...catalog,managerOnlyItems:null}));
  await writeFile('/tmp/aviator-public-catering-menu-hidden-apps.pdf',await documents.cateringMenuPdf(catalog,'Visibility fixture'));
  console.log('Passed manager-only appetizer visibility, blocked direct customer submissions, normal included/extra pricing, new premium appetizer upgrades/extras, backend-controlled prices and legacy settings compatibility');
+ const customExtraFood={...original,flightPlan:{...original.flightPlan,extraAppetizers:['Hush Puppies','Shrimp Cocktail'],extraEntrees:['Aviator Pulled Pork BBQ','Aviator Beef Brisket'],extraAppetizerPriceCents:225,extraEntreePriceCents:450,extraPremiumEntreePriceCents:650}};
+ const customExtraParsed=model.parseEventPlan(customExtraFood,catalog),customExtraSnapshot=booking.proposalSnapshot(customExtraParsed,catalog,35000,'Fixture policies','fixture');
+ assert.equal(model.eventTotals(customExtraParsed,catalog).subtotal,190000+50*(225*2+300+450+650));
+ assert.equal(customExtraSnapshot.totals.subtotal,model.eventTotals(customExtraParsed,catalog).subtotal);
+ assert.equal(customExtraSnapshot.items.find(i=>i.name==='Additional appetizer: Hush Puppies').unitPriceCents,225);
+ assert.equal(customExtraSnapshot.items.find(i=>i.name==='Additional premium entree: Aviator Beef Brisket').unitPriceCents,650);
+ assert.notEqual(proposals.materialHash(customExtraParsed),proposals.materialHash({...customExtraParsed,flightPlan:{...customExtraParsed.flightPlan,extraEntreePriceCents:475}}),'Price edits require a revised proposal');
+ const forcedDefaults=booking.validateCateringRequest({...customExtraFood,flightPlan:{...customExtraFood.flightPlan,extraAppetizerPriceCents:0,extraEntreePriceCents:0,extraPremiumEntreePriceCents:0}},catalog,35000);
+ assert.equal(model.eventTotals(forcedDefaults,catalog).subtotal,190000+50*(300*2+300+500+700),'Public requests cannot override manager extra prices');
+ for(const key of ['extraAppetizerPriceCents','extraEntreePriceCents','extraPremiumEntreePriceCents'])assert.ok(!Object.hasOwn(forcedDefaults.flightPlan,key),'Public inquiries do not store manager price overrides');
+ assert.ok(plans.eventSummaryHtml({id:'fixture-custom-prices',version:1,details:customExtraParsed},false,'',false,catalog).includes('$2.25'),'Printable order summary uses staff prices');
+ await writeFile('/tmp/aviator-custom-extra-prices-proposal.pdf',await documents.proposalPdf({id:'fixture-custom-prices',number:'AVI-CUSTOM-PRICES',version:1,snapshot:customExtraSnapshot,expires_at:new Date(Date.now()+86400000).toISOString(),accepted_at:null}));
+ console.log('Passed manager extra appetizer/regular/premium entree prices, immutable snapshots, material revision detection, public price-tampering prevention, printable summary and proposal PDF');
  console.log('Passed menu validation, backend pricing, disabled items, guest limits and overnight availability');
  const req={requestId:randomUUID(),humanCheck:'yes',website:'',cateringPlan:original};
  const inquiry=await inquiries.submitCateringInquiry(req);await inquiries.submitCateringInquiry(req);
@@ -423,6 +436,13 @@ try{
  const managerAppSaved=await plans.getEventPlan(managerAppEvent.plan.id),managerAppKitchen=documents.kitchenSheetHtml(managerAppSaved,catalog,true);
  assert.ok(managerAppKitchen.includes('Chicken Fingers')&&managerAppKitchen.includes('Loaded Tots'),'Kitchen production sheets retain the staff-selected foods');
  assert.ok((await settings.getPrivateEventSettings()).catering.managerOnlyItems.includes('Loaded Tots'),'Manager visibility settings round-trip through the existing backend');
+ const customPriceEvent=await approved({...customExtraParsed,date:future(366)}),savedCustomPriceEvent=await plans.getEventPlan(customPriceEvent.plan.id);
+ assert.equal(savedCustomPriceEvent.details.flightPlan.extraAppetizerPriceCents,225);assert.equal(savedCustomPriceEvent.details.flightPlan.extraEntreePriceCents,450);assert.equal(savedCustomPriceEvent.details.flightPlan.extraPremiumEntreePriceCents,650);
+ const originalPriceProposal=await proposals.getManagerProposal(customPriceEvent.plan.id,customPriceEvent.p.id),changedPriceEvent=await plans.saveEventPlan({...savedCustomPriceEvent.details,flightPlan:{...savedCustomPriceEvent.details.flightPlan,extraEntreePriceCents:475}},savedCustomPriceEvent.id,savedCustomPriceEvent.version);
+ assert.equal((await proposals.listProposals(savedCustomPriceEvent.id)).proposals[0].termsCurrent,false,'Saved price edits invalidate sending the old proposal');
+ const revisedPriceProposal=await proposals.createProposal(savedCustomPriceEvent.id,{version:changedPriceEvent.version,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
+ assert.equal(revisedPriceProposal.snapshot.totals.subtotal,originalPriceProposal.snapshot.totals.subtotal+50*25);
+ assert.equal((await proposals.getManagerProposal(savedCustomPriceEvent.id,customPriceEvent.p.id)).snapshot.details.flightPlan.extraEntreePriceCents,450,'Issued quote retains its original staff price');
  const browserFixture=await approved(valid(future(95)));
  await writeFile('/tmp/aviator-event-proposal-browser-fixture.json',JSON.stringify({token:browserFixture.token,planId:browserFixture.plan.id,proposalId:browserFixture.p.id,paidToken:token,paidPlanId:sourcePlan.id}),{mode:0o600});
 }finally{globalThis.fetch=actualFetch;await connection.end();process.exitCode||=0;setTimeout(()=>process.exit(process.exitCode),50).unref();}

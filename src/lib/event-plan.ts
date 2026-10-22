@@ -50,6 +50,7 @@ export const readyRoomLegacyAppetizers = ["Loaded Tots", "Aviator Chicken Tender
 export const readyRoomEntrees = [...readyRoomMenu.entrees, ...readyRoomMenu.premiumEntrees];
 export type FlightPlan = {
   packageId: string; appetizers: string[]; entrees: string[]; sides: string[]; salads: string[]; pizzas: string[];
+  extraAppetizerPriceCents?: number | null; extraEntreePriceCents?: number | null; extraPremiumEntreePriceCents?: number | null;
   extraAppetizers: string[]; extraEntrees: string[]; extraSides: string[]; extraSalads: string[]; extraSidePriceCents: number | null; extraSaladPriceCents: number | null; extraHours: number; dessert: boolean; coffee: boolean; pizzaExtra: boolean;
   glutenFreeCount: number; pizzaTime: string; pizzaNotes: string; wingSauce: string; dietaryNeeds: string; foodNotes: string;
   eventType: string; organization: string; billingName: string; billingAddress: string; appetizerTime: string; outsideSeating: string;
@@ -83,13 +84,13 @@ export function eventOrderItems(plan: EventPlanDetails, catalog = defaultCaterin
   const rows: EventOrderItem[] = [];
   const add = (id: string, name: string, quantity: number, price: number, category: EventOrderItem["category"] = "Food") => { if (quantity) rows.push({ id: `package-${id}`, name, quantity, unitPriceCents: price, taxable: true, category, notes: "" }); };
   add("base", pkg.name + " / guest", plan.guestCount, pkg.priceCents);
-  for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, readyRoomExtraPrices.appetizer);
-  for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional ${readyRoomMenu.premiumEntrees.includes(name) ? "premium " : ""}entree: ${name}`, plan.guestCount, readyRoomMenu.premiumEntrees.includes(name) ? readyRoomExtraPrices.premiumEntree : readyRoomExtraPrices.entree);
+  for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, f.extraAppetizerPriceCents ?? readyRoomExtraPrices.appetizer);
+  for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional ${readyRoomMenu.premiumEntrees.includes(name) ? "premium " : ""}entree: ${name}`, plan.guestCount, readyRoomMenu.premiumEntrees.includes(name) ? f.extraPremiumEntreePriceCents ?? readyRoomExtraPrices.premiumEntree : f.extraEntreePriceCents ?? readyRoomExtraPrices.entree);
   for (const [i, name] of (f.extraSides || []).entries()) add(`side-${i}`, `Additional side: ${name}`, plan.guestCount, f.extraSidePriceCents ?? 0);
   for (const [i, name] of (f.extraSalads || []).entries()) add(`salad-${i}`, `Additional salad: ${name}`, plan.guestCount, f.extraSaladPriceCents ?? 0);
   for (const [i, name] of [...f.appetizers, ...f.extraAppetizers].entries()) if (readyRoomMenu.premiumAppetizers.includes(name)) add(`premium-app-${i}`, `Premium appetizer upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumAppetizer);
   if (!pkg.premiumEntreesIncluded) for (const [i, name] of f.entrees.entries()) if (readyRoomMenu.premiumEntrees.includes(name)) add(`premium-entree-${i}`, `Premium entree upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumEntreeUpgrade);
-  if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, readyRoomExtraPrices.entree);
+  if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, f.extraEntreePriceCents ?? readyRoomExtraPrices.entree);
   if (f.dessert) add("dessert", "Dessert display", plan.guestCount, readyRoomExtraPrices.dessert);
   if (f.coffee) add("coffee", "Coffee service", plan.guestCount, readyRoomExtraPrices.coffee);
   add("hours", "Additional event hour", f.extraHours, readyRoomExtraPrices.hour, "Room");
@@ -163,6 +164,18 @@ function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCa
     const price = input[key] === undefined ? f[key] : input[key];
     if (price !== null && (typeof price !== "number" || !Number.isInteger(price) || price < 0 || price > 10000000)) throw new Error("Enter a valid extra side or salad price.");
     if (selections.length && price === null) throw new Error(`Enter the additional ${key === "extraSidePriceCents" ? "side" : "salad"} price per guest.`);
+    f[key] = price as number | null;
+  }
+  // Leave absent overrides absent so legacy events and issued proposal hashes keep their existing terms.
+  for (const [key, label, selected] of [
+    ["extraAppetizerPriceCents", "appetizer", f.extraAppetizers.length > 0],
+    ["extraEntreePriceCents", "regular entree", f.pizzaExtra || f.extraEntrees.some(name => !readyRoomMenu.premiumEntrees.includes(name))],
+    ["extraPremiumEntreePriceCents", "premium entree", f.extraEntrees.some(name => readyRoomMenu.premiumEntrees.includes(name))],
+  ] as const) {
+    const price = input[key];
+    if (price === undefined) continue;
+    if (price !== null && (typeof price !== "number" || !Number.isInteger(price) || price < 0 || price > 10000000)) throw new Error(`Enter a valid additional ${label} price per guest.`);
+    if (selected && price === null) throw new Error(`Enter the additional ${label} price per guest.`);
     f[key] = price as number | null;
   }
   if (pkg) {
