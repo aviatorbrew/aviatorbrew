@@ -54,6 +54,7 @@ export function eventBookingStage(status:string,proposal?:{state:string;expires_
  if(status==="Cancelled")return "Canceled";
  if(status==="Completed")return "Completed";
  if(proposal){
+ if(proposal.state==='changes_requested')return 'Changes Requested';
   if(proposal.state==="declined")return "Declined";
   if(proposal.state==="cancelled")return "Canceled";
   if(proposal.state==="paid_review")return "Deposit paid — staff review required";

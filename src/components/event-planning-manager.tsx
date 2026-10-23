@@ -72,7 +72,7 @@ export function EventPlanningManager() {
   useEffect(() => { if(error) errorNotice.current?.scrollIntoView({block:"center"}); }, [error]);
   useEffect(() => {
     const params=new URLSearchParams(window.location.search),eventId=params.get("event");
-    if(eventId&&/^[a-f0-9-]{36}$/i.test(eventId)){getExistingInquiryPlan(eventId,true);return;}
+    if(eventId&&/^(?:[a-f0-9-]{36}|gcal-[a-f0-9]{64})$/i.test(eventId)){getExistingInquiryPlan(eventId,true);return;}
     const id=params.get("inquiry");
     if(!id||!/^\d{1,20}$/.test(id))return;
     if(inquiryArchive.current)inquiryArchive.current.open=true;

@@ -22,6 +22,10 @@ Use the existing controls as follows:
 
 Use the existing event status and guest-update controls to complete or cancel events, apply existing authorized manual booking exceptions, or send additional updates. Cancelling a plan never deletes payment history. Moving a previously approved plan back to Draft revokes its proposal approval; a late payment cannot confirm it. Declined or expired proposals are shown for review; staff can release a remaining tentative hold through the existing event status control.
 
+When an event already has the required deposit recorded (manual or verified Stripe credit), the proposal email offers **Review & Approve Proposal** and **Request a Change**. The secure review page shows the existing credit and an **Approve Proposal — Deposit Already Paid** button. Approval still records the exact proposal/policy version, customer name and timestamp and checks availability; it creates no additional deposit checkout when the credit covers the requirement.
+
+**Request a Change** opens an online message form under the same expiring secure link. Requests are stored against that exact proposal version, displayed in its manager proposal box with the customer name/time and events-team email status, and sent to `events@aviatorbrew.com` through the existing delivery queue. Duplicate submissions do not duplicate the record or notification. The saved event/menu, payment credit and historical acceptance are retained. A proposal with requested changes requires a revised draft before another acceptance or send; a late payment remains credited for staff review. Staff can retry failed notifications using the existing approved delivery controls. Previously sent/accepted proposals and their request history remain available after revision.
+
 ## Settings and activation dependency
 
 Extend the existing **Website settings & room booking fee** panel; there is no separate catering administration application. It now contains package names/prices/selection limits, premium eligibility, food choices/availability, upgrade prices, venue minimum/maximum and taxes. Disable dishes instead of deleting names used by saved events. Existing event data and legacy menu selections remain stored.
@@ -40,7 +44,7 @@ Event plan writes and booking checks share a PostgreSQL advisory lock to seriali
 
 ## Database and integration
 
-Schema changes are additive and included in both existing migration paths. New related tables are `private_event_proposals`, `private_event_checkout_attempts`, `private_event_deposits`, and `private_event_deliveries`. Existing inquiry, event, tour, shop and payment records are not rewritten by the migration. No BrewOps integration or additional Render service is used.
+Schema changes are additive and included in both existing migration paths. New related tables are `private_event_proposals`, `private_event_checkout_attempts`, `private_event_deposits`, `private_event_deliveries`, and `private_event_proposal_changes`. Existing inquiry, event, tour, shop and payment records are not rewritten by the migration. No BrewOps integration or additional Render service is used.
 
 Stripe events are handled by the existing `/api/stripe/webhook` endpoint. It verifies the raw request signature, including timestamp tolerance and rotated signatures. The proposal branch supports Checkout completion, asynchronous success/failure and expiry; card Checkout is used for deposits. Stripe idempotency keys preserve a single checkout across retries. The existing shop and tour branches are retained.
 

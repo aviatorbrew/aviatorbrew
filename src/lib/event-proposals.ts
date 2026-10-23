@@ -15,6 +15,7 @@ import { availableCatalog } from "@/lib/catering-catalog";
 
 export class ProposalError extends Error { constructor(message: string, public status=400){super(message);} }
 export type EventProposal = { id:string; plan_id:string; version:number; number:string; plan_version:number; material_hash:string; termsCurrent?:boolean; snapshot:ProposalSnapshot; state:string; expires_at:string; approved_at:string|null; sent_at:string|null; accepted_at:string|null; accepted_name:string|null; created_at:string };
+export type ProposalChangeRequest = {id:string;proposal_id:string;customer_name:string;message:string;requested_at:string;notification_status:string};
 const iso=(v: unknown)=>v instanceof Date?v.toISOString():v as string;
 function proposalRow(row: Record<string,unknown>): EventProposal { const {token_hash,acceptance,approved_by,...safe}=row; void token_hash;void acceptance;void approved_by;return {...safe,expires_at:iso(row.expires_at),approved_at:iso(row.approved_at),sent_at:iso(row.sent_at),accepted_at:iso(row.accepted_at),created_at:iso(row.created_at)} as EventProposal; }
 function stable(value: unknown): unknown { if(Array.isArray(value))return value.map(stable); if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,stable(v)])); return value; }
@@ -86,7 +87,8 @@ export async function listProposals(planId:string){return withDatabase(async cli
   const deliveries=(await client.query("SELECT proposal_id,recipient,subject,status,updated_at FROM website.private_event_deliveries WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1)",[planId])).rows;
   const attempts=(await client.query("SELECT proposal_id,status,expires_at,created_at FROM website.private_event_checkout_attempts WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY created_at DESC",[planId])).rows;
   const review=await currentProposalReview(client,planId);
-  return {proposals,deposits,deliveries,review,attempts};
+  const changeRequests=(await client.query("SELECT r.id,r.proposal_id,r.customer_name,r.message,r.requested_at,d.status AS notification_status FROM website.private_event_proposal_changes r LEFT JOIN website.private_event_deliveries d ON d.key='proposal-change:'||r.id WHERE r.proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY r.requested_at DESC",[planId])).rows.map(r=>({...r,requested_at:iso(r.requested_at)}));
+  return {proposals,deposits,deliveries,review,attempts,changeRequests};
 });}
 export async function getManagerProposal(planId:string,id:string){return withDatabase(async client=>{const row=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2",[id,planId])).rows[0];return row?proposalRow(row):null;});}
 export async function deleteProposalDraft(planId:string,id:string,version:number){return transaction(async client=>{
@@ -127,7 +129,7 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
     const plan=(await client.query("SELECT * FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[planId])).rows[0];
     if(!p||!plan)throw new ProposalError("Proposal not found.",404);
     if(input.reviewContext!==undefined)await requireSavedProposalReview(planId,id,input.reviewContext,client,plan);
-    if(p.state==="superseded"||p.state==="declined"||p.state==="cancelled"||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError("Create a revised proposal before sending a new link.",409);
+    if(['superseded','declined','cancelled','changes_requested'].includes(p.state)||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError("Create a revised proposal before sending a new link.",409);
     if(materialHash(plan.data)!==p.material_hash)throw new ProposalError("The event terms changed. Create a revised proposal.",409);
     const s=p.snapshot as ProposalSnapshot;
     if(!s.policyText.trim()||!s.policyVersion.trim())throw new ProposalError("Save approved cancellation, deposit/refund and event policies in Private Events settings, then create a new proposal. Acceptance and payment remain inactive.",409);
@@ -138,9 +140,11 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
 
     await client.query("UPDATE website.private_event_proposals SET state='superseded',token_hash=NULL WHERE plan_id=$1 AND id<>$2 AND state NOT IN ('paid','paid_review','declined','cancelled','superseded')",[planId,id]);
     await client.query("UPDATE website.private_event_plans SET status=CASE WHEN status='Draft' THEN 'Tentative' ELSE status END,data=jsonb_set(data,'{status}',to_jsonb(CASE WHEN status='Draft' THEN 'Tentative' ELSE status END)),updated_at=now() WHERE id=$1",[planId]);
-    return proposalRow((await client.query("UPDATE website.private_event_proposals SET token_hash=$1,approved_at=COALESCE(approved_at,now()),approved_by='manager-session',state=CASE WHEN accepted_at IS NULL THEN 'sent' ELSE state END WHERE id=$2 RETURNING *",[tokenHash(token),id])).rows[0]);
+    return {...proposalRow((await client.query("UPDATE website.private_event_proposals SET token_hash=$1,approved_at=COALESCE(approved_at,now()),approved_by='manager-session',state=CASE WHEN accepted_at IS NULL THEN 'sent' ELSE state END WHERE id=$2 RETURNING *",[tokenHash(token),id])).rows[0]),recordedPaidCents:Number(plan.data.paidCents||0)};
   });
   const link=publicSiteUrl()+"/event-proposal#token="+token;
+  const changeLink=publicSiteUrl()+"/event-proposal?view=changes#token="+token;
+  const depositCovered=proposal.recordedPaidCents>=proposal.snapshot.depositCents;
   const expirationLabel=new Date(proposal.expires_at).toLocaleString("en-US",{timeZone:"America/New_York",dateStyle:"long",timeStyle:"short"})+" Eastern";
   const details=proposal.snapshot.details;
   const eventSchedule=`${eventDateLabel(details.date)} · ${timeLabel(details.startTime)}–${timeLabel(details.endTime)} Eastern`;
@@ -148,7 +152,7 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
   let sent=false;
   try {
     await fs.writeFile(attachment,await proposalPdf(proposal));
-    sent=await sendMail({to:proposal.snapshot.details.contactEmail,cc:"events@aviatorbrew.com",fromName:"Aviator Events",replyTo:"events@aviatorbrew.com",subject:`Review your Aviator event proposal ${proposal.number}`,attachments:[{filename:proposal.number+".pdf",path:attachment,contentType:"application/pdf"}],html:`<div style="font:16px/1.6 Arial,sans-serif;color:#172b3b"><h1 style="margin:0 0 8px">Your Aviator event proposal</h1><p style="margin:0 0 20px;font-size:18px;font-weight:700">${eventSchedule}</p><p>Review the quoted menu, prices and policies in proposal ${proposal.number}.</p><p><a href="${link}" style="display:inline-block;padding:12px 18px;background:#efb45f;color:#102b3e">Review Your Aviator Event Proposal</a></p><p><strong>Proposal expires:</strong> ${expirationLabel}. Please accept the proposal and complete the required deposit before this deadline.</p><p>The attached PDF is an optional printable copy. Accept the proposal and pay the deposit using the secure link. Your booking requires staff approval, availability verification and the required deposit.</p><p>Questions? Reply to events@aviatorbrew.com.</p></div>`,text:["Review Your Aviator Event Proposal",eventSchedule,proposal.number,link,"Review the exact menu, prices and event policies, then accept and pay the required deposit through Stripe.",`Proposal expires: ${expirationLabel}`,"Your event is confirmed only after approved availability and verified deposit payment.","Questions? events@aviatorbrew.com"].join("\n")});
+    sent=await sendMail({to:proposal.snapshot.details.contactEmail,cc:"events@aviatorbrew.com",fromName:"Aviator Events",replyTo:"events@aviatorbrew.com",subject:`Review your Aviator event proposal ${proposal.number}`,attachments:[{filename:proposal.number+".pdf",path:attachment,contentType:"application/pdf"}],html:`<div style="font:16px/1.6 Arial,sans-serif;color:#172b3b"><h1 style="margin:0 0 8px">Your Aviator event proposal</h1><p style="margin:0 0 20px;font-size:18px;font-weight:700">${eventSchedule}</p><p>Review the quoted menu, prices and policies in proposal ${proposal.number}.</p><p><a href="${link}" style="display:inline-block;padding:12px 18px;background:#efb45f;color:#102b3e">${depositCovered?"Review & Approve Proposal":"Review Your Aviator Event Proposal"}</a> <a href="${changeLink}" style="display:inline-block;padding:12px 18px;border:1px solid #465d70;color:#102b3e">Request a Change</a></p><p>${depositCovered?`Your deposit is already paid. ${money(proposal.recordedPaidCents)} is credited toward your event. No additional deposit payment is required to approve this proposal.`:"Review the complete proposal, then accept it and pay the required deposit through secure checkout."}</p><p><strong>Proposal expires:</strong> ${expirationLabel}. Please approve the quoted details${depositCovered?"":" and complete the required deposit"} before this deadline.</p><p>The attached PDF is an optional printable copy. Use the secure links to approve the proposal or send the events team a change request. Requested changes require a revised proposal. Booking remains subject to staff approval, availability and the required deposit.</p><p>Questions? Reply to events@aviatorbrew.com.</p></div>`,text:["Review Your Aviator Event Proposal",eventSchedule,proposal.number,link,depositCovered?`APPROVE PROPOSAL: Your deposit is already paid (${money(proposal.recordedPaidCents)} credit). No additional deposit payment is required. Review the exact menu, prices and policies, then approve this proposal.`:"Review the exact menu, prices and event policies, then accept and pay the required deposit through Stripe.","Request a Change",changeLink,`Proposal expires: ${expirationLabel}`,"Your event is confirmed only after approved availability and verified deposit payment.","Questions? events@aviatorbrew.com"].join("\n")});
   }finally{await fs.unlink(attachment).catch(()=>undefined);}
   if(!sent)throw new ProposalError("The proposal was approved, but email was not delivered. Use Resend proposal link to retry.",503);
   await withDatabase(client=>client.query("UPDATE website.private_event_proposals SET sent_at=now() WHERE id=$1",[id]));
@@ -159,13 +163,34 @@ async function accessRow(client:PoolClient,token:string,lock=false){
   if(!p||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError("This proposal link is invalid or expired. Please contact events@aviatorbrew.com for a new proposal.",410);
   return proposalRow(p);
 }
+export async function requestProposalChange(token:string,input:{requestId:unknown;proposalVersion:unknown;name:unknown;message:unknown;userAgent?:string;ip?:string}){
+  const name=typeof input.name==='string'?input.name.trim():'',message=typeof input.message==='string'?input.message.trim():'';
+  if(typeof input.requestId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.requestId)||name.length<2||name.length>200||!message||message.length>3000)throw new ProposalError('Enter your name and the changes you would like (up to 3,000 characters).');
+  const result=await transaction(async client=>{
+    const p=await accessRow(client,token,true),plan=(await client.query('SELECT data,status FROM website.private_event_plans WHERE id=$1 FOR UPDATE',[p.plan_id])).rows[0];
+    if(input.proposalVersion!==p.version||!p.approved_at||!plan||materialHash(plan.data)!==p.material_hash||!['Tentative','Confirmed'].includes(plan.status)||['superseded','declined','cancelled'].includes(p.state))throw new ProposalError('Open the latest approved proposal before requesting changes.',409);
+    const previous=(await client.query('SELECT id,customer_name,message FROM website.private_event_proposal_changes WHERE proposal_id=$1 AND request_id=$2',[p.id,input.requestId])).rows[0];
+    if(previous){if(previous.customer_name!==name||previous.message!==message)throw new ProposalError('This request was already used. Start a new change request.',409);return {proposalId:p.id,requestId:previous.id};}
+    const count=Number((await client.query('SELECT count(*)::int AS count FROM website.private_event_proposal_changes WHERE proposal_id=$1',[p.id])).rows[0].count);
+    if(count>=20)throw new ProposalError('Please contact events@aviatorbrew.com for further changes to this proposal.',429);
+    const id=randomUUID();
+    await client.query('INSERT INTO website.private_event_proposal_changes(id,proposal_id,request_id,customer_name,message,metadata) VALUES($1,$2,$3,$4,$5,$6::jsonb)',[id,p.id,input.requestId,name,message,JSON.stringify({proposalVersion:p.version,userAgent:(input.userAgent||'').slice(0,500),ipHash:input.ip?createHash('sha256').update(input.ip).digest('hex'):null})]);
+    await client.query("UPDATE website.private_event_proposals SET state='changes_requested' WHERE id=$1",[p.id]);
+    await client.query("UPDATE website.private_event_plans SET proposal_review='{}'::jsonb WHERE id=$1",[p.plan_id]);
+    const d=p.snapshot.details,text=[`Customer requested changes to ${p.number} (proposal v.${p.version}).`,d.title,eventDateLabel(d.date)+' '+timeLabel(d.startTime)+'–'+timeLabel(d.endTime),`From: ${name} <${d.contactEmail}>`,'Requested changes:',message,'Review in Manager Portal:',publicSiteUrl()+'/manager/private-events?event='+encodeURIComponent(p.plan_id),'Existing payment credits, event details and prior acceptance records were preserved. Review the request and send a revised proposal for customer approval.'].join('\n\n');
+    await client.query('INSERT INTO website.private_event_deliveries(key,proposal_id,recipient,subject,message) VALUES($1,$2,$3,$4,$5)',['proposal-change:'+id,p.id,'events@aviatorbrew.com','Changes requested: '+p.number,text]);
+    return {proposalId:p.id,requestId:id};
+  });
+  const notified=await deliverProposalMessages(result.proposalId,'proposal-change:'+result.requestId).catch(()=>false);
+  return {requested:true,requestId:result.requestId,notified};
+}
 export async function customerProposal(token:string){return withDatabase(async client=>{
   const p=await accessRow(client,token),plan=(await client.query("SELECT data,status FROM website.private_event_plans WHERE id=$1",[p.plan_id])).rows[0];
   const payments=(await client.query("SELECT amount_cents,session_id,payment_intent,paid_at FROM website.private_event_deposits WHERE plan_id=$1 ORDER BY paid_at",[p.plan_id])).rows;
   const current=plan&&materialHash(plan.data)===p.material_hash&&!['Cancelled','Completed'].includes(plan.status)&&!['superseded','cancelled','declined'].includes(p.state);
   const lastAttempt=(await client.query("SELECT status FROM website.private_event_checkout_attempts WHERE proposal_id=$1 ORDER BY created_at DESC LIMIT 1",[p.id])).rows[0];
-  const status=plan?.status==='Cancelled'?'Canceled':plan?.status==='Completed'?'Completed':!current?'Revised proposal required':p.state==='paid_review'?'Deposit paid — staff review required':!p.approved_at?'Under Review':p.accepted_at&&plan?.status==='Confirmed'?'Confirmed':p.accepted_at?(lastAttempt?.status==='failed'?'Payment Failed / Pending':'Awaiting Deposit'):p.sent_at?'Proposal Sent':'Under Review';
-  return {proposal:{...p,snapshot:{...p.snapshot,catalog:availableCatalog(p.snapshot.catalog)}},status,canAccept:Boolean(current&&p.approved_at&&p.snapshot.policyText&&p.snapshot.policyVersion),payments,recordedPaidCents:Number(plan?.data.paidCents||0),remainingCents:p.snapshot.totals.total-Number(plan?.data.paidCents||0)};
+  const status=plan?.status==='Cancelled'?'Canceled':plan?.status==='Completed'?'Completed':!current?'Revised proposal required':p.state==='changes_requested'?'Changes requested — awaiting revised proposal':p.state==='paid_review'?'Deposit paid — staff review required':!p.approved_at?'Under Review':p.accepted_at&&plan?.status==='Confirmed'?'Confirmed':p.accepted_at?(lastAttempt?.status==='failed'?'Payment Failed / Pending':'Awaiting Deposit'):p.sent_at?'Proposal Sent':'Under Review';
+  return {proposal:{...p,snapshot:{...p.snapshot,catalog:availableCatalog(p.snapshot.catalog)}},status,canAccept:Boolean(current&&p.approved_at&&p.snapshot.policyText&&p.snapshot.policyVersion&&p.state!=='changes_requested'),canRequestChanges:Boolean(current&&p.approved_at&&['Tentative','Confirmed'].includes(plan.status)),changeRequests:(await client.query('SELECT id,customer_name,message,requested_at FROM website.private_event_proposal_changes WHERE proposal_id=$1 ORDER BY requested_at DESC',[p.id])).rows.map(r=>({...r,requested_at:iso(r.requested_at)})),payments,recordedPaidCents:Number(plan?.data.paidCents||0),remainingCents:p.snapshot.totals.total-Number(plan?.data.paidCents||0)};
 });}
 export async function acceptAndCheckout(token:string,input:{name:unknown;agreed:unknown;proposalVersion:unknown;policyVersion:unknown;userAgent?:string;ip?:string}){
   const name=typeof input.name==='string'?input.name.trim():'';
@@ -174,7 +199,7 @@ export async function acceptAndCheckout(token:string,input:{name:unknown;agreed:
   const data=await transaction(async client=>{
     const p=await accessRow(client,token,true),plan=(await client.query("SELECT * FROM website.private_event_plans WHERE id=$1 FOR UPDATE",[p.plan_id])).rows[0];
     if(!p.approved_at||!p.snapshot.policyText||!p.snapshot.policyVersion||input.proposalVersion!==p.version||input.policyVersion!==p.snapshot.policyVersion)throw new ProposalError("Review the latest approved proposal and its policies before accepting.",409);
-    if(!plan||materialHash(plan.data)!==p.material_hash||!['Tentative','Confirmed'].includes(plan.status)||['superseded','cancelled','declined'].includes(p.state))throw new ProposalError("The event has changed. Please request a revised proposal.",409);
+    if(!plan||materialHash(plan.data)!==p.material_hash||!['Tentative','Confirmed'].includes(plan.status)||['superseded','cancelled','declined','changes_requested'].includes(p.state))throw new ProposalError("The event has changed. Please request a revised proposal.",409);
     await availability(client,p.plan_id,p.snapshot.details);
     if(p.accepted_at&&p.accepted_name!==name)throw new ProposalError('This proposal was already accepted under the recorded customer name.',409);
     if(!p.accepted_at)await client.query("UPDATE website.private_event_proposals SET accepted_at=now(),accepted_name=$1,acceptance=$2::jsonb,state='accepted' WHERE id=$3",[name,JSON.stringify({proposalVersion:p.version,policyVersion:p.snapshot.policyVersion,name,userAgent:(input.userAgent||'').slice(0,500),ipHash:input.ip?createHash('sha256').update(input.ip).digest('hex'):null}),p.id]);
@@ -224,11 +249,11 @@ export async function processProposalPayment(session:DepositSession,eventId:stri
       return {proposalId:p.id};
     }
     const details=plan.data as EventPlanDetails;details.paidCents+=a.amount_cents;
-    let confirmed=Boolean(p.approved_at&&new Date(p.expires_at).getTime()>Date.now()&&materialHash(details)===p.material_hash&&!['superseded','cancelled','declined'].includes(p.state)&&['Tentative','Confirmed'].includes(plan.status));
+    let confirmed=Boolean(p.approved_at&&new Date(p.expires_at).getTime()>Date.now()&&materialHash(details)===p.material_hash&&!['superseded','cancelled','declined','changes_requested'].includes(p.state)&&['Tentative','Confirmed'].includes(plan.status));
     if(confirmed){try{await availability(client,p.plan_id,details);}catch{confirmed=false;}}
     if(confirmed&&details.paidCents>=p.snapshot.depositCents)details.status='Confirmed';else confirmed=false;
     await client.query("UPDATE website.private_event_plans SET status=$1,data=$2::jsonb,version=version+1,updated_at=now() WHERE id=$3",[details.status,JSON.stringify(details),p.plan_id]);
-    await client.query("UPDATE website.private_event_proposals SET state=$1 WHERE id=$2",[confirmed?'paid':'paid_review',p.id]);
+    await client.query("UPDATE website.private_event_proposals SET state=CASE WHEN state='changes_requested' THEN state ELSE $1 END WHERE id=$2",[confirmed?'paid':'paid_review',p.id]);
     const s=p.snapshot as ProposalSnapshot;
     const text=[confirmed?'Your Aviator event is confirmed.':'Your deposit was received. The events team must review the current event details and availability before confirming the booking.',p.number,s.details.title,eventDateLabel(s.details.date)+' '+timeLabel(s.details.startTime)+'–'+timeLabel(s.details.endTime),s.details.location,`${s.details.guestCount} guests`,`Deposit received: ${money(a.amount_cents)}`,`Total payments recorded: ${money(details.paidCents)}`,`Estimated event total: ${money(s.totals.total)}`,`Estimated remaining balance: ${money(s.totals.total-details.paidCents)}`,s.exclusions,`Stripe receipt reference: ${session.id}`,`Payment reference: ${intent}`,'Questions? events@aviatorbrew.com'].join('\n');
     for(const recipient of [s.details.contactEmail,process.env.PRIVATE_EVENT_PAYMENT_RECIPIENT_EMAIL||'events@aviatorbrew.com'])await client.query("INSERT INTO website.private_event_deliveries(key,proposal_id,recipient,subject,message) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",[session.id+':'+recipient,p.id,recipient,(confirmed?'Confirmed: ':'Deposit received — review required: ')+p.number,text]);
@@ -239,8 +264,8 @@ export async function processProposalPayment(session:DepositSession,eventId:stri
 export async function markProposalAttempt(session:DepositSession,status:'expired'|'failed'){
   await withDatabase(client=>client.query("UPDATE website.private_event_checkout_attempts SET status=$1 WHERE session_id=$2 AND status<>'paid'",[status,session.id]));
 }
-export async function deliverProposalMessages(proposalId:string){
-  const rows=await withDatabase(client=>client.query("SELECT * FROM website.private_event_deliveries WHERE proposal_id=$1 AND (status IN ('pending','failed') OR (status='sending' AND updated_at<now()-interval '5 minutes'))",[proposalId]));
+export async function deliverProposalMessages(proposalId:string,onlyKey:string|null=null){
+  const rows=await withDatabase(client=>client.query("SELECT * FROM website.private_event_deliveries WHERE proposal_id=$1 AND ($2::text IS NULL OR key=$2) AND (status IN ('pending','failed') OR (status='sending' AND updated_at<now()-interval '5 minutes'))",[proposalId,onlyKey]));
   let all=true;
   for(const row of rows.rows){
     const claimed=await withDatabase(client=>client.query("UPDATE website.private_event_deliveries SET status='sending',updated_at=now() WHERE key=$1 AND (status IN ('pending','failed') OR (status='sending' AND updated_at<now()-interval '5 minutes')) RETURNING key",[row.key]));
@@ -248,7 +273,7 @@ export async function deliverProposalMessages(proposalId:string){
     let sent=false;try{sent=await sendMail({to:row.recipient,subject:row.subject,text:row.message,replyTo:'events@aviatorbrew.com',fromName:'Aviator Events'});}catch{}
     await withDatabase(client=>client.query("UPDATE website.private_event_deliveries SET status=$1,updated_at=now() WHERE key=$2",[sent?'sent':'failed',row.key]));all&&=sent;
   }
-  const pending=await withDatabase(client=>client.query("SELECT count(*)::int AS count FROM website.private_event_deliveries WHERE proposal_id=$1 AND status<>'sent'",[proposalId]));
+  const pending=await withDatabase(client=>client.query("SELECT count(*)::int AS count FROM website.private_event_deliveries WHERE proposal_id=$1 AND ($2::text IS NULL OR key=$2) AND status<>'sent'",[proposalId,onlyKey]));
   return all&&pending.rows[0].count===0;
 }
 export async function declineProposal(token:string){return transaction(async client=>{const p=await accessRow(client,token,true);if(p.accepted_at)throw new ProposalError("Contact the events team to cancel or change an accepted proposal.",409);await client.query("UPDATE website.private_event_proposals SET state='declined',token_hash=NULL WHERE id=$1",[p.id]);return {declined:true};});}

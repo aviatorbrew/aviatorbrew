@@ -456,6 +456,12 @@ const schemaStatements = [
     key text PRIMARY KEY, proposal_id text NOT NULL REFERENCES website.private_event_proposals(id), recipient text NOT NULL,
     subject text NOT NULL, message text NOT NULL, status text NOT NULL DEFAULT 'pending', updated_at timestamptz NOT NULL DEFAULT now()
   )`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_proposal_changes (
+    id text PRIMARY KEY, proposal_id text NOT NULL REFERENCES website.private_event_proposals(id), request_id text NOT NULL,
+    customer_name text NOT NULL, message text NOT NULL, metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+    requested_at timestamptz NOT NULL DEFAULT now(), UNIQUE(proposal_id,request_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS private_event_proposal_changes_proposal_idx ON website.private_event_proposal_changes(proposal_id,requested_at)`,
   `CREATE TABLE IF NOT EXISTS website.private_event_payment_notifications (
     session_id text PRIMARY KEY,
     notified_at timestamptz NOT NULL DEFAULT now(),
