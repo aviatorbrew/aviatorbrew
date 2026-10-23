@@ -152,7 +152,7 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
     if(materialHash(plan.data)!==p.material_hash)throw new ProposalError("The event terms changed. Create a revised proposal.",409);
     const s=p.snapshot as ProposalSnapshot;
     if(!s.policyText.trim()||!s.policyVersion.trim())throw new ProposalError("Save approved cancellation, deposit/refund and event policies in Private Events settings, then create a new proposal. Acceptance and payment remain inactive.",409);
-    if(s.details.guestCount<s.catalog.minimumGuests||s.details.guestCount>s.catalog.maximumGuests)throw new ProposalError("The guest count is outside the configured venue capacity.");
+    if((s.details.flightPlan?.packageId&&s.details.guestCount<s.catalog.minimumGuests)||s.details.guestCount>s.catalog.maximumGuests)throw new ProposalError("The guest count is outside the configured venue capacity.");
     if(!["Draft","Tentative","Confirmed"].includes(plan.status))throw new ProposalError("This event is not available for booking.",409);
     await availability(client,planId,s.details);
     await closeUnpaidEventCheckouts(client,planId,id);

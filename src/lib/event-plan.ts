@@ -48,7 +48,9 @@ export const readyRoomAppetizers = [...readyRoomMenu.appetizers, ...readyRoomMen
 // Keep existing bookings editable after menu changes; these are not offered for new selections.
 export const readyRoomLegacyAppetizers = ["Loaded Tots", "Aviator Chicken Tenders with Aviator Sauce"];
 export const readyRoomEntrees = [...readyRoomMenu.entrees, ...readyRoomMenu.premiumEntrees];
+export const eventCateringModes = {meeting:"No food — meeting only",drinks:"Meeting & drinks — no food",custom:"Custom / off-menu food & drinks"} as const;
 export type FlightPlan = {
+  cateringMode?: keyof typeof eventCateringModes;
   packageId: string; appetizers: string[]; entrees: string[]; sides: string[]; salads: string[]; pizzas: string[];
   extraAppetizerPriceCents?: number | null; extraEntreePriceCents?: number | null; extraPremiumEntreePriceCents?: number | null;
   extraAppetizers: string[]; extraEntrees: string[]; extraSides: string[]; extraSalads: string[]; extraSidePriceCents: number | null; extraSaladPriceCents: number | null; extraHours: number; dessert: boolean; coffee: boolean; pizzaExtra: boolean;
@@ -105,6 +107,7 @@ export function flightPlanSelections(plan: EventPlanDetails, catalog = defaultCa
   if (!f) return [];
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
   return [
+    ["Service plan", !pkg && f.cateringMode ? eventCateringModes[f.cateringMode] : ""],
     ["Package", pkg ? `${pkg.name} · ${money(pkg.priceCents)} / guest` : ""],
     ["Appetizers", foodSelections(f.appetizers)], ["Entrees", foodSelections(f.entrees)], ["Sides", foodSelections(f.sides)], ["Salad", foodSelections(f.salads)],
     ["Extra appetizers", foodSelections(f.extraAppetizers)], ["Extra entrees", foodSelections(f.extraEntrees)], ["Extra sides", foodSelections(f.extraSides || [])], ["Extra salads", foodSelections(f.extraSalads || [])],
@@ -151,6 +154,10 @@ function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCa
   }
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
   if (f.packageId && !pkg) throw new Error("Choose a Ready Room package.");
+  if (input.cateringMode !== undefined) {
+    if (typeof input.cateringMode !== 'string' || !Object.hasOwn(eventCateringModes,input.cateringMode) || pkg) throw new Error("Choose a valid meeting/service plan without a buffet package.");
+    f.cateringMode = input.cateringMode as keyof typeof eventCateringModes;
+  }
   const entrees = readyRoomEntrees;
   const appetizers = [...readyRoomAppetizers, ...readyRoomLegacyAppetizers];
   const groups = { appetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: appetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };

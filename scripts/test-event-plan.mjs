@@ -114,4 +114,14 @@ for(const flight of [true,false]){
   assert.ok(!html.includes('STAFF SECRET'));assert.ok(!html.includes('<script>event</script>'));
   assert.equal(html.includes('Customer printed name / signature'),flight);
 }
+for(const cateringMode of ['meeting','drinks','custom']){
+ const meeting=parseEventPlan({...emptyEventPlan(),title:'General business meeting',date:'2027-04-10',startTime:'09:00',endTime:'11:00',guestCount:12,flightPlan:{...emptyFlightPlan(),cateringMode,eventType:'General business meeting',organization:'Fixture company',foodNotes:'Boardroom layout; no buffet; drinks at actual prices.',barMode:'Guest-paid bar',av:['Big-screen setup','Microphone']},notes:'Meeting agenda and setup instructions'});
+ assert.equal(meeting.flightPlan.cateringMode,cateringMode);assert.equal(eventTotals(meeting).subtotal,0,'Custom service choices never add an automatic catering charge');assert.equal(eventOrderItems(meeting).length,0);
+ const withItems=parseEventPlan({...meeting,items:[{id:'custom-food',category:'Food',name:'Off-menu platter',quantity:2,unitPriceCents:4500,taxable:true,notes:'Fixture order'},{id:'drinks',category:'Drinks',name:'Drink service',quantity:12,unitPriceCents:600,taxable:true,notes:''}]});
+ assert.equal(eventTotals(withItems).subtotal,16200);assert.equal(withItems.flightPlan.foodNotes,meeting.flightPlan.foodNotes);assert.equal(withItems.flightPlan.eventType,'General business meeting');assert.deepEqual(withItems.flightPlan.av,['Big-screen setup','Microphone']);
+ const html=summaryModule.eventSummaryHtml({id:'meeting-fixture',version:1,updatedAt:new Date().toISOString(),details:meeting},true);assert.ok(html.includes('Meeting &amp;')||html.includes('Meeting & service plan'));assert.ok(html.includes('General business meeting'));assert.ok(html.includes('Fixture company'));assert.ok(html.includes('Boardroom layout'));assert.ok(!html.includes('Package choices include buffet service'));
+ assert.throws(()=>parseEventPlan({...meeting,flightPlan:{...meeting.flightPlan,cateringMode:'unknown'}}));assert.throws(()=>parseEventPlan({...meeting,flightPlan:{...meeting.flightPlan,cateringMode:null}}));
+ assert.throws(()=>parseEventPlan({...pizzaPlan,flightPlan:{...pizzaPlan.flightPlan,cateringMode}}),'Buffet and no-package service plans cannot be combined');
+}
+assert.ok(!Object.hasOwn(parseEventPlan(input).flightPlan,'cateringMode'),'Legacy records do not gain a service-plan field');
 console.log('Event planning passed: package choices, premium menus, extras, guest recalculation, separate taxes, deposit credits, legacy orders, printable Flight Plan and summary, private notes and validation.');
