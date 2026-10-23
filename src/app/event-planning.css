@@ -26,6 +26,8 @@
 .manager-private-events .event-planning .event-day .event-calendar-entry{border-left:5px solid var(--event-status-color,#ffd54f)}
 .manager-private-events .event-outline-legend span{border-left:6px solid var(--event-status-color)}
 .manager-private-events .event-planning .event-cancel-button{border-color:#ff7777;color:#ffb6b6}
+.manager-private-events .inquiry-review-controls{display:inline-flex;align-items:center;flex-wrap:wrap;gap:.4rem;vertical-align:middle}
+.manager-private-events .inquiry-review-result{margin:.35rem 0;font-size:.75rem;font-weight:400}
 .manager-private-events .event-planning input:is([type="date"],[type="time"],[type="month"]){color-scheme:dark}
 .manager-private-events .event-planning input:is([type="date"],[type="time"],[type="month"])::-webkit-calendar-picker-indicator{filter:brightness(0) invert(1);opacity:1}
 
