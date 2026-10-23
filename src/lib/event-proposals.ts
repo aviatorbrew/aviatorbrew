@@ -14,10 +14,10 @@ import { sendMail, isMailConfigured } from "@/lib/mail";
 import { availableCatalog } from "@/lib/catering-catalog";
 
 export class ProposalError extends Error { constructor(message: string, public status=400){super(message);} }
-export type EventProposal = { id:string; plan_id:string; version:number; number:string; plan_version:number; material_hash:string; termsCurrent?:boolean; snapshot:ProposalSnapshot; state:string; expires_at:string; approved_at:string|null; sent_at:string|null; accepted_at:string|null; accepted_name:string|null; created_at:string };
+export type EventProposal = { id:string; plan_id:string; version:number; number:string; plan_version:number; material_hash:string; termsCurrent?:boolean; snapshot:ProposalSnapshot; state:string; expires_at:string; approved_at:string|null; sent_at:string|null; accepted_at:string|null; accepted_name:string|null; acceptanceMethod?:'manual'|'customer'|null; manualAcceptanceNote?:string; created_at:string };
 export type ProposalChangeRequest = {id:string;proposal_id:string;customer_name:string;message:string;requested_at:string;notification_status:string};
 const iso=(v: unknown)=>v instanceof Date?v.toISOString():v as string;
-function proposalRow(row: Record<string,unknown>): EventProposal { const {token_hash,acceptance,approved_by,...safe}=row; void token_hash;void acceptance;void approved_by;return {...safe,expires_at:iso(row.expires_at),approved_at:iso(row.approved_at),sent_at:iso(row.sent_at),accepted_at:iso(row.accepted_at),created_at:iso(row.created_at)} as EventProposal; }
+function proposalRow(row: Record<string,unknown>,staff=false): EventProposal { const {token_hash,acceptance,approved_by,...safe}=row; void token_hash;void approved_by;const metadata=acceptance as Record<string,unknown>|null,manual=metadata?.method==='manual';return {...safe,acceptanceMethod:row.accepted_at?(manual?'manual':'customer'):null,...(staff&&manual?{manualAcceptanceNote:String(metadata?.note||'')}:{}),expires_at:iso(row.expires_at),approved_at:iso(row.approved_at),sent_at:iso(row.sent_at),accepted_at:iso(row.accepted_at),created_at:iso(row.created_at)} as EventProposal; }
 function stable(value: unknown): unknown { if(Array.isArray(value))return value.map(stable); if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,stable(v)])); return value; }
 export function materialHash(details: EventPlanDetails) { const {paidCents,status,internalNotes,...terms}=details; void paidCents; void status; void internalNotes; return createHash("sha256").update(JSON.stringify(stable(terms))).digest("hex"); }
 function tokenHash(token:string){if(!/^[a-f0-9]{64}$/.test(token))throw new ProposalError("This proposal link is invalid or expired.",404);return createHash("sha256").update(token).digest("hex");}
@@ -82,7 +82,7 @@ export async function listProposals(planId:string){return withDatabase(async cli
   const plan=(await client.query('SELECT data FROM website.private_event_plans WHERE id=$1',[planId])).rows[0];
   if(!plan)throw new ProposalError('Event not found.',404);
   const currentHash=materialHash(plan.data);
-  const proposals=(await client.query("SELECT * FROM website.private_event_proposals WHERE plan_id=$1 ORDER BY version DESC",[planId])).rows.map(row=>({...proposalRow(row),termsCurrent:row.material_hash===currentHash}));
+  const proposals=(await client.query("SELECT * FROM website.private_event_proposals WHERE plan_id=$1 ORDER BY version DESC",[planId])).rows.map(row=>({...proposalRow(row,true),termsCurrent:row.material_hash===currentHash}));
   const deposits=(await client.query("SELECT session_id,payment_intent,proposal_id,amount_cents,paid_at FROM website.private_event_deposits WHERE plan_id=$1 ORDER BY paid_at",[planId])).rows;
   const deliveries=(await client.query("SELECT proposal_id,recipient,subject,status,updated_at FROM website.private_event_deliveries WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1)",[planId])).rows;
   const attempts=(await client.query("SELECT proposal_id,status,expires_at,created_at FROM website.private_event_checkout_attempts WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY created_at DESC",[planId])).rows;
@@ -90,7 +90,26 @@ export async function listProposals(planId:string){return withDatabase(async cli
   const changeRequests=(await client.query("SELECT r.id,r.proposal_id,r.customer_name,r.message,r.requested_at,d.status AS notification_status FROM website.private_event_proposal_changes r LEFT JOIN website.private_event_deliveries d ON d.key='proposal-change:'||r.id WHERE r.proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY r.requested_at DESC",[planId])).rows.map(r=>({...r,requested_at:iso(r.requested_at)}));
   return {proposals,deposits,deliveries,review,attempts,changeRequests};
 });}
-export async function getManagerProposal(planId:string,id:string){return withDatabase(async client=>{const row=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2",[id,planId])).rows[0];return row?proposalRow(row):null;});}
+export async function getManagerProposal(planId:string,id:string){return withDatabase(async client=>{const row=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2",[id,planId])).rows[0];return row?proposalRow(row,true):null;});}
+export async function manuallyAcceptProposal(planId:string,id:string,input:{version:unknown;planVersion:unknown;name:unknown;note?:unknown;confirmed?:unknown}){
+  const name=typeof input.name==='string'?input.name.trim():'',note=typeof input.note==='string'?input.note.trim():'';
+  if(input.confirmed!==true||name.length<2||name.length>200||note.length>2000||(input.note!==undefined&&typeof input.note!=='string'))throw new ProposalError('Confirm the manual acceptance and enter the customer name (staff note up to 2,000 characters).');
+  return transaction(async client=>{
+    const plan=(await client.query('SELECT * FROM website.private_event_plans WHERE id=$1 AND deleted_at IS NULL FOR UPDATE',[planId])).rows[0];
+    const p=(await client.query('SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2 FOR UPDATE',[id,planId])).rows[0];
+    if(!plan||!p)throw new ProposalError('Proposal not found.',404);
+    if(p.version!==input.version||plan.version!==input.planVersion||materialHash(plan.data)!==p.material_hash)throw new ProposalError('Save and reload the latest event and proposal before recording manual acceptance.',409);
+    const latest=(await client.query('SELECT id FROM website.private_event_proposals WHERE plan_id=$1 ORDER BY version DESC LIMIT 1',[planId])).rows[0];
+    if(latest.id!==id||['Cancelled','Completed'].includes(plan.status)||['superseded','cancelled','declined','changes_requested'].includes(p.state)||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError('Use a current proposal draft. Closed, expired or changed proposals cannot be manually accepted.',409);
+    if(!p.snapshot.policyText?.trim()||!p.snapshot.policyVersion?.trim())throw new ProposalError('Create a revised proposal with the approved event policies before recording acceptance.',409);
+    if(p.accepted_at){
+      if(p.acceptance?.method==='manual'&&p.accepted_name===name&&p.acceptance.note===note)return proposalRow(p,true);
+      throw new ProposalError('Acceptance is already recorded for this version and cannot be overwritten.',409);
+    }
+    const metadata={method:'manual',name,note,recordedBy:'manager-session',proposalVersion:p.version,policyVersion:p.snapshot.policyVersion};
+    return proposalRow((await client.query("UPDATE website.private_event_proposals SET accepted_at=now(),accepted_name=$1,acceptance=$2::jsonb,state='accepted' WHERE id=$3 RETURNING *",[name,JSON.stringify(metadata),id])).rows[0],true);
+  });
+}
 export async function deleteProposalDraft(planId:string,id:string,version:number){return transaction(async client=>{
   const p=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2 FOR UPDATE",[id,planId])).rows[0];
   if(!p)throw new ProposalError("Proposal not found.",404);

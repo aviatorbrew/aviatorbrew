@@ -99,6 +99,13 @@
 .manager-portal .event-proposal-manager .event-row-actions > a { display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); padding:.4rem .6rem; font-size:.75rem; font-weight:600; line-height:1.2; text-decoration:none; }
 .manager-portal .event-proposal-change-request { margin:.65rem 0; padding:.6rem; border-left:3px solid #efb45f; background:#173a50; }
 .manager-portal .event-proposal-change-request h5 { margin:0; font:600 .8rem/1.3 Arial,sans-serif; }
+.manager-portal .proposal-status-badge { display:inline-block; padding:.2rem .5rem; border:1px solid #89a4b6; color:#edf4f8; font-size:.8rem; font-weight:700; }
+.manager-portal .proposal-status-badge.is-accepted { border-color:#88d7a7; color:#bdf3d0; }
+.manager-portal .proposal-status-badge.is-review { border-color:#efb45f; color:#ffd69b; }
+.manager-portal .proposal-status-badge.is-closed { border-color:#d7a1a1; color:#f2caca; }
+.proposal-send-dialog form { display:grid; gap:.7rem; }
+.proposal-send-dialog label { display:grid; gap:.3rem; }
+.proposal-send-dialog :is(input,textarea) { width:100%; min-width:0; padding:.55rem; border:1px solid #56778d; background:#071827; color:#f4f7f8; font:inherit; }
 .event-proposal-change-message { white-space:pre-wrap; overflow-wrap:anywhere; }
 .proposal-change-form { display:grid; gap:.8rem; margin:1rem 0; padding:1rem; border:1px solid #efb45f; }
 .proposal-change-form label { display:grid; gap:.3rem; }

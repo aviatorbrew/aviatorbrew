@@ -473,6 +473,42 @@ try{
  await connection.query("UPDATE website.private_event_proposals SET expires_at=now()-interval '1 minute' WHERE id=$1",[unpaidChanges.p.id]);await assert.rejects(()=>proposals.requestProposalChange(unpaidChanges.token,{requestId:randomUUID(),proposalVersion:unpaidChanges.p.version,name:'Fixture Customer',message:'Expired link'}));
  console.log('Passed paid revision approval without checkout, exact-version acceptance, secure change links/forms, stored messages and metadata, manager request history, staff-only notification, concurrent idempotence, failed-email retry, revised proposals, expired/stale/invalid requests, request API and preserved late-payment credits without false confirmation.');
  }
+ { // Manual proposal acceptance records evidence without email, payment or booking side effects.
+ const statusModule=require(await compile(path.join(root,'src/lib/event-proposal-status.ts')));
+ const manualPlan=await plans.saveEventPlan(valid(future(500))),manualDraft=await proposals.createProposal(manualPlan.id,{version:manualPlan.version,expiresAt:expiration()});
+ const input={version:manualDraft.version,planVersion:manualPlan.version,name:'Fixture Customer',note:'Accepted by phone. STAFF NOTE <script>private</script>',confirmed:true};
+ const request=(body,authenticated=true)=>new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+manualPlan.id+'/proposals/'+manualDraft.id,{method:'POST',headers:{'content-type':'application/json',...(authenticated?{cookie:managerCookie}:{})},body:JSON.stringify({action:'manual-accept',...body})});
+ const context={params:Promise.resolve({id:manualPlan.id,proposalId:manualDraft.id})};
+ assert.equal((await proposalRoute.POST(request(input,false),context)).status,401);
+ assert.equal((await proposalRoute.POST(request({...input,confirmed:false}),context)).status,400);
+ const mailCount=globalThis.eventTestMail.length,checkoutCount=stripeCalls;
+ const accepted=await Promise.all([proposals.manuallyAcceptProposal(manualPlan.id,manualDraft.id,input),proposals.manuallyAcceptProposal(manualPlan.id,manualDraft.id,input)]);
+ assert.equal(accepted[0].accepted_at,accepted[1].accepted_at);assert.equal(accepted[0].acceptanceMethod,'manual');assert.equal(accepted[0].manualAcceptanceNote,input.note);
+ assert.equal(statusModule.proposalStatus(accepted[0]).label,'Manual Accepted');
+ assert.equal(globalThis.eventTestMail.length,mailCount);assert.equal(stripeCalls,checkoutCount);assert.deepEqual(await plans.getEventPlan(manualPlan.id),manualPlan,'Manual acceptance changes no event details, booking status, version or payments');
+ assert.equal((await proposalRoute.POST(request(input),context)).status,200,'Recording acceptance requires manager authorization but no customer-email approval');
+ const audit=(await connection.query('SELECT acceptance FROM website.private_event_proposals WHERE id=$1',[manualDraft.id])).rows[0].acceptance;assert.equal(audit.method,'manual');assert.equal(audit.proposalVersion,manualDraft.version);assert.equal(audit.policyVersion,manualDraft.snapshot.policyVersion);assert.equal(audit.recordedBy,'manager-session');
+ for(const bad of [{...input,name:'X'},{...input,note:'x'.repeat(2001)},{...input,version:99},{...input,planVersion:99},{...input,name:'Different customer'},{...input,note:'Changed evidence'}])await assert.rejects(()=>proposals.manuallyAcceptProposal(manualPlan.id,manualDraft.id,bad));
+ await assert.rejects(()=>proposals.deleteProposalDraft(manualPlan.id,manualDraft.id,manualDraft.version));
+ assert.equal((await proposals.listProposals(manualPlan.id)).proposals[0].acceptanceMethod,'manual');
+ await proposals.sendProposal(manualPlan.id,manualDraft.id,{availabilityApproved:true,capacityApproved:true,emailApproved:true});const manualToken=globalThis.eventTestMail.at(-1).text.match(/#token=([a-f0-9]{64})/)[1],customerManual=await proposals.customerProposal(manualToken);
+ assert.equal(customerManual.proposal.acceptanceMethod,'manual');assert.ok(!JSON.stringify(customerManual).includes('STAFF NOTE'));assert.ok(!Object.hasOwn(customerManual.proposal,'manualAcceptanceNote'));assert.ok(!Object.hasOwn(customerManual.proposal,'acceptance'));
+ await writeFile('/tmp/aviator-manual-acceptance-proposal.pdf',await documents.proposalPdf(customerManual.proposal));
+ const livePlan=await plans.getEventPlan(manualPlan.id),next=await proposals.createProposal(livePlan.id,{version:livePlan.version,expiresAt:expiration()});assert.equal(statusModule.proposalStatus(next).label,'Draft');await assert.rejects(()=>proposals.manuallyAcceptProposal(manualPlan.id,manualDraft.id,{...input,planVersion:livePlan.version}));
+ const online=await approved(valid(future(501)));await proposals.acceptAndCheckout(online.token,acceptance(online.p));const onlineCurrent=await plans.getEventPlan(online.plan.id),onlineAccepted=await proposals.getManagerProposal(online.plan.id,online.p.id);assert.equal(onlineAccepted.acceptanceMethod,'customer');assert.equal(statusModule.proposalStatus(onlineAccepted).label,'Customer Accepted');await assert.rejects(()=>proposals.manuallyAcceptProposal(online.plan.id,online.p.id,{...input,version:online.p.version,planVersion:onlineCurrent.version}));
+ for(const [offset,state] of [[502,'cancelled'],[503,'declined'],[504,'changes_requested'],[505,'superseded'],[506,'expired'],[507,'stale'],[508,'closed'],[509,'policies']]){
+  const plan=await plans.saveEventPlan(valid(future(offset))),p=await proposals.createProposal(plan.id,{version:plan.version,expiresAt:expiration()});
+  if(state==='expired')await connection.query("UPDATE website.private_event_proposals SET expires_at=now()-interval '1 minute' WHERE id=$1",[p.id]);
+  else if(state==='stale')await plans.saveEventPlan({...plan.details,guestCount:51},plan.id,plan.version);
+  else if(state==='closed')await plans.saveEventPlan({...plan.details,status:'Cancelled'},plan.id,plan.version);
+  else if(state==='policies')await connection.query("UPDATE website.private_event_proposals SET snapshot=jsonb_set(snapshot,'{policyText}','\"\"'::jsonb) WHERE id=$1",[p.id]);
+  else await connection.query('UPDATE website.private_event_proposals SET state=$1 WHERE id=$2',[state,p.id]);
+  await assert.rejects(()=>proposals.manuallyAcceptProposal(plan.id,p.id,{...input,version:p.version,planVersion:plan.version}));
+ }
+ const base={state:'draft',accepted_at:null,sent_at:null,approved_at:null,expires_at:expiration()};
+ for(const [p,label] of [[base,'Draft'],[{...base,approved_at:new Date().toISOString()},'Approved — Not Sent'],[{...base,sent_at:new Date().toISOString()},'Sent'],[{...base,state:'changes_requested'},'Changes Requested'],[{...base,state:'declined'},'Declined'],[{...base,state:'cancelled'},'Cancelled'],[{...base,state:'superseded'},'Superseded'],[{...base,expires_at:'2020-01-01'},'Expired'],[{...base,expires_at:'2020-01-01',accepted_at:new Date().toISOString(),acceptanceMethod:'manual'},'Manual Accepted']])assert.equal(statusModule.proposalStatus(p).label,label);
+ console.log('Passed authenticated exact-version manual acceptance, explicit confirmation, concurrent/idempotent records, immutable evidence, no email/payment/booking side effects, preserved customer acceptance, rejected stale/closed/expired/changed/old/no-policy proposals, protected staff notes, manual PDF evidence and all proposal status labels.');
+ }
  const browserFixture=await approved(valid(future(95)));
  await writeFile('/tmp/aviator-event-proposal-browser-fixture.json',JSON.stringify({token:browserFixture.token,planId:browserFixture.plan.id,proposalId:browserFixture.p.id,paidToken:token,paidPlanId:sourcePlan.id}),{mode:0o600});
 }finally{globalThis.fetch=actualFetch;await connection.end();process.exitCode||=0;setTimeout(()=>process.exit(process.exitCode),50).unref();}
