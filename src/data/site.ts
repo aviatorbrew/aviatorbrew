@@ -26,17 +26,17 @@ export type Event = {
 export const orderFoodUrl = "/order-food";
 
 export const primaryNav = [
-  { label: "Beer", href: "/beer" },
-  { label: "Brewery", href: "/brewery" },
-  { label: "Live Music", href: "https://aviatorlive.beer/live-music" },
-  { label: "Shop", href: "/shop-new" },
-  { label: "Sales", href: "/kegs" },
-  { label: "Locations", href: "/locations" },
-  { label: "EVENTS", href: "/events", children: [{ label: "Brewery Events", href: "/events" }, { label: "Private Events", href: "/private-events" }, { label: "Catering To Go", href: "/catering-to-go" }] },
-  { label: "Become a Pilot", href: "/become-a-pilot" },
-  { label: "About", href: "/about" },
-  { label: "Tours", href: "/about#brewery-tours" },
-  { label: "Contact Us", href: "/contact" },
+  { label: "Beer", href: "/beer", group: "brewery" },
+  { label: "Brewery", href: "/brewery", group: "brewery" },
+  { label: "Tours", href: "/about#brewery-tours", group: "brewery" },
+  { label: "Locations", href: "/locations", group: "visit" },
+  { label: "Live Music", href: "https://aviatorlive.beer/live-music", group: "visit" },
+  { label: "EVENTS", href: "/events", group: "visit", children: [{ label: "Brewery Events", href: "/events" }, { label: "Private Events", href: "/private-events" }, { label: "Catering To Go", href: "/catering-to-go" }] },
+  { label: "Shop", href: "/shop-new", group: "shop" },
+  { label: "Sales", href: "/kegs", group: "shop" },
+  { label: "Become a Pilot", href: "/become-a-pilot", group: "company" },
+  { label: "About", href: "/about", group: "company" },
+  { label: "Contact Us", href: "/contact", group: "company" },
 ];
 
 export const locations: Location[] = [

@@ -25,6 +25,10 @@ export function SiteHeader({ version }: { version: string }) {
 
     function closeForEscape(event: globalThis.KeyboardEvent) {
       if (event.key === "Escape") {
+        const desktopTrigger = navRef.current?.querySelector<HTMLButtonElement>('[aria-expanded="true"]');
+        const mobileTrigger = document.getElementById("mobile-nav")?.querySelector<HTMLButtonElement>('.mobile-nav-trigger[aria-expanded="true"]');
+        if (desktopTrigger?.getClientRects().length) desktopTrigger.focus();
+        else mobileTrigger?.focus();
         setOpenMenu(null);
         setMobileExpanded(null);
       }
@@ -74,13 +78,14 @@ export function SiteHeader({ version }: { version: string }) {
       <span className="site-version" aria-label={`Website version ${version}`}>v{version}</span>
       <Link href="/" className="wordmark" aria-label="Aviator Brewing Company home"><BrandLogo className="brand-logo" decorative /> <span className="wordmark-copy">AVIATOR <b>BREWING CO.</b></span></Link>
       <nav className="desktop-nav" aria-label="Primary navigation" ref={navRef} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpenMenu(null); }}>
-        {primaryNav.map((item) => {
+        {primaryNav.map((item, index) => {
           const active = isNavActive(item);
-          if (item.children?.length) return <div className={"desktop-nav-item has-submenu" + (active ? " is-active" : "") + (("featured" in item && item.featured) ? " is-featured" : "")} key={item.href} onMouseEnter={() => setOpenMenu(item.href)} onMouseLeave={() => setOpenMenu(null)}>
+          const groupStart = index > 0 && item.group !== primaryNav[index - 1].group;
+          if (item.children?.length) return <div className={"desktop-nav-item has-submenu" + (groupStart ? " is-group-start" : "") + (active ? " is-active" : "") + (("featured" in item && item.featured) ? " is-featured" : "")} key={item.href} onMouseEnter={() => setOpenMenu(item.href)} onMouseLeave={() => setOpenMenu(null)}>
             <button className={"desktop-nav-trigger" + (active ? " is-active" : "")} type="button" aria-haspopup="menu" aria-expanded={openMenu === item.href} aria-controls={"desktop-submenu-" + item.href.replace(/[^a-z0-9]/gi, "-")} onClick={() => setOpenMenu(openMenu === item.href ? null : item.href)} onKeyDown={(event) => handleDesktopTriggerKeyDown(event, item.href)}>
               {item.label}<span aria-hidden="true">▾</span>
             </button>
-            <div className="desktop-submenu" id={"desktop-submenu-" + item.href.replace(/[^a-z0-9]/gi, "-")} role="menu" data-open={openMenu === item.href ? "true" : undefined} data-submenu={item.href}>
+            <div className="desktop-submenu" id={"desktop-submenu-" + item.href.replace(/[^a-z0-9]/gi, "-")} role="menu" aria-hidden={openMenu !== item.href} inert={openMenu !== item.href} data-open={openMenu === item.href ? "true" : undefined} data-submenu={item.href}>
               {item.children.map((child) => {
                 const childActive = isLinkActive(child.href);
                 return <Link className={childActive ? "is-active" : undefined} href={child.href} key={child.href} role="menuitem" aria-current={childActive ? "page" : undefined} onClick={() => setOpenMenu(null)}>{child.label}</Link>;
@@ -88,7 +93,7 @@ export function SiteHeader({ version }: { version: string }) {
             </div>
           </div>;
 
-          return <div className={"desktop-nav-item" + (active ? " is-active" : "") + (("featured" in item && item.featured) ? " is-featured" : "")} key={item.href}>
+          return <div className={"desktop-nav-item" + (groupStart ? " is-group-start" : "") + (active ? " is-active" : "") + (("featured" in item && item.featured) ? " is-featured" : "")} key={item.href}>
             <Link className={(active ? "is-active" : "") + (("featured" in item && item.featured) ? " is-featured" : "") || undefined} href={item.href} aria-current={active ? "page" : undefined}>{item.label}</Link>
           </div>;
         })}
@@ -103,9 +108,10 @@ export function SiteHeader({ version }: { version: string }) {
       </button>
       <div id="mobile-nav" className={`mobile-panel ${open ? "is-open" : ""}`}>
         <nav aria-label="Mobile navigation">
-          {primaryNav.map((item) => {
+          {primaryNav.map((item, index) => {
             const active = isNavActive(item);
-            if (item.children?.length) return <div className="mobile-nav-group" key={item.href}>
+            const groupStart = index > 0 && item.group !== primaryNav[index - 1].group;
+            if (item.children?.length) return <div className={"mobile-nav-group" + (groupStart ? " is-group-start" : "")} key={item.href}>
               <button className={"mobile-nav-trigger" + (active ? " is-active" : "") + (("featured" in item && item.featured) ? " is-featured" : "")} type="button" aria-expanded={mobileExpanded === item.href} aria-controls={"mobile-submenu-" + item.href.replace(/[^a-z0-9]/gi, "-")} onClick={() => setMobileExpanded(mobileExpanded === item.href ? null : item.href)}>
                 {item.label}<span aria-hidden="true">▾</span>
               </button>
@@ -117,7 +123,7 @@ export function SiteHeader({ version }: { version: string }) {
               </div>
             </div>;
 
-            return <div className="mobile-nav-group" key={item.href}>
+            return <div className={"mobile-nav-group" + (groupStart ? " is-group-start" : "")} key={item.href}>
               <Link className={active ? "is-active" : undefined} href={item.href} aria-current={active ? "page" : undefined} onClick={closeMobile}>{item.label}</Link>
             </div>;
           })}
