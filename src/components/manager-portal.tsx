@@ -20,6 +20,7 @@ import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
 import { TourGuestEmail } from "@/components/tour-guest-email";
 import { EventCateringSettings } from "@/components/event-catering-settings";
 import { EventPlanningManager } from "@/components/event-planning-manager";
+import { FeastManager } from "@/components/feast-manager";
 import { EventReports } from "@/components/event-reports";
 
 type Signup = { id: string; createdAt: string; name: string; email: string; tickets: number; tourDate: string; tourTime: string; paymentStatus?: "pending" | "paid" };
@@ -805,6 +806,7 @@ function ManagerSectionContent({ section, editId, editType, returnTo }: { sectio
     case "kegs": return <KegInventoryManager editId={editId} returnTo={returnTo} />;
     case "events": return <EventManager editId={editId} returnTo={returnTo} />;
     case "private-events": return <PrivateEventsManager />;
+    case "feast": return <FeastManager />;
     case "catering": return <CateringManager />;
     case "database": return <DatabaseManager />;
     case "email-test": return <EmailTestManager />;

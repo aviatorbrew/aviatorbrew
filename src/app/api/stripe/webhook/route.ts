@@ -1,3 +1,4 @@
+import {processFeastPayment,markFeastAttempt,FeastError} from "@/lib/feast-store";
 import { verifyStripeSignature } from "@/lib/stripe-webhook-signature";
 import { processProposalPayment, markProposalAttempt, ProposalError } from "@/lib/event-proposals";
 import { NextRequest, NextResponse } from "next/server";
@@ -25,6 +26,15 @@ export async function POST(request: NextRequest) {
   let event: StripeCheckoutEvent;
   try {event=JSON.parse(raw) as StripeCheckoutEvent;} catch {return NextResponse.json({error:"Invalid webhook JSON."},{status:400});}
   const session = event.data?.object;
+  if(session?.metadata?.item === "aviator-feast") {
+    try {
+      if(!session.id||!event.id)return NextResponse.json({error:"Missing payment references."},{status:400});
+      if((event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded")&&session.payment_status==="paid")await processFeastPayment(session,event.id);
+      if(event.type==="checkout.session.expired")await markFeastAttempt(session,"expired");
+      if(event.type==="checkout.session.async_payment_failed")await markFeastAttempt(session,"failed");
+      return NextResponse.json({received:true});
+    } catch(error){return NextResponse.json({error:error instanceof FeastError?error.message:"Could not record Feast payment; provider retry required."},{status:error instanceof FeastError?error.status:503});}
+  }
   if(session?.metadata?.item === "private-event-proposal") {
     try {
       if(!session.id || !event.id) return NextResponse.json({error:"Missing Stripe event or session reference."},{status:400});

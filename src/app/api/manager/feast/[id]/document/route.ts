@@ -1,0 +1,6 @@
+import {NextRequest,NextResponse} from 'next/server';
+import {isManager} from '@/lib/manager-auth';
+import {getFeastOrder} from '@/lib/feast-store';
+import {feastDocumentHtml,feastDocumentPdf} from '@/lib/feast-documents';
+export const runtime='nodejs';
+export async function GET(r:NextRequest,ctx:{params:Promise<{id:string}>}){const headers={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'};if(!isManager(r))return NextResponse.json({error:'Unauthorized'},{status:401,headers});try{const order=await getFeastOrder((await ctx.params).id);if(!order)return NextResponse.json({error:'Feast order not found.'},{status:404,headers});const kitchen=r.nextUrl.searchParams.get('kind')==='kitchen';if(r.nextUrl.searchParams.get('format')==='pdf')return new Response(new Uint8Array(await feastDocumentPdf(order,kitchen)),{headers:{...headers,'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="${order.number}-${kitchen?'kitchen':order.paidCents?'receipt':'checkout-summary'}.pdf"`}});return new Response(feastDocumentHtml(order,kitchen),{headers:{...headers,'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"}});}catch{return NextResponse.json({error:'Could not create Feast document.'},{status:500,headers});}}

@@ -31,7 +31,8 @@
     "pdf:flight-plan": "python3 scripts/update-ready-room-flight-plan.py",
     "test:flight-plan-pdf": "python3 scripts/test-ready-room-flight-plan.py",
     "calendar:sync": "node scripts/sync-ready-room-calendar.mjs",
-    "test:calendar-sync": "node scripts/test-ready-room-calendar-sync.mjs"
+    "test:calendar-sync": "node scripts/test-ready-room-calendar-sync.mjs",
+    "test:feast": "node scripts/test-feast.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

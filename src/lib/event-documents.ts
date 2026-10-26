@@ -8,7 +8,7 @@ import { buffetExplanation } from "@/lib/event-booking";
 import { availableCatalog } from "@/lib/catering-catalog";
 
 const clean=(s:string)=>s.replace(/[–—]/g,"-").replace(/×/g,"x").replace(/[^\x20-\x7e\u00a0-\u00ff\n]/g,"");
-async function brandedPdf(title:string,revision:string,sections:Array<{heading:string;lines:string[]}>) {
+export async function brandedPdf(title:string,revision:string,sections:Array<{heading:string;lines:string[]}>) {
   const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);
   let logo:PDFImage|undefined;
   try{const custom=await findCustomLogo();const bytes=await readFile(custom?.file||path.join(process.cwd(),'public/images/aviator-logo.png'));logo=custom?.contentType==='image/jpeg'?await pdf.embedJpg(bytes):await pdf.embedPng(bytes);}catch{/* Printed brand name remains available if artwork cannot be embedded. */}

@@ -14,6 +14,30 @@ const schemaStatements = [
     description text,
     updated_at timestamptz NOT NULL DEFAULT now()
   )`,
+
+  `CREATE TABLE IF NOT EXISTS website.feast_orders (
+    id text PRIMARY KEY, number text NOT NULL UNIQUE, version integer NOT NULL DEFAULT 1,
+    input jsonb NOT NULL, quote jsonb NOT NULL, state text NOT NULL DEFAULT 'Under review',
+    request_key text NOT NULL UNIQUE, input_hash text NOT NULL, token_hash text UNIQUE, token_expires_at timestamptz,
+    paid_cents integer NOT NULL DEFAULT 0 CHECK(paid_cents>=0), payment_method text NOT NULL DEFAULT '', payment_reference text NOT NULL DEFAULT '',
+    approved_at timestamptz, internal_notes text NOT NULL DEFAULT '', created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS feast_orders_pickup_idx ON website.feast_orders ((input->>'pickupDate'),state)`,
+  `CREATE TABLE IF NOT EXISTS website.feast_order_revisions (
+    order_id text NOT NULL REFERENCES website.feast_orders(id), version integer NOT NULL, input jsonb NOT NULL, quote jsonb NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(order_id,version)
+  )`,
+  `CREATE TABLE IF NOT EXISTS website.feast_checkout_attempts (
+    id text PRIMARY KEY, order_id text NOT NULL REFERENCES website.feast_orders(id), version integer NOT NULL,
+    amount_cents integer NOT NULL CHECK(amount_cents>=100), state text NOT NULL DEFAULT 'creating',
+    session_id text UNIQUE, checkout_url text, expires_at timestamptz NOT NULL, acceptance jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS feast_active_checkout_idx ON website.feast_checkout_attempts(order_id) WHERE state IN ('creating','open')`,
+  `CREATE TABLE IF NOT EXISTS website.feast_payments (
+    id text PRIMARY KEY, order_id text NOT NULL REFERENCES website.feast_orders(id), version integer NOT NULL,
+    amount_cents integer NOT NULL CHECK(amount_cents>0), method text NOT NULL, reference text NOT NULL,
+    session_id text UNIQUE, payment_intent text UNIQUE, stripe_event_id text, paid_at timestamptz NOT NULL DEFAULT now()
+  )`,
   `CREATE TABLE IF NOT EXISTS website.content_blocks (
     id bigserial PRIMARY KEY,
     area text NOT NULL,
