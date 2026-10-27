@@ -114,7 +114,7 @@ for(const flight of [true,false]){
   assert.ok(!html.includes('STAFF SECRET'));assert.ok(!html.includes('<script>event</script>'));
   assert.equal(html.includes('Customer printed name / signature'),flight);
 }
-for(const cateringMode of ['meeting','drinks','custom']){
+for(const cateringMode of ['meeting','drinks','appetizers','custom']){
  const meeting=parseEventPlan({...emptyEventPlan(),title:'General business meeting',date:'2027-04-10',startTime:'09:00',endTime:'11:00',guestCount:12,flightPlan:{...emptyFlightPlan(),cateringMode,eventType:'General business meeting',organization:'Fixture company',foodNotes:'Boardroom layout; no buffet; drinks at actual prices.',barMode:'Guest-paid bar',av:['Big-screen setup','Microphone']},notes:'Meeting agenda and setup instructions'});
  assert.equal(meeting.flightPlan.cateringMode,cateringMode);assert.equal(eventTotals(meeting).subtotal,0,'Custom service choices never add an automatic catering charge');assert.equal(eventOrderItems(meeting).length,0);
  const withItems=parseEventPlan({...meeting,items:[{id:'custom-food',category:'Food',name:'Off-menu platter',quantity:2,unitPriceCents:4500,taxable:true,notes:'Fixture order'},{id:'drinks',category:'Drinks',name:'Drink service',quantity:12,unitPriceCents:600,taxable:true,notes:''}]});
@@ -125,3 +125,16 @@ for(const cateringMode of ['meeting','drinks','custom']){
 }
 assert.ok(!Object.hasOwn(parseEventPlan(input).flightPlan,'cateringMode'),'Legacy records do not gain a service-plan field');
 console.log('Event planning passed: package choices, premium menus, extras, guest recalculation, separate taxes, deposit credits, legacy orders, printable Flight Plan and summary, private notes and validation.');
+
+// Appetizer-only events reuse individually priced custom Food rows.
+const appetizers=await import(moduleUrl(await readFile(new URL('../src/lib/event-appetizer-order.ts',import.meta.url),'utf8')));
+const {defaultCateringCatalog}=await import(planUrl),catalog=structuredClone(defaultCateringCatalog);
+assert.equal(appetizers.appetizerGuestPrice('Hush Puppies',catalog),300);assert.equal(appetizers.appetizerGuestPrice('Shrimp Cocktail',catalog),600);
+const app=(id,name,quantity=12,unitPriceCents=appetizers.appetizerGuestPrice(name,catalog),unit='guest')=>appetizers.appetizerOrderItem({id,name,quantity,unitPriceCents,unit},catalog);
+const appetizerEvent=parseEventPlan({...emptyEventPlan(),title:'Appetizer meeting',date:'2027-04-10',guestCount:12,flightPlan:{...emptyFlightPlan(),cateringMode:'appetizers'},items:[app('app-regular','Hush Puppies'),app('app-premium','Shrimp Cocktail'),app('app-tray','Chicken Fingers',2,5000,'tray')]});
+assert.equal(eventTotals(appetizerEvent).subtotal,20800);assert.equal(eventOrderItems(appetizerEvent).length,3);assert.equal(eventTotals(appetizerEvent).total,22516);assert.equal(eventTotals({...appetizerEvent,guestCount:20}).subtotal,20800,'Explicit custom quantities remain as quoted when headcount changes');
+assert.equal(app('free','Hush Puppies',1,0).unitPriceCents,0);assert.equal(app('piece','Loaded Tots',20,125,'piece').quantity,20);
+for(const values of [{name:'Unavailable app'},{quantity:0},{quantity:1.5},{quantity:10001},{unit:'pan'},{unitPriceCents:-1},{unitPriceCents:1.5}])assert.throws(()=>appetizers.appetizerOrderItem({id:'invalid',name:'Hush Puppies',quantity:12,unit:'guest',unitPriceCents:300,...values},catalog));
+catalog.disabledItems.push('Hush Puppies');assert.throws(()=>appetizers.appetizerOrderItem({id:'disabled',name:'Hush Puppies',quantity:12,unit:'guest',unitPriceCents:300},catalog));catalog.disabledItems=[];catalog.extraPrices.appetizer=425;catalog.extraPrices.premiumAppetizer=350;assert.equal(appetizers.appetizerGuestPrice('Shrimp Cocktail',catalog),775);assert.equal(eventTotals(appetizerEvent).subtotal,20800,'Previously entered appetizer prices stay fixed');
+const appHtml=summaryModule.eventSummaryHtml({id:'appetizer-fixture',version:1,updatedAt:new Date().toISOString(),details:appetizerEvent},true);for(const text of ['Appetizers &amp; drinks','Appetizer: Hush Puppies / guest','Appetizer: Shrimp Cocktail / guest','Appetizer: Chicken Fingers / tray','$208.00'])assert.ok(appHtml.includes(text),text);
+console.log('Passed appetizer events: menu and manager-only choices, premium/default/override pricing, guest/tray/piece quantities, no buffet base, fixed custom prices, tax, disabled choices, validation and itemized printing.');

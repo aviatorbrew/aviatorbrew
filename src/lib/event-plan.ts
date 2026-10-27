@@ -48,7 +48,7 @@ export const readyRoomAppetizers = [...readyRoomMenu.appetizers, ...readyRoomMen
 // Keep existing bookings editable after menu changes; these are not offered for new selections.
 export const readyRoomLegacyAppetizers = ["Loaded Tots", "Aviator Chicken Tenders with Aviator Sauce"];
 export const readyRoomEntrees = [...readyRoomMenu.entrees, ...readyRoomMenu.premiumEntrees];
-export const eventCateringModes = {meeting:"No food — meeting only",drinks:"Meeting & drinks — no food",custom:"Custom / off-menu food & drinks"} as const;
+export const eventCateringModes = {meeting:"No food — meeting only",drinks:"Meeting & drinks — no food",appetizers:"Appetizers & drinks — no buffet package",custom:"Custom / off-menu food & drinks"} as const;
 export type FlightPlan = {
   cateringMode?: keyof typeof eventCateringModes;
   packageId: string; appetizers: string[]; entrees: string[]; sides: string[]; salads: string[]; pizzas: string[];
