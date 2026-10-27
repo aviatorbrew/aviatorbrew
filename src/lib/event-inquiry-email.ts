@@ -5,7 +5,7 @@ const escape = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, c => 
 const nextSteps = [
   "Our events team will review your request and confirm date availability.",
   "We will send a proposal with instructions to accept it and pay your deposit online.",
-  "Your event is not confirmed until Aviator approves the reservation and the required deposit is paid. The deposit is credited toward your event total.",
+  "Your event is not confirmed until Aviator emails the approved proposal and your acceptance is recorded. The required deposit remains payable and is credited toward your event total.",
 ];
 
 export function buildEventInquiryEmail(details: EventPlanDetails, catalog: CateringCatalog, inquiryId: string, audience: "customer" | "internal") {

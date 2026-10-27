@@ -2,7 +2,7 @@ import { defaultCateringCatalog, emptyEventPlan, eventOrderItems, eventTotals, f
 import { availableCatalog } from "@/lib/catering-catalog";
 
 export const buffetExplanation = "Your menu selections are for the entire group, not individual orders. All guests enjoy the same buffet featuring the dishes you select.";
-export const inquiryAcknowledgement = "Thank you! We've received your event request. Our events team will review the details and contact you with a proposal. Your event is not confirmed until your reservation is approved and the required deposit is paid.";
+export const inquiryAcknowledgement = "Thank you! We've received your event request. Our events team will review the details and contact you with a proposal. Your event is not confirmed until Aviator emails the approved proposal and your acceptance is recorded. The required deposit remains payable and is credited toward your event total.";
 export function easternToday(now = new Date()) { return new Intl.DateTimeFormat("en-CA", {timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).format(now); }
 export function eventIsFuture(p:Pick<EventPlanDetails,"date"|"startTime">,now=new Date()) {
  const today=easternToday(now),time=new Intl.DateTimeFormat("en-GB",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(now);
