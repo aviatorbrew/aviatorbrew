@@ -179,3 +179,8 @@
 .package-card-top-note{font-size:.7rem}
 
 .manager-portal .event-settings-menu-item{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .8rem}
+.proposal-deposit-summary{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;padding:1.2rem;margin:1rem 0;border:2px solid #efb45f;background:#17334a;scroll-margin-top:120px}.proposal-deposit-summary p{margin:0;color:#ffd497;font-size:.8rem;font-weight:700;letter-spacing:.09em}.proposal-deposit-summary h2{font:700 2.4rem/1.1 Arial,sans-serif!important;color:#fff2cc;margin:.35rem 0!important}.proposal-deposit-summary span{font-size:.9rem}.proposal-deposit-summary.is-paid{border-color:#89bda4}.proposal-deposit-summary button{min-height:48px}.proposal-accept{scroll-margin-top:120px}.proposal-accept h2:focus,.proposal-deposit-summary h2:focus{outline:2px solid #efb45f;outline-offset:5px}.manager-private-events .event-row-actions .event-deposit-send{border-color:#efb45f;color:#ffdc9f;background:#35433f}.manager-private-events .event-row-actions .event-deposit-send:hover:not(:disabled){background:#70572e;color:#fff}
+@media(max-width:650px){.proposal-deposit-summary{padding:1rem}.proposal-deposit-summary button{width:100%}}
+@media print{.proposal-deposit-summary{display:none}}
+
+.proposal-accept .proposal-review-details{justify-self:start;background:transparent;border:0;color:#ffd497;padding:.35rem 0;min-height:44px;font:400 .9rem Arial,sans-serif;text-decoration:underline;text-underline-offset:4px;cursor:pointer}.proposal-accept .proposal-review-details:focus-visible{outline:2px solid #fff;outline-offset:4px}

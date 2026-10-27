@@ -3,7 +3,8 @@ import { activeEventBookingSql, hasEventBookingHold, eventRecordConflicts, event
 import { getPrivateEventSettings } from "@/lib/private-event-settings";
 import { createHash, randomUUID } from "node:crypto";
 import { withDatabase } from "@/lib/database";
-import { sendMail, isMailConfigured } from "@/lib/mail";
+import { isMailConfigured } from "@/lib/mail";
+import {sendEventMail as sendMail} from "@/lib/event-mail";
 import type { PoolClient } from "pg";
 import { eventStatuses, type EventReport } from "@/lib/event-plan";
 import { eventDateLabel, eventOrderItems, eventTotals, flightPlanSelections, money, parseEventPlan, timeLabel, defaultCateringCatalog, type CateringCatalog, type EventPlan, type EventPlanDetails } from "@/lib/event-plan";

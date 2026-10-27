@@ -1,3 +1,4 @@
+import {sendEventMail} from "@/lib/event-mail";
 import { submitCateringInquiry } from "@/lib/event-inquiries";
 import { promises as fs } from "node:fs";
 import os from "node:os";
@@ -172,7 +173,7 @@ export async function POST(request: Request) {
         });
         await fs.unlink(attachmentPath).catch(() => undefined);
         if (!internalSent) throw new Error("Email delivery is not configured");
-        const customerSent = await sendMail({
+        const customerSent = await sendEventMail({
           to: body.email,
           subject: "We received your Aviator Catering To Go request",
           text: cateringCustomerText(body),

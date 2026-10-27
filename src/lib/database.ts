@@ -470,6 +470,12 @@ const schemaStatements = [
     approved_at timestamptz, approved_by text, sent_at timestamptz, accepted_at timestamptz, accepted_name text,
     acceptance jsonb, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(plan_id,version)
   )`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_deposit_links (
+    id text PRIMARY KEY, proposal_id text NOT NULL REFERENCES website.private_event_proposals(id),
+    token_hash text NOT NULL UNIQUE, expires_at timestamptz NOT NULL, recipient text NOT NULL,
+    status text NOT NULL DEFAULT 'sending', sent_at timestamptz, created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS private_event_deposit_links_proposal_idx ON website.private_event_deposit_links(proposal_id,created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS website.private_event_checkout_attempts (
     id text PRIMARY KEY, proposal_id text NOT NULL REFERENCES website.private_event_proposals(id), amount_cents integer NOT NULL CHECK(amount_cents>=100),
     session_id text UNIQUE, checkout_url text, status text NOT NULL DEFAULT 'creating', expires_at timestamptz NOT NULL,

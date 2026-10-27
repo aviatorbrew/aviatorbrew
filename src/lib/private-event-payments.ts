@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { isMailConfigured, sendMail } from "@/lib/mail";
+import { isMailConfigured } from "@/lib/mail";
+import {sendEventMail as sendMail} from "@/lib/event-mail";
 import { databaseConfigured, withDatabase } from "@/lib/database";
 
 export type PrivateEventCheckoutSession = {

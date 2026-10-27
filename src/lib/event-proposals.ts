@@ -1,3 +1,4 @@
+import {depositReminderEmail} from "@/lib/event-deposit-email";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,7 +11,8 @@ import { activeEventBookingSql, eventRecordConflicts, proposalSnapshot, type Pro
 import { eventDateLabel, money, parseEventPlan, timeLabel, type EventPlanDetails } from "@/lib/event-plan";
 import { createDynamicCheckoutSession } from "@/lib/stripe";
 import { publicSiteUrl } from "@/lib/site-url";
-import { sendMail, isMailConfigured } from "@/lib/mail";
+import { isMailConfigured } from "@/lib/mail";
+import {sendEventMail as sendMail} from "@/lib/event-mail";
 import { availableCatalog } from "@/lib/catering-catalog";
 
 export class ProposalError extends Error { constructor(message: string, public status=400){super(message);} }
@@ -88,7 +90,8 @@ export async function listProposals(planId:string){return withDatabase(async cli
   const attempts=(await client.query("SELECT proposal_id,status,expires_at,created_at FROM website.private_event_checkout_attempts WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY created_at DESC",[planId])).rows;
   const review=await currentProposalReview(client,planId);
   const changeRequests=(await client.query("SELECT r.id,r.proposal_id,r.customer_name,r.message,r.requested_at,d.status AS notification_status FROM website.private_event_proposal_changes r LEFT JOIN website.private_event_deliveries d ON d.key='proposal-change:'||r.id WHERE r.proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY r.requested_at DESC",[planId])).rows.map(r=>({...r,requested_at:iso(r.requested_at)}));
-  return {proposals,deposits,deliveries,review,attempts,changeRequests};
+  const depositLinks=(await client.query("SELECT proposal_id,recipient,status,sent_at,created_at FROM website.private_event_deposit_links WHERE proposal_id IN (SELECT id FROM website.private_event_proposals WHERE plan_id=$1) ORDER BY created_at DESC",[planId])).rows.map(r=>({...r,sent_at:iso(r.sent_at),created_at:iso(r.created_at)}));
+  return {proposals,deposits,deliveries,review,attempts,changeRequests,depositLinks};
 });}
 export async function getManagerProposal(planId:string,id:string){return withDatabase(async client=>{const row=(await client.query("SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2",[id,planId])).rows[0];return row?proposalRow(row,true):null;});}
 export async function manuallyAcceptProposal(planId:string,id:string,input:{version:unknown;planVersion:unknown;name:unknown;note?:unknown;confirmed?:unknown}){
@@ -177,8 +180,45 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
   await withDatabase(client=>client.query("UPDATE website.private_event_proposals SET sent_at=now() WHERE id=$1",[id]));
   return {sent:true,proposalId:id};
 }
+export async function sendDepositLink(planId:string,id:string,input:{emailApproved?:boolean;reviewContext?:string;requestId?:string}){
+  if(input.emailApproved!==true)throw new ProposalError("Review and approve this customer email before sending.",403);
+  if(typeof input.reviewContext!=='string'||typeof input.requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(input.requestId))throw new ProposalError("Refresh the event and confirm the deposit email before sending.",409);
+  if(!isMailConfigured()&&process.env.MAIL_MODE!=="record")throw new ProposalError("Email delivery is not configured.",503);
+  if(!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET)throw new ProposalError("Stripe Checkout and verified webhooks must both be configured before sending payment links.",503);
+  const token=randomBytes(32).toString('hex');
+  const result=await transaction(async client=>{
+    const p=(await client.query('SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2 FOR UPDATE',[id,planId])).rows[0];
+    const plan=(await client.query('SELECT * FROM website.private_event_plans WHERE id=$1 AND deleted_at IS NULL FOR UPDATE',[planId])).rows[0];
+    if(!p||!plan)throw new ProposalError('Proposal not found.',404);
+    await requireSavedProposalReview(planId,id,input.reviewContext!,client,plan);
+    if(!p.sent_at||!p.approved_at)throw new ProposalError('Approve and send the proposal before resending a deposit link.',409);
+    if(['superseded','declined','cancelled','changes_requested'].includes(p.state)||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError('Use a current, unexpired proposal before sending a deposit link.',409);
+    if(materialHash(plan.data)!==p.material_hash)throw new ProposalError('The event terms changed. Create and send a revised proposal first.',409);
+    const snapshot=p.snapshot as ProposalSnapshot;
+    if(!snapshot.policyText.trim()||!snapshot.policyVersion.trim())throw new ProposalError('Create a proposal with the approved event policies.',409);
+    if((snapshot.details.flightPlan?.packageId&&snapshot.details.guestCount<snapshot.catalog.minimumGuests)||snapshot.details.guestCount>snapshot.catalog.maximumGuests)throw new ProposalError('The guest count is outside the configured venue capacity.');
+    if(!['Tentative','Confirmed'].includes(plan.status))throw new ProposalError('This event cannot receive a deposit link.',409);
+    const ledger=Number((await client.query('SELECT COALESCE(sum(amount_cents),0)::int AS paid FROM website.private_event_deposits WHERE plan_id=$1',[planId])).rows[0].paid);
+    const due=Math.max(0,snapshot.depositCents-Math.max(Number(plan.data.paidCents||0),ledger));
+    if(!due)throw new ProposalError('The required deposit is already paid. No deposit reminder was sent.',409);
+    await availability(client,planId,snapshot.details);
+    const existing=(await client.query('SELECT * FROM website.private_event_deposit_links WHERE id=$1',[input.requestId])).rows[0];
+    if(existing){if(existing.proposal_id!==id)throw new ProposalError('This send reference belongs to a different proposal.',409);if(existing.status==='sent')return {alreadySent:true,proposal:proposalRow(p),due};throw new ProposalError('This email attempt is already pending or needs delivery verification. Refresh before sending again.',409);}
+    await closeUnpaidEventCheckouts(client,planId,id);
+    await client.query("INSERT INTO website.private_event_deposit_links(id,proposal_id,token_hash,expires_at,recipient) VALUES($1,$2,$3,$4,$5)",[input.requestId,id,tokenHash(token),p.expires_at,snapshot.details.contactEmail]);
+    return {alreadySent:false,proposal:proposalRow(p),due};
+  });
+  if(result.alreadySent)return {sent:true,alreadySent:true,proposalId:id};
+  const link=publicSiteUrl()+'/event-proposal?view=deposit#token='+token;
+  let sent=false;
+  try{sent=await sendMail({to:result.proposal.snapshot.details.contactEmail,fromName:'Aviator Events',replyTo:'events@aviatorbrew.com',...depositReminderEmail(result.proposal,link,result.due)});}
+  catch{await withDatabase(c=>c.query("UPDATE website.private_event_deposit_links SET status='unknown' WHERE id=$1",[input.requestId]));throw new ProposalError('Deposit email delivery could not be verified. Refresh its status before sending again.',503);}
+  await withDatabase(c=>c.query("UPDATE website.private_event_deposit_links SET status=$2,sent_at=CASE WHEN $2='sent' THEN now() ELSE NULL END WHERE id=$1",[input.requestId,sent?'sent':'failed']));
+  if(!sent)throw new ProposalError('The deposit email was not delivered. Review its status before sending again.',503);
+  return {sent:true,proposalId:id};
+}
 async function accessRow(client:PoolClient,token:string,lock=false){
-  const p=(await client.query("SELECT * FROM website.private_event_proposals WHERE token_hash=$1"+(lock?" FOR UPDATE":""),[tokenHash(token)])).rows[0];
+  const p=(await client.query("SELECT p.* FROM website.private_event_proposals p WHERE p.token_hash=$1 OR (p.state NOT IN ('superseded','declined','cancelled') AND EXISTS(SELECT 1 FROM website.private_event_deposit_links l WHERE l.proposal_id=p.id AND l.token_hash=$1 AND l.expires_at>now()))"+(lock?" FOR UPDATE":""),[tokenHash(token)])).rows[0];
   if(!p||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError("This proposal link is invalid or expired. Please contact events@aviatorbrew.com for a new proposal.",410);
   return proposalRow(p);
 }
@@ -275,7 +315,7 @@ export async function processProposalPayment(session:DepositSession,eventId:stri
     await client.query("UPDATE website.private_event_proposals SET state=CASE WHEN state='changes_requested' THEN state ELSE $1 END WHERE id=$2",[confirmed?'paid':'paid_review',p.id]);
     const s=p.snapshot as ProposalSnapshot;
     const text=[confirmed?'Your Aviator event is confirmed.':'Your deposit was received. The events team must review the current event details and availability before confirming the booking.',p.number,s.details.title,eventDateLabel(s.details.date)+' '+timeLabel(s.details.startTime)+'–'+timeLabel(s.details.endTime),s.details.location,`${s.details.guestCount} guests`,`Deposit received: ${money(a.amount_cents)}`,`Total payments recorded: ${money(details.paidCents)}`,`Estimated event total: ${money(s.totals.total)}`,`Estimated remaining balance: ${money(s.totals.total-details.paidCents)}`,s.exclusions,`Stripe receipt reference: ${session.id}`,`Payment reference: ${intent}`,'Questions? events@aviatorbrew.com'].join('\n');
-    for(const recipient of [s.details.contactEmail,process.env.PRIVATE_EVENT_PAYMENT_RECIPIENT_EMAIL||'events@aviatorbrew.com'])await client.query("INSERT INTO website.private_event_deliveries(key,proposal_id,recipient,subject,message) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",[session.id+':'+recipient,p.id,recipient,(confirmed?'Confirmed: ':'Deposit received — review required: ')+p.number,text]);
+    for(const recipient of [...new Set([s.details.contactEmail,...(process.env.PRIVATE_EVENT_PAYMENT_RECIPIENT_EMAIL&&process.env.PRIVATE_EVENT_PAYMENT_RECIPIENT_EMAIL.toLowerCase()!=='events@aviatorbrew.com'?[process.env.PRIVATE_EVENT_PAYMENT_RECIPIENT_EMAIL]:[])])])await client.query("INSERT INTO website.private_event_deliveries(key,proposal_id,recipient,subject,message) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",[session.id+':'+recipient,p.id,recipient,(confirmed?'Confirmed: ':'Deposit received — review required: ')+p.number,text]);
     return {proposalId:p.id};
   });
   return deliverProposalMessages(result.proposalId);

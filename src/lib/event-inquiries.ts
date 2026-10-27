@@ -3,7 +3,7 @@ import { withDatabase } from "@/lib/database";
 import { getPrivateEventSettings } from "@/lib/private-event-settings";
 import { cateringSummary, inquiryAcknowledgement, validateCateringRequest } from "@/lib/event-booking";
 import { eventTotals, money } from "@/lib/event-plan";
-import { sendMail } from "@/lib/mail";
+import {sendEventMail as sendMail} from "@/lib/event-mail";
 import { buildEventInquiryEmail } from "@/lib/event-inquiry-email";
 
 export async function submitCateringInquiry(body: Record<string, unknown>) {
