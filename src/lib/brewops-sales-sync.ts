@@ -39,7 +39,7 @@ export function mergeBrewOpsSalesSnapshot(value:unknown,previous:KegInventory,no
   if(typeof r.totalBbl!=='number'||Math.abs(r.totalBbl-bbl)>0.000001||r.status!=='Available'||r.forSale!==true)fail('Invalid availability or packaged volume');
   if(n('sixtelsAvailableViaBackfill')!==Math.floor(n('fiftyLKegs')*50/(31*3.785411784/6)))fail('Backfill availability is invalid');
   // Only quantities change. Website prices, labels, hidden state and merchandising survive.
-  return {...old!,sixthBblKegs:n('sixthBblKegs'),fiftyLKegs:n('fiftyLKegs'),totalBbl:bbl,case12Count:n('cases12oz'),case12FourPackCount:n('fourPacks12oz'),case12SixPackCount:n('sixPacks12oz'),case16Count:n('cases16oz'),case16FourPackCount:n('fourPacks16oz'),caseCount:n('cases12oz')+n('cases16oz'),sixtelsAvailableViaBackfill:n('sixtelsAvailableViaBackfill')};
+  return {...old!,unitsPerCase12oz:n('unitsPerCase12oz'),unitsPerCase16oz:n('unitsPerCase16oz'),totalCans12oz:n('totalCans12oz'),totalCans16oz:n('totalCans16oz'),sixthBblKegs:n('sixthBblKegs'),fiftyLKegs:n('fiftyLKegs'),totalBbl:bbl,case12Count:n('cases12oz'),case12FourPackCount:n('fourPacks12oz'),case12SixPackCount:n('sixPacks12oz'),case16Count:n('cases16oz'),case16FourPackCount:n('fourPacks16oz'),caseCount:n('cases12oz')+n('cases16oz'),sixtelsAvailableViaBackfill:n('sixtelsAvailableViaBackfill')};
  });
  return {inventory:{...previous,items,updatedAt:data.inventoryUpdatedAt as string,inventoryUpdatedAt:data.inventoryUpdatedAt as string,websiteUpdatedAt:now.toISOString(),uploadedAt:now.toISOString()},sha256:createHash('sha256').update(JSON.stringify(value)).digest('hex'),revision:data.inventoryRevision as string};
 }

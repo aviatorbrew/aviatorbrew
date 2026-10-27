@@ -26,7 +26,7 @@ test('actual receiver rejects unauthorized requests without replacing the existi
 let firstId:string,firstSha:string;
 test('authenticated quantities replace stock atomically while prices and hidden state survive',async()=>{
  firstId=randomUUID();const response=await POST(request(payload,firstId));assert.equal(response.status,200,await response.clone().text());firstSha=(await response.json()).sha256;
- const stock=await getUploadedKegInventory({includeHidden:true});assert.equal(stock!.items[0].sixthBblKegs,6);assert.equal(stock!.items[0].sixthBblPriceCents,9500);assert.equal(stock!.items[0].case12PriceCents,4000);assert.equal(stock!.items[0].case12SixPackCount,8);assert.equal(stock!.items[0].hidden,true);
+ const stock=await getUploadedKegInventory({includeHidden:true});assert.equal(stock!.items[0].sixthBblKegs,6);assert.equal(stock!.items[0].sixthBblPriceCents,9500);assert.equal(stock!.items[0].case12PriceCents,4000);assert.equal(stock!.items[0].case12SixPackCount,8);assert.equal(stock!.items[0].totalCans12oz,53);assert.equal(stock!.items[0].totalCans16oz,27);assert.equal(stock!.items[0].unitsPerCase12oz,24);assert.equal(stock!.items[0].unitsPerCase16oz,24);assert.equal(stock!.items[0].hidden,true);
  assert.equal((await getUploadedKegInventory())!.items.length,0);
 });
 test('duplicate publications are idempotent and another publication is throttled',async()=>{

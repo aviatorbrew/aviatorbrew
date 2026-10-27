@@ -11,6 +11,10 @@ export type KegInventoryItem = {
   totalBbl: number;
   sixthBblPriceCents?: number;
   fiftyLPriceCents?: number;
+  unitsPerCase12oz?: number;
+  unitsPerCase16oz?: number;
+  totalCans12oz?: number;
+  totalCans16oz?: number;
   caseSize?: string;
   casePriceCents?: number;
   case12PriceCents?: number;
@@ -410,6 +414,10 @@ function normalizeUploadedRows(value: unknown, options: { requireKegsForSaleExpo
     const sixtelsAvailableViaBackfill = firstCount(item, ["sixtelsAvailableViaBackfill", "sixtelsByBackfill", "sixtelsAvailableByBackfill", "Backfill Sixtels", "Sixtels Available By Backfill", "sixtels available by backfill"]) ?? 0;
     return {
       category,
+      unitsPerCase12oz:firstCount(item,["unitsPerCase12oz"])??24,
+      unitsPerCase16oz:firstCount(item,["unitsPerCase16oz"])??24,
+      ...(firstCount(item,["totalCans12oz"])===null?{}:{totalCans12oz:firstCount(item,["totalCans12oz"])!}),
+      ...(firstCount(item,["totalCans16oz"])===null?{}:{totalCans16oz:firstCount(item,["totalCans16oz"])!}),
       beerName,
       packaging,
       sixthBblKegs,
