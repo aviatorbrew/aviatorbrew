@@ -13,7 +13,8 @@ export type FeastSelection = {id:string; quantity:number; sides:string[]; meats:
 export type FeastInput = {season:FeastSeason; guests:number; packages:FeastSelection[]; extras:{id:string; quantity:number}[]; customerName:string; email:string; phone:string; pickupDate:string; pickupTime:string; notes:string; dietary:string; services:string[]; beerAgeConfirmed?:boolean};
 export type FeastLine = {name:string; quantity:number; unit:string; unitPriceCents:number; totalCents:number; description:string};
 export type FeastQuote = {lines:FeastLine[]; subtotalCents:number; taxCents:number|null; totalCents:number|null; capacity:number; production:FeastYield[]; productionNotes:string[]; selections:string[]; quoteServices:string[]; policyText:string; policyVersion:string; pickupLocation:string; pickupInstructions:string; taxRateBps:number|null; pfbTaxRateBps:number|null; catalogVersion:number;beerSalesTaxBps?:number|null;beerPfbTaxBps?:number|null};
-export type FeastOrder = {id:string; number:string; version:number; input:FeastInput; quote:FeastQuote; state:FeastState; paidCents:number; paymentMethod:string; paymentReference:string; approvedAt:string|null; createdAt:string; updatedAt:string; internalNotes:string};
+export type FeastEmailProof = {id:string;session:string;proof:string};
+export type FeastOrder = {emailVerifiedAt?:string|null;leadTimeCheckedAt?:string|null;id:string; number:string; version:number; input:FeastInput; quote:FeastQuote; state:FeastState; paidCents:number; paymentMethod:string; paymentReference:string; approvedAt:string|null; createdAt:string; updatedAt:string; internalNotes:string};
 export const feastStates=['Under review','Approved','Preparing','Ready','Completed','Cancelled'] as const;
 export type FeastState = typeof feastStates[number];
 export const feastMoney=(c:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(c/100);

@@ -38,6 +38,26 @@ const schemaStatements = [
     amount_cents integer NOT NULL CHECK(amount_cents>0), method text NOT NULL, reference text NOT NULL,
     session_id text UNIQUE, payment_intent text UNIQUE, stripe_event_id text, paid_at timestamptz NOT NULL DEFAULT now()
   )`,
+  `ALTER TABLE website.feast_orders ADD COLUMN IF NOT EXISTS email_verified_at timestamptz`,
+  `ALTER TABLE website.feast_orders ADD COLUMN IF NOT EXISTS lead_time_checked_at timestamptz`,
+  `CREATE TABLE IF NOT EXISTS website.feast_email_verifications (
+    id text PRIMARY KEY, email text NOT NULL, session_hash text NOT NULL, code_hash text NOT NULL, proof_hash text,
+    state text NOT NULL DEFAULT 'pending', attempts integer NOT NULL DEFAULT 0, ip_hash text,
+    expires_at timestamptz NOT NULL, verified_at timestamptz, used_order_id text REFERENCES website.feast_orders(id),
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS feast_email_verification_rate_idx ON website.feast_email_verifications(email,created_at)`,
+  `CREATE INDEX IF NOT EXISTS feast_email_verification_ip_idx ON website.feast_email_verifications(ip_hash,created_at)`,
+  `CREATE TABLE IF NOT EXISTS website.feast_order_links (
+    token_hash text PRIMARY KEY, order_id text NOT NULL REFERENCES website.feast_orders(id), expires_at timestamptz NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS website.feast_message_deliveries (
+    id text PRIMARY KEY, order_id text NOT NULL REFERENCES website.feast_orders(id), version integer NOT NULL,
+    kind text NOT NULL CHECK(kind IN ('request','approval')), recipient text NOT NULL, status text NOT NULL DEFAULT 'pending',
+    sent_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(order_id,version,kind)
+  )`,
   `CREATE TABLE IF NOT EXISTS website.content_blocks (
     id bigserial PRIMARY KEY,
     area text NOT NULL,
