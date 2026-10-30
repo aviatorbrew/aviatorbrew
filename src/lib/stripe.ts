@@ -97,7 +97,7 @@ export async function createCheckoutSession(input: CheckoutInput) {
 }
 
 type DynamicCheckoutInput = {
-  idempotencyKey?: string; expiresAt?: number; cardOnly?: boolean;
+  idempotencyKey?: string; expiresAt?: number; cardOnly?: boolean; paymentDescription?: string;
   name: string;
   description: string;
   unitAmount: number;
@@ -128,7 +128,8 @@ export async function createDynamicCheckoutSession(input: DynamicCheckoutInput) 
   form.set("line_items[0][quantity]", String(input.quantity));
   if (input.referenceId) form.set("client_reference_id", input.referenceId);
   if (input.customerEmail) form.set("customer_email", input.customerEmail);
-  for (const [key, value] of Object.entries(input.metadata || {})) form.set("metadata[" + key + "]", value);
+  for (const [key, value] of Object.entries(input.metadata || {})) {form.set("metadata[" + key + "]", value);if(input.paymentDescription)form.set("payment_intent_data[metadata]["+key+"]",value);}
+  if(input.paymentDescription)form.set("payment_intent_data[description]",input.paymentDescription);
 
   const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",

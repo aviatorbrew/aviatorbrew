@@ -1,3 +1,4 @@
+import {deliverFeastMessages} from '@/lib/feast-messages';
 import {processFeastPayment,markFeastAttempt,FeastError} from "@/lib/feast-store";
 import { verifyStripeSignature } from "@/lib/stripe-webhook-signature";
 import { processProposalPayment, markProposalAttempt, ProposalError } from "@/lib/event-proposals";
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
   if(session?.metadata?.item === "aviator-feast") {
     try {
       if(!session.id||!event.id)return NextResponse.json({error:"Missing payment references."},{status:400});
-      if((event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded")&&session.payment_status==="paid")await processFeastPayment(session,event.id);
+      if((event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded")&&session.payment_status==="paid"){await processFeastPayment(session,event.id);const delivered=await deliverFeastMessages(session.metadata.orderId!,'paid');if(!['sent','none','skipped'].includes(delivered.status))return NextResponse.json({error:'FEAST payment recorded; customer notification requires retry.'},{status:503});}
       if(event.type==="checkout.session.expired")await markFeastAttempt(session,"expired");
       if(event.type==="checkout.session.async_payment_failed")await markFeastAttempt(session,"failed");
       return NextResponse.json({received:true});

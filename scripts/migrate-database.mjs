@@ -58,6 +58,16 @@ const schemaStatements = [
     sent_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE(order_id,version,kind)
   )`,
+  `ALTER TABLE website.feast_orders ADD COLUMN IF NOT EXISTS payment_requested_at timestamptz`,
+  `ALTER TABLE website.feast_orders ADD COLUMN IF NOT EXISTS payment_warning_sent_at timestamptz`,
+  `ALTER TABLE website.feast_orders ADD COLUMN IF NOT EXISTS payment_cancelled_at timestamptz`,
+  `ALTER TABLE website.feast_orders ADD COLUMN IF NOT EXISTS automation_attention text NOT NULL DEFAULT ''`,
+  `ALTER TABLE website.feast_message_deliveries DROP CONSTRAINT IF EXISTS feast_message_deliveries_kind_check`,
+  `ALTER TABLE website.feast_message_deliveries ADD CONSTRAINT feast_message_deliveries_kind_check CHECK(kind IN ('request','approval','payment','payment_warning','cancelled','paid'))`,
+  `CREATE TABLE IF NOT EXISTS website.feast_order_flow (
+    id bigserial PRIMARY KEY, order_id text NOT NULL REFERENCES website.feast_orders(id), version integer NOT NULL,
+    kind text NOT NULL, label text NOT NULL, event_key text NOT NULL UNIQUE, created_at timestamptz NOT NULL DEFAULT now()
+  )`,
   `CREATE TABLE IF NOT EXISTS website.content_blocks (
     id bigserial PRIMARY KEY,
     area text NOT NULL,
