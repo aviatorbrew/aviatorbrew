@@ -90,7 +90,7 @@ export function eventOrderItems(plan: EventPlanDetails, catalog = defaultCaterin
   for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, f.extraAppetizerPriceCents ?? readyRoomExtraPrices.appetizer);
   for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional ${readyRoomMenu.premiumEntrees.includes(name) ? "premium " : ""}entree: ${name}`, plan.guestCount, readyRoomMenu.premiumEntrees.includes(name) ? f.extraPremiumEntreePriceCents ?? readyRoomExtraPrices.premiumEntree : f.extraEntreePriceCents ?? readyRoomExtraPrices.entree);
   for (const [i, name] of (f.extraSides || []).entries()) add(`side-${i}`, `Additional side: ${name}`, plan.guestCount, f.extraSidePriceCents ?? 0);
-  for (const [i, name] of (f.extraSalads || []).entries()) add(`salad-${i}`, `Additional salad: ${name}`, plan.guestCount, f.extraSaladPriceCents ?? 0);
+  for (const [i, name] of (f.extraSalads || []).entries()) if(name) add(`salad-${i}`, `Additional salad: ${name}`, plan.guestCount, f.extraSaladPriceCents ?? 0);
   for (const [i, name] of [...f.appetizers, ...f.extraAppetizers].entries()) if (readyRoomMenu.premiumAppetizers.includes(name)) add(`premium-app-${i}`, `Premium appetizer upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumAppetizer);
   if (!pkg.premiumEntreesIncluded) for (const [i, name] of f.entrees.entries()) if (readyRoomMenu.premiumEntrees.includes(name)) add(`premium-entree-${i}`, `Premium entree upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumEntreeUpgrade);
   if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, f.extraEntreePriceCents ?? readyRoomExtraPrices.entree);
@@ -110,7 +110,7 @@ export function flightPlanSelections(plan: EventPlanDetails, catalog = defaultCa
   return [
     ["Service plan", !pkg && f.cateringMode ? eventCateringModes[f.cateringMode] : ""],
     ["Package", pkg ? `${pkg.name} · ${money(pkg.priceCents)} / guest` : ""],
-    ["Appetizers", foodSelections(f.appetizers)], ["Entrees", foodSelections(f.entrees)], ["Sides", foodSelections(f.sides.map(name=>catalog.menu.salads.includes(name)&&!catalog.menu.sides.includes(name)?name+" (salad substituted for side)":name))], ["Salad", foodSelections(f.salads)],
+    ["Appetizers", foodSelections(f.appetizers)], ["Entrees", foodSelections(f.entrees)], ["Sides", foodSelections(f.sides.map(name=>catalog.menu.salads.includes(name)&&!catalog.menu.sides.includes(name)?name+" (salad substituted for side)":name))], ["Salad", foodSelections(f.salads)||(pkg?.salads?"No salad requested":"")],
     ["Extra appetizers", foodSelections(f.extraAppetizers)], ["Extra entrees", foodSelections(f.extraEntrees)], ["Extra sides", foodSelections(f.extraSides || [])], ["Extra salads", foodSelections(f.extraSalads || [])],
     ["Pizza styles", f.pizzas.join(", ")], ["Pizza service", f.pizzaTime ? timeLabel(f.pizzaTime) : ""], ["Gluten-free pizzas", f.glutenFreeCount ? String(f.glutenFreeCount) : ""], ["Pizza notes", f.pizzaNotes], ["Wing sauce", f.wingSauce], ["Dietary needs", f.dietaryNeeds], ["Food notes", f.foodNotes],
   ].filter(([, value]) => Boolean(value)) as [string, string][];
@@ -167,7 +167,8 @@ function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCa
   const appetizers = [...readyRoomAppetizers, ...readyRoomLegacyAppetizers];
   const groups = { appetizers, entrees, sides: managerAdjustments?[...new Set([...readyRoomMenu.sides,...readyRoomMenu.salads])]:readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: appetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
   for (const key of Object.keys(groups) as (keyof typeof groups)[]) {
-    const v = input[key] ?? [];
+    const raw = input[key] ?? [];
+    const v = managerAdjustments&&(key==="salads"||key==="extraSalads")&&Array.isArray(raw)?raw.filter(value=>value!==""):raw;
     const distinct = key === "pizzas" || key === "av";
     if (!Array.isArray(v) || v.length > 12 || v.some(s => typeof s !== "string" || !groups[key].includes(s)) || (distinct && new Set(v).size !== v.length)) throw new Error(`Choose valid ${key}${distinct ? " without duplicates" : ""}.`);
     f[key] = v as string[];
@@ -192,7 +193,10 @@ function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCa
   }
   if (pkg) {
     if (guestCount < catalog.minimumGuests) throw new Error(`Ready Room packages require at least ${catalog.minimumGuests} guests.`);
-    for (const key of ["appetizers", "entrees", "sides", "salads"] as const) if (f[key].length !== pkg[key]) throw new Error(`${pkg.name}: choose ${pkg[key]} ${key}.`);
+    for (const key of ["appetizers", "entrees", "sides", "salads"] as const) {
+      if(managerAdjustments&&key==="salads"){if(f.salads.length>pkg.salads)throw new Error(`${pkg.name}: choose up to ${pkg.salads} included salads; use Additional salad for extras.`);}
+      else if(f[key].length!==pkg[key])throw new Error(`${pkg.name}: choose ${pkg[key]} ${key}.`);
+    }
     if (f.pizzaExtra && [...f.entrees, ...f.extraEntrees].includes("Aviator Pizzeria Pizza Bar")) throw new Error("Pizza Bar is already selected as an entree; do not add it twice.");
   } else if ([f.appetizers, f.entrees, f.sides, f.salads, f.extraAppetizers, f.extraEntrees, f.extraSides, f.extraSalads].some(v => v.length) || f.extraHours || f.dessert || f.coffee || f.pizzaExtra) throw new Error("Choose a package before its food selections and extras.");
   const pizza = [...f.entrees, ...f.extraEntrees].includes("Aviator Pizzeria Pizza Bar") || f.pizzaExtra;
