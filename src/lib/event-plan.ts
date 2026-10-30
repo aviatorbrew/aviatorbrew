@@ -73,6 +73,7 @@ export type EventPlanDetails = {
   date: string; startTime: string; endTime: string; location: string; guestCount: number;
   status: typeof eventStatuses[number]; setupTime: string; foodTime: string; lastCall: string;
   items: EventOrderItem[]; taxRateBps: number; paidCents: number; barDetails: string; notes: string; internalNotes: string;
+  managerDiscount?: {amountCents:number;reason:string};
   flightPlan?: FlightPlan | null; pfbTaxRateBps?: number; reservationDepositCents?: number;
 };
 export type EventCalendarSync = { status: "active" | "changed" | "removed" | "cancelled"; checkedAt: string; calendarId?:string; eventId?:string; linkedFromPlanId?:string; linkedToPlanId?:string; linkedAt?:string; source?: { title: string; date: string; startTime: string; endTime: string; description: string; url: string } };
@@ -109,7 +110,7 @@ export function flightPlanSelections(plan: EventPlanDetails, catalog = defaultCa
   return [
     ["Service plan", !pkg && f.cateringMode ? eventCateringModes[f.cateringMode] : ""],
     ["Package", pkg ? `${pkg.name} · ${money(pkg.priceCents)} / guest` : ""],
-    ["Appetizers", foodSelections(f.appetizers)], ["Entrees", foodSelections(f.entrees)], ["Sides", foodSelections(f.sides)], ["Salad", foodSelections(f.salads)],
+    ["Appetizers", foodSelections(f.appetizers)], ["Entrees", foodSelections(f.entrees)], ["Sides", foodSelections(f.sides.map(name=>catalog.menu.salads.includes(name)&&!catalog.menu.sides.includes(name)?name+" (salad substituted for side)":name))], ["Salad", foodSelections(f.salads)],
     ["Extra appetizers", foodSelections(f.extraAppetizers)], ["Extra entrees", foodSelections(f.extraEntrees)], ["Extra sides", foodSelections(f.extraSides || [])], ["Extra salads", foodSelections(f.extraSalads || [])],
     ["Pizza styles", f.pizzas.join(", ")], ["Pizza service", f.pizzaTime ? timeLabel(f.pizzaTime) : ""], ["Gluten-free pizzas", f.glutenFreeCount ? String(f.glutenFreeCount) : ""], ["Pizza notes", f.pizzaNotes], ["Wing sauce", f.wingSauce], ["Dietary needs", f.dietaryNeeds], ["Food notes", f.foodNotes],
   ].filter(([, value]) => Boolean(value)) as [string, string][];
@@ -118,9 +119,13 @@ export function eventTotals(plan: EventPlanDetails, catalog = defaultCateringCat
   const items = eventOrderItems(plan, catalog);
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
   const taxable = items.filter((item) => item.taxable).reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
-  const salesTax = Math.round(taxable * plan.taxRateBps / 10000), pfbTax = Math.round(taxable * (plan.pfbTaxRateBps || 0) / 10000);
-  const tax = salesTax + pfbTax;
-  return { subtotal, tax, salesTax, pfbTax, total: subtotal + tax, paid: plan.paidCents, balance: subtotal + tax - plan.paidCents };
+  // An event-wide retailer discount is allocated proportionally to taxable charges.
+  // Drafts can be incomplete; the authoritative parser rejects invalid/oversized discounts.
+  const discount = Math.min(subtotal,Math.max(0,plan.managerDiscount?.amountCents||0));
+  const discountedSubtotal = subtotal-discount,taxableAfterDiscount=taxable-(subtotal?Math.round(discount*taxable/subtotal):0);
+  const salesTax = Math.round(taxableAfterDiscount * plan.taxRateBps / 10000), pfbTax = Math.round(taxableAfterDiscount * (plan.pfbTaxRateBps || 0) / 10000);
+  const tax = salesTax + pfbTax,total=discountedSubtotal+tax;
+  return { subtotal,...(discount?{discount,discountedSubtotal}:{}),tax,salesTax,pfbTax,total,paid:plan.paidCents,balance:total-plan.paidCents };
 }
 export function emptyEventPlan(reservationDepositCents = 35000): EventPlanDetails {
   return { title: "", contactName: "", contactEmail: "", phone: "", guestEmails: [], date: "", startTime: "", endTime: "", location: "Ready Room · 688 Brewing Drive, Fuquay-Varina", guestCount: 0, status: "Draft", setupTime: "", foodTime: "", lastCall: "", items: [], taxRateBps: 725, pfbTaxRateBps: 100, reservationDepositCents, paidCents: 0, flightPlan: emptyFlightPlan(), barDetails: "", notes: "", internalNotes: "" };
@@ -133,7 +138,7 @@ export function timeLabel(time: string) {
   const [hour, minute] = time.split(":").map(Number);
   return `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
 }
-function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCatalog): FlightPlan | null {
+function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCatalog,managerAdjustments:boolean): FlightPlan | null {
   const readyRoomPackages = catalog.packages, readyRoomMenu = catalog.menu, readyRoomAppetizers = [...catalog.menu.appetizers, ...catalog.menu.premiumAppetizers], readyRoomEntrees = [...catalog.menu.entrees, ...catalog.menu.premiumEntrees];
   if (value == null) return null;
   if (typeof value !== "object" || Array.isArray(value)) throw new Error("Check the Flight Plan.");
@@ -160,7 +165,7 @@ function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCa
   }
   const entrees = readyRoomEntrees;
   const appetizers = [...readyRoomAppetizers, ...readyRoomLegacyAppetizers];
-  const groups = { appetizers, entrees, sides: readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: appetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
+  const groups = { appetizers, entrees, sides: managerAdjustments?[...new Set([...readyRoomMenu.sides,...readyRoomMenu.salads])]:readyRoomMenu.sides, salads: readyRoomMenu.salads, pizzas: readyRoomMenu.pizzas, extraAppetizers: appetizers, extraEntrees: entrees, extraSides: readyRoomMenu.sides, extraSalads: readyRoomMenu.salads, av: readyRoomMenu.av };
   for (const key of Object.keys(groups) as (keyof typeof groups)[]) {
     const v = input[key] ?? [];
     const distinct = key === "pizzas" || key === "av";
@@ -198,7 +203,7 @@ function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCa
   if (!["", "Dry Rub", "Aviator", "Buffalo", "BlackMamba", "Monster"].includes(f.wingSauce)) throw new Error("Choose a wing sauce.");
   return f;
 }
-export function parseEventPlan(value: unknown, catalog = defaultCateringCatalog): EventPlanDetails {
+export function parseEventPlan(value: unknown, catalog = defaultCateringCatalog,managerAdjustments=true): EventPlanDetails {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Provide event details.");
   const input = value as Record<string, unknown>;
   const text = (key: string, max: number, required = false) => {
@@ -235,5 +240,22 @@ export function parseEventPlan(value: unknown, catalog = defaultCateringCatalog)
   if (new Set(items.map((r) => r.id)).size !== items.length) throw new Error("Order rows must have distinct IDs.");
   const guestCount = integer("guestCount", 10000);
   const optionalInteger = (key: string, max: number) => input[key] == null ? 0 : integer(key, max);
-  return { title: text("title", 200, true), contactName: text("contactName", 200), contactEmail, phone: text("phone", 100), guestEmails, date, startTime, endTime, location: text("location", 300, true), guestCount, status: input.status as EventPlanDetails["status"], setupTime: time("setupTime"), foodTime: time("foodTime"), lastCall: time("lastCall"), items, taxRateBps: integer("taxRateBps", 10000), pfbTaxRateBps: optionalInteger("pfbTaxRateBps", 10000), reservationDepositCents: optionalInteger("reservationDepositCents", 100000000), paidCents: integer("paidCents", 1000000000), flightPlan: parseFlightPlan(input.flightPlan, guestCount, catalog), barDetails: text("barDetails", 5000), notes: text("notes", 5000), internalNotes: text("internalNotes", 5000) };
+  const details:EventPlanDetails = { title: text("title", 200, true), contactName: text("contactName", 200), contactEmail, phone: text("phone", 100), guestEmails, date, startTime, endTime, location: text("location", 300, true), guestCount, status: input.status as EventPlanDetails["status"], setupTime: time("setupTime"), foodTime: time("foodTime"), lastCall: time("lastCall"), items, taxRateBps: integer("taxRateBps", 10000), pfbTaxRateBps: optionalInteger("pfbTaxRateBps", 10000), reservationDepositCents: optionalInteger("reservationDepositCents", 100000000), paidCents: integer("paidCents", 1000000000), flightPlan: parseFlightPlan(input.flightPlan, guestCount, catalog,managerAdjustments), barDetails: text("barDetails", 5000), notes: text("notes", 5000), internalNotes: text("internalNotes", 5000) };
+  if(input.managerDiscount!==undefined){
+    const raw=input.managerDiscount;
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Check the one-time event discount.');
+    const d=raw as Record<string,unknown>;
+    if(typeof d.amountCents!=='number'||!Number.isSafeInteger(d.amountCents)||d.amountCents<0||d.amountCents>100000000||typeof d.reason!=='string'||d.reason.length>300)throw new Error('Enter a valid one-time discount amount and reason.');
+    if(d.amountCents>0){
+      if(!managerAdjustments)throw new Error('Only a manager can apply an event discount.');
+      if(!d.reason.trim())throw new Error('Enter the reason for this one-time event discount.');
+      if(d.amountCents>eventOrderItems(details,catalog).reduce((sum,item)=>sum+item.quantity*item.unitPriceCents,0))throw new Error('The one-time discount cannot exceed the event subtotal.');
+      details.managerDiscount={amountCents:d.amountCents,reason:d.reason.trim()};
+    }
+  }
+  return details;
+}
+
+export function eventDiscountLines(details:EventPlanDetails,totals:ReturnType<typeof eventTotals>):[string,string][]{
+ return totals.discount?[[`One-time event discount${details.managerDiscount?.reason?' — '+details.managerDiscount.reason:''}`,money(-totals.discount)],['Subtotal after discount',money(totals.discountedSubtotal!)]]:[];
 }
