@@ -1,3 +1,4 @@
+import type { PoolClient } from 'pg';
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { databaseConfigured, withDatabase } from "@/lib/database";
@@ -178,4 +179,11 @@ export async function unsubscribeNewsletter(emailValue: string) {
   const found = store.subscribers.some((subscriber) => subscriber.email === email);
   if (found) await write({ subscribers: store.subscribers.filter((subscriber) => subscriber.email !== email) });
   return found;
+}
+
+// Inbox ownership is already proven by the caller. Upsert just this subscriber,
+// preserving their existing source, contact information and welcome history.
+export async function subscribeVerifiedNewsletterEmail(client:PoolClient,emailValue:string,source:string){
+ const email=cleanEmail(emailValue);
+ await client.query("INSERT INTO website.newsletter_subscribers(email,source,status,confirmed_at) VALUES($1,$2,'confirmed',now()) ON CONFLICT(email) DO UPDATE SET status='confirmed',confirmed_at=coalesce(website.newsletter_subscribers.confirmed_at,now()),confirmation_expires_at=NULL",[email,source]);
 }

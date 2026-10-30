@@ -56,6 +56,14 @@ const schemaStatements = [
   )`,
   `CREATE INDEX IF NOT EXISTS feast_email_verification_rate_idx ON website.feast_email_verifications(email,created_at)`,
   `CREATE INDEX IF NOT EXISTS feast_email_verification_ip_idx ON website.feast_email_verifications(ip_hash,created_at)`,
+  `CREATE TABLE IF NOT EXISTS website.feast_verified_customers (
+    email text PRIMARY KEY, verified_at timestamptz NOT NULL DEFAULT now(), newsletter_enrolled_at timestamptz
+  )`,
+  `CREATE TABLE IF NOT EXISTS website.feast_email_sessions (
+    token_hash text PRIMARY KEY, email text NOT NULL REFERENCES website.feast_verified_customers(email),
+    created_at timestamptz NOT NULL DEFAULT now(), last_used_at timestamptz NOT NULL DEFAULT now(), expires_at timestamptz NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS feast_email_sessions_expiry_idx ON website.feast_email_sessions(expires_at)`,
   `CREATE TABLE IF NOT EXISTS website.feast_order_links (
     token_hash text PRIMARY KEY, order_id text NOT NULL REFERENCES website.feast_orders(id), expires_at timestamptz NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now()
