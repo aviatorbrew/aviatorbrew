@@ -40,23 +40,28 @@ export async function createFeastOrder(raw:unknown,requestKey:string,staff=false
  const old=(await c.query('SELECT * FROM website.feast_orders WHERE request_key=$1',[requestKey])).rows[0];
  if(verified?.used_order_id&&verified.used_order_id!==old?.id)throw new FeastError('This email verification was already used for another order. Verify your email again.',403);
  if(old){if(old.input_hash!==inputHash)throw new FeastError('This request reference was already used for a different menu.',409);const token=randomBytes(32).toString('hex');await c.query("UPDATE website.feast_orders SET token_hash=$2,token_expires_at=now()+interval '120 days' WHERE id=$1",[old.id,hash(token)]);return {order:orderRow(old),token};}
- assertFeastPickupWindow(input.pickupDate,input.pickupTime);
+ assertFeastPickupWindow(input.pickupDate,input.pickupTime);await checkDailyOrderLimit(c,s,input.pickupDate);
  // Pickup slots are optional for requests, but required for approval/payment.
  if(s.slots.some(x=>x.enabled&&x.season===input.season)&&!s.slots.some(x=>x.enabled&&x.season===input.season&&x.date===input.pickupDate&&input.pickupTime>=x.start&&input.pickupTime<=x.end&&(!x.deadline||feastToday()<=x.deadline)))throw new FeastError('Choose an available pickup date and time before the ordering deadline.');
  if(!staff&&Number((await c.query("SELECT count(*) FROM website.feast_orders WHERE input->>'email'=$1 AND created_at>now()-interval '1 minute'",[input.email])).rows[0].count)>=5)throw new FeastError('Please wait a minute before submitting another order.',429);
  const id=randomUUID(),number='FEAST-'+new Date().getFullYear()+'-'+id.slice(0,8).toUpperCase(),token=randomBytes(32).toString('hex');
  const row=(await c.query("INSERT INTO website.feast_orders(id,number,input,quote,request_key,input_hash,token_hash,token_expires_at,email_verified_at,lead_time_checked_at) VALUES($1,$2,$3::jsonb,$4::jsonb,$5,$6,$7,now()+interval '120 days',$8,now()) RETURNING *",[id,number,JSON.stringify(input),JSON.stringify(quote),requestKey,inputHash,hash(token),verified?.verified_at||null])).rows[0];const order=orderRow(row);await saveRevision(c,order);await recordFeastFlow(c,id,order.version,'request','Order received — waiting for staff approval','created:'+id);if(verified){await c.query('UPDATE website.feast_email_verifications SET used_order_id=$2 WHERE id=$1',[verified.id,id]);await queueFeastMessage(c,id,order.version,'request',input.email);}return {order,token};});
 }
+async function checkDailyOrderLimit(c:PoolClient,s:FeastSettings,date:string,excludeId=''){
+ if(!s.maxOrdersPerDay)return;
+ const count=Number((await c.query("SELECT count(*) FROM website.feast_orders WHERE id<>$1 AND input->>'pickupDate'=$2 AND state IN ('Approved','Preparing','Ready','Completed')",[excludeId,date])).rows[0].count);
+ if(count>=s.maxOrdersPerDay)throw new FeastError(`This pickup day has reached its ${s.maxOrdersPerDay}-order limit. Please choose another date.`,409);
+}
 async function checkCapacity(c:PoolClient,s:FeastSettings,o:FeastOrder){
  if(o.leadTimeCheckedAt)assertFeastPickupWindow(o.input.pickupDate,o.input.pickupTime,new Date(o.leadTimeCheckedAt));
  if(o.input.pickupDate<feastToday())throw new FeastError('The pickup date has passed.');
  const slot=s.slots.find(x=>x.enabled&&x.season===o.input.season&&x.date===o.input.pickupDate&&o.input.pickupTime>=x.start&&o.input.pickupTime<=x.end);
- if(!slot)throw new FeastError('Configure an available pickup window for this order before approval.');if(slot.deadline&&feastToday()>slot.deadline)throw new FeastError('The ordering deadline for this pickup has passed.');
+ if(!slot)throw new FeastError('Configure an available pickup window for this order before approval.');await checkDailyOrderLimit(c,s,o.input.pickupDate,o.id);if(slot.deadline&&feastToday()>slot.deadline)throw new FeastError('The ordering deadline for this pickup has passed.');
  const others=(await c.query("SELECT input,quote FROM website.feast_orders WHERE id<>$1 AND state IN ('Approved','Preparing','Ready','Completed') AND input->>'pickupDate'=$2 AND input->>'pickupTime'>=$3 AND input->>'pickupTime'<=$4",[o.id,slot.date,slot.start,slot.end])).rows as {input:FeastInput;quote:FeastQuote}[];
  const beerOrders=(await c.query("SELECT input FROM website.feast_orders WHERE id<>$1 AND state IN ('Approved','Preparing','Ready') AND input->>'pickupDate'>=$2",[o.id,feastToday()])).rows as {input:FeastInput}[];
  for(const row of o.input.extras){const beer=s.beers?.find(i=>i.id===row.id);if(!beer)continue;const reserved=beerOrders.reduce((n,x)=>n+(x.input.extras.find(i=>i.id===row.id)?.quantity||0),0);if(row.quantity+reserved>(beer.maxQuantity||0))throw new FeastError(beer.name+' has insufficient unreserved 6-packs. Refresh the menu or reduce the quantity.',409);}
  const load=(x:{input:FeastInput;quote:FeastQuote})=>Math.max(x.input.guests,x.quote.capacity);
- if(others.reduce((n,x)=>n+load(x),load(o))>slot.capacity)throw new FeastError('This pickup window has reached its serving capacity.',409);
+ if(slot.capacity&&others.reduce((n,x)=>n+load(x),load(o))>slot.capacity)throw new FeastError('This pickup window has reached its serving capacity.',409);
  for(const row of o.input.packages){const p=s.packages.find(p=>p.id===row.id);if(p?.preorder&&!p.deadline&&!slot.deadline)throw new FeastError('Set an ordering deadline for this premium preorder.');if(!p?.enabled||!p.seasons.includes(o.input.season)||p.deadline&&feastToday()>p.deadline)throw new FeastError('This feast is unavailable or its deadline has passed.');if(p.maxPerSlot&&others.reduce((n,x)=>n+(x.input.packages.find(i=>i.id===p.id)?.quantity||0),row.quantity)>p.maxPerSlot)throw new FeastError(p.name+' has reached its pickup-window limit.',409);}
 }
 function quoteSame(a:FeastQuote,b:FeastQuote){const terms=(x:FeastQuote)=>({...x,catalogVersion:0});return isDeepStrictEqual(terms(a),terms(b));}
