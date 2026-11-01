@@ -37,6 +37,7 @@ export type CateringPackage = { id: string; name: string; priceCents: number; ap
 export type CateringCatalog = {
   packages: CateringPackage[]; menu: Record<keyof typeof readyRoomMenu, string[]>;
   extraPrices: Record<keyof typeof readyRoomExtraPrices, number>; disabledItems: string[]; managerOnlyItems?: string[];
+  entreeDescriptions?: Record<string,string>;
   minimumGuests: number; maximumGuests: number; venue: string; salesTaxBps: number; pfbTaxBps: number;
 };
 export const defaultCateringCatalog: CateringCatalog = {
@@ -111,7 +112,8 @@ export function flightPlanSelections(plan: EventPlanDetails, catalog = defaultCa
     ["Service plan", !pkg && f.cateringMode ? eventCateringModes[f.cateringMode] : ""],
     ["Package", pkg ? `${pkg.name} · ${money(pkg.priceCents)} / guest` : ""],
     ["Appetizers", foodSelections(f.appetizers)], ["Entrees", foodSelections(f.entrees)], ["Sides", foodSelections(f.sides.map(name=>catalog.menu.salads.includes(name)&&!catalog.menu.sides.includes(name)?name+" (salad substituted for side)":name))], ["Salad", foodSelections(f.salads)||(pkg?.salads?"No salad requested":"")],
-    ["Extra appetizers", foodSelections(f.extraAppetizers)], ["Extra entrees", foodSelections(f.extraEntrees)], ["Extra sides", foodSelections(f.extraSides || [])], ["Extra salads", foodSelections(f.extraSalads || [])],
+    ["Extra appetizers", foodSelections(f.extraAppetizers)], ["Extra entrees", foodSelections(f.extraEntrees)],
+    ["Entrée descriptions", [...new Set([...f.entrees,...f.extraEntrees,...(f.pizzaExtra?["Aviator Pizzeria Pizza Bar"]:[])])].map(name=>cateringEntreeDescription(catalog,name)?name+": "+cateringEntreeDescription(catalog,name):"").filter(Boolean).join("\n")], ["Extra sides", foodSelections(f.extraSides || [])], ["Extra salads", foodSelections(f.extraSalads || [])],
     ["Pizza styles", f.pizzas.join(", ")], ["Pizza service", f.pizzaTime ? timeLabel(f.pizzaTime) : ""], ["Gluten-free pizzas", f.glutenFreeCount ? String(f.glutenFreeCount) : ""], ["Pizza notes", f.pizzaNotes], ["Wing sauce", f.wingSauce], ["Dietary needs", f.dietaryNeeds], ["Food notes", f.foodNotes],
   ].filter(([, value]) => Boolean(value)) as [string, string][];
 }
@@ -262,4 +264,8 @@ export function parseEventPlan(value: unknown, catalog = defaultCateringCatalog,
 
 export function eventDiscountLines(details:EventPlanDetails,totals:ReturnType<typeof eventTotals>):[string,string][]{
  return totals.discount?[[`One-time event discount${details.managerDiscount?.reason?' — '+details.managerDiscount.reason:''}`,money(-totals.discount)],['Subtotal after discount',money(totals.discountedSubtotal!)]]:[];
+}
+
+export function cateringEntreeDescription(catalog:CateringCatalog,name:string){
+ const description=catalog.entreeDescriptions?.[name];return typeof description==='string'?description:'';
 }

@@ -1,5 +1,5 @@
 import { buffetExplanation } from "@/lib/event-booking";
-import { eventDateLabel, eventOrderItems, eventTotals, flightPlanSelections, money, timeLabel, type CateringCatalog, type EventPlanDetails } from "@/lib/event-plan";
+import { cateringEntreeDescription,eventDateLabel, eventOrderItems, eventTotals, flightPlanSelections, money, timeLabel, type CateringCatalog, type EventPlanDetails } from "@/lib/event-plan";
 
 const escape = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const nextSteps = [
@@ -19,7 +19,7 @@ export function buildEventInquiryEmail(details: EventPlanDetails, catalog: Cater
   const groups: [string,string[]][] = f?[["Appetizers",f.appetizers],["Entrées",f.entrees],["Salads",f.salads],["Sides",f.sides],["Additional appetizers",f.extraAppetizers],["Additional entrées",f.extraEntrees],["Additional salads",f.extraSalads],["Additional sides",f.extraSides],["Pizza styles",f.pizzas]]:[];
   const menu=groups.filter(([,names])=>names.length).map(([label,names])=>{
     const counts=new Map<string,number>();for(const name of names)counts.set(name,(counts.get(name)||0)+1);
-    return `<h3 style="margin:17px 0 6px;font-size:15px;color:#102b3e">${escape(label)}</h3><ul style="margin:0;padding-left:22px;color:#253f50">${[...counts].map(([name,count])=>`<li style="padding:3px 0">${escape(name)}${count>1?` × ${count}`:""}</li>`).join("")}</ul>`;
+    return `<h3 style="margin:17px 0 6px;font-size:15px;color:#102b3e">${escape(label)}</h3><ul style="margin:0;padding-left:22px;color:#253f50">${[...counts].map(([name,count])=>`<li style="padding:3px 0">${escape(name)}${count>1?` × ${count}`:""}${["Entrées","Additional entrées"].includes(label)&&cateringEntreeDescription(catalog,name)?`<br/><small>${escape(cateringEntreeDescription(catalog,name))}</small>`:""}</li>`).join("")}</ul>`;
   }).join("");
   const notes=flightPlanSelections(details,catalog).filter(([label])=>["Pizza service","Gluten-free pizzas","Pizza notes","Wing sauce","Dietary needs","Food notes"].includes(label));
   const charges=eventOrderItems(details,catalog);

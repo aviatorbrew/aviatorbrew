@@ -2343,3 +2343,6 @@ body {
 .manager-password-toggle svg{width:1.4rem;height:1.4rem}
 .manager-password-toggle:focus-visible{outline:2px solid #efb45f;outline-offset:-4px}
 .manager-password-toggle:hover{color:#fff}
+
+/* Short descriptions use the existing catering catalog and normal form text. */
+.event-entree-description,.catering-entree-description{display:block;font-weight:400;font-size:.83rem;line-height:1.5;white-space:pre-line}.event-entree-description-field{display:flex;flex-direction:column;gap:4px;flex-basis:100%;width:100%;margin:8px 0}.event-entree-description-field textarea{width:100%;box-sizing:border-box}.event-settings-menu-item:has(.event-entree-description-field){flex-wrap:wrap}.catering-entree-descriptions{margin:8px 0 14px}.catering-entree-descriptions summary{cursor:pointer;font-weight:700}.catering-entree-descriptions dl{display:grid;gap:10px;margin:12px 0}.catering-entree-descriptions dt{font-weight:700}.catering-entree-descriptions dd{margin:3px 0 0;white-space:pre-line}

@@ -18,9 +18,15 @@ export function parseCateringCatalog(value: unknown): CateringCatalog {
   if (!Array.isArray(c.disabledItems) || c.disabledItems.length > 500 || c.disabledItems.some(s => !text(s))) throw new Error("Check unavailable food items.");
   if(c.managerOnlyItems===undefined)c.managerOnlyItems=[];
   if (!Array.isArray(c.managerOnlyItems) || c.managerOnlyItems.length > 500 || c.managerOnlyItems.some(s => !text(s)) || new Set(c.managerOnlyItems).size !== c.managerOnlyItems.length) throw new Error("Check manager-only food items.");
+  if(c.entreeDescriptions!==undefined){
+    if(!c.entreeDescriptions||typeof c.entreeDescriptions!=='object'||Array.isArray(c.entreeDescriptions)||Object.keys(c.entreeDescriptions).length>200)throw new Error('Check entrée descriptions.');
+    const entries=Object.entries(c.entreeDescriptions);if(entries.some(([name,description])=>!text(name)||typeof description!=='string'||description.length>300||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(description)))throw new Error('Use short entrée descriptions of up to 300 characters.');
+    const entrees=new Set([...c.menu.entrees,...c.menu.premiumEntrees]);c.entreeDescriptions=Object.fromEntries(entries.filter(([name,description])=>entrees.has(name)&&description.trim()).map(([name,description])=>[name,description.trim()]));
+  }
   return c;
 }
 export function availableCatalog(catalog: CateringCatalog): CateringCatalog {
   const hidden=new Set([...catalog.disabledItems,...(catalog.managerOnlyItems||[])]);
-  return {...catalog, disabledItems:[], managerOnlyItems:[], packages: catalog.packages.filter(p => p.enabled), menu: Object.fromEntries(Object.entries(catalog.menu).map(([key, values]) => [key, values.filter(name => !hidden.has(name))])) as CateringCatalog["menu"]};
+  const menu=Object.fromEntries(Object.entries(catalog.menu).map(([key,values])=>[key,values.filter(name=>!hidden.has(name))])) as CateringCatalog["menu"];
+  return {...catalog, disabledItems:[], managerOnlyItems:[], packages:catalog.packages.filter(p=>p.enabled),menu,...(catalog.entreeDescriptions?{entreeDescriptions:Object.fromEntries(Object.entries(catalog.entreeDescriptions).filter(([name])=>[...menu.entrees,...menu.premiumEntrees].includes(name)))}:{})};
 }

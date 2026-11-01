@@ -12,3 +12,5 @@
 @media(max-width:600px){.feast-order-actions{padding:10px}.feast-order-actions .feast-manager-actions>button{flex:1 0 42%}.feast-action-payment-link{max-width:100%}}
 
 .feast-settings-slot>summary{font-weight:700;cursor:pointer;line-height:1.5}.feast-settings-slot[open]>summary{margin-bottom:10px}
+
+.feast-calendar-pickup{display:block;background:#1a4539;border:1px solid #699c80;color:#e0ffe8;font:10px/1.35 Arial,sans-serif;padding:3px;margin:3px 0;overflow-wrap:anywhere}.feast-settings-status{font-size:12px!important;color:#d8eadf!important}
