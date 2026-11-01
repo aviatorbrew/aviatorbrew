@@ -160,3 +160,24 @@ for(const pkg of readyRoomPackages){
  for(const key of ['appetizers','entrees','sides'])assert.throws(()=>parseEventPlan({...base,flightPlan:{...base.flightPlan,[key]:[]}}));
 }
 console.log('PASS optional manager salad: omitted/blank included salads, blank additional rows, unchanged base price, selected extras still billed, limits/other categories retained and public included-salad requirements enforced.');
+
+// The office flow describes existing records; it never advances booking or payment state.
+{
+ const {eventOrderFlow}=await import(moduleUrl((await readFile(new URL('../src/lib/event-order-flow.ts',import.meta.url),'utf8')).replaceAll('@/lib/event-plan',planUrl)));
+ const now=Date.parse('2026-11-01T12:00:00Z'),at=day=>new Date(now+day*86400000).toISOString(),plan={id:'flow-fixture',version:1,createdAt:at(-5),updatedAt:at(-1),sourceInquiryId:'inquiry-fixture',details:{...emptyEventPlan(),status:'Draft'}},p={id:'proposal-fixture',number:'AVI-FLOW',version:1,created_at:at(-4),sent_at:null,accepted_at:null,accepted_name:null,expires_at:at(14),termsCurrent:true,state:'draft',snapshot:{depositCents:35000,details:{contactName:'Fixture Customer',contactEmail:'fixture@example.invalid'}}};
+ const base={plan,proposals:[],deposits:[],attempts:[],changes:[],depositCents:35000,now},run=v=>eventOrderFlow({...base,...v});
+ assert.match(run().label,/Under review/);assert.equal(run().due,35000);assert.equal(run().steps.find(s=>s.state==='current').label,'Event saved');assert.match(run({proposals:[p]}).label,/draft ready/);
+ const sent={...p,sent_at:at(-3)},accepted={...sent,accepted_at:at(-2),accepted_name:'Fixture Customer'};
+ assert.match(run({proposals:[sent]}).label,/waiting for customer acceptance/);assert.equal(run({proposals:[sent]}).accepted,false);assert.equal(run({proposals:[accepted]}).accepted,true);assert.equal(run({proposals:[accepted]}).confirmed,false,'Acceptance display never invents booking confirmation');
+ const payment={proposal_id:p.id,amount_cents:35000,paid_at:at(-1)},paid=run({proposals:[accepted],deposits:[payment]});assert.equal(paid.due,0);assert.equal(paid.confirmed,false,'Payment display never confirms a booking');
+ const confirmed={...plan,details:{...plan.details,status:'Confirmed',paidCents:35000}},f=run({plan:confirmed,proposals:[accepted],deposits:[payment]});assert.equal(f.paid,35000,'Saved payment and Stripe ledger are not double counted');assert.equal(f.manualPaid,0);assert.equal(f.confirmed,true);assert.equal(f.steps.find(s=>s.state==='current').label,'Event confirmed');assert.match(f.label,/Confirmed/);
+ const manual=run({plan:confirmed});assert.equal(manual.manualPaid,35000);assert.equal(manual.steps.filter(s=>s.state==='skipped').length,3);assert.match(run({plan:{...confirmed,details:{...confirmed.details,paidCents:0}}}).label,/deposit outstanding/);
+ const changed=run({plan:confirmed,proposals:[{...accepted,termsCurrent:false}]});assert.equal(changed.accepted,false);assert.match(changed.label,/updated proposal needed/);assert.equal(changed.due,0,'Payment survives a material revision');
+ assert.match(run({proposals:[{...sent,expires_at:at(-1)}]}).label,/expired/);assert.match(run({proposals:[{...sent,state:'changes_requested'}]}).label,/requested changes/);
+ for(const status of ['open','creating','paid']){const pending=run({proposals:[accepted],attempts:[{proposal_id:p.id,status,expires_at:at(1),created_at:at(-1)}]});assert.equal(pending.paid,0);assert.equal(pending.due,35000);assert.match(pending.label,/pending/);}
+ assert.match(run({proposals:[sent],attempts:[{proposal_id:p.id,status:'failed',expires_at:at(1),created_at:at(-1)}]}).label,/failed/);
+ assert.match(run({dirty:true}).label,/Unsaved/);assert.match(run({loaded:false}).label,/unavailable/);assert.match(run({plan:{...plan,details:{...plan.details,status:'Cancelled'}},dirty:true}).label,/cancelled/);assert.match(run({plan:{...plan,details:{...plan.details,status:'Completed'}},dirty:true}).label,/completed/);
+ assert.equal(run({depositCents:0}).steps.find(s=>s.label==='Deposit recorded').state,'skipped');
+ const before=JSON.stringify({plan,p,payment});const history=run({proposals:[{...accepted,acceptanceMethod:'manual'}],deposits:[payment],changes:[{customer_name:'Fixture Customer',requested_at:at(-1)}]}).history;assert.ok(history.some(e=>/accepted manually/.test(e.label)));assert.deepEqual(history.map(e=>e.at),history.map(e=>e.at).sort());assert.equal(JSON.stringify({plan,p,payment}),before);
+ console.log('PASS event flow: drafts, emailed/accepted versions, pending/failed/verified/manual payments, no double credit, independent confirmation, revised/expired proposals, cancelled/completed events, manual bypass milestones, history and unchanged source records.');
+}
