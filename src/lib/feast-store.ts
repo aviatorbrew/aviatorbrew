@@ -8,7 +8,7 @@ import {publicSiteUrl} from '@/lib/site-url';
 import {calculateFeast,defaultFeastSettings,feastPaymentDependencies,feastStates,feastToday,parseFeastSettings,type FeastInput,type FeastOrder,type FeastQuote,type FeastSettings,type FeastState} from '@/lib/feast';
 import {FeastError} from '@/lib/feast-errors';
 export {FeastError} from '@/lib/feast-errors';
-import {assertFeastPickupWindow} from '@/lib/feast-order-window';
+import {assertFeastPickupWindow,feastPickupDayAllowed,feastPickupDaysError,feastPickupLeadTimeError} from '@/lib/feast-order-window';
 import {requireFeastVerifiedEmail} from '@/lib/feast-email-verification';
 import {recordFeastFlow} from '@/lib/feast-flow-store';
 import {feastBalance} from '@/lib/feast-flow';
@@ -53,7 +53,9 @@ async function checkDailyOrderLimit(c:PoolClient,s:FeastSettings,date:string,exc
  if(count>=s.maxOrdersPerDay)throw new FeastError(`This pickup day has reached its ${s.maxOrdersPerDay}-order limit. Please choose another date.`,409);
 }
 async function checkCapacity(c:PoolClient,s:FeastSettings,o:FeastOrder){
- if(o.leadTimeCheckedAt)assertFeastPickupWindow(o.input.pickupDate,o.input.pickupTime,new Date(o.leadTimeCheckedAt));
+ const alreadyApproved=o.state==='Approved'&&Boolean(o.approvedAt);
+ if(!alreadyApproved&&!feastPickupDayAllowed(o.input.pickupDate))throw new FeastError(feastPickupDaysError);
+ if(o.leadTimeCheckedAt){const error=feastPickupLeadTimeError(o.input.pickupDate,o.input.pickupTime,new Date(o.leadTimeCheckedAt));if(error)throw new FeastError(error);}
  if(o.input.pickupDate<feastToday())throw new FeastError('The pickup date has passed.');
  const slot=s.slots.find(x=>x.enabled&&x.season===o.input.season&&x.date===o.input.pickupDate&&o.input.pickupTime>=x.start&&o.input.pickupTime<=x.end);
  if(!slot)throw new FeastError('Configure an available pickup window for this order before approval.');await checkDailyOrderLimit(c,s,o.input.pickupDate,o.id);if(slot.deadline&&feastToday()>slot.deadline)throw new FeastError('The ordering deadline for this pickup has passed.');

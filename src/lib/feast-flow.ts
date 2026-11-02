@@ -1,3 +1,4 @@
+import {feastPickupDayAllowed,feastPickupDaysError} from '@/lib/feast-order-window';
 import type {FeastOrder,FeastSettings} from '@/lib/feast';
 export type FeastFlowEvent={id:string;order_id:string;version:number;kind:string;label:string;created_at:string};
 export function feastBalance(o:Pick<FeastOrder,'quote'|'paidCents'>){return o.quote.totalCents===null?null:Math.max(0,o.quote.totalCents-o.paidCents);}
@@ -21,5 +22,5 @@ export function feastOrderListStatus(o:FeastOrder){
 // Setup guidance only. Approval still runs the authoritative server checks.
 export function feastApprovalSetupIssues(o:FeastOrder,s:FeastSettings){
  if(o.state!=='Under review')return [];
- return [...(o.quote.totalCents===null?['Edit menu / recalculate and save this order to include the configured taxes.']:[]),...(!s.slots.some(w=>w.enabled&&w.season===o.input.season&&w.date===o.input.pickupDate&&o.input.pickupTime>=w.start&&o.input.pickupTime<=w.end)?['Add an enabled pickup window covering this order’s pickup date and time in seasonal settings.']:[]),...(!s.turkeyWeightConfirmed&&(o.input.packages.some(p=>p.id.startsWith('turkey-'))||o.input.extras.some(i=>i.id.startsWith('whole-turkey')))?['Confirm whole-turkey weights and serving yields in seasonal settings.']:[]),...(!s.policyText.trim()||!s.policyVersion.trim()?['Save approved Feast order policies and their version in seasonal settings.']:[])];
+ return [...(!feastPickupDayAllowed(o.input.pickupDate)?[feastPickupDaysError]:[]),...(o.quote.totalCents===null?['Edit menu / recalculate and save this order to include the configured taxes.']:[]),...(!s.slots.some(w=>w.enabled&&w.season===o.input.season&&w.date===o.input.pickupDate&&o.input.pickupTime>=w.start&&o.input.pickupTime<=w.end)?['Add an enabled pickup window covering this order’s pickup date and time in seasonal settings.']:[]),...(!s.turkeyWeightConfirmed&&(o.input.packages.some(p=>p.id.startsWith('turkey-'))||o.input.extras.some(i=>i.id.startsWith('whole-turkey')))?['Confirm whole-turkey weights and serving yields in seasonal settings.']:[]),...(!s.policyText.trim()||!s.policyVersion.trim()?['Save approved Feast order policies and their version in seasonal settings.']:[])];
 }

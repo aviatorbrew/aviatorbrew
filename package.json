@@ -32,6 +32,7 @@
     "test:flight-plan-pdf": "python3 scripts/test-ready-room-flight-plan.py",
     "calendar:sync": "node scripts/sync-ready-room-calendar.mjs",
     "test:calendar-sync": "node scripts/test-ready-room-calendar-sync.mjs",
+    "test:feast-details": "node scripts/test-feast-details.mjs",
     "test:feast": "node scripts/test-feast.mjs"
   },
   "dependencies": {
