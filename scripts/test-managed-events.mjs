@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdtemp, readFile, rm} from 'node:fs/promises';
+import {mkdtemp, readFile, writeFile, rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import ts from 'typescript';
@@ -37,6 +37,17 @@ try {
   assert.deepEqual((await read({fromDate:'2026-11-02',throughDate:'2026-11-30'})).map(e=>e.date),['2026-11-06','2026-11-13','2026-11-20','2026-11-27'],'Existing weekly recurrence is unchanged');
   await events.createManagedEvent({...base,title:'Music',eventType:'live_music',date:'2026-11-06'});
   assert.equal((await events.getPublishedLiveMusicEvents({fromDate:'2026-11-02',throughDate:'2026-11-30'})).length,1,'Event categories remain separate');
+  const old = await events.createManagedEvent({...base,title:'Older announcement, earlier event',date:'2026-11-05'});
+  const recent = await events.createManagedEvent({...base,title:'New announcement, later event',date:'2026-11-20'});
+  const stored = JSON.parse(await readFile(process.env.MANAGED_EVENTS_DATA_FILE,'utf8'));
+  for(const item of stored) item.createdAt = item.id===recent.id ? '2026-11-02T12:00:00Z' : item.id===old.id ? '2026-11-01T12:00:00Z' : '2026-10-01T12:00:00Z';
+  await writeFile(process.env.MANAGED_EVENTS_DATA_FILE,JSON.stringify(stored));
+  const november = {fromDate:'2026-11-02',throughDate:'2026-11-30'};
+  assert.deepEqual((await read(november)).slice(0,2).map(e=>e.id),[recent.id,old.id],'New announcements lead the public list regardless of event date');
+  assert.deepEqual((await events.getManagedEvents()).slice(0,2).map(e=>e.id),[recent.id,old.id],'Manager list also shows new events first');
+  await events.updateManagedEvent(old.id,{description:'Edited older announcement'});
+  assert.equal((await read(november))[0].id,recent.id,'Editing an older event does not make it a new announcement');
+  assert.equal((await read({...november,order:'date'}))[0].id,old.id,'Explicit chronological order remains available');
   await rm(process.env.MANAGED_EVENTS_DATA_FILE);
 
   const rows = [];
@@ -54,7 +65,7 @@ try {
   assert.equal(rows[0].ends_at,'2027-01-02T17:00:00-05:00','Database end timestamp follows the final date');
   assert.equal((await read())[0].endDate,'2027-01-02','Database reads preserve the range');
   assert.equal((await read())[0].linkLabel,'Build your feast');
-  console.log('PASS managed events: ongoing ranges, boundaries, validation, publication, editable CTA, unchanged recurrence/categories and database timestamp/JSON round trip.');
+  console.log('PASS managed events: newest-first announcement/manager order, stable edits, chronological music, ongoing ranges, boundaries, validation, publication, editable CTA, unchanged recurrence/categories and database timestamp/JSON round trip.');
 } finally {
   if(originalFile === undefined) delete process.env.MANAGED_EVENTS_DATA_FILE;
   else process.env.MANAGED_EVENTS_DATA_FILE = originalFile;

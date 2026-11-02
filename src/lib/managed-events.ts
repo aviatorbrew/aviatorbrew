@@ -197,7 +197,10 @@ async function readAll(eventType = "special"): Promise<ManagedEvent[]> {
   return eventType === "all" ? legacyEvents : legacyEvents.filter((event) => (event.eventType || "special") === eventType);
 }
 
-function sorted(events: ManagedEvent[]) { return [...events].sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime)); }
+function sorted(events: ManagedEvent[], order: "date" | "newest" = "date") {
+  const created = (event: ManagedEvent) => Date.parse(event.createdAt) || 0;
+  return [...events].sort((a, b) => (order === "newest" ? created(b) - created(a) : 0) || (a.date + a.startTime).localeCompare(b.date + b.startTime));
+}
 
 function uniqueImages(images: string[]) {
   return [...new Set(images.map((image) => clean(image, 500)).filter(Boolean))].slice(0, 12);
@@ -255,15 +258,15 @@ function expandEvent(event: ManagedEvent, through: string) {
   return results;
 }
 
-export async function getManagedEvents(options: { eventType?: string } = {}) { return sorted((await readAll(options.eventType || "special")).map(normalizeEventImages)); }
-export async function getPublishedEvents(options: { monthsAhead?: number; eventType?: string; fromDate?: string; throughDate?: string } = {}) {
+export async function getManagedEvents(options: { eventType?: string; order?: "date" | "newest" } = {}) { return sorted((await readAll(options.eventType || "special")).map(normalizeEventImages), options.order || "newest"); }
+export async function getPublishedEvents(options: { monthsAhead?: number; eventType?: string; fromDate?: string; throughDate?: string; order?: "date" | "newest" } = {}) {
   const today = easternDate();
   const fromDate = options.fromDate || today;
   const through = options.throughDate || addMonths(today, typeof options.monthsAhead === "number" ? options.monthsAhead : 12);
   return sorted((await getManagedEvents({ eventType: options.eventType || "special" }))
     .filter((event) => event.published)
     .flatMap((event) => expandEvent(event, through))
-    .filter((event) => (event.endDate || event.date) >= fromDate && event.date <= through));
+    .filter((event) => (event.endDate || event.date) >= fromDate && event.date <= through), options.order || (options.eventType === "live_music" ? "date" : "newest"));
 }
 export async function getPublishedLiveMusicEvents(options: { monthsAhead?: number; fromDate?: string; throughDate?: string } = {}) {
   return getPublishedEvents({ ...options, eventType: "live_music" });

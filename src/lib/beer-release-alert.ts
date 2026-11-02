@@ -13,6 +13,9 @@ export type BeerReleaseAlert = {
   locations: string;
   specials: string;
   sellSheetUrl: string;
+  description?: string;
+  storyUrl?: string;
+  createdAt?: string;
   updatedAt: string;
 };
 
@@ -29,6 +32,12 @@ const contentArea = "new_release_alerts";
 function normalize(input: BeerReleaseAlertInput, existing: BeerReleaseAlert = emptyAlert): BeerReleaseAlert {
   const releaseDate = input.releaseDate === undefined ? existing.releaseDate : clean(input.releaseDate, 10);
   const releaseTime = input.releaseTime === undefined ? existing.releaseTime : clean(input.releaseTime, 5);
+  const storyUrl = input.storyUrl === undefined ? existing.storyUrl || "" : clean(input.storyUrl, 500);
+  if (storyUrl) {
+    let url: URL;
+    try { url = new URL(storyUrl); } catch { throw new Error("Use a valid YouTube story link."); }
+    if (url.protocol !== "https:" || url.username || url.password || !["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"].includes(url.hostname)) throw new Error("Use an HTTPS YouTube story link.");
+  }
   const sellSheetUrl = input.sellSheetUrl === undefined ? existing.sellSheetUrl : clean(input.sellSheetUrl, 500);
   if (releaseDate && !/^\d{4}-\d{2}-\d{2}$/.test(releaseDate)) throw new Error("Use a valid release date.");
   if (releaseTime && !/^\d{2}:\d{2}$/.test(releaseTime)) throw new Error("Use a valid release time.");
@@ -41,6 +50,9 @@ function normalize(input: BeerReleaseAlertInput, existing: BeerReleaseAlert = em
     locations: input.locations === undefined ? existing.locations : clean(input.locations, 300),
     specials: input.specials === undefined ? existing.specials : clean(input.specials, 300),
     sellSheetUrl,
+    description: input.description === undefined ? existing.description || "" : clean(input.description, 1200),
+    storyUrl,
+    createdAt: existing.createdAt || clean(input.createdAt, 40) || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -56,7 +68,7 @@ function fromStored(value: unknown): BeerReleaseAlert[] {
 function sortAlerts(a: BeerReleaseAlert, b: BeerReleaseAlert) {
   const dateA = (a.releaseDate || "9999-99-99") + "T" + (a.releaseTime || "99:99");
   const dateB = (b.releaseDate || "9999-99-99") + "T" + (b.releaseTime || "99:99");
-  return dateA.localeCompare(dateB) || b.updatedAt.localeCompare(a.updatedAt);
+  return ((Date.parse(b.createdAt || "") || 0) - (Date.parse(a.createdAt || "") || 0)) || dateA.localeCompare(dateB) || a.id.localeCompare(b.id);
 }
 
 async function readFileAlerts() {
@@ -82,7 +94,7 @@ async function readDatabaseAlerts() {
   if (!databaseConfigured()) return null;
   return withDatabase(async (client) => {
     const result = await client.query(
-      `SELECT slug, title, data, published, starts_at, updated_at
+      `SELECT slug, title, data, published, starts_at, created_at, updated_at
        FROM website.content_blocks
        WHERE area = $1
        ORDER BY starts_at NULLS LAST, updated_at DESC`,
@@ -100,6 +112,9 @@ async function readDatabaseAlerts() {
         locations: clean(data.locations, 300),
         specials: clean(data.specials, 300),
         sellSheetUrl: clean(data.sellSheetUrl, 500),
+        description: clean(data.description, 1200),
+        storyUrl: clean(data.storyUrl, 500),
+        createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : clean(data.createdAt || row.created_at, 40),
         updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : clean(row.updated_at, 40),
       };
     }).sort(sortAlerts);
