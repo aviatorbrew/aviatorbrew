@@ -20,6 +20,8 @@ export type ManagedEvent = {
   eventType?: ManagedEventType;
   title: string;
   date: string;
+  endDate?: string;
+  linkLabel?: string;
   startTime: string;
   endTime: string;
   location: string;
@@ -53,6 +55,10 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   const title = clean(input.title, 120);
   const eventType = clean(input.eventType, 30) === "live_music" ? "live_music" : "special";
   const date = clean(input.date, 10);
+  const rangeEndDate = clean(input.endDate, 10);
+  const linkLabel = clean(input.linkLabel, 60);
+  const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + "T12:00:00Z")) && new Date(value + "T12:00:00Z").toISOString().slice(0, 10) === value;
+  if (rangeEndDate && (!validDate(rangeEndDate) || !validDate(date) || rangeEndDate < date)) throw new Error("The event end date must be a valid date on or after its start date.");
   const startTime = clean(input.startTime, 5);
   const endTime = clean(input.endTime, 5);
   const location = clean(input.location, 120);
@@ -68,6 +74,7 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   const allowedFrequencies: RecurrenceFrequency[] = ["none", "daily", "weekly", "biweekly", "monthly-date", "monthly-weekday", "yearly"];
   if (!allowedFrequencies.includes(rawFrequency as RecurrenceFrequency)) throw new Error("Choose a valid recurrence pattern.");
   const frequency = rawFrequency as RecurrenceFrequency;
+  if (rangeEndDate && frequency !== "none") throw new Error("Choose either a continuous date range or a repeating event.");
   const interval = Math.max(1, Math.min(12, Number(input.recurrenceInterval ?? input.recurrence?.interval ?? 1) || 1));
   const weekday = Number(input.recurrenceWeekday ?? input.recurrence?.weekday);
   const ordinal = Number(input.recurrenceOrdinal ?? input.recurrence?.ordinal);
@@ -75,7 +82,7 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   if (endDate && endDate.length !== 10) throw new Error("Use a valid recurrence end date.");
   if (frequency === "monthly-weekday" && (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 || ![1, 2, 3, 4, 5, -1].includes(ordinal))) throw new Error("Choose a weekday and occurrence for monthly recurrence.");
   const recurrence = frequency === "none" ? undefined : { frequency, interval, ...(frequency === "monthly-weekday" ? { weekday, ordinal } : {}), ...(endDate ? { endDate } : {}) };
-  return { eventType, title, date, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), ...(galleryImages.length ? { galleryImages } : {}), published: input.published === true, recurrence };
+  return { eventType, title, date, endDate: rangeEndDate || undefined, linkLabel: linkLabel || undefined, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), ...(galleryImages.length ? { galleryImages } : {}), published: input.published === true, recurrence };
 }
 
 async function readFileEvents(): Promise<ManagedEvent[]> {
@@ -101,7 +108,7 @@ function eventStart(event: ManagedEvent) {
 }
 
 function eventEnd(event: ManagedEvent) {
-  return event.endTime ? easternLocalTimestamp(event.date, event.endTime) : null;
+  return event.endTime || event.endDate ? easternLocalTimestamp(event.endDate || event.date, event.endTime || "23:59") : null;
 }
 
 async function readDatabaseEvents(eventType = "special"): Promise<ManagedEvent[] | null> {
@@ -124,6 +131,8 @@ async function readDatabaseEvents(eventType = "special"): Promise<ManagedEvent[]
         eventType: row.event_type === "live_music" ? "live_music" : "special",
         title: clean(row.title || details.title, 120),
         date: clean(details.date || (startsAt && !Number.isNaN(startsAt.getTime()) ? startsAt.toISOString().slice(0, 10) : ""), 10),
+        endDate: clean(details.endDate, 10) || undefined,
+        linkLabel: clean(details.linkLabel, 60) || undefined,
         startTime: clean(details.startTime || (startsAt && !Number.isNaN(startsAt.getTime()) ? startsAt.toISOString().slice(11, 16) : ""), 5),
         endTime: clean(details.endTime || (endsAt && !Number.isNaN(endsAt.getTime()) ? endsAt.toISOString().slice(11, 16) : ""), 5),
         location: clean(row.location || details.location, 120),
@@ -254,7 +263,7 @@ export async function getPublishedEvents(options: { monthsAhead?: number; eventT
   return sorted((await getManagedEvents({ eventType: options.eventType || "special" }))
     .filter((event) => event.published)
     .flatMap((event) => expandEvent(event, through))
-    .filter((event) => event.date >= fromDate && event.date <= through));
+    .filter((event) => (event.endDate || event.date) >= fromDate && event.date <= through));
 }
 export async function getPublishedLiveMusicEvents(options: { monthsAhead?: number; fromDate?: string; throughDate?: string } = {}) {
   return getPublishedEvents({ ...options, eventType: "live_music" });

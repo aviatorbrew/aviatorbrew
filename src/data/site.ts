@@ -31,7 +31,7 @@ export const primaryNav = [
   { label: "Tours", href: "/about#brewery-tours", group: "brewery" },
   { label: "Locations", href: "/locations", group: "visit" },
   { label: "Live Music", href: "https://aviatorlive.beer/live-music", group: "visit" },
-  { label: "EVENTS", href: "/events", group: "visit", children: [{ label: "Brewery Events", href: "/events" }, { label: "Private Events", href: "/private-events" }, { label: "Catering To Go", href: "/catering-to-go" }] },
+  { label: "EVENTS", href: "/events", group: "visit", children: [{ label: "Brewery Events", href: "/events" }, { label: "Private Events", href: "/private-events" }, { label: "Feast by Aviator", href: "/feast" }, { label: "Catering To Go", href: "/catering-to-go" }] },
   { label: "Shop", href: "/shop-new", group: "shop" },
   { label: "Sales", href: "/kegs", group: "shop" },
   { label: "Become a Pilot", href: "/become-a-pilot", group: "company" },

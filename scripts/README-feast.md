@@ -1,6 +1,6 @@
 # Feast by Aviator
 
-Public builder: `/feast`. Intentionally absent from public navigation and sitemap, with `noindex, nofollow` metadata. This is an unlisted page, not an authenticated private page.
+Public builder: `/feast`, listed under **EVENTS → Feast by Aviator**, included in the sitemap and available to search engines. Holiday promotion listings are managed through the existing Brewery Events screen; a continuous start/last-date range keeps one seasonal listing visible until it ends. The event links directly to the builder.
 
 Manager: **Events & Hospitality → Feast Event**, `/manager/feast`. Uses existing manager authentication, PostgreSQL `website.settings`, the shared branded PDF renderer, existing Stripe Checkout helper and signed Stripe webhook. It does not change Ready Room packages, prices, calendars, inquiries or deposits.
 
