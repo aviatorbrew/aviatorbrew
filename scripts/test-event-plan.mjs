@@ -181,3 +181,26 @@ console.log('PASS optional manager salad: omitted/blank included salads, blank a
  const before=JSON.stringify({plan,p,payment});const history=run({proposals:[{...accepted,acceptanceMethod:'manual'}],deposits:[payment],changes:[{customer_name:'Fixture Customer',requested_at:at(-1)}]}).history;assert.ok(history.some(e=>/accepted manually/.test(e.label)));assert.deepEqual(history.map(e=>e.at),history.map(e=>e.at).sort());assert.equal(JSON.stringify({plan,p,payment}),before);
  console.log('PASS event flow: drafts, emailed/accepted versions, pending/failed/verified/manual payments, no double credit, independent confirmation, revised/expired proposals, cancelled/completed events, manual bypass milestones, history and unchanged source records.');
 }
+
+// Customer response belongs to the current quoted version, independently of booking/payment status.
+{
+ const {eventProposalProgress}=await import(moduleUrl(await readFile(new URL('../src/lib/event-proposal-progress.ts',import.meta.url),'utf8')));
+ const now=Date.parse('2026-11-02T12:00:00Z'),p={id:'v2',version:2,state:'draft',termsCurrent:true,sent_at:null,accepted_at:null,expires_at:'2026-12-01T12:00:00Z'},old={...p,id:'v1',version:1,state:'superseded',sent_at:'2026-10-01T12:00:00Z',accepted_at:'2026-10-02T12:00:00Z'};
+ const run=(proposal=p,extra={})=>eventProposalProgress({proposals:[proposal,old],status:'Confirmed',now,...extra});
+ assert.match(run().label,/not emailed/);assert.match(run().detail,/Earlier v.1 was accepted/);
+ const sent={...p,state:'sent',sent_at:'2026-11-01T12:00:00Z'};
+ assert.match(run(sent).label,/Waiting for customer acceptance/,'Booking confirmation does not imply acceptance of a revised proposal');
+ assert.match(run(sent).detail,/updated proposal needs its own acceptance/);
+ assert.match(run({...sent,accepted_at:'2026-11-02T11:00:00Z'}).label,/accepted online/);
+ assert.match(run({...sent,accepted_at:'2026-11-02T11:00:00Z',acceptanceMethod:'manual'}).label,/accepted manually/);
+ assert.match(run({...sent,termsCurrent:false,accepted_at:'2026-11-02T11:00:00Z'}).label,/Updated proposal needed/,'Old acceptance does not cover changed terms');
+ assert.match(run({...sent,state:'changes_requested',accepted_at:'2026-11-02T11:00:00Z'}).label,/requested changes/);
+ assert.match(run({...sent,expires_at:'2026-11-01T12:00:00Z'}).label,/expired/);
+ assert.match(run({...sent,expires_at:'2026-11-01T12:00:00Z',accepted_at:'2026-10-31T12:00:00Z'}).label,/accepted online/,'Accepted records remain accepted after expiration');
+ assert.match(run({...sent,state:'declined'}).label,/declined/);assert.match(run({...sent,state:'superseded'}).label,/No current proposal/);
+ assert.match(run(p,{dirty:true}).label,/Unsaved/);assert.match(run(p,{loaded:false}).label,/unavailable/);
+ assert.match(run(p,{status:'Cancelled',dirty:true}).label,/cancelled/);assert.match(run(p,{status:'Completed'}).label,/completed/);
+ assert.match(run(p,{proposals:[]}).label,/No proposal sent/);
+ const before=JSON.stringify([p,old]);run();assert.equal(JSON.stringify([p,old]),before,'Status presentation never modifies records');
+ console.log('PASS current customer progress: revised draft/sent acceptance, earlier accepted versions, independent confirmed booking, manual/online acceptance, material changes, customer change requests, expiration and closed events.');
+}

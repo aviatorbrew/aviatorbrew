@@ -113,3 +113,18 @@
 .manager-private-events .event-list-scope{font-size:.8rem;color:#c7d9e3;display:flex;align-items:center;flex-wrap:wrap;gap:.6rem}
 
 .manager-private-events .event-plan-list .event-list-date{font-size:.9rem;font-weight:700;color:#fff}
+
+/* Current customer response stays visible; prior versions are read-only history. */
+.manager-private-events .event-proposal-customer-progress,.manager-private-events .event-flow-customer{padding:.5rem .65rem;margin:.4rem 0;border-left:3px solid #efb45f;background:#143448;font:400 .8rem/1.4 Arial,sans-serif;overflow-wrap:anywhere}
+.manager-private-events .event-proposal-customer-progress p,.manager-private-events .event-flow-customer p{margin:.2rem 0 0;color:#d1e0e9}
+.manager-private-events .event-proposal-customer-progress.is-accepted,.manager-private-events .event-flow-customer.is-accepted{border-left-color:#70dc98}
+.manager-private-events .event-proposal-history,.manager-private-events .event-proposal-document-history{border:1px solid #68869a;margin:.5rem 0;background:#102a3b;font:400 .8rem/1.4 Arial,sans-serif}
+.manager-private-events .event-proposal-history>summary,.manager-private-events .event-proposal-history-item>summary,.manager-private-events .event-proposal-document-history>summary{padding:.45rem .6rem;cursor:pointer;color:#f3f7fa;overflow-wrap:anywhere}
+.manager-private-events .event-proposal-history>summary>span,.manager-private-events .event-proposal-history-item>summary>span{margin-left:.65rem;color:#bcd1de;font-size:.75rem}
+.manager-private-events .event-proposal-history>summary:focus-visible,.manager-private-events .event-proposal-history-item>summary:focus-visible,.manager-private-events .event-proposal-document-history>summary:focus-visible{outline:2px solid #efb45f;outline-offset:2px}
+.manager-private-events .event-proposal-history-list{border-top:1px solid #68869a}
+.manager-private-events .event-proposal-history-item+ .event-proposal-history-item{border-top:1px solid #3f5e72}
+.manager-private-events .event-proposal-history-record{padding:0 .6rem .5rem;border-top:1px solid #3f5e72}
+.manager-private-events .event-proposal-history-record p{margin:.35rem 0}
+.manager-private-events .event-proposal-document-history .event-proposal-documents{margin:0;padding:.5rem .6rem}
+@media(max-width:600px){.manager-private-events .event-proposal-history>summary>span{display:block;margin-left:1rem}.manager-private-events .event-proposal-history-item>summary>span{margin-left:.35rem}}
