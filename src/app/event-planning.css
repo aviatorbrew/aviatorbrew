@@ -128,3 +128,25 @@
 .manager-private-events .event-proposal-history-record p{margin:.35rem 0}
 .manager-private-events .event-proposal-document-history .event-proposal-documents{margin:0;padding:.5rem .6rem}
 @media(max-width:600px){.manager-private-events .event-proposal-history>summary>span{display:block;margin-left:1rem}.manager-private-events .event-proposal-history-item>summary>span{margin-left:.35rem}}
+
+/* Compact event sections remain mounted while collapsed, preserving in-progress edits. */
+.manager-private-events .event-plan-editor{border:3px solid #eef5f8;border-left:8px solid var(--event-status-color,#ffd54f)}
+.manager-private-events .event-plan-editor>.event-editor-actions{gap:.5rem;padding:.35rem .25rem .6rem;border-bottom:2px solid #90a9b9}
+.manager-private-events .event-plan-editor>.event-editor-actions h3{flex:1;min-width:0;font:700 1rem/1.35 Arial,sans-serif;overflow-wrap:anywhere}
+.manager-private-events .event-editor-section{margin:.6rem 0;padding:0;border:3px solid #d4e5ef;border-radius:3px;background:#102a3b;min-width:0}
+.manager-private-events .event-editor-section.event-order-flow{border-color:#eac17b}
+.manager-private-events .event-editor-section>summary{display:flex;align-items:center;gap:.55rem;padding:.65rem .7rem;list-style:none;cursor:pointer;color:#fff;font:400 .8rem/1.4 Arial,sans-serif;min-width:0}
+.manager-private-events .event-editor-section>summary::-webkit-details-marker{display:none}
+.manager-private-events .event-section-arrow{flex:none;color:#efb45f;font:700 1.2rem/1 Arial,sans-serif}
+.manager-private-events .event-section-arrow::before{content:"→"}
+.manager-private-events .event-editor-section[open]>summary>.event-section-arrow::before{content:"←"}
+.manager-private-events .event-section-name{flex:none;font-size:.85rem}
+.manager-private-events .event-section-summary{margin-left:auto;color:#c3d8e6;font-size:.75rem;overflow-wrap:anywhere;text-align:right;min-width:0}
+.manager-private-events .event-editor-section[open]>summary{border-bottom:2px solid #6c8ba1;background:#173b51}
+.manager-private-events .event-editor-section>summary:focus-visible{outline:3px solid #efb45f;outline-offset:3px}
+.manager-private-events .event-section-body{padding:.65rem .7rem;min-width:0}
+.manager-private-events .event-section-body>p:first-child{margin-top:0}
+@media(max-width:600px){.manager-private-events .event-editor-section>summary{flex-wrap:wrap;padding:.6rem .5rem}.manager-private-events .event-section-summary{flex-basis:100%;margin-left:1.7rem;text-align:left}.manager-private-events .event-section-body{padding:.5rem}.manager-private-events .event-section-name{font-size:.8rem}}
+
+.manager-private-events .event-order-actions .event-section-body>section>h4{font:700 1rem/1.3 Arial,sans-serif}
+.manager-private-events .event-plan-editor .event-proposal-manager{margin:0;padding:0;border:0;background:transparent}
