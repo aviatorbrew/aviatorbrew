@@ -22,3 +22,17 @@
 .feast-portion-guide{border:1px solid #bdc7b4;background:#f0f3e8;padding:12px 15px;margin:16px 0;font-size:13px}.feast-portion-guide summary{font-weight:700;cursor:pointer}.feast-portion-guide p{margin:10px 0}.feast-portion-guide a{color:#28533b;text-decoration:underline}.feast-package-portions{padding:12px;border-left:3px solid #ab8748;background:#f1eddf;margin:12px 0;font-size:13px}.feast-package-portions p{margin:6px 0}.feast-package-portions ul{padding-left:18px;margin:8px 0}.feast-side-portion{display:block;font-size:11px;line-height:1.45;color:#52634a;margin-top:4px}.feast-turkey-servings{padding-top:8px;border-top:1px solid #c7c5b5}.feast-builder-manager .feast-portion-guide,.feast-builder-manager .feast-package-portions{color:#203b2c}
 
 .feast-turkey-servings dl{margin:10px 0}.feast-turkey-servings dl>div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #d4d0be}.feast-turkey-servings dt{flex:1}.feast-turkey-servings dd{margin:0;font-weight:700;text-align:right;flex:1}.feast-turkey-servings dl>div:last-child{background:#e6ead7;padding:8px}.feast-package-portions .feast-turkey-servings p{font-size:12px}
+
+/* Beer is an explicit optional add-on; prices and availability stay inventory-backed. */
+.feast-beer-addons{margin:24px 0;padding:20px;border:2px solid #54715a;background:#edf2e4;min-width:0}
+.feast-beer-addons h3{margin:0 0 10px;font-size:1.5rem;line-height:1.2}
+.feast-beer-addons>p{font-size:.85rem;line-height:1.5}
+.feast-beer-count{font-weight:700;color:#254b36}
+.feast-beer-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.feast-beer-options .feast-extra-row{padding:14px;border:1px solid #a4b599;background:#fffdf7;flex-wrap:wrap;align-items:flex-start;min-width:0}
+.feast-beer-options .feast-extra-row>label:first-child{flex-basis:100%;min-width:0}
+.feast-beer-options .feast-extra-row b{font-size:1rem;color:#244a35;margin-top:8px}
+.feast-beer-options .feast-extra-row:has(input:checked){border:2px solid #527c46;background:#f8f9ec}
+.feast-beer-options .feast-extra-quantity{width:100%;display:grid;grid-template-columns:auto minmax(4rem,6rem) auto;gap:8px;align-items:center;font-size:.8rem}
+.feast-beer-options .feast-extra-quantity small{justify-self:end;font-weight:700}
+@media(max-width:700px){.feast-beer-addons{padding:14px}.feast-beer-options{grid-template-columns:minmax(0,1fr)}}
