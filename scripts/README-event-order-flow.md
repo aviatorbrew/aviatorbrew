@@ -9,3 +9,5 @@ The flow history uses recorded timestamps only. The latest proposal remains open
 **Print orders & receipts** is separate from actions and includes kitchen sheets, summaries, menu planning sheets, proposal previews/downloads and available deposit receipts. Printing and saving do not send customer emails. Staff must still approve customer email delivery and confirm its recipient.
 
 Validate with `npm run test:event-plans`, the production build, and desktop/mobile manager browser checks using mocked records/providers. Do not issue real customer emails, payments or event mutations for automated testing.
+
+Calendar selections, list Edit buttons and existing-event links expand the saved event directly inside its matching list row. Only one editor is mounted. Selecting the same event again focuses its open editor without reloading unsaved fields. Selected events outside the current search/date filter remain visible while editing, then return to the normal filtered view on close. New, unsaved plans use the new-event editor until saved to the list. Opening a calendar entry only reads the existing event; it does not create a booking.
