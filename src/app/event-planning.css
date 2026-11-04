@@ -151,6 +151,22 @@
 .manager-private-events .event-order-actions .event-section-body>section>h4{font:700 1rem/1.3 Arial,sans-serif}
 .manager-private-events .event-plan-editor .event-proposal-manager{margin:0;padding:0;border:0;background:transparent}
 
-.manager-private-events .event-plan-list>article.is-editing-event{padding:0;border:0;background:transparent;min-width:0}
-.manager-private-events .event-plan-list>article.is-editing-event>.event-plan-editor{margin-top:0}
+.manager-private-events .event-plan-list>article.is-editing-event{border-top-width:3px;border-right-width:3px;border-bottom-width:3px;min-width:0}
+.manager-private-events .event-plan-list>article.is-editing-event>.event-plan-editor{margin-top:.5rem;padding:0;border:0;background:transparent}
 .manager-private-events .event-list-selected-notice{padding:.4rem .6rem;border-left:3px solid #efb45f;font:.75rem/1.4 Arial,sans-serif;color:#d5e5ef}
+
+/* Keep event identity and scheduling visible as its editing sections expand. */
+.manager-private-events .event-plan-list>article{scroll-margin-top:6rem;align-self:start}
+.manager-private-events .event-plan-row-title{flex-wrap:nowrap;align-items:start}
+.manager-private-events .event-plan-row-title>.event-plan-toggle{display:flex;align-items:baseline;gap:.5rem;flex:1;padding-left:0;text-align:left}
+.manager-private-events .event-row-arrow{color:#efb45f;flex:none;font-size:1rem}
+.manager-private-events .event-plan-overview{padding:.2rem 0 .4rem;overflow-wrap:anywhere}
+.manager-private-events .event-plan-overview p{margin:.2rem 0;font:.75rem/1.4 Arial,sans-serif;color:#d5e5ef}
+.manager-private-events .event-plan-overview p:empty{display:none}
+.manager-private-events .event-plan-list>article.is-editing-event>.event-plan-overview{border-bottom:2px solid #90a9b9}
+.manager-private-events .event-submitted-menus{border:2px solid #ffd54f;padding:.55rem .65rem;margin:.65rem 0;background:#173b51;font:.78rem/1.45 Arial,sans-serif}
+.manager-private-events .event-submitted-menus h4{font:700 .9rem/1.3 Arial,sans-serif;color:#fff;margin:0 0 .35rem}
+.manager-private-events .event-submitted-menus p{margin:.3rem 0}
+.manager-private-events .event-submitted-menu{padding:.4rem 0;border-top:1px solid #8ba2af}
+.manager-private-events .event-submitted-menu summary{cursor:pointer;color:#fff;font-weight:700}
+.manager-private-events .event-submitted-menu pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;color:#e3edf2}

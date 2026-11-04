@@ -35,7 +35,8 @@
     "test:beer-release-alert": "node scripts/test-beer-release-alert.mjs",
     "test:managed-events": "node scripts/test-managed-events.mjs",
     "test:feast-details": "node scripts/test-feast-details.mjs",
-    "test:feast": "node scripts/test-feast.mjs"
+    "test:feast": "node scripts/test-feast.mjs",
+    "test:event-editor-ui": "node scripts/test-event-editor-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",
