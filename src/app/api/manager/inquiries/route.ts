@@ -22,7 +22,7 @@ function inquiryKind(request: NextRequest) {
   return allowedKinds.has(kind) ? kind : "";
 }
 async function unreviewedEventInquiries() {
-  return withDatabase(async client=>Number((await client.query("SELECT count(*)::int AS count FROM website.form_inquiries i WHERE i.kind='event' AND i.reviewed_at IS NULL AND NOT EXISTS (SELECT 1 FROM website.private_event_plans e WHERE e.source_inquiry_id=i.id)")).rows[0].count));
+  return withDatabase(async client=>Number((await client.query("SELECT count(*)::int AS count FROM website.form_inquiries i WHERE i.kind='event' AND i.reviewed_at IS NULL AND NOT EXISTS (SELECT 1 FROM website.private_event_plans e WHERE e.deleted_at IS NULL AND (e.source_inquiry_id=i.id OR e.id=i.payload->>'menuImportedPlanId'))")).rows[0].count));
 }
 
 export async function GET(request: NextRequest) {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     SELECT id, kind, email, name, payload, source, created_at, reviewed_at, count(*) OVER()::int AS total_count
     FROM website.form_inquiries
     WHERE kind = $1
-      AND ($1 <> 'event' OR $7::text <> '' OR NOT EXISTS (SELECT 1 FROM website.private_event_plans e WHERE e.source_inquiry_id=website.form_inquiries.id AND e.deleted_at IS NULL AND e.status IN ('Confirmed','Completed','Cancelled')))
+      AND ($1 <> 'event' OR $7::text <> '' OR NOT EXISTS (SELECT 1 FROM website.private_event_plans e WHERE (e.source_inquiry_id=website.form_inquiries.id OR e.id=website.form_inquiries.payload->>'menuImportedPlanId') AND e.deleted_at IS NULL AND e.status IN ('Confirmed','Completed','Cancelled')))
       AND ($7::text = '' OR id::text = $7)
       AND ($2::text = '' OR name ILIKE $5 OR email ILIKE $5 OR payload->>'phone' ILIKE $5 OR payload->>'orderSummary' ILIKE $5 OR payload->>'message' ILIKE $5 OR payload->>'eventType' ILIKE $5 OR payload->>'location' ILIKE $5)
       AND ($3::date IS NULL OR created_at >= $3::date OR NULLIF(payload->>'eventDate', '') >= $3::text OR NULLIF(payload->>'pickupDate', '') >= $3::text)

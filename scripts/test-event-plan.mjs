@@ -204,3 +204,17 @@ console.log('PASS optional manager salad: omitted/blank included salads, blank a
  const before=JSON.stringify([p,old]);run();assert.equal(JSON.stringify([p,old]),before,'Status presentation never modifies records');
  console.log('PASS current customer progress: revised draft/sent acceptance, earlier accepted versions, independent confirmed booking, manual/online acceptance, material changes, customer change requests, expiration and closed events.');
 }
+
+{
+ const menuModule=moduleUrl((await readFile(new URL('../src/lib/event-inquiry-menu.ts',import.meta.url),'utf8')).replaceAll('@/lib/event-plan',planUrl));
+ const {inquiryLastName,inquiryLastNameMatches,mergeInquiryMenuDetails}=await import(menuModule);
+ assert.equal(inquiryLastName('Deb Genzabella'),'genzabella');assert.equal(inquiryLastName("Pat O’Neill Jr."),'oneill');assert.equal(inquiryLastName('Anne García'),'garcia');
+ assert.ok(inquiryLastNameMatches('Deb Genzabella',{title:'Genzabella rehearsal',contactName:''}));assert.ok(!inquiryLastNameMatches('Deb Genzabella',{title:'Unrelated rehearsal',contactName:'Deb Smith'}));
+ const current={...emptyEventPlan(),title:'Original confirmed booking',status:'Confirmed',date:'2026-11-19',startTime:'17:00',endTime:'21:00',guestCount:40,contactName:'Existing host',contactEmail:'existing@example.invalid',notes:'Original setup notes',internalNotes:'Keep private',paidCents:35000,managerDiscount:{amountCents:1000,reason:'Agreed credit'},items:[{id:'room-fixture',category:'Room',name:'Agreed room charge',quantity:1,unitPriceCents:10000,taxable:false,notes:''}]};
+ const incoming={...emptyEventPlan(),title:'Different inquiry title',date:'2026-11-18',startTime:'18:00',endTime:'22:00',guestCount:50,foodTime:'17:45',contactName:'New host',contactEmail:'new@example.invalid',notes:'Customer food request',flightPlan:{...emptyFlightPlan(),packageId:'feast',appetizers:['Hush Puppies','Tater Tots','Brewer Fries'],entrees:['Aviator Pulled Pork BBQ','Aviator Chicken Tenders'],sides:['Mac & Cheese','Potato Salad'],salads:['Caesar Salad'],dessert:true}};
+ const catalog=JSON.parse(JSON.stringify((await import(planUrl)).defaultCateringCatalog)),merged=mergeInquiryMenuDetails(current,incoming,catalog);
+ for(const key of ['title','status','date','startTime','endTime','contactName','contactEmail','items','paidCents','managerDiscount','internalNotes','taxRateBps','pfbTaxRateBps'])assert.deepEqual(merged[key],current[key],'Keep confirmed '+key);
+ assert.equal(merged.guestCount,50);assert.equal(merged.foodTime,'17:45');assert.deepEqual(merged.flightPlan.appetizers,incoming.flightPlan.appetizers);assert.ok(merged.notes.includes(current.notes)&&merged.notes.includes(incoming.notes));assert.deepEqual(mergeInquiryMenuDetails(merged,incoming,catalog),merged,'Repeated menu import is stable');
+ assert.throws(()=>mergeInquiryMenuDetails({...current,status:'Draft'},incoming,catalog),/confirmed/);assert.throws(()=>mergeInquiryMenuDetails(current,{...incoming,flightPlan:emptyFlightPlan()},catalog),/buffet/);
+ console.log('PASS inquiry menu merge: exact normalized last-name suggestions, menu/guest/food-time replacement, stable repeated import, confirmed booking/contact/payment/discount/custom-charge preservation and invalid-input guards.');
+}

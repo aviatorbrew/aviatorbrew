@@ -1,0 +1,53 @@
+import {fileURLToPath} from 'node:url';
+const {chromium}=await import(process.env.AVIATOR_PLAYWRIGHT_MODULE||'playwright');
+import {spawn} from 'node:child_process';import {createServer} from 'node:net';import {readFileSync,writeFileSync} from 'node:fs';import {createRequire} from 'node:module';import assert from 'node:assert/strict';
+const root=fileURLToPath(new URL('../',import.meta.url)),require=createRequire(root+'/package.json'),ts=require('typescript'),mod={exports:{}};new Function('module','exports',ts.transpileModule(readFileSync(root+'/src/lib/event-plan.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(mod,mod.exports);const m=mod.exports,catalog=structuredClone(m.defaultCateringCatalog),stamp=new Date().toISOString();let app,browser,page,base=process.env.EVENT_EDITOR_UI_ORIGIN;
+try{if(!base){const probe=createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));base='http://127.0.0.1:'+port;app=spawn('node',['.next/standalone/server.js'],{cwd:root,env:{...process.env,HOSTNAME:'127.0.0.1',PORT:String(port),DATABASE_URL:'',MAIL_MODE:'record',STRIPE_SECRET_KEY:'',STRIPE_WEBHOOK_SECRET:''},stdio:'ignore'});for(let i=0;i<100;i++){try{if((await fetch(base+'/manager')).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}}
+browser=await chromium.launch();page=await browser.newPage();const errors=[];page.setDefaultTimeout(18000);page.on('pageerror',e=>errors.push(e.message));page.on('console',e=>{if(e.type()==='error'&&/same key|unique.*key|hydrat|NotFoundError/i.test(e.text()))errors.push(e.text());});
+await page.clock.setFixedTime(new Date('2026-11-03T15:00:00Z'));
+
+const incoming={...m.emptyEventPlan(),title:'Rehearsal dinner',date:'2026-11-19',guestCount:50,foodTime:'17:45',contactName:'Deb Fixture',contactEmail:'deb-fixture@example.invalid',flightPlan:{...m.emptyFlightPlan(),packageId:'feast',appetizers:['Hush Puppies','Tater Tots','Brewer Fries'],entrees:['Aviator Pulled Pork BBQ','Aviator Chicken Tenders'],sides:['Mac & Cheese','Potato Salad'],salads:['Caesar Salad']}};
+const inquiry={id:'160',kind:'event',createdAt:stamp,source:'Browser fixture',name:'Deb Fixture',email:incoming.contactEmail,phone:'',guestCount:'50',eventDate:incoming.date,eventTime:'17:30',eventType:'Rehearsal dinner',location:'Ready Room',orderSummary:'Requested fixture buffet with Hush Puppies',message:'Fixture food notes',payload:{cateringPlan:incoming},reviewed:false,bookingStage:'Inquiry Received'};
+const second={...structuredClone(inquiry),id:'161',name:'Other Guest',email:'other-fixture@example.invalid',payload:{cateringPlan:{...structuredClone(incoming),contactName:'Other Guest',contactEmail:'other-fixture@example.invalid'}}};
+const target={id:'gcal-'+('b'.repeat(64)),version:1,createdAt:stamp,updatedAt:stamp,sourceInquiryId:null,details:{...m.emptyEventPlan(),title:'Fixture rehearsal booking',date:'2026-11-19',startTime:'17:00',endTime:'21:00',status:'Confirmed'}};
+const manual={...structuredClone(target),id:'11111111-2222-4333-8444-555555555555',details:{...structuredClone(target.details),title:'Other confirmed booking',contactName:'Manual Host',date:'2026-11-20'}};
+let plans,merged,posts,mergeBody;
+function reset(){plans=structuredClone([target,manual]);merged=false;posts=[];mergeBody=null;}
+await page.route('**/api/manager/**',async route=>{
+ const r=route.request(),u=new URL(r.url()),path=u.pathname;let b={};
+ if(r.method()!=='GET')posts.push(path);
+ if(path==='/api/manager/session')b={authenticated:true};
+ else if(path==='/api/manager/private-events')b={catering:catalog,bookingFeeCents:35000,policyText:'Fixture policies',policyVersion:'fixture-v1'};
+ else if(path==='/api/manager/inquiries'){
+  const found=u.searchParams.get('id')?[inquiry,second].filter(i=>i.id===u.searchParams.get('id')):merged?[second]:[inquiry,second];
+  b={inquiries:found,total:found.length,unreviewedCount:found.length};
+ }
+ else if(path.endsWith('/merge')){
+  if(r.method()==='POST'){
+   mergeBody=r.postDataJSON();assert.deepEqual(Object.keys(mergeBody).sort(),['confirmed','fingerprint','targetId','version']);assert.equal(mergeBody.confirmed,true);
+   const p=plans.find(p=>p.id===mergeBody.targetId);assert.equal(mergeBody.version,p.version);const details={...p.details,flightPlan:structuredClone(incoming.flightPlan),guestCount:50,foodTime:'17:45'};p.details=details;p.version++;p.sourceInquiryId=inquiry.id;merged=true;b={plan:p,message:'Merged without customer email.'};
+  }else{
+   const q=(u.searchParams.get('q')||'').toLowerCase();const candidates=plans.filter(p=>!q||(p.details.title+' '+p.details.contactName).toLowerCase().includes(q)).map(p=>({id:p.id,version:p.version,details:p.details,lastNameMatch:p.id===target.id}));b={candidates,total:candidates.length,fingerprint:'fixture-inquiry-fingerprint',catering:catalog};
+  }
+ }
+ else if(path==='/api/manager/event-plans')b={plans,catering:catalog,defaultRoomFeeCents:35000};
+ else if(path.endsWith('/calendar-match'))b={matches:[],linked:null};
+ else if(path.endsWith('/proposals')){assert.equal(r.method(),'GET');b={proposals:[],deposits:[],attempts:[],deliveries:[],changeRequests:[],depositLinks:[],review:{context:'fixture',proposalId:null,emailApproved:false}};}
+ else if(path.startsWith('/api/manager/event-plans/')){assert.equal(r.method(),'GET');b={plan:plans.find(p=>p.id===path.split('/')[4]),updates:[]};}
+ else assert.equal(r.method(),'GET','No emails, payments or other mutations in browser checks');
+ await route.fulfill({json:b});
+});
+for(const width of [1440,390]){
+ reset();await page.setViewportSize({width,height:1000});await page.goto(base+'/manager/private-events');
+ const first=page.locator('[data-inquiry-id="160"]'),other=page.locator('[data-inquiry-id="161"]');await first.waitFor();await other.waitFor();
+ assert.equal(await page.locator('.event-inquiry-archive').evaluate(e=>e.tagName),'SECTION');assert.equal(await first.getByRole('region',{name:'Website inquiry details',exact:true}).isVisible(),true);assert.equal(await other.getByRole('region',{name:'Website inquiry details',exact:true}).isVisible(),true);assert.equal(await first.getByRole('button',{name:'Review details',exact:true}).count(),0);assert.equal(await first.getByRole('button',{name:'Close',exact:true}).count(),0);
+ await first.getByRole('button',{name:'Merge into confirmed event',exact:true}).click();let dialog=page.getByRole('dialog',{name:'Merge menu into a confirmed event',exact:true});await dialog.waitFor();const choose=dialog.getByLabel('Confirmed event',{exact:true}),approve=dialog.getByRole('checkbox'),submit=dialog.getByRole('button',{name:'Merge menu into this confirmed event',exact:true});await page.waitForFunction(id=>document.querySelector('.inquiry-merge-dialog select')?.value===id,target.id);
+ await dialog.getByText('Last name matches this inquiry.',{exact:true}).waitFor();assert.equal(await choose.locator('option').count(),3);assert.equal(await submit.isDisabled(),true);assert.deepEqual(posts,[]);await approve.check();assert.equal(await submit.isEnabled(),true);await choose.selectOption(manual.id);assert.equal(await approve.isChecked(),false);assert.equal(await submit.isDisabled(),true);await dialog.getByText('Please verify this is the correct customer and event.',{exact:true}).waitFor();await dialog.getByRole('button',{name:'Cancel — keep events unchanged',exact:true}).click();assert.deepEqual(posts,[]);
+ // Manual search and selection work even when no last name matches.
+ await first.getByRole('button',{name:'Merge into confirmed event',exact:true}).click();dialog=page.getByRole('dialog',{name:'Merge menu into a confirmed event',exact:true});await dialog.getByLabel('Search confirmed events',{exact:true}).fill('Other confirmed');await page.waitForFunction(()=>document.querySelectorAll('.inquiry-merge-dialog select option').length===2);await dialog.getByLabel('Confirmed event',{exact:true}).selectOption(manual.id);await dialog.getByRole('checkbox').check();await dialog.screenshot({path:'/tmp/aviator-inquiry-merge-dialog-'+width+'.png'});assert.equal(await dialog.evaluate(e=>e.scrollWidth>e.clientWidth),false);await dialog.getByRole('button',{name:'Merge menu into this confirmed event',exact:true}).click();await dialog.waitFor({state:'detached'});await first.waitFor({state:'detached'});assert.equal(mergeBody.targetId,manual.id);assert.deepEqual(posts,['/api/manager/inquiries/160/merge']);
+ const edited=page.locator('[data-event-id="'+manual.id+'"]');await edited.locator('.event-plan-editor').waitFor();assert.ok((await edited.locator('.event-plan-overview').innerText()).includes('50 guests'));assert.equal(plans.find(p=>p.id===manual.id).details.startTime,'17:00');assert.equal(plans.find(p=>p.id===manual.id).details.endTime,'21:00');assert.equal(await other.getByRole('region',{name:'Website inquiry details',exact:true}).isVisible(),true);
+ // Unsaved local changes to the chosen target must not be overwritten by a merge.
+ await edited.locator('details.event-menu-section>summary').click();await edited.getByLabel('Event name',{exact:true}).fill('Unsaved manager edits');await other.getByRole('button',{name:'Merge into confirmed event',exact:true}).click();dialog=page.getByRole('dialog',{name:'Merge menu into a confirmed event',exact:true});await dialog.getByLabel('Confirmed event',{exact:true}).selectOption(manual.id);await dialog.getByRole('checkbox').check();await dialog.getByRole('button',{name:'Merge menu into this confirmed event',exact:true}).click();await dialog.getByRole('alert').filter({hasText:'Save or close the unsaved edits'}).waitFor();assert.equal(posts.length,1);await page.keyboard.press('Escape');await dialog.waitFor({state:'detached'});assert.equal(await edited.getByLabel('Event name',{exact:true}).inputValue(),'Unsaved manager edits');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+}
+assert.deepEqual(errors,[]);console.log('PASS inquiry merge UI: all website inquiries expanded without extra clicks, automatic last-name suggestions, manual/search selection, review before merge, selection changes reset approval, cancel/Escape preserve records, one confirmed merge request, updated event and list routing, preserved booking hours, unsaved-target guard, keyboard dialog and desktop/mobile layout. All APIs intercepted; no live emails, payments or records.');
+}finally{if(page){writeFileSync('/tmp/inquiry-merge-ui-debug.txt',await page.locator('body').innerText().catch(()=>''));await page.screenshot({path:'/tmp/inquiry-merge-ui-debug.png',fullPage:true}).catch(()=>{});}await browser?.close();app?.kill('SIGTERM');}

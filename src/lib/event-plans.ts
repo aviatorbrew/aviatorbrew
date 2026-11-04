@@ -18,7 +18,17 @@ const eventPlanSelect = `SELECT e.*, CASE WHEN p.id IS NULL THEN NULL ELSE jsonb
  LEFT JOIN LATERAL (SELECT * FROM website.private_event_proposals WHERE plan_id=e.id ORDER BY version DESC LIMIT 1) p ON true
  LEFT JOIN LATERAL (SELECT status FROM website.private_event_checkout_attempts WHERE proposal_id=p.id ORDER BY created_at DESC LIMIT 1) a ON true`;
 export async function inquiryBookingStages(ids:string[]) {
- return withDatabase(async client=>(await client.query(eventPlanSelect+" WHERE e.source_inquiry_id=ANY($1::bigint[])",[ids])).rows.map(row=>{const d=row.data as EventPlanDetails;return {inquiryId:String(row.source_inquiry_id),planId:String(row.id),contactEmail:d.contactEmail,contactName:d.contactName,title:d.title,schedule:{date:d.date,startTime:d.startTime,endTime:d.endTime},stage:record(row).bookingStage};}));
+ return withDatabase(async client=>{
+   const inquiries=(await client.query("SELECT id,payload->>'menuImportedPlanId' AS merged_id FROM website.form_inquiries WHERE id=ANY($1::bigint[])",[ids])).rows;
+   const mergedIds=inquiries.map(i=>i.merged_id).filter(Boolean);
+   const rows=(await client.query(eventPlanSelect+" WHERE e.deleted_at IS NULL AND (e.source_inquiry_id=ANY($1::bigint[]) OR e.id=ANY($2::text[]))",[ids,mergedIds])).rows;
+   return ids.flatMap(id=>{
+     const mergedId=inquiries.find(i=>String(i.id)===id)?.merged_id;
+     const row=rows.find(r=>r.id===mergedId)||rows.find(r=>String(r.source_inquiry_id)===id);
+     if(!row)return [];
+     const d=row.data as EventPlanDetails;return [{inquiryId:id,planId:String(row.id),contactEmail:d.contactEmail,contactName:d.contactName,title:d.title,schedule:{date:d.date,startTime:d.startTime,endTime:d.endTime},stage:record(row).bookingStage}];
+   });
+ });
 }
 export async function listEventPlans(month: string) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new EventPlanError("Choose a calendar month.");

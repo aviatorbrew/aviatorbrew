@@ -170,3 +170,23 @@
 .manager-private-events .event-submitted-menu{padding:.4rem 0;border-top:1px solid #8ba2af}
 .manager-private-events .event-submitted-menu summary{cursor:pointer;color:#fff;font-weight:700}
 .manager-private-events .event-submitted-menu pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;color:#e3edf2}
+
+.manager-private-events .event-inquiry-archive>h2{color:#fff;font:700 1.5rem/1.3 Arial,sans-serif;margin:0 0 .65rem}
+.inquiry-merge-dialog{position:fixed;inset:0;margin:auto;width:min(58rem,calc(100vw - 2rem));max-height:calc(100dvh - 2rem);overflow:auto;padding:1.2rem;border:3px solid #efb45f;border-radius:4px;background:#0b2337;color:#edf4f7;font:14px/1.45 Arial,sans-serif}
+.inquiry-merge-dialog::backdrop{background:rgba(0,10,20,.85)}
+.inquiry-merge-dialog h2{font:700 1.3rem/1.3 Arial,sans-serif;color:#fff;margin:0 0 .5rem}
+.inquiry-merge-dialog h3{font:700 1.05rem/1.3 Arial,sans-serif;color:#fff}
+.inquiry-merge-dialog h4{font:700 .95rem/1.3 Arial,sans-serif;color:#efb45f;margin:.4rem 0}
+.inquiry-merge-dialog label{display:grid;gap:.35rem;margin:.7rem 0;font-weight:700}
+.inquiry-merge-dialog input:not([type=checkbox]),.inquiry-merge-dialog select{width:100%;min-width:0;padding:.6rem;border:1px solid #94afbf;background:#071827;color:#fff;font:inherit}
+.inquiry-merge-dialog .event-check{display:flex;align-items:start;gap:.5rem}
+.inquiry-merge-dialog .event-check input{flex:none;margin-top:.25rem}
+.inquiry-merge-dialog button{padding:.6rem .8rem;border:1px solid #b4c8d3;background:#173b51;color:#fff;cursor:pointer;font:inherit}
+.inquiry-merge-dialog button:disabled{opacity:.5;cursor:default}
+.inquiry-merge-dialog button:focus-visible,.inquiry-merge-dialog select:focus-visible,.inquiry-merge-dialog input:focus-visible{outline:3px solid #efb45f;outline-offset:2px}
+.inquiry-merge-dialog [role=alert]{border-left:3px solid #ff9883;padding:.5rem;color:#ffd5ca}
+.inquiry-merge-columns{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.inquiry-merge-columns>div{min-width:0;padding:.6rem;border:1px solid #7996a6;overflow-wrap:anywhere}
+.inquiry-merge-columns ul{padding-left:1rem}.inquiry-merge-columns li{margin:.4rem 0}
+.inquiry-merge-match{color:#a7edbf}
+@media(max-width:650px){.inquiry-merge-dialog{padding:.8rem}.inquiry-merge-columns{grid-template-columns:1fr}}
