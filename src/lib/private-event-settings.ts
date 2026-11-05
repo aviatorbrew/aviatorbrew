@@ -1,3 +1,4 @@
+import {defaultEventProductionSettings,parseEventProductionSettings,type EventProductionSettings} from "@/lib/event-production";
 import { defaultCateringCatalog, type CateringCatalog } from "@/lib/event-plan";
 import { parseCateringCatalog } from "@/lib/catering-catalog";
 import { promises as fs } from "node:fs";
@@ -15,8 +16,8 @@ export const DEFAULT_PRIVATE_EVENT_INQUIRY_COPY = [
 ];
 const SETTINGS_KEY = "private_event_settings";
 
-type PrivateEventSettingsInput = { catering?: unknown; policyText?: unknown; policyVersion?: unknown; bookingFeeCents?: number; aviatorWayCopy?: unknown; aviatorWayCopyText?: unknown; inquiryCopy?: unknown; inquiryCopyText?: unknown };
-export type PrivateEventSettings = { catering: CateringCatalog; policyText: string; policyVersion: string; bookingFeeCents: number; aviatorWayCopy: string[]; inquiryCopy: string[] };
+type PrivateEventSettingsInput = { production?: unknown; catering?: unknown; policyText?: unknown; policyVersion?: unknown; bookingFeeCents?: number; aviatorWayCopy?: unknown; aviatorWayCopyText?: unknown; inquiryCopy?: unknown; inquiryCopyText?: unknown };
+export type PrivateEventSettings = { production:EventProductionSettings; catering: CateringCatalog; policyText: string; policyVersion: string; bookingFeeCents: number; aviatorWayCopy: string[]; inquiryCopy: string[] };
 
 function runtimeNumber(name: string) {
   const raw = process.env[name];
@@ -65,6 +66,7 @@ function configuredBookingFeeCents() {
 
 function settingsWithDefaults(value?: Partial<PrivateEventSettings>): PrivateEventSettings {
   return {
+    production: value?.production?parseEventProductionSettings(value.production):structuredClone(defaultEventProductionSettings),
     catering: value?.catering ? parseCateringCatalog(value.catering) : structuredClone(defaultCateringCatalog),
     policyText: value?.policyText || "", policyVersion: value?.policyVersion || "",
     bookingFeeCents: value?.bookingFeeCents === undefined ? configuredBookingFeeCents() : validPrivateEventBookingFeeCents(value.bookingFeeCents),
@@ -129,6 +131,7 @@ export async function getPrivateEventSettings(): Promise<PrivateEventSettings> {
 
 export async function setPrivateEventSettings(input: PrivateEventSettingsInput) {
   const settings = await getPrivateEventSettings();
+  if (input.production !== undefined) settings.production=parseEventProductionSettings(input.production);
   if (input.catering !== undefined) settings.catering = parseCateringCatalog(input.catering);
   if (input.policyText !== undefined || input.policyVersion !== undefined) {
     const text = input.policyText ?? settings.policyText, version = input.policyVersion ?? settings.policyVersion;

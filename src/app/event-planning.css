@@ -190,3 +190,5 @@
 .inquiry-merge-columns ul{padding-left:1rem}.inquiry-merge-columns li{margin:.4rem 0}
 .inquiry-merge-match{color:#a7edbf}
 @media(max-width:650px){.inquiry-merge-dialog{padding:.8rem}.inquiry-merge-columns{grid-template-columns:1fr}}
+.manager-private-events .event-top-actions{margin:.4rem 0 .55rem;padding:.4rem 0;border-top:1px solid #647f90;border-bottom:1px solid #647f90;align-items:center}
+.manager-private-events .event-top-actions .button{font:inherit;padding:.35rem .5rem;letter-spacing:normal}

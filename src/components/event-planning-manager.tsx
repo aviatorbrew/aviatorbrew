@@ -276,18 +276,16 @@ export function EventPlanningManager() {
             <p>{[details.contactName,details.contactEmail,details.phone].filter(Boolean).join(" · ")}</p>
             <p>{details.location} · {money(eventTotals(details,catalog).total)}{active&&dirty?" · Unsaved changes":""}</p>
           </div>
-          {active?eventEditor:<>
-            <CalendarSourceNotice plan={plan}/>
-            <div className="event-row-actions">
-              <button type="button" onClick={()=>openPlan(plan)} disabled={busy}>Edit plan</button>
-              <button type="button" className="event-print-button" onClick={()=>print(plan)} disabled={busy}>Order Summary / Print</button>
-              <button type="button" onClick={()=>print(plan,true)} disabled={busy}>Menu Planning Sheet / PDF</button>
-              <KitchenSheetLink plan={plan} disabled={busy}/>
-              <button type="button" onClick={()=>compose(plan)} disabled={busy}>Write guest update</button>
-              <button type="button" className="event-cancel-button" disabled={busy||plan.details.status==="Cancelled"} onClick={e=>cancelEvent(plan,e.currentTarget)}>{plan.details.status==="Cancelled"?"Cancelled":"Cancel Event"}</button>
-              <button type="button" className="event-cancel-button" disabled={busy} onClick={e=>deleteEvent(plan,e.currentTarget)}>Delete Event</button>
-            </div>
-          </>}
+          <div className="event-row-actions event-top-actions" role="group" aria-label="Event shortcuts">
+            <button type="button" disabled={busy} onClick={async()=>{await openPlan(plan);window.setTimeout(()=>{const field=document.getElementById('event-editor-'+plan.id)?.querySelector<HTMLInputElement>('input');if(field)revealEventEditorField(field);},80);}}>Edit plan</button>
+            <button type="button" className="event-print-button" onClick={()=>print(plan)} disabled={busy}>Order Summary / Print</button>
+            <button type="button" onClick={()=>print(plan,true)} disabled={busy}>Menu Planning Sheet / PDF</button>
+            <KitchenSheetLink plan={plan} disabled={busy||(active&&dirty)}/>
+            <button type="button" onClick={()=>compose(plan)} disabled={busy}>Write guest update</button>
+            <button type="button" className="event-cancel-button" disabled={busy||plan.details.status==="Cancelled"||(active&&dirty)} title={active&&dirty?"Save or discard changes before cancelling.":undefined} onClick={e=>cancelEvent(plan,e.currentTarget)}>{plan.details.status==="Cancelled"?"Cancelled":"Cancel Event"}</button>
+            <button type="button" className="event-cancel-button" disabled={busy||(active&&dirty)} title={active&&dirty?"Save or discard changes before deleting.":undefined} onClick={e=>deleteEvent(plan,e.currentTarget)}>Delete Event</button>
+          </div>
+          {active?eventEditor:<CalendarSourceNotice plan={plan}/>}
         </article>
       </Fragment>;
     })}{!listLoading&&!visible.length?<p>{query.trim()?"No events match your search.":"No upcoming event plans. Add an event or search for past events."}</p>:null}</div>
