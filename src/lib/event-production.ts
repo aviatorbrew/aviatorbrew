@@ -2,9 +2,9 @@ import {emptyFlightPlan,type CateringCatalog,type EventPlanDetails} from '@/lib/
 
 export const eventPanProfiles={full:{model:'S-22409',label:'full-size pan',dimensions:'21 × 13 × 3 in',capacityFlOz:343,url:'https://www.uline.com/Product/Detail/S-22409/Take-Out-Containers/Aluminum-Steam-Table-Pans-Full-Size'},half:{model:'S-22408',label:'half-size pan',dimensions:'13 × 10 × 3 in',capacityFlOz:128,url:'https://www.uline.com/Product/Detail/S-22408/Take-Out-Containers/Aluminum-Steam-Table-Pans-1-2-Size'}} as const;
 export type ProductionPanSize='full'|'half'|'chef-choice'|'pizza';
-export type EventProductionSettings={estimatedFullPanLb?:number;estimatedHalfPanLb?:number;estimatedSaladPanLb?:number;halfTrayFinishedLb?:Record<string,number>;itemPanSize?:Record<string,'full'|'half'>;entreeOz:number;appetizerOz:number;sideOz:number;sideWithSaladOz:number;saladOz:number;reservePercent:number;planningBatchLb:number;regularPizzaOz:number|null;glutenFreePizzaOz:number|null;trayFinishedLb:Record<string,number>};
+export type EventProductionSettings={pizzaDiameterInches?:number;pizzaSlicesPerPie?:number;pizzaSlicesPerGuest?:number;estimatedFullPanLb?:number;estimatedHalfPanLb?:number;estimatedSaladPanLb?:number;halfTrayFinishedLb?:Record<string,number>;itemPanSize?:Record<string,'full'|'half'>;entreeOz:number;appetizerOz:number;sideOz:number;sideWithSaladOz:number;saladOz:number;reservePercent:number;planningBatchLb:number;regularPizzaOz:number|null;glutenFreePizzaOz:number|null;trayFinishedLb:Record<string,number>};
 // Suggested combined buffet allowances, not measured recipe yields or pricing rules.
-export const defaultEventProductionSettings:EventProductionSettings={entreeOz:8,appetizerOz:3,sideOz:8,sideWithSaladOz:6,saladOz:2,reservePercent:5,planningBatchLb:5,regularPizzaOz:null,glutenFreePizzaOz:null,trayFinishedLb:{},halfTrayFinishedLb:{},itemPanSize:{},estimatedFullPanLb:10,estimatedHalfPanLb:5,estimatedSaladPanLb:5};
+export const defaultEventProductionSettings:EventProductionSettings={entreeOz:8,appetizerOz:3,sideOz:8,sideWithSaladOz:6,saladOz:2,reservePercent:5,planningBatchLb:5,regularPizzaOz:null,glutenFreePizzaOz:null,trayFinishedLb:{},halfTrayFinishedLb:{},itemPanSize:{},estimatedFullPanLb:10,estimatedHalfPanLb:5,estimatedSaladPanLb:5,pizzaDiameterInches:13,pizzaSlicesPerPie:8,pizzaSlicesPerGuest:2};
 export function parseEventProductionSettings(raw:unknown):EventProductionSettings{
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Provide kitchen production settings.');
  const s={...structuredClone(defaultEventProductionSettings),...raw} as EventProductionSettings;
@@ -17,6 +17,7 @@ export function parseEventProductionSettings(raw:unknown):EventProductionSetting
  if(!s.halfTrayFinishedLb||typeof s.halfTrayFinishedLb!=='object'||Array.isArray(s.halfTrayFinishedLb)||Object.keys(s.halfTrayFinishedLb).length>500)throw new Error('Check half-pan food weights.');
  for(const [name,lb] of Object.entries(s.halfTrayFinishedLb))if(!name.trim()||name.length>200||/[\r\n<>]/.test(name)||!Number.isFinite(lb)||lb<=0||lb>100)throw new Error('Check measured half-pan weights.');
  if(!s.itemPanSize||typeof s.itemPanSize!=='object'||Array.isArray(s.itemPanSize)||Object.keys(s.itemPanSize).length>500||Object.entries(s.itemPanSize).some(([name,size])=>!name.trim()||name.length>200||/[\r\n<>]/.test(name)||!['full','half'].includes(size)))throw new Error('Check food pan-size overrides.');
+ if(!Number.isFinite(s.pizzaDiameterInches)||s.pizzaDiameterInches!<8||s.pizzaDiameterInches!>36||!Number.isInteger(s.pizzaSlicesPerPie)||s.pizzaSlicesPerPie!<4||s.pizzaSlicesPerPie!>16||!Number.isFinite(s.pizzaSlicesPerGuest)||s.pizzaSlicesPerGuest!<=0||s.pizzaSlicesPerGuest!>8)throw new Error('Check pizza diameter, slices per pizza and pizza portion size.');
  return s;
 }
 export function productionPanFor(name:string,category:string,c:CateringCatalog,s:EventProductionSettings){
@@ -42,7 +43,8 @@ export function productionBatchGuide(row:ProductionRow){
  return parts.join(' + ')+(row.measuredTray?'':' · planning weight; pan yield unverified');
 }
 export function eventProductionPlan(d:EventPlanDetails,c:CateringCatalog,s:EventProductionSettings=defaultEventProductionSettings){
- let pizzaRoundingOz=0;
+ let pizzaRoundingOz=0,pizzaCountTotal:number|null=null,pizzaServingGuests=0;
+ const pizzaDiameterInches=s.pizzaDiameterInches||13,pizzaSlicesPerPie=s.pizzaSlicesPerPie||8,pizzaSlicesPerGuest=s.pizzaSlicesPerGuest||2;
  const f={...emptyFlightPlan(),...d.flightPlan},warnings:string[]=[],groups:ProductionGroup[]=[],pizzaName='Aviator Pizzeria Pizza Bar';
  const buffet=Boolean(f.packageId),guests=d.guestCount,reserve=1+s.reservePercent/100;
  const row=(name:string,selections:number,ounces:number,category=''):ProductionRow=>({name,selections,ounces,...productionPanFor(name,category,c,s)});
@@ -67,21 +69,27 @@ export function eventProductionPlan(d:EventPlanDetails,c:CateringCatalog,s:Event
      else warnings.push('Gluten-free pizzas are requested. Their finished weight is unverified; deduct them from the pizza allocation after weighing. Do not add them on top of the regular pizza plan.');
    }
    const unresolvedGf=Boolean(f.glutenFreeCount&&!s.glutenFreePizzaOz);
-   const regularCount=s.regularPizzaOz&&!unresolvedGf?Math.ceil(Math.max(0,remaining-1e-9)/s.regularPizzaOz):null;
+   const entreeSelections=[...f.entrees,...f.extraEntrees,...(f.pizzaExtra?[pizzaName]:[])].filter(Boolean).length;
+   pizzaServingGuests=guests*reserve*pizza.selections/Math.max(1,entreeSelections);
+   const servingCount=Math.ceil(Math.max(0,pizzaServingGuests*pizzaSlicesPerGuest-f.glutenFreeCount*pizzaSlicesPerPie-1e-9)/pizzaSlicesPerPie);
+   const weightCount=s.regularPizzaOz&&!unresolvedGf?Math.ceil(Math.max(0,remaining-1e-9)/s.regularPizzaOz):0;
+   const regularCount=Math.max(servingCount,weightCount);
+   pizzaCountTotal=regularCount+f.glutenFreeCount;
    for(const [index,name] of styles.entries()){
-     const r=row(name,1,remaining/(styles.length||1),'pizza');
-     if(unresolvedGf)r.detail='Provisional share before deducting gluten-free pizzas.';
-     else if(regularCount!==null&&s.regularPizzaOz){r.count=Math.floor(regularCount/styles.length)+(index<regularCount%styles.length?1:0);r.countLabel='whole pizza(s)';r.ounces=r.count*s.regularPizzaOz;}
-     else r.detail='Chef to confirm pizza count: finished weight per pizza is not configured.';
+     const count=Math.floor(regularCount/styles.length)+(index<regularCount%styles.length?1:0);
+     const r=row(name,1,regularCount?remaining*count/regularCount:0,'pizza');r.count=count;r.countLabel='whole pizza(s)';
+     if(s.regularPizzaOz&&!unresolvedGf)r.ounces=count*s.regularPizzaOz;
+     else r.detail=`Serving estimate: ${count*pizzaSlicesPerPie} slices. Finished weight is a target${unresolvedGf?' before gluten-free weight is deducted':''}.`;
      pizzaRows.push(r);
    }
-   if(regularCount!==null&&regularCount<styles.length)warnings.push('The pizza allowance produces fewer whole pizzas than selected styles. Chef must reconcile the style choices and quantities before production.');
+   if(regularCount<styles.length)warnings.push('The pizza allowance produces fewer whole pizzas than selected styles. Chef must reconcile the style choices and quantities before production.');
    if(!styles.length)warnings.push('Pizza Bar is selected but no pizza styles are saved. Confirm the styles with the coordinator.');
-   if(s.regularPizzaOz&&!unresolvedGf){const rounded=pizzaRows.filter(r=>r.countLabel==='whole pizza(s)').reduce((total,r)=>total+(r.count||0)*s.regularPizzaOz!,0)+(s.glutenFreePizzaOz?f.glutenFreeCount*s.glutenFreePizzaOz:0);pizzaRoundingOz=Math.max(0,rounded-pizza.ounces);if(rounded>pizza.ounces+.01)warnings.push(`Whole-pizza rounding adds ${productionWeight(rounded-pizza.ounces)} above the pizza allocation. This is the only rounding allowance; do not round other foods up to full trays.`);}
+   if(s.regularPizzaOz&&!unresolvedGf){const rounded=regularCount*s.regularPizzaOz+(s.glutenFreePizzaOz?f.glutenFreeCount*s.glutenFreePizzaOz:0);pizzaRoundingOz=Math.max(0,rounded-pizza.ounces);if(rounded>pizza.ounces+.01)warnings.push(`Whole-pizza planning adds ${productionWeight(rounded-pizza.ounces)} above the pizza allocation. Do not add another reserve or round other foods up to full trays.`);}
+
  }
  const custom=d.items.filter(i=>i.category==='Food');
  if(custom.length)warnings.push('Custom food orders below are explicit quantities. Their finished weights are not included in the buffet allowance; chef must reconcile them with the buffet before adding production.');
  if(buffet&&!groups.some(g=>g.name==='Entrees'))warnings.push('No entree selections are saved. This buffet plan is incomplete.');
  if(!guests)warnings.push('Guest count is missing. Set the guaranteed guest count before planning food.');
- return {guests,groups,pizza,pizzaRows,warnings,custom,totalOz:groups.reduce((n,g)=>n+g.totalOz,0),reservePercent:s.reservePercent,pizzaRoundingOz,buffet};
+ return {guests,groups,pizza,pizzaRows,warnings,custom,totalOz:groups.reduce((n,g)=>n+g.totalOz,0),reservePercent:s.reservePercent,pizzaRoundingOz,pizzaCountTotal,pizzaServingGuests,pizzaDiameterInches,pizzaSlicesPerPie,pizzaSlicesPerGuest,buffet};
 }

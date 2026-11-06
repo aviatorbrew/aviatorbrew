@@ -12,7 +12,7 @@ export function parseEventFoodCosts(raw:unknown):EventFoodCostSettings{
 }
 export function eventFoodCostEstimate(d:EventPlanDetails,c:CateringCatalog,p:EventProductionSettings,costs:EventFoodCostSettings){
  const production=eventProductionPlan(d,c,p),rows:{name:string;amountCents:number|null;quantity:number|null;basis?:FoodCostBasis;source?:string;note:string}[]=[];
- const foods=production.groups.flatMap(g=>g.rows).map(r=>({name:r.name,ounces:r.ounces+(r.name==='Aviator Pizzeria Pizza Bar'?production.pizzaRoundingOz:0),guests:d.guestCount,each:r.name==='Aviator Pizzeria Pizza Bar'&&production.pizzaRows.length&&production.pizzaRows.every(v=>v.count!==undefined)?production.pizzaRows.reduce((n,v)=>n+(v.count||0),0):null}));
+ const foods=production.groups.flatMap(g=>g.rows).map(r=>({name:r.name,ounces:r.ounces+(r.name==='Aviator Pizzeria Pizza Bar'?production.pizzaRoundingOz:0),guests:d.guestCount,each:r.name==='Aviator Pizzeria Pizza Bar'&&d.flightPlan?.pizzas.length?production.pizzaCountTotal:null}));
  if(d.flightPlan?.dessert)foods.push({name:'Dessert display',ounces:0,guests:d.guestCount,each:d.guestCount});
  if(d.flightPlan?.coffee)foods.push({name:'Coffee service',ounces:0,guests:d.guestCount,each:d.guestCount});
  for(const i of production.custom){const match=i.name.match(/^Appetizer: (.+) \/ (guest|tray|piece)$/);foods.push({name:match?.[1]||i.name,ounces:match?.[2]==='tray'?i.quantity*(p.trayFinishedLb[match[1]]||p.estimatedFullPanLb||10)*16:0,guests:match?.[2]==='guest'?i.quantity:0,each:match?.[2]==='piece'?i.quantity:null});}
@@ -24,7 +24,7 @@ export function eventFoodCostEstimate(d:EventPlanDetails,c:CateringCatalog,p:Eve
      if(cost.basis==='event-guest'&&f.guests)quantity=f.guests;
      if((cost.basis==='pizza'||cost.basis==='each')&&f.each!==null)quantity=f.each;
      if(quantity===null)note='Cost entered, but its production quantity is unverified. Excluded from known-cost subtotal.';
-     else if(note.startsWith('Cost not entered'))note='Allocated prepared-food estimate.';
+     else if(note.startsWith('Cost not entered'))note=f.name==='Aviator Pizzeria Pizza Bar'&&cost.basis==='pizza'?'Planned whole pizzas from buffet serving estimates; measured weights also apply when configured.':'Allocated prepared-food estimate.';
    }
    rows.push({name:f.name,amountCents:cost&&quantity!==null?Math.round(cost.costCents*quantity):null,quantity,basis:cost?.basis,source:cost?.source,note});
  }
