@@ -1,5 +1,8 @@
 "use client";
 import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
+import { EventFoodCostEstimate } from "@/components/event-food-cost";
+import {defaultEventFoodCosts,type EventFoodCostSettings} from "@/lib/event-food-cost";
+import {defaultEventProductionSettings,type EventProductionSettings} from "@/lib/event-production";
 import { EventProposalManager } from "@/components/event-proposal-manager";
 import { EventSubmittedMenus } from "@/components/event-submitted-menus";
 import { EventEditorSection, revealEventEditorField } from "@/components/event-editor-section";
@@ -29,6 +32,8 @@ function CalendarSourceNotice({plan}:{plan:EventPlan}) {
 }
 
 export function EventPlanningManager() {
+  const [production,setProduction]=useState<EventProductionSettings>(structuredClone(defaultEventProductionSettings));
+  const [foodCosts,setFoodCosts]=useState<EventFoodCostSettings>(structuredClone(defaultEventFoodCosts));
   const [catalog,setCatalog]=useState<CateringCatalog>(structuredClone(defaultCateringCatalog));
   const readyRoomPackages=catalog.packages;
   const [month, setMonth] = useState(() => today().slice(0,7));
@@ -62,9 +67,10 @@ export function EventPlanningManager() {
   const dirty = Boolean(draft && (!selected || JSON.stringify(draft) !== JSON.stringify(selected.details)));
   const totals = draft ? eventTotals(draft,catalog) : null;
 
+  useEffect(()=>{const update=(event:Event)=>{const value=(event as CustomEvent).detail;if(value?.production)setProduction(value.production);if(value?.foodCosts)setFoodCosts(value.foodCosts);};window.addEventListener('aviator-private-event-settings-updated',update);return()=>window.removeEventListener('aviator-private-event-settings-updated',update);},[]);
   useEffect(() => {
     const controller = new AbortController(); setLoading(true); setError("");
-    getManagerJson(`/api/manager/event-plans?month=${month}`,controller.signal).then(body => {setPlans(body.plans);setCatalog(body.catering||structuredClone(defaultCateringCatalog));setDefaultFee(body.defaultRoomFeeCents);setCalendarSyncStatus(body.calendarSyncStatus||null);}).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+    getManagerJson(`/api/manager/event-plans?month=${month}`,controller.signal).then(body => {setPlans(body.plans);setProduction(body.production||structuredClone(defaultEventProductionSettings));setFoodCosts(body.foodCosts||structuredClone(defaultEventFoodCosts));setCatalog(body.catering||structuredClone(defaultCateringCatalog));setDefaultFee(body.defaultRoomFeeCents);setCalendarSyncStatus(body.calendarSyncStatus||null);}).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return ()=>controller.abort();
   },[month]);
   useEffect(()=>{
@@ -247,7 +253,7 @@ export function EventPlanningManager() {
       <p className="event-package-hint">Reservation deposit: {money(draft.reservationDepositCents||defaultFee)} applied to the final bill. Record manual payments here only when received, then use Approve Event — No Email to confirm directly. Taxes apply to taxable items; gratuity is excluded.</p><div className="event-generated-charges">{draft.flightPlan?.packageId?<><span>{draft.guestCount} guests × {money(readyRoomPackages.find(p=>p.id===draft.flightPlan?.packageId)?.priceCents||0)} / guest</span><span>Package & extras: {money(totals!.subtotal-draft.items.reduce((sum,row)=>sum+row.quantity*row.unitPriceCents,0))}</span></>:null}</div><div className="event-totals" aria-live="polite"><span>Subtotal <b>{money(totals!.subtotal)}</b></span>{totals!.discount?<><span>One-time event discount <b>−{money(totals!.discount)}</b></span><span>Subtotal after discount <b>{money(totals!.discountedSubtotal!)}</b></span></>:null}<span>Sales tax <b>{money(totals!.salesTax)}</b></span><span>PFB tax <b>{money(totals!.pfbTax)}</b></span><span>Total <b>{money(totals!.total)}</b></span><span>Payments <b>{money(totals!.paid)}</b></span><span>{totals!.balance<0?"Credit":"Balance"} <b>{money(Math.abs(totals!.balance))}</b></span></div></fieldset>
       <fieldset disabled={busy}><legend>Service & notes</legend><div className="event-fields"><label>Bar service / drink-ticket plan<textarea value={draft.barDetails} rows={2} maxLength={5000} onChange={e=>patch("barDetails",e.target.value)} /></label><label>Event notes for summary & guests<textarea value={draft.notes} rows={2} maxLength={5000} onChange={e=>patch("notes",e.target.value)} /></label><label>Staff-only notes (excluded from print and guest emails)<textarea value={draft.internalNotes} rows={2} maxLength={5000} onChange={e=>patch("internalNotes",e.target.value)} /></label></div></fieldset>
       <p className={error?"event-plan-error":"event-plan-notice"}>{error || (dirty?"Unsaved changes. Save or recreate the summary to keep these edits.":selected?`Saved revision ${selected.version}. Saving and printing do not send email.`:"")}</p>
-      </form>{selected?<EventCalendarMatchManager key={"calendar-match-"+selected.id} plan={selected} disabled={busy||dirty} onLinked={calendarEventLinked}/>:null}</EventEditorSection>{selected?<EventProposalManager key={"proposals-"+selected.id} plan={selected} dirty={dirty} depositCents={selected.details.reservationDepositCents??defaultFee} eventActions={eventActionButtons} printActions={eventPrintButtons} onRefresh={()=>getExistingInquiryPlan(selected.id,false,false)}/>:<><EventEditorSection title="EVENT ACTIONS" className="event-order-actions" summary="Save or add the event to the calendar"><section aria-label="Event actions"><div className="event-editor-actions">{eventActionButtons}</div></section></EventEditorSection><EventEditorSection title="PRINT ORDERS & RECEIPTS" className="event-print-actions" summary="Order summary, menu planning and kitchen sheets"><section aria-label="Print orders and receipts"><div className="event-editor-actions">{eventPrintButtons}</div></section></EventEditorSection></>}
+      </form>{selected?<EventCalendarMatchManager key={"calendar-match-"+selected.id} plan={selected} disabled={busy||dirty} onLinked={calendarEventLinked}/>:null}</EventEditorSection><EventFoodCostEstimate key={"cost-"+(selected?.id||"new")} details={draft} catalog={catalog} production={production} costs={foodCosts} dirty={dirty}/>{selected?<EventProposalManager key={"proposals-"+selected.id} plan={selected} dirty={dirty} depositCents={selected.details.reservationDepositCents??defaultFee} eventActions={eventActionButtons} printActions={eventPrintButtons} onRefresh={()=>getExistingInquiryPlan(selected.id,false,false)}/>:<><EventEditorSection title="EVENT ACTIONS" className="event-order-actions" summary="Save or add the event to the calendar"><section aria-label="Event actions"><div className="event-editor-actions">{eventActionButtons}</div></section></EventEditorSection><EventEditorSection title="PRINT ORDERS & RECEIPTS" className="event-print-actions" summary="Order summary, menu planning and kitchen sheets"><section aria-label="Print orders and receipts"><div className="event-editor-actions">{eventPrintButtons}</div></section></EventEditorSection></>}
       {updates.length?<details className="event-update-history"><summary>Guest email history</summary>{updates.map((update,index)=><p key={index}>{update.recipient} · {update.subject} · {update.status==="sent"?"Accepted for delivery":update.status} · revision {update.plan_version}</p>)}</details>:null}
     </div>:null;
   return <section className="coupon-manager event-planning" id="event-planning">

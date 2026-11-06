@@ -192,3 +192,13 @@
 @media(max-width:650px){.inquiry-merge-dialog{padding:.8rem}.inquiry-merge-columns{grid-template-columns:1fr}}
 .manager-private-events .event-top-actions{margin:.4rem 0 .55rem;padding:.4rem 0;border-top:1px solid #647f90;border-bottom:1px solid #647f90;align-items:center}
 .manager-private-events .event-top-actions .button{font:inherit;padding:.35rem .5rem;letter-spacing:normal}
+.manager-private-events .event-food-cost{border-color:#8fbd9d}
+.manager-private-events .event-cost-incomplete{border-left:3px solid #efb45f;padding:.5rem;color:#ffe1a6}
+.manager-private-events .event-cost-table-scroll{overflow:auto}
+.manager-private-events .event-cost-table-scroll table{width:100%;border-collapse:collapse;font:.75rem/1.4 Arial,sans-serif}
+.manager-private-events .event-cost-table-scroll th,.manager-private-events .event-cost-table-scroll td{padding:.45rem;border:1px solid #6f8a9a;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.manager-private-events .event-measured-pan-grid,.manager-private-events .event-food-cost-settings-grid{display:grid;gap:.6rem;grid-template-columns:repeat(2,minmax(0,1fr))}
+.manager-private-events .event-measured-pan-grid>div,.manager-private-events .event-food-cost-settings-grid>div{display:grid;gap:.3rem;padding:.55rem;border:1px solid #6f8a9a;min-width:0}
+.manager-private-events .event-pan-reference{padding:.5rem;border:1px solid #8ca6b6;margin:.5rem 0}
+.manager-private-events .event-pan-reference a{color:#efb45f}
+@media(max-width:650px){.manager-private-events .event-measured-pan-grid,.manager-private-events .event-food-cost-settings-grid{grid-template-columns:1fr}}

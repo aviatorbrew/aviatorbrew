@@ -1,3 +1,4 @@
+import {defaultEventFoodCosts,parseEventFoodCosts,type EventFoodCostSettings} from "@/lib/event-food-cost";
 import {defaultEventProductionSettings,parseEventProductionSettings,type EventProductionSettings} from "@/lib/event-production";
 import { defaultCateringCatalog, type CateringCatalog } from "@/lib/event-plan";
 import { parseCateringCatalog } from "@/lib/catering-catalog";
@@ -16,8 +17,8 @@ export const DEFAULT_PRIVATE_EVENT_INQUIRY_COPY = [
 ];
 const SETTINGS_KEY = "private_event_settings";
 
-type PrivateEventSettingsInput = { production?: unknown; catering?: unknown; policyText?: unknown; policyVersion?: unknown; bookingFeeCents?: number; aviatorWayCopy?: unknown; aviatorWayCopyText?: unknown; inquiryCopy?: unknown; inquiryCopyText?: unknown };
-export type PrivateEventSettings = { production:EventProductionSettings; catering: CateringCatalog; policyText: string; policyVersion: string; bookingFeeCents: number; aviatorWayCopy: string[]; inquiryCopy: string[] };
+type PrivateEventSettingsInput = { foodCosts?:unknown; production?: unknown; catering?: unknown; policyText?: unknown; policyVersion?: unknown; bookingFeeCents?: number; aviatorWayCopy?: unknown; aviatorWayCopyText?: unknown; inquiryCopy?: unknown; inquiryCopyText?: unknown };
+export type PrivateEventSettings = { foodCosts:EventFoodCostSettings; production:EventProductionSettings; catering: CateringCatalog; policyText: string; policyVersion: string; bookingFeeCents: number; aviatorWayCopy: string[]; inquiryCopy: string[] };
 
 function runtimeNumber(name: string) {
   const raw = process.env[name];
@@ -66,6 +67,7 @@ function configuredBookingFeeCents() {
 
 function settingsWithDefaults(value?: Partial<PrivateEventSettings>): PrivateEventSettings {
   return {
+    foodCosts: value?.foodCosts?parseEventFoodCosts(value.foodCosts):structuredClone(defaultEventFoodCosts),
     production: value?.production?parseEventProductionSettings(value.production):structuredClone(defaultEventProductionSettings),
     catering: value?.catering ? parseCateringCatalog(value.catering) : structuredClone(defaultCateringCatalog),
     policyText: value?.policyText || "", policyVersion: value?.policyVersion || "",
@@ -131,6 +133,7 @@ export async function getPrivateEventSettings(): Promise<PrivateEventSettings> {
 
 export async function setPrivateEventSettings(input: PrivateEventSettingsInput) {
   const settings = await getPrivateEventSettings();
+  if (input.foodCosts !== undefined) settings.foodCosts=parseEventFoodCosts(input.foodCosts);
   if (input.production !== undefined) settings.production=parseEventProductionSettings(input.production);
   if (input.catering !== undefined) settings.catering = parseCateringCatalog(input.catering);
   if (input.policyText !== undefined || input.policyVersion !== undefined) {

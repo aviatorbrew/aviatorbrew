@@ -39,7 +39,9 @@
     "test:event-editor-ui": "node scripts/test-event-editor-ui.mjs",
     "test:inquiry-merge-ui": "node scripts/test-inquiry-merge-ui.mjs",
     "test:event-production": "node scripts/test-event-production.mjs",
-    "test:event-production-ui": "node scripts/test-event-production.mjs && node scripts/test-event-production-ui.mjs"
+    "test:event-production-ui": "node scripts/test-event-production.mjs && node scripts/test-event-production-ui.mjs",
+    "test:event-food-cost": "node scripts/test-event-food-cost.mjs",
+    "test:event-food-cost-ui": "node scripts/test-event-production.mjs && node scripts/test-event-food-cost-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",
