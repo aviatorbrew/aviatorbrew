@@ -198,6 +198,7 @@ async function productInput(form: FormData) {
       ticketEventStartsAt: optionalText(form, "ticketEventStartsAt"),
       ticketSalesEndAt: optionalText(form, "ticketSalesEndAt"),
       ticketCapacity: optionalWholeNumber(form, "ticketCapacity"),
+      ticketDoorPriceCents: form.has("ticketDoorPrice")?dollarsToCents(form.get("ticketDoorPrice")):undefined,
       ticketMaxPerOrder: optionalWholeNumber(form, "ticketMaxPerOrder"),
       ticketFullWidth: ticketBoolean(form, "ticketFullWidth"),
       ticketPublishAsEvent: ticketBoolean(form, "ticketPublishAsEvent"),

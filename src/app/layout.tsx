@@ -18,6 +18,7 @@ import "./manager.css";
 import "./online-catering.css";
 import "./feast.css";
 import "./site-skins.css";
+import "./shop-tickets.css";
 import packageInfo from "../../package.json";
 import { AnalyticsHooks } from "@/components/analytics";
 import { SiteFooter } from "@/components/site-footer";

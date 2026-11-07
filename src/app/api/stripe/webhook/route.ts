@@ -47,12 +47,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({received:true});
     } catch(error) {return NextResponse.json({error:error instanceof ProposalError ? error.message : "Could not record the deposit; provider retry required."},{status:error instanceof ProposalError?error.status:503});}
   }
-  if (event.type === "checkout.session.expired" && session?.metadata?.item === "shop-new" && session.id) await expireShopCheckout(session.id);
-  if (event.type === "checkout.session.completed" && session?.payment_status === "paid") {
+  if ((event.type === "checkout.session.expired" || event.type === "checkout.session.async_payment_failed") && session?.metadata?.item === "shop-new" && session.id) await expireShopCheckout(session.id);
+  if ((event.type === "checkout.session.completed" || (event.type === "checkout.session.async_payment_succeeded" && session?.metadata?.item === "shop-new")) && session?.payment_status === "paid") {
     const signupId = session.metadata?.tourSignupId;
     if (signupId) await markTourPaid(signupId, session.id || "");
     if (session.metadata?.item === "shop-new" && session.id) {
-      const notified = await markShopOrderPaid(session.id);
+      const notified = await markShopOrderPaid(session.id,session);
       if (!notified) return NextResponse.json({ error: "Payment received, but the shop order notification email could not be sent." }, { status: 503 });
     }
     if (session.metadata?.item === "private-event-room-booking") {

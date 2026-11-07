@@ -1,3 +1,7 @@
+import { easternLocalTimestamp } from "@/lib/eastern-time";
+import { ticketCutoff, ticketGuestLists, ticketSalesStatus, type TicketGuest, type TicketGuestLists } from "@/lib/shop-tickets";
+import { shopTicketReceipt } from "@/lib/shop-ticket-receipt";
+import { ticketRosterHtml } from "@/lib/shop-ticket-roster";
 import { randomUUID } from "node:crypto";
 import { databaseConfigured, ensureDatabaseSchema, withDatabase } from "@/lib/database";
 import { sendMail } from "@/lib/mail";
@@ -53,6 +57,7 @@ export type ShopProduct = {
   ticketSalesEndAt: string;
   ticketCapacity: number;
   ticketMaxPerOrder: number;
+  ticketDoorPriceCents?: number;
   ticketFullWidth: boolean;
   ticketPublishAsEvent: boolean;
   ticketSoldCount: number;
@@ -127,6 +132,7 @@ export type ShopTicketPurchase = {
   purchaserEmail: string;
   purchaserPhone: string;
   partySize: number;
+  guestNames?: TicketGuest[];
   paidAt: string;
 };
 
@@ -175,6 +181,7 @@ export type ShopProductInput = {
   ticketSalesEndAt?: string;
   ticketCapacity?: number;
   ticketMaxPerOrder?: number;
+  ticketDoorPriceCents?: number;
   ticketFullWidth?: boolean;
   ticketPublishAsEvent?: boolean;
   variants: ShopVariantInput[];
@@ -196,6 +203,8 @@ export type ShopCartItem = {
   productType: "merchandise" | "ticket";
   ticketLocationSlug: string;
   ticketEventStartsAt: string;
+  ticketSalesEndAt?: string;
+  guestNames?: TicketGuest[];
 };
 
 export type PreparedShopCart = {
@@ -353,9 +362,9 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
   await ensureDefaultCategories();
   return withDatabase(async (client) => {
     const categoryResult = await client.query("SELECT * FROM website.shop_categories " + (options.manager ? "" : "WHERE published=true ") + "ORDER BY sort_order, name");
-    const productResult = await client.query("SELECT p.*,c.slug AS category_slug,c.name AS category_name,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS ticket_sold_count,COALESCE((SELECT SUM(i.quantity) FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=p.id AND i.is_bonus=false AND o.status='pending' AND o.checkout_expires_at>now()),0)::int AS ticket_reserved_count FROM website.shop_products p LEFT JOIN website.shop_categories c ON c.id=p.category_id " + (options.manager ? "" : "WHERE p.published=true ") + "ORDER BY COALESCE(c.sort_order, 9999), c.name NULLS LAST, p.sort_order, p.name");
+    const productResult = await client.query("SELECT p.*,c.slug AS category_slug,c.name AS category_name,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS ticket_sold_count,COALESCE((SELECT SUM(i.quantity) FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=p.id AND i.is_bonus=false AND o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true')))),0)::int AS ticket_reserved_count FROM website.shop_products p LEFT JOIN website.shop_categories c ON c.id=p.category_id " + (options.manager ? "" : "WHERE p.published=true ") + "ORDER BY COALESCE(c.sort_order, 9999), c.name NULLS LAST, p.sort_order, p.name");
     const productIds = productResult.rows.map((row) => Number(row.id));
-    const variantResult = productIds.length ? await client.query("SELECT v.*,COALESCE(r.reserved_count,0)::int AS reserved_count FROM website.shop_product_variants v LEFT JOIN (SELECT i.variant_id,SUM(i.quantity)::int AS reserved_count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.status='pending' AND o.checkout_expires_at>now() AND i.is_bonus=false GROUP BY i.variant_id) r ON r.variant_id=v.id WHERE v.product_id=ANY($1::bigint[]) " + (options.manager ? "" : "AND v.published=true ") + "ORDER BY v.sort_order, v.label", [productIds]) : { rows: [] as Record<string, unknown>[] };
+    const variantResult = productIds.length ? await client.query("SELECT v.*,COALESCE(r.reserved_count,0)::int AS reserved_count FROM website.shop_product_variants v LEFT JOIN (SELECT i.variant_id,SUM(i.quantity)::int AS reserved_count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true'))) AND i.is_bonus=false GROUP BY i.variant_id) r ON r.variant_id=v.id WHERE v.product_id=ANY($1::bigint[]) " + (options.manager ? "" : "AND v.published=true ") + "ORDER BY v.sort_order, v.label", [productIds]) : { rows: [] as Record<string, unknown>[] };
     const variantsByProduct = new Map<number, ShopVariant[]>();
     for (const row of variantResult.rows) {
       const variant = variantFromRow(row);
@@ -384,9 +393,10 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
         productType: row.product_type === "ticket" ? "ticket" as const : "merchandise" as const,
         ticketLocationSlug: String(row.ticket_location_slug || ""),
         ticketLocationName: locations.find((location) => location.slug === String(row.ticket_location_slug || ""))?.name || "",
-        ticketEventStartsAt: row.ticket_event_starts_at ? new Date(String(row.ticket_event_starts_at)).toISOString() : "",
-        ticketSalesEndAt: row.ticket_sales_end_at ? new Date(String(row.ticket_sales_end_at)).toISOString() : "",
+        ticketEventStartsAt: normalizedDate(row.ticket_event_starts_at,"Ticket event date"),
+        ticketSalesEndAt: normalizedDate(row.ticket_sales_end_at,"Ticket sales end"),
         ticketCapacity: Number(row.ticket_capacity || 0),
+        ticketDoorPriceCents: Number(row.ticket_door_price_cents || 0),
         ticketMaxPerOrder: Math.max(1, Number(row.ticket_max_per_order || 20)),
         ticketFullWidth: row.ticket_full_width === true,
         ticketPublishAsEvent: row.ticket_publish_as_event === true,
@@ -434,7 +444,7 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
         items: Array.isArray(row.items) ? row.items as ShopOrderItem[] : [],
       }));
       const ticketResult = await client.query("SELECT * FROM website.shop_ticket_purchases ORDER BY paid_at DESC, id DESC LIMIT 5000");
-      ticketPurchases = ticketResult.rows.map((row) => ({ id: Number(row.id), orderId: Number(row.order_id), productId: row.product_id === null ? null : Number(row.product_id), productName: String(row.product_name || ""), variantLabel: String(row.variant_label || ""), locationSlug: String(row.location_slug || ""), eventStartsAt: String(row.event_starts_at || ""), purchaserName: String(row.purchaser_name || ""), purchaserEmail: String(row.purchaser_email || ""), purchaserPhone: String(row.purchaser_phone || ""), partySize: Number(row.party_size || 0), paidAt: String(row.paid_at || "") }));
+      ticketPurchases = ticketResult.rows.map((row) => ({ id: Number(row.id), orderId: Number(row.order_id), productId: row.product_id === null ? null : Number(row.product_id), productName: String(row.product_name || ""), variantLabel: String(row.variant_label || ""), locationSlug: String(row.location_slug || ""), eventStartsAt: String(row.event_starts_at || ""), purchaserName: String(row.purchaser_name || ""), purchaserEmail: String(row.purchaser_email || ""), purchaserPhone: String(row.purchaser_phone || ""), partySize: Number(row.party_size || 0), guestNames:Array.isArray(row.guest_names)?row.guest_names:[], paidAt: String(row.paid_at || "") }));
     }
     return { categories: categoryResult.rows.map(categoryFromRow), products, settings, orders, ticketPurchases, locations };
   });
@@ -496,9 +506,10 @@ async function categoryIdForInput(client: { query: (text: string, values?: unkno
 }
 
 function normalizedDate(value: unknown, label: string) {
+  if(value instanceof Date){if(!Number.isFinite(value.getTime()))throw new Error(label+" is invalid.");return value.toISOString();}
   const raw = String(value || "").trim();
   if (!raw) return "";
-  const date = new Date(raw);
+  const date = new Date(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)?easternLocalTimestamp(raw.slice(0,10),raw.slice(11,16))!:raw);
   if (!Number.isFinite(date.getTime())) throw new Error(label + " is invalid.");
   return date.toISOString();
 }
@@ -518,6 +529,8 @@ function normalizeProductInput(input: ShopProductInput, current?: Record<string,
   const ticketEventStartsAt = normalizedDate(input.ticketEventStartsAt === undefined ? current?.ticket_event_starts_at : input.ticketEventStartsAt, "Event date and time");
   const ticketSalesEndAt = normalizedDate(input.ticketSalesEndAt === undefined ? current?.ticket_sales_end_at : input.ticketSalesEndAt, "Ticket sales end date");
   const ticketCapacity = Math.max(0, Math.floor(Number(input.ticketCapacity === undefined ? currentInt(current, "ticket_capacity", 0) : input.ticketCapacity || 0)));
+  const ticketDoorPriceCents = input.ticketDoorPriceCents === undefined ? currentInt(current, "ticket_door_price_cents", 0) : input.ticketDoorPriceCents;
+  if (!Number.isInteger(ticketDoorPriceCents) || ticketDoorPriceCents < 0 || ticketDoorPriceCents > 2000000) throw new Error("Enter a valid door ticket price.");
   const ticketMaxPerOrder = Math.max(1, Math.min(1000, Math.floor(Number(input.ticketMaxPerOrder === undefined ? currentInt(current, "ticket_max_per_order", 20) : input.ticketMaxPerOrder || 0))));
   const ticketFullWidth = productType === "ticket" && (input.ticketFullWidth === undefined ? current?.ticket_full_width === true : input.ticketFullWidth === true);
   const ticketPublishAsEvent = productType === "ticket" && (input.ticketPublishAsEvent === undefined ? current?.ticket_publish_as_event === true : input.ticketPublishAsEvent === true);
@@ -543,7 +556,7 @@ function normalizeProductInput(input: ShopProductInput, current?: Record<string,
   if (!variants.length) throw new Error("Add at least one product option or ticket type.");
   const hasInvalidSellablePrice = input.published !== false && variants.some((variant) => variant.published && variant.availableForSale && variant.priceCents < 100);
   if (hasInvalidSellablePrice) throw new Error("Every published option available for sale needs a price of at least $1.00. Unpublish the product to save it as a draft.");
-  return { ...input, name, productType, ticketLocationSlug: productType === "ticket" ? ticketLocationSlug : "", ticketEventStartsAt: productType === "ticket" ? ticketEventStartsAt : "", ticketSalesEndAt: productType === "ticket" ? ticketSalesEndAt : "", ticketCapacity: productType === "ticket" ? ticketCapacity : 0, ticketMaxPerOrder: productType === "ticket" ? ticketMaxPerOrder : 20, ticketFullWidth, ticketPublishAsEvent, variants };
+  return { ...input, name, productType, ticketDoorPriceCents: productType === "ticket" ? ticketDoorPriceCents : 0, ticketLocationSlug: productType === "ticket" ? ticketLocationSlug : "", ticketEventStartsAt: productType === "ticket" ? ticketEventStartsAt : "", ticketSalesEndAt: productType === "ticket" ? ticketSalesEndAt : "", ticketCapacity: productType === "ticket" ? ticketCapacity : 0, ticketMaxPerOrder: productType === "ticket" ? ticketMaxPerOrder : 20, ticketFullWidth, ticketPublishAsEvent, variants };
 }
 
 function productImagesForSave(input: ShopProductInput, current?: Record<string, unknown>) {
@@ -576,15 +589,15 @@ export async function saveShopProduct(input: ShopProductInput) {
       const categoryId = await categoryIdForInput(client, normalized);
       if (productId) {
         const committedTickets = await client.query("SELECT COALESCE(SUM(party_size),0)::int AS sold FROM website.shop_ticket_purchases WHERE product_id=$1", [productId]);
-        const reservedTickets = await client.query("SELECT COALESCE(SUM(i.quantity),0)::int AS reserved FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=$1 AND i.is_bonus=false AND o.status='pending' AND o.checkout_expires_at>now()", [productId]);
+        const reservedTickets = await client.query("SELECT COALESCE(SUM(i.quantity),0)::int AS reserved FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=$1 AND i.is_bonus=false AND o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true')))", [productId]);
         const allocatedTickets = Number(committedTickets.rows[0]?.sold || 0) + Number(reservedTickets.rows[0]?.reserved || 0);
         if (allocatedTickets > 0 && normalized.productType !== "ticket") throw new Error("A ticket product with sales or active checkout reservations cannot be changed to merchandise.");
         if (normalized.productType === "ticket" && normalized.ticketCapacity < allocatedTickets) throw new Error("Total ticket capacity cannot be lower than the " + allocatedTickets + " tickets already sold or reserved.");
         const images = productImagesForSave(normalized, currentProduct);
-        await client.query("UPDATE website.shop_products SET category_id=$2,name=$3,description=$4,image_url=$5,additional_image_urls=$6::jsonb,published=$7,featured=$8,sort_order=$9,source=$10,source_id=$11,product_type=$12,ticket_location_slug=$13,ticket_event_starts_at=$14,ticket_sales_end_at=$15,ticket_capacity=$16,ticket_max_per_order=$17,ticket_full_width=$18,ticket_publish_as_event=$19,updated_at=now() WHERE id=$1", [productId, categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || currentProduct?.source || "manager", normalized.sourceId || currentProduct?.source_id || null, normalized.productType, normalized.ticketLocationSlug || null, normalized.ticketEventStartsAt || null, normalized.ticketSalesEndAt || null, normalized.ticketCapacity, normalized.ticketMaxPerOrder, normalized.ticketFullWidth, normalized.ticketPublishAsEvent]);
+        await client.query("UPDATE website.shop_products SET category_id=$2,name=$3,description=$4,image_url=$5,additional_image_urls=$6::jsonb,published=$7,featured=$8,sort_order=$9,source=$10,source_id=$11,product_type=$12,ticket_location_slug=$13,ticket_event_starts_at=$14,ticket_sales_end_at=$15,ticket_capacity=$16,ticket_max_per_order=$17,ticket_full_width=$18,ticket_publish_as_event=$19,ticket_door_price_cents=$20,updated_at=now() WHERE id=$1", [productId, categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || currentProduct?.source || "manager", normalized.sourceId || currentProduct?.source_id || null, normalized.productType, normalized.ticketLocationSlug || null, normalized.ticketEventStartsAt || null, normalized.ticketSalesEndAt || null, normalized.ticketCapacity, normalized.ticketMaxPerOrder, normalized.ticketFullWidth, normalized.ticketPublishAsEvent, normalized.ticketDoorPriceCents]);
       } else {
         const images = productImagesForSave(normalized);
-        const inserted = await client.query("INSERT INTO website.shop_products (slug,category_id,name,description,image_url,additional_image_urls,published,featured,sort_order,source,source_id,product_type,ticket_location_slug,ticket_event_starts_at,ticket_sales_end_at,ticket_capacity,ticket_max_per_order,ticket_full_width,ticket_publish_as_event) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id", [shopSlug(normalized.name), categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || "manager", normalized.sourceId || null, normalized.productType, normalized.ticketLocationSlug || null, normalized.ticketEventStartsAt || null, normalized.ticketSalesEndAt || null, normalized.ticketCapacity, normalized.ticketMaxPerOrder, normalized.ticketFullWidth, normalized.ticketPublishAsEvent]);
+        const inserted = await client.query("INSERT INTO website.shop_products (slug,category_id,name,description,image_url,additional_image_urls,published,featured,sort_order,source,source_id,product_type,ticket_location_slug,ticket_event_starts_at,ticket_sales_end_at,ticket_capacity,ticket_max_per_order,ticket_full_width,ticket_publish_as_event,ticket_door_price_cents) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING id", [shopSlug(normalized.name), categoryId, normalized.name, normalized.description || "", images.primary, JSON.stringify(images.additional), normalized.published !== false, normalized.featured === true, intValue(normalized.sortOrder), normalized.source || "manager", normalized.sourceId || null, normalized.productType, normalized.ticketLocationSlug || null, normalized.ticketEventStartsAt || null, normalized.ticketSalesEndAt || null, normalized.ticketCapacity, normalized.ticketMaxPerOrder, normalized.ticketFullWidth, normalized.ticketPublishAsEvent, normalized.ticketDoorPriceCents]);
         productId = Number(inserted.rows[0].id);
       }
       const existing = normalized.id ? await client.query("SELECT id FROM website.shop_product_variants WHERE product_id=$1", [productId]) : { rows: [] as Record<string, unknown>[] };
@@ -601,7 +614,7 @@ export async function saveShopProduct(input: ShopProductInput) {
       }
       if (existingIds.size) await client.query("DELETE FROM website.shop_product_variants WHERE product_id=$1 AND NOT (id=ANY($2::bigint[]))", [productId, retainedIds]);
 
-      const persistedProductResult = await client.query("SELECT category_id,name,description,published,featured,sort_order,product_type,ticket_location_slug,ticket_event_starts_at,ticket_sales_end_at,ticket_capacity,ticket_max_per_order,ticket_full_width,ticket_publish_as_event,updated_at FROM website.shop_products WHERE id=$1", [productId]);
+      const persistedProductResult = await client.query("SELECT category_id,name,description,published,featured,sort_order,product_type,ticket_location_slug,ticket_event_starts_at,ticket_sales_end_at,ticket_capacity,ticket_max_per_order,ticket_full_width,ticket_publish_as_event,ticket_door_price_cents,updated_at FROM website.shop_products WHERE id=$1", [productId]);
       const persistedProduct = persistedProductResult.rows[0];
       const expectedCategoryId = categoryId === null ? null : Number(categoryId);
       const actualCategoryId = persistedProduct?.category_id === null || persistedProduct?.category_id === undefined ? null : Number(persistedProduct.category_id);
@@ -619,7 +632,8 @@ export async function saveShopProduct(input: ShopProductInput) {
         || Number(persistedProduct.ticket_capacity || 0) !== normalized.ticketCapacity
         || Number(persistedProduct.ticket_max_per_order || 20) !== normalized.ticketMaxPerOrder
         || persistedProduct.ticket_full_width !== normalized.ticketFullWidth
-        || persistedProduct.ticket_publish_as_event !== normalized.ticketPublishAsEvent) {
+        || persistedProduct.ticket_publish_as_event !== normalized.ticketPublishAsEvent
+        || Number(persistedProduct.ticket_door_price_cents||0)!==normalized.ticketDoorPriceCents) {
         throw new Error("Database verification failed after saving the product details.");
       }
 
@@ -717,7 +731,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
   const requests = normalizeCartRequests(rawItems);
   return withDatabase(async (client) => {
     const ids = requests.map((item) => item.variantId);
-    const result = await client.query("SELECT v.*,p.name AS product_name,p.slug AS product_slug,p.image_url,p.additional_image_urls,p.published AS product_published,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at,p.ticket_sales_end_at,p.ticket_capacity,p.ticket_max_per_order,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS ticket_sold_count,COALESCE((SELECT SUM(oi.quantity) FROM website.shop_order_items oi JOIN website.shop_orders oo ON oo.id=oi.order_id WHERE oi.product_id=p.id AND oi.is_bonus=false AND oo.status='pending' AND oo.checkout_expires_at>now()),0)::int AS ticket_product_reserved_count,COALESCE(r.reserved_count,0)::int AS reserved_count FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id LEFT JOIN (SELECT i.variant_id,SUM(i.quantity)::int AS reserved_count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.status='pending' AND o.checkout_expires_at>now() AND i.is_bonus=false GROUP BY i.variant_id) r ON r.variant_id=v.id WHERE v.id=ANY($1::bigint[])", [ids]);
+    const result = await client.query("SELECT v.*,p.name AS product_name,p.slug AS product_slug,p.image_url,p.additional_image_urls,p.published AS product_published,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at,p.ticket_sales_end_at,p.ticket_capacity,p.ticket_max_per_order,p.ticket_door_price_cents,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS ticket_sold_count,COALESCE((SELECT SUM(oi.quantity) FROM website.shop_order_items oi JOIN website.shop_orders oo ON oo.id=oi.order_id WHERE oi.product_id=p.id AND oi.is_bonus=false AND oo.status='pending' AND (oo.checkout_expires_at>now() OR (oo.stripe_session_id LIKE 'cs_%' AND (oo.metadata->>'containsTickets'='true' OR oo.metadata->>'ticketOnly'='true')))),0)::int AS ticket_product_reserved_count,COALESCE(r.reserved_count,0)::int AS reserved_count FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id LEFT JOIN (SELECT i.variant_id,SUM(i.quantity)::int AS reserved_count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true'))) AND i.is_bonus=false GROUP BY i.variant_id) r ON r.variant_id=v.id WHERE v.id=ANY($1::bigint[])", [ids]);
     const rows = new Map(result.rows.map((row) => [Number(row.id), row]));
     const ticketProductQuantities = new Map<number, number>();
     const merchandiseItems = requests.map((request) => {
@@ -727,7 +741,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
       const productType = row.product_type === "ticket" ? "ticket" as const : "merchandise" as const;
       if (productType === "ticket") {
         const cutoff = row.ticket_sales_end_at || row.ticket_event_starts_at;
-        if (cutoff && new Date(String(cutoff)).getTime() <= Date.now()) throw new ShopCartAvailabilityError(String(row.product_name || "This event") + " ticket sales are closed.", [request.variantId]);
+        if (cutoff && new Date(cutoff).getTime() <= Date.now()) throw new ShopCartAvailabilityError(String(row.product_name || "This event") + " ticket sales are closed.", [request.variantId]);
         const productQuantity = (ticketProductQuantities.get(variant.productId) || 0) + request.quantity;
         const maxPerOrder = Math.max(1, Number(row.ticket_max_per_order || 20));
         const eventAvailable = Math.max(0, Number(row.ticket_capacity || 0) - Number(row.ticket_sold_count || 0) - Number(row.ticket_product_reserved_count || 0));
@@ -751,7 +765,8 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
         isBonus: false,
         productType,
         ticketLocationSlug: String(row.ticket_location_slug || ""),
-        ticketEventStartsAt: String(row.ticket_event_starts_at || ""),
+        ticketEventStartsAt: normalizedDate(row.ticket_event_starts_at,"Ticket event date"),
+        ticketSalesEndAt: normalizedDate(row.ticket_sales_end_at,"Ticket sales end"),
       } satisfies ShopCartItem;
     });
     const subtotalCents = merchandiseItems.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0);
@@ -807,6 +822,9 @@ export async function recordShopCheckout(input: {
   shippingProvider?: string;
   shippingService?: string;
   shippingRateId?: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+  ticketGuests?: TicketGuestLists;
 }) {
   return withDatabase(async (client) => {
     await client.query("BEGIN");
@@ -815,17 +833,23 @@ export async function recordShopCheckout(input: {
       for (const item of input.cart.merchandiseItems.filter((entry) => entry.productType === "ticket")) ticketQuantities.set(item.productId, (ticketQuantities.get(item.productId) || 0) + item.quantity);
       const purchaserEmail = String(input.customerEmail || "").trim().toLowerCase();
       if (ticketQuantities.size && (!purchaserEmail.includes("@") || !purchaserEmail.includes("."))) throw new Error("A valid purchaser email is required for event tickets.");
-      for (const [productId, quantity] of ticketQuantities) {
-        const productResult = await client.query("SELECT name,ticket_capacity,ticket_max_per_order FROM website.shop_products WHERE id=$1 AND product_type='ticket' AND published=true FOR UPDATE", [productId]);
+      const guests = ticketGuestLists(input.ticketGuests, input.cart.merchandiseItems);
+      const cutoffs: number[] = [];
+      for (const [productId, quantity] of [...ticketQuantities].sort((a,b)=>a[0]-b[0])) {
+        const productResult = await client.query("SELECT name,ticket_capacity,ticket_max_per_order,ticket_event_starts_at,ticket_sales_end_at,ticket_location_slug FROM website.shop_products WHERE id=$1 AND product_type='ticket' AND published=true FOR UPDATE", [productId]);
         const product = productResult.rows[0];
         if (!product) throw new Error("A ticket in this cart is no longer available.");
+        const ticketItems=input.cart.merchandiseItems.filter(i=>i.productId===productId),currentVariants=(await client.query("SELECT id,price_cents,published,available_for_sale FROM website.shop_product_variants WHERE product_id=$1",[productId])).rows;
+        for(const item of ticketItems){const variant=currentVariants.find(v=>Number(v.id)===item.variantId);if(!variant||variant.published!==true||variant.available_for_sale!==true||Number(variant.price_cents)!==item.unitPriceCents)throw new Error("A ticket price or option changed. Reload your cart before paying.");if(new Date(item.ticketEventStartsAt).getTime()!==new Date(product.ticket_event_starts_at).getTime()||item.ticketLocationSlug!==product.ticket_location_slug)throw new Error("Event details changed. Reload your cart before paying.");}
+        const cutoff = ticketCutoff({ticketEventStartsAt:product.ticket_event_starts_at?new Date(product.ticket_event_starts_at).toISOString():"",ticketSalesEndAt:product.ticket_sales_end_at?new Date(product.ticket_sales_end_at).toISOString():""});
+        if(cutoff!==null){if(cutoff<=Date.now())throw new Error("Online ticket sales are closed.");cutoffs.push(cutoff);}
         const soldResult = await client.query("SELECT COALESCE(SUM(party_size),0)::int AS count FROM website.shop_ticket_purchases WHERE product_id=$1", [productId]);
-        const reservedResult = await client.query("SELECT COALESCE(SUM(i.quantity),0)::int AS count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=$1 AND i.is_bonus=false AND o.status='pending' AND o.checkout_expires_at>now() AND o.stripe_session_id<>$2", [productId, input.stripeSessionId]);
+        const reservedResult = await client.query("SELECT COALESCE(SUM(i.quantity),0)::int AS count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=$1 AND i.is_bonus=false AND o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true'))) AND o.stripe_session_id<>$2", [productId, input.stripeSessionId]);
         const available = Math.max(0, Number(product.ticket_capacity || 0) - Number(soldResult.rows[0]?.count || 0) - Number(reservedResult.rows[0]?.count || 0));
         const maxPerOrder = Math.max(1, Number(product.ticket_max_per_order || 20));
         if (quantity > maxPerOrder) throw new Error("Ticket purchases for " + String(product.name || "this event") + " are limited to " + maxPerOrder + " per customer.");
         const customerPurchases = await client.query("SELECT COALESCE(SUM(party_size),0)::int AS count FROM website.shop_ticket_purchases WHERE product_id=$1 AND lower(purchaser_email)=lower($2)", [productId, purchaserEmail]);
-        const customerReservations = await client.query("SELECT COALESCE(SUM(i.quantity),0)::int AS count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=$1 AND i.is_bonus=false AND o.status='pending' AND o.checkout_expires_at>now() AND lower(COALESCE(o.customer_email,''))=lower($2) AND o.stripe_session_id<>$3", [productId, purchaserEmail, input.stripeSessionId]);
+        const customerReservations = await client.query("SELECT COALESCE(SUM(i.quantity),0)::int AS count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=$1 AND i.is_bonus=false AND o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true'))) AND lower(COALESCE(o.customer_email,''))=lower($2) AND o.stripe_session_id<>$3", [productId, purchaserEmail, input.stripeSessionId]);
         const previouslyAllocated = Number(customerPurchases.rows[0]?.count || 0) + Number(customerReservations.rows[0]?.count || 0);
         if (previouslyAllocated + quantity > maxPerOrder) {
           const remainingForCustomer = Math.max(0, maxPerOrder - previouslyAllocated);
@@ -835,11 +859,16 @@ export async function recordShopCheckout(input: {
       }
       const total = input.cart.subtotalCents + input.shippingCents;
       const checkoutExpiresAt = input.checkoutExpiresAt || new Date(Date.now() + 30 * 60_000).toISOString();
-      const order = await client.query("INSERT INTO website.shop_orders (stripe_session_id,customer_email,customer_name,customer_phone,status,amount_total_cents,subtotal_cents,shipping_cents,shipping_address,shipping_provider,shipping_service,shipping_rate_id,checkout_expires_at,metadata) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13::jsonb) ON CONFLICT (stripe_session_id) DO UPDATE SET customer_email=EXCLUDED.customer_email,customer_name=EXCLUDED.customer_name,customer_phone=EXCLUDED.customer_phone,amount_total_cents=EXCLUDED.amount_total_cents,subtotal_cents=EXCLUDED.subtotal_cents,shipping_cents=EXCLUDED.shipping_cents,shipping_address=EXCLUDED.shipping_address,shipping_provider=EXCLUDED.shipping_provider,shipping_service=EXCLUDED.shipping_service,shipping_rate_id=EXCLUDED.shipping_rate_id,checkout_expires_at=EXCLUDED.checkout_expires_at RETURNING id", [input.stripeSessionId, input.customerEmail || null, input.customerName || null, input.customerPhone || null, total, input.cart.subtotalCents, input.shippingCents, JSON.stringify(input.shippingAddress || {}), input.shippingProvider || null, input.shippingService || null, input.shippingRateId || null, checkoutExpiresAt, JSON.stringify({ source: "shop-new", bonusApplied: Boolean(input.cart.bonusItem), ticketOnly: input.cart.ticketOnly })]);
+      const order = await client.query("INSERT INTO website.shop_orders (stripe_session_id,customer_email,customer_name,customer_phone,status,amount_total_cents,subtotal_cents,shipping_cents,shipping_address,shipping_provider,shipping_service,shipping_rate_id,checkout_expires_at,metadata) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13::jsonb) RETURNING id", [input.stripeSessionId, input.customerEmail || null, input.customerName || null, input.customerPhone || null, total, input.cart.subtotalCents, input.shippingCents, JSON.stringify(input.shippingAddress || {}), input.shippingProvider || null, input.shippingService || null, input.shippingRateId || null, checkoutExpiresAt, JSON.stringify({ source: "shop-new", bonusApplied: Boolean(input.cart.bonusItem), ticketOnly: input.cart.ticketOnly, containsTickets:ticketQuantities.size>0, purchaser:ticketQuantities.size?{firstName:input.customerFirstName,lastName:input.customerLastName}:undefined,ticketCutoffAt:cutoffs.length?new Date(Math.min(...cutoffs)).toISOString():undefined })]);
       const orderId = Number(order.rows[0].id);
-      await client.query("DELETE FROM website.shop_order_items WHERE order_id=$1", [orderId]);
-      for (const item of input.cart.items) await client.query("INSERT INTO website.shop_order_items (order_id,product_id,variant_id,product_name,variant_label,quantity,unit_price_cents,is_bonus) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", [orderId, item.productId, item.variantId, item.productName, item.variantLabel, item.quantity, item.unitPriceCents, item.isBonus]);
+      const offsets=new Map<number,number>();
+      for (const item of input.cart.items) {
+        const offset=offsets.get(item.productId)||0,names=item.productType==="ticket"?(guests[item.productId]||[]).slice(offset,offset+item.quantity):[];
+        if(item.productType==="ticket")offsets.set(item.productId,offset+item.quantity);
+        await client.query("INSERT INTO website.shop_order_items (order_id,product_id,variant_id,product_name,variant_label,quantity,unit_price_cents,is_bonus,guest_names,ticket_details) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)", [orderId, item.productId, item.variantId, item.productName, item.variantLabel, item.quantity, item.unitPriceCents, item.isBonus,JSON.stringify(names),JSON.stringify(item.productType==="ticket"?{eventStartsAt:item.ticketEventStartsAt,locationSlug:item.ticketLocationSlug}: {})]);
+      }
       await client.query("COMMIT");
+      return {orderId};
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       throw error;
@@ -854,6 +883,9 @@ type ShopOrderNotificationJob = {
   customerEmail: string;
   customerName: string;
   customerPhone: string;
+  containsTickets?: boolean;
+  adminDelivered?: boolean;
+  customerDelivered?: boolean;
   stripeSessionId: string;
   subtotalCents: number;
   shippingCents: number;
@@ -892,6 +924,12 @@ function shopOrderHtmlList(items: ShopOrderItem[]) {
 
 async function sendShopCustomerOrderAcknowledgement(job: Exclude<ShopOrderNotificationJob, { complete: true }>) {
   if (!validShopEmail(job.customerEmail)) return true;
+  if(job.containsTickets&&!job.isTestOrder){
+    const purchases=await withDatabase(async c=>(await c.query("SELECT product_name,event_starts_at,location_slug,party_size,guest_names FROM website.shop_ticket_purchases WHERE order_id=$1 ORDER BY id",[job.orderId])).rows,{skipSchema:true});
+    const locations=await getAllLocations(),receipt=shopTicketReceipt({orderId:job.orderId,name:job.customerName,totalCents:job.totalCents,purchases:purchases.map(p=>({name:String(p.product_name),date:p.event_starts_at?new Date(p.event_starts_at).toISOString():"",venue:locations.find(l=>l.slug===p.location_slug)?.name||String(p.location_slug||"Aviator"),quantity:Number(p.party_size),guestNames:Array.isArray(p.guest_names)?p.guest_names:[]}))});
+    if(!await sendMail({to:job.customerEmail,cc:"events@aviatorbrew.com",replyTo:"events@aviatorbrew.com",...receipt}))return false;
+    await withDatabase(async c=>c.query("UPDATE website.shop_orders SET customer_acknowledgement_sent_at=COALESCE(customer_acknowledgement_sent_at,now()),updated_at=now() WHERE id=$1",[job.orderId]),{skipSchema:true});return true;
+  }
   const itemLines = shopOrderItemLines(job.items);
   const text = [
     job.isTestOrder ? "Aviator Supply test order received" : "Aviator Supply order received",
@@ -930,6 +968,7 @@ async function shopOrderEmailJobById(orderId: number): Promise<Exclude<ShopOrder
       customerEmail: String(row.customer_email || ""),
       customerName: String(row.customer_name || ""),
       customerPhone: String(row.customer_phone || ""),
+      containsTickets:row.metadata?.containsTickets===true||row.metadata?.ticketOnly===true,
       stripeSessionId: String(row.stripe_session_id || ""),
       subtotalCents: Number(row.subtotal_cents || 0),
       shippingCents: Number(row.shipping_cents || 0),
@@ -990,31 +1029,33 @@ export async function expireShopCheckout(sessionId: string) {
   await withDatabase(async (client) => client.query("UPDATE website.shop_orders SET status='cancelled',updated_at=now() WHERE stripe_session_id=$1 AND status='pending'", [sessionId]), { skipSchema: true });
 }
 
-export async function markShopOrderPaid(sessionId: string): Promise<boolean> {
+export async function markShopOrderPaid(sessionId: string, payment?:{id?:string;payment_status?:string;amount_total?:number|null;currency?:string|null}): Promise<boolean> {
   if (!sessionId) return false;
   const job = await withDatabase(async (client): Promise<ShopOrderNotificationJob | null> => {
     await client.query("BEGIN");
     try {
-      const newlyPaid = await client.query("UPDATE website.shop_orders SET status='paid', paid_at=COALESCE(paid_at,now()), updated_at=now() WHERE stripe_session_id=$1 AND status <> 'paid' RETURNING id", [sessionId]);
+      await client.query("SELECT id FROM website.shop_products WHERE id IN (SELECT i.product_id FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.stripe_session_id=$1) AND product_type='ticket' ORDER BY id FOR UPDATE",[sessionId]);
+      const newlyPaid = await client.query("UPDATE website.shop_orders SET status='paid', paid_at=COALESCE(paid_at,now()), updated_at=now() WHERE stripe_session_id=$1 AND paid_at IS NULL RETURNING id", [sessionId]);
       const order = await client.query("SELECT o.*,s.order_notification_email FROM website.shop_orders o CROSS JOIN website.shop_settings s WHERE o.stripe_session_id=$1 AND s.id=1 FOR UPDATE OF o", [sessionId]);
       const row = order.rows[0];
       if (!row) {
         await client.query("COMMIT");
         return null;
       }
+      if(payment&&(payment.id!==sessionId||payment.payment_status!=="paid"||payment.amount_total!==Number(row.amount_total_cents)||payment.currency?.toLowerCase()!=="usd"))throw new Error("Payment details do not match the saved order.");
       const orderId = Number(row.id);
       if (newlyPaid.rows[0]?.id) {
-        const inventoryItems = await client.query("SELECT i.id AS order_item_id,i.product_id,i.variant_id,i.product_name,i.variant_label,i.quantity,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at FROM website.shop_order_items i LEFT JOIN website.shop_products p ON p.id=i.product_id WHERE i.order_id=$1 AND i.is_bonus=false", [orderId]);
+        const inventoryItems = await client.query("SELECT i.id AS order_item_id,i.product_id,i.variant_id,i.product_name,i.variant_label,i.quantity,i.guest_names,i.ticket_details,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at FROM website.shop_order_items i LEFT JOIN website.shop_products p ON p.id=i.product_id WHERE i.order_id=$1 AND i.is_bonus=false", [orderId]);
         for (const item of inventoryItems.rows) {
           await client.query("UPDATE website.shop_product_variants SET inventory_count=GREATEST(inventory_count-$1,0),available_for_sale=CASE WHEN track_inventory AND GREATEST(inventory_count-$1,0)=0 THEN false ELSE available_for_sale END,updated_at=now() WHERE id=$2 AND track_inventory=true", [Number(item.quantity || 0), Number(item.variant_id)]);
-          if (item.product_type === "ticket") await client.query("INSERT INTO website.shop_ticket_purchases (order_id,order_item_id,product_id,variant_id,product_name,variant_label,location_slug,event_starts_at,purchaser_name,purchaser_email,purchaser_phone,party_size,paid_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,COALESCE($13,now())) ON CONFLICT (order_item_id) DO NOTHING", [orderId, Number(item.order_item_id), item.product_id ? Number(item.product_id) : null, item.variant_id ? Number(item.variant_id) : null, String(item.product_name || "Ticket"), String(item.variant_label || "Admission"), item.ticket_location_slug || null, item.ticket_event_starts_at || null, String(row.customer_name || "Guest"), String(row.customer_email || ""), String(row.customer_phone || "") || null, Number(item.quantity || 0), row.paid_at || null]);
+          if (item.product_type === "ticket" && row.is_test_order!==true) await client.query("INSERT INTO website.shop_ticket_purchases (order_id,order_item_id,product_id,variant_id,product_name,variant_label,location_slug,event_starts_at,purchaser_name,purchaser_email,purchaser_phone,party_size,paid_at,guest_names) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,COALESCE($13,now()),$14::jsonb) ON CONFLICT (order_item_id) DO NOTHING", [orderId, Number(item.order_item_id), item.product_id ? Number(item.product_id) : null, item.variant_id ? Number(item.variant_id) : null, String(item.product_name || "Ticket"), String(item.variant_label || "Admission"), item.ticket_details?.locationSlug || item.ticket_location_slug || null, item.ticket_details?.eventStartsAt || item.ticket_event_starts_at || null, String(row.customer_name || "Guest"), String(row.customer_email || ""), String(row.customer_phone || "") || null, Number(item.quantity || 0), row.paid_at || null,JSON.stringify(Array.isArray(item.guest_names)?item.guest_names:[])]);
         }
       }
-      if (row.notification_sent_at) {
+      if (row.notification_sent_at && row.customer_acknowledgement_sent_at) {
         await client.query("COMMIT");
         return { complete: true };
       }
-      const claimed = await client.query("UPDATE website.shop_orders SET notification_claimed_at=now(),updated_at=now() WHERE id=$1 AND notification_sent_at IS NULL AND (notification_claimed_at IS NULL OR notification_claimed_at < now()-interval '10 minutes') RETURNING id", [orderId]);
+      const claimed = await client.query("UPDATE website.shop_orders SET notification_claimed_at=now(),updated_at=now() WHERE id=$1 AND (notification_sent_at IS NULL OR customer_acknowledgement_sent_at IS NULL) AND (notification_claimed_at IS NULL OR notification_claimed_at < now()-interval '10 minutes') RETURNING id", [orderId]);
       if (!claimed.rows[0]) {
         await client.query("COMMIT");
         return { complete: true };
@@ -1029,6 +1070,8 @@ export async function markShopOrderPaid(sessionId: string): Promise<boolean> {
         customerEmail: String(row.customer_email || ""),
         customerName: String(row.customer_name || ""),
         customerPhone: String(row.customer_phone || ""),
+        adminDelivered:Boolean(row.notification_sent_at),customerDelivered:Boolean(row.customer_acknowledgement_sent_at),
+        containsTickets:row.metadata?.containsTickets===true||row.metadata?.ticketOnly===true,
         stripeSessionId: String(row.stripe_session_id || ""),
         subtotalCents: Number(row.subtotal_cents || 0),
         shippingCents: Number(row.shipping_cents || 0),
@@ -1077,6 +1120,7 @@ export async function markShopOrderPaid(sessionId: string): Promise<boolean> {
   ].join("\n");
 
   try {
+    if(!job.adminDelivered){
     const sent = await sendMail({
       to: job.recipient,
       subject: "Paid Aviator Supply order #" + job.orderId + " - " + shopOrderMoney(job.totalCents),
@@ -1087,12 +1131,14 @@ export async function markShopOrderPaid(sessionId: string): Promise<boolean> {
     await withDatabase(async (client) => {
       await client.query("UPDATE website.shop_orders SET notification_sent_at=now(),updated_at=now() WHERE id=$1 AND notification_sent_at IS NULL", [job.orderId]);
     }, { skipSchema: true });
-    await sendShopCustomerOrderAcknowledgement(job);
+    }
+    if(!job.customerDelivered&&!await sendShopCustomerOrderAcknowledgement(job))throw new Error("Customer receipt delivery needs retry.");
+    await withDatabase(async c=>c.query("UPDATE website.shop_orders SET notification_claimed_at=NULL WHERE id=$1",[job.orderId]),{skipSchema:true});
     return true;
   } catch (error) {
     console.error("shop.order_notification_failed", error instanceof Error ? error.message : "unknown error");
     await withDatabase(async (client) => {
-      await client.query("UPDATE website.shop_orders SET notification_claimed_at=NULL,updated_at=now() WHERE id=$1 AND notification_sent_at IS NULL", [job.orderId]);
+      await client.query("UPDATE website.shop_orders SET notification_claimed_at=NULL,updated_at=now() WHERE id=$1", [job.orderId]);
     }, { skipSchema: true }).catch(() => undefined);
     return false;
   }
@@ -1187,4 +1233,21 @@ export async function sendShopOrderShipmentEmail(input: { id: number; trackingUr
   if (!sent) throw new Error("Shop shipment email is not configured.");
   await withDatabase(async (client) => client.query("UPDATE website.shop_orders SET status='shipped', shipment_tracking_url=$2, shipment_note=$3, shipped_at=COALESCE(shipped_at,now()), shipment_email_sent_at=now(), updated_at=now() WHERE id=$1", [id, trackingUrl, note]), { skipSchema: true });
   return getShopCatalog({ manager: true });
+}
+
+export async function getShopTicketAvailability(productId:number) {
+  return withDatabase(async client=>{
+    const result=await client.query("SELECT p.id,p.published,p.ticket_capacity,p.ticket_door_price_cents,p.ticket_event_starts_at,p.ticket_sales_end_at,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS sold,COALESCE((SELECT SUM(i.quantity) FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE i.product_id=p.id AND i.is_bonus=false AND o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true')))),0)::int AS reserved FROM website.shop_products p WHERE p.id=$1 AND p.product_type='ticket' AND p.published=true",[productId]);
+    const p=result.rows[0];if(!p)return null;
+    const variants=await client.query("SELECT id,label,price_cents,published,available_for_sale FROM website.shop_product_variants WHERE product_id=$1 AND published=true ORDER BY sort_order,id",[productId]);
+    return {id:Number(p.id),published:true,ticketCapacity:Number(p.ticket_capacity),ticketSoldCount:Number(p.sold),ticketReservedCount:Number(p.reserved),ticketAvailableCount:Math.max(0,Number(p.ticket_capacity)-Number(p.sold)-Number(p.reserved)),ticketDoorPriceCents:Number(p.ticket_door_price_cents||0),ticketEventStartsAt:p.ticket_event_starts_at?new Date(p.ticket_event_starts_at).toISOString():"",ticketSalesEndAt:p.ticket_sales_end_at?new Date(p.ticket_sales_end_at).toISOString():"",variants:variants.rows.map(v=>({id:Number(v.id),label:String(v.label),priceCents:Number(v.price_cents),published:v.published===true,availableForSale:v.available_for_sale===true}))};
+  });
+}
+export async function getShopTicketGuestRoster(productId:number) {
+  const locations=await getAllLocations();
+  return withDatabase(async client=>{
+    const p=(await client.query("SELECT id,name,ticket_capacity,ticket_event_starts_at,ticket_location_slug FROM website.shop_products WHERE id=$1 AND product_type='ticket'",[productId])).rows[0];if(!p)throw new Error('Ticket event not found.');
+    const rows=(await client.query("SELECT t.order_id,t.purchaser_name,t.variant_label,t.party_size,t.guest_names FROM website.shop_ticket_purchases t JOIN website.shop_orders o ON o.id=t.order_id WHERE t.product_id=$1 AND o.paid_at IS NOT NULL AND COALESCE(o.is_test_order,false)=false ORDER BY t.id",[productId])).rows;
+    return ticketRosterHtml({name:p.name,ticketCapacity:Number(p.ticket_capacity),ticketEventStartsAt:p.ticket_event_starts_at?new Date(p.ticket_event_starts_at).toISOString():'',ticketLocationName:locations.find(l=>l.slug===p.ticket_location_slug)?.name||String(p.ticket_location_slug||'Aviator')},rows.map(r=>({orderId:Number(r.order_id),purchaserName:String(r.purchaser_name),variantLabel:String(r.variant_label),partySize:Number(r.party_size),guestNames:Array.isArray(r.guest_names)?r.guest_names:[]})));
+  });
 }

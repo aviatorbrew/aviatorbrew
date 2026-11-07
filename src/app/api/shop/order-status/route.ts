@@ -1,0 +1,4 @@
+import {NextRequest,NextResponse} from 'next/server';
+import {withDatabase} from '@/lib/database';
+export const runtime='nodejs';export const dynamic='force-dynamic';
+export async function GET(request:NextRequest){const id=request.nextUrl.searchParams.get('sessionId')||'';const headers={'Cache-Control':'no-store'};if(!/^cs_(test|live)_[A-Za-z0-9_]{10,250}$/.test(id))return NextResponse.json({error:'Invalid checkout reference.'},{status:400,headers});const row=await withDatabase(async c=>(await c.query('SELECT status,paid_at,is_test_order FROM website.shop_orders WHERE stripe_session_id=$1',[id])).rows[0]);if(!row||row.is_test_order)return NextResponse.json({error:'Order not found.'},{status:404,headers});return NextResponse.json({status:row.paid_at&&['paid','shipped'].includes(row.status)?'paid':'pending'},{headers});}

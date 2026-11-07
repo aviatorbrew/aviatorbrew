@@ -1,0 +1,14 @@
+Tool: built-in image_gen.imagegen, opaque background, two separate new images.
+
+Common prompt (verbatim):
+Create a polished original New Year's Eve event ticket advertisement for Aviator Brewing Company / Aviator Hangar Bar in Fuquay-Varina, North Carolina. Aviation meets live music: sophisticated midnight navy, warm champagne gold, cream, restrained crimson; vintage aviation / art deco concert poster, small airplane silhouette, tasteful fireworks, live-stage spotlights and subtle musical instruments, crisp editorial typography, premium brewery character. Do not use photographs of real band members or Grateful Dead art. All type must be large and legible, exact spelling and punctuation. Exact text: AVIATOR HANGAR BAR; NEW YEAR'S EVE; RING IN 2027; THURSDAY, DECEMBER 31, 2026; 7 PM – 1 AM; RALEIGH ASSASSINS · 7–10 PM; LONGLEAF SOUL · 10 PM–1 AM; $20 ADVANCE · $25 AT THE DOOR; ONLINE SALES END DEC 31 AT 5 PM; TICKET REQUIRED FOR ENTRY; 688 BREWING DRIVE · FUQUAY-VARINA, NC; AVIATORBREW.COM. Prioritize event title, date and band names. Smaller but readable price, cutoff and ticket-required message. No invented sponsors, VIP offers, complimentary drinks, QR codes or fake barcodes. Finished print-like artwork with generous safe margins, no mockup background.
+
+Portrait suffix (verbatim):
+Format: portrait event poster, about 2:3 aspect ratio, full bleed artwork, balanced professional concert announcement.
+Saved project asset: public/images/tickets/aviator-nye-2027-poster.png
+Original: /home/skynet/.codex/generated_images/01a13518-7353-7ee1-a0d9-e78c25b188a3/exec-2900e700-89a8-46f2-a70c-91d524e55d41.png
+
+Landscape suffix (verbatim):
+Format: landscape wide website ticket promotion / social share image, about 16:9 aspect ratio. Full bleed artwork. Keep all critical copy safely within the central 90%, highly readable band schedule, not a screenshot of a website.
+Saved project asset: public/images/tickets/aviator-nye-2027-banner.png
+Original: /home/skynet/.codex/generated_images/01a13518-7353-7ee1-a0d9-e78c25b188a3/exec-0d09805d-9520-4b74-af22-aebb65d2fd87.png

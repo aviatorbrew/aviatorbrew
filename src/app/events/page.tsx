@@ -1,3 +1,4 @@
+import { ticketSalesStatus } from "@/lib/shop-tickets";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, Calendar } from "@/components/icons";
@@ -97,6 +98,7 @@ function LiveMusicDispatchShow({ show }: { show: LiveMusicShow }) {
 }
 
 function TicketProductEventCard({ product }: { product: ShopProduct }) {
+  const ticketStatus=ticketSalesStatus(product);
   const startsAt = new Date(product.ticketEventStartsAt);
   const dateParts = {
     weekday: new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "America/New_York" }).format(startsAt),
@@ -104,7 +106,7 @@ function TicketProductEventCard({ product }: { product: ShopProduct }) {
     day: new Intl.DateTimeFormat("en-US", { day: "numeric", timeZone: "America/New_York" }).format(startsAt),
   };
   const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).format(startsAt);
-  return <article className="event-card managed-event-card ticket-product-event-card"><div className="managed-event-media">{product.imageUrls.length ? <div className={"managed-event-gallery" + (product.imageUrls.length > 1 ? " has-multiple" : "")}>{product.imageUrls.slice(0, 6).map((image, index) => <EventImageViewer src={image} alt={product.name + " event photo " + (index + 1)} title={product.name} description={product.description} key={image} />)}</div> : <div className="managed-event-image-placeholder">Aviator ticketed event</div>}</div><div className="managed-event-info"><div className="managed-event-summary"><p className="card-kicker">{product.ticketLocationName}</p><div className="managed-event-title-row"><h3>{product.name}</h3><span>Tickets on sale</span></div><div className="managed-event-schedule"><div className="managed-event-date-block"><span>{dateParts.weekday}</span><strong>{dateParts.month}</strong><b>{dateParts.day}</b></div><div className="managed-event-time-block"><span>Event time</span><strong>{time}</strong></div></div></div><div className="managed-event-description"><p className="ticket-product-description">{product.description}</p><Link href={"/shop-new#product-" + product.slug} data-analytics="ticket_product_event">Details + tickets</Link></div></div></article>;
+  return <article className="event-card managed-event-card ticket-product-event-card"><div className="managed-event-media">{product.imageUrls.length ? <div className={"managed-event-gallery" + (product.imageUrls.length > 1 ? " has-multiple" : "")}>{product.imageUrls.slice(0, 6).map((image, index) => <EventImageViewer src={image} alt={product.name + " event photo " + (index + 1)} title={product.name} description={product.description} key={image} />)}</div> : <div className="managed-event-image-placeholder">Aviator ticketed event</div>}</div><div className="managed-event-info"><div className="managed-event-summary"><p className="card-kicker">{product.ticketLocationName}</p><div className="managed-event-title-row"><h3>{product.name}</h3><span>{ticketStatus.open?"Tickets on sale":ticketStatus.kind==="closed"?"Online sales closed":ticketStatus.kind==="sold-out"?"Sold out":"Ticket availability"}</span></div><div className="managed-event-schedule"><div className="managed-event-date-block"><span>{dateParts.weekday}</span><strong>{dateParts.month}</strong><b>{dateParts.day}</b></div><div className="managed-event-time-block"><span>Event time</span><strong>{time}</strong></div></div></div><div className="managed-event-description"><p className="ticket-product-description">{product.description}</p><Link href={"/shop-new#product-" + product.slug} data-analytics="ticket_product_event">Details + tickets</Link></div></div></article>;
 }
 
 export default async function EventsPage() {

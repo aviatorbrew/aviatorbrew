@@ -151,6 +151,9 @@ export async function createDynamicCheckoutSession(input: DynamicCheckoutInput) 
 
 
 type ShopCartCheckoutInput = {
+  idempotencyKey?: string;
+  expiresAt?: number;
+  cardOnly?: boolean;
   items: Array<{ name: string; description: string; unitAmount: number; quantity: number }>;
   customerEmail: string;
   metadata: Record<string, string>;
@@ -177,7 +180,8 @@ export async function createShopCartCheckoutSession(input: ShopCartCheckoutInput
   form.set("customer_email", input.customerEmail);
   form.set("billing_address_collection", "auto");
   form.set("customer_creation", "always");
-  form.set("expires_at", String(Math.floor(Date.now() / 1000) + 31 * 60));
+  form.set("expires_at", String(input.expiresAt || Math.floor(Date.now() / 1000) + 31 * 60));
+  if(input.cardOnly)form.set("payment_method_types[0]","card");
   if (input.shipping) {
     form.set("payment_intent_data[shipping][name]", input.shipping.address.name);
     form.set("payment_intent_data[shipping][phone]", input.shipping.phone);
@@ -205,8 +209,9 @@ export async function createShopCartCheckoutSession(input: ShopCartCheckoutInput
 
   const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
-    headers: { authorization: "Bearer " + secret, "content-type": "application/x-www-form-urlencoded", "Stripe-Version": "2026-02-25.clover" },
+    headers: { authorization: "Bearer " + secret, "content-type": "application/x-www-form-urlencoded", "Stripe-Version": "2026-02-25.clover",...(input.idempotencyKey?{"Idempotency-Key":input.idempotencyKey}:{}) },
     body: form,
+    signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) {
     let detail = "Stripe Checkout could not be started.";

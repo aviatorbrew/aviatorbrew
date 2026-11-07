@@ -437,6 +437,9 @@ const schemaStatements = [
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_event_starts_at timestamptz`,
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_sales_end_at timestamptz`,
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_capacity integer NOT NULL DEFAULT 0`,
+  `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_door_price_cents integer NOT NULL DEFAULT 0 CHECK(ticket_door_price_cents>=0)`,
+  `ALTER TABLE IF EXISTS website.shop_order_items ADD COLUMN IF NOT EXISTS guest_names jsonb NOT NULL DEFAULT '[]'::jsonb`,
+  `ALTER TABLE IF EXISTS website.shop_order_items ADD COLUMN IF NOT EXISTS ticket_details jsonb NOT NULL DEFAULT '{}'::jsonb`,
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_max_per_order integer NOT NULL DEFAULT 20`,
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_full_width boolean NOT NULL DEFAULT false`,
   `ALTER TABLE IF EXISTS website.shop_products ADD COLUMN IF NOT EXISTS ticket_publish_as_event boolean NOT NULL DEFAULT false`,
@@ -499,6 +502,7 @@ const schemaStatements = [
     paid_at timestamptz NOT NULL DEFAULT now(),
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
+  `ALTER TABLE IF EXISTS website.shop_ticket_purchases ADD COLUMN IF NOT EXISTS guest_names jsonb NOT NULL DEFAULT '[]'::jsonb`,
   `ALTER TABLE IF EXISTS website.shop_ticket_purchases DROP CONSTRAINT IF EXISTS shop_ticket_purchases_party_size_check`,
   `ALTER TABLE IF EXISTS website.shop_ticket_purchases ADD CONSTRAINT shop_ticket_purchases_party_size_check CHECK (party_size BETWEEN 1 AND 1000)`,
   `CREATE TABLE IF NOT EXISTS website.private_event_proposals (

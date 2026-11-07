@@ -4,7 +4,7 @@ import { ShopCartCheckout } from "@/components/shop-cart-checkout";
 export const metadata: Metadata = { title: "Cart | Aviator Supply", description: "Review your Aviator cart, calculate USPS shipping, and check out securely." };
 export const dynamic = "force-dynamic";
 
-export default async function ShopCartPage({ searchParams }: { searchParams?: Promise<{ checkout?: string }> }) {
-  const params = await (searchParams || Promise.resolve({ checkout: undefined }));
-  return <ShopCartCheckout checkoutStatus={params.checkout} />;
+export default async function ShopCartPage({ searchParams }: { searchParams?: Promise<{ checkout?: string; session_id?: string }> }) {
+  const params = await (searchParams || Promise.resolve({ checkout: undefined, session_id: undefined }));
+  return <ShopCartCheckout checkoutStatus={params.checkout} sessionId={params.session_id} />;
 }

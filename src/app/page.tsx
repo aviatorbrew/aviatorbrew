@@ -18,6 +18,7 @@ import { getPublishedBeerReleaseAlerts } from "@/lib/beer-release-alert";
 import { getPublishedShopTicketEvents, type ShopProduct } from "@/lib/shop";
 import { getLocationHero } from "@/lib/location-photos";
 import { getCachedSiteTheme } from "@/lib/site-theme-cache";
+import { ticketSalesStatus } from "@/lib/shop-tickets";
 import { homeSharingMetadata } from "@/lib/home-sharing";
 
 export const dynamic = "force-dynamic";
@@ -68,10 +69,11 @@ function ManagedEventCard({ event }: { event: ManagedEvent }) {
 }
 
 function TicketProductHomeCard({ product }: { product: ShopProduct }) {
+  const ticketStatus = ticketSalesStatus(product);
   const startsAt = new Date(product.ticketEventStartsAt);
   const date = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" }).format(startsAt);
   const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).format(startsAt);
-  return <article className="event-card managed-event-card ticket-product-home-card"><div className="event-date"><span>{date}</span><strong>{time}</strong></div><div className="event-content"><p className="card-kicker">{product.ticketLocationName} · Tickets on sale</p><h3>{product.name}</h3><p className="managed-event-copy ticket-product-description">{product.description}</p><Link href={"/shop-new#product-" + product.slug} data-analytics="home_ticket_product_event">Details + tickets <ArrowUpRight /></Link></div></article>;
+  return <article className="event-card managed-event-card ticket-product-home-card"><div className="event-date"><span>{date}</span><strong>{time}</strong></div><div className="event-content"><p className="card-kicker">{product.ticketLocationName} · {ticketStatus.open?"Tickets on sale":ticketStatus.kind==="closed"?"Online sales closed":ticketStatus.kind==="sold-out"?"Sold out":"Ticket availability"}</p><h3>{product.name}</h3><p className="managed-event-copy ticket-product-description">{product.description}</p><Link href={"/shop-new#product-" + product.slug} data-analytics="home_ticket_product_event">Details + tickets <ArrowUpRight /></Link></div></article>;
 }
 
 export default async function Home() { const [weekendEvents, locations, beers, couponOffers, couponStatus, beerReleaseAlert, ticketEvents] = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getAllLocations(), getAllBeers(), getCouponOffers(), couponAvailability(), getPublishedBeerReleaseAlerts(), getPublishedShopTicketEvents()]); const schema = { "@context": "https://schema.org", "@type": ["Brewery", "Restaurant", "LocalBusiness"], name: "Aviator Brewing Company", address: { "@type": "PostalAddress", streetAddress: "688 Brewing Drive", addressLocality: "Fuquay-Varina", addressRegion: "NC", postalCode: "27526", addressCountry: "US" }, telephone: "+1-919-567-2337", servesCuisine: ["American", "Pizza", "Barbecue"], url: "https://aviatorbrew.com" }; return <>
