@@ -41,7 +41,9 @@
     "test:event-production": "node scripts/test-event-production.mjs",
     "test:event-production-ui": "node scripts/test-event-production.mjs && node scripts/test-event-production-ui.mjs",
     "test:event-food-cost": "node scripts/test-event-food-cost.mjs",
-    "test:event-food-cost-ui": "node scripts/test-event-production.mjs && node scripts/test-event-food-cost-ui.mjs"
+    "test:event-food-cost-ui": "node scripts/test-event-production.mjs && node scripts/test-event-food-cost-ui.mjs",
+    "test:site-skins": "node scripts/test-site-skins.mjs",
+    "test:site-skins-ui": "node scripts/test-site-skins-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

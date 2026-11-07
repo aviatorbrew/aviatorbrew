@@ -18,3 +18,5 @@ data/coupons.json
 logs/*.log
 manager-shop-debug.png
 data/keg-imports/
+
+data/site-theme.json

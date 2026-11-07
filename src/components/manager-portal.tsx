@@ -8,6 +8,7 @@ import { managerSectionGroups, managerSections, type ManagerSection } from "@/li
 import { CouponManager } from "@/components/coupons";
 import { MenuLibraryClient } from "@/components/menu-library-client";
 import { LocationManager } from "@/components/location-manager";
+import { SiteSkinManager } from "@/components/site-skin-manager";
 import { BrandingManager } from "@/components/branding-manager";
 import { NewsletterManager } from "@/components/newsletter-manager";
 import { PaymentTestManager } from "@/components/payment-test-manager";
@@ -812,6 +813,7 @@ function ManagerSectionContent({ section, editId, editType, returnTo }: { sectio
     case "catering": return <CateringManager />;
     case "database": return <DatabaseManager />;
     case "email-test": return <EmailTestManager />;
+    case "site-skins": return <SiteSkinManager />;
     case "media": return <div className="manager-media-route"><BrandingManager /><MenuLibraryClient managerMode /></div>;
     default: return <ManagerOverview />;
   }

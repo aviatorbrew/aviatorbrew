@@ -102,6 +102,12 @@ export const managerSections = [
     description: "Create, validate, and manage customer offers.",
   },
   {
+    id: "site-skins",
+    href: "/manager/site-skins",
+    label: "Website Skins",
+    description: "Switch seasonal website themes, feature a show, and restore the standard Aviator design.",
+  },
+  {
     id: "newsletter",
     href: "/manager/newsletter",
     label: "Newsletter",
@@ -134,7 +140,7 @@ export const managerSectionGroups = [
   { id: "products", label: "Products & Sales", sections: ["beers", "beverages", "beer-release-alert", "kegs", "shop"] },
   { id: "media", label: "Photos, Menus & Locations", sections: ["media", "brewery-photos", "private-event-photos", "amphitheater-photos", "locations"] },
   { id: "hospitality", label: "Events & Hospitality", sections: ["events", "private-events", "feast", "catering", "tours"] },
-  { id: "marketing", label: "Marketing", sections: ["newsletter", "coupons"] },
+  { id: "marketing", label: "Marketing", sections: ["site-skins", "newsletter", "coupons"] },
   { id: "system", label: "System Tools", sections: ["payments", "email-test", "database"] },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; sections: readonly ManagerSection[] }>;
 

@@ -17,11 +17,15 @@ import "./event-planning.css";
 import "./manager.css";
 import "./online-catering.css";
 import "./feast.css";
+import "./site-skins.css";
 import packageInfo from "../../package.json";
 import { AnalyticsHooks } from "@/components/analytics";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { publicSiteUrl } from "@/lib/site-url";
+
+import { SitePresentation } from "@/components/site-presentation";
+import { getCachedSiteTheme } from "@/lib/site-theme-cache";
 
 const siteUrl = publicSiteUrl();
 export const metadata: Metadata = {
@@ -39,8 +43,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const theme = await getCachedSiteTheme();
   const revision = process.env.RENDER_GIT_COMMIT?.slice(0, 7);
   const websiteVersion = revision ? `${packageInfo.version} · ${revision}` : packageInfo.version;
-  return <html lang="en"><body><AnalyticsHooks /><div className="page-shell"><SiteHeader version={websiteVersion} /><main id="main" className="page-main">{children}</main><SiteFooter /></div></body></html>;
+  return <html lang="en"><body><AnalyticsHooks /><SitePresentation initial={theme}><div className="page-shell"><SiteHeader version={websiteVersion} /><main id="main" className="page-main">{children}</main><SiteFooter /></div></SitePresentation></body></html>;
 }
