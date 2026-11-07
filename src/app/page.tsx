@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 import { ThemedHomeHero } from "@/components/site-presentation";
 import Link from "next/link";
 import { BeerCard } from "@/components/cards";
@@ -16,8 +17,15 @@ import { couponAvailability, getCouponOffers } from "@/lib/coupons";
 import { getPublishedBeerReleaseAlerts } from "@/lib/beer-release-alert";
 import { getPublishedShopTicketEvents, type ShopProduct } from "@/lib/shop";
 import { getLocationHero } from "@/lib/location-photos";
+import { getCachedSiteTheme } from "@/lib/site-theme-cache";
+import { homeSharingMetadata } from "@/lib/home-sharing";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return homeSharingMetadata(await getCachedSiteTheme(), publicSiteUrl());
+}
 
 async function HangarBarFeature() {
   const image = await getLocationHero("hangar-bar", "/images/locations/hangar-bar.png");
