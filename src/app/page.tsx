@@ -19,12 +19,11 @@ import { getPublishedShopTicketEvents, type ShopProduct } from "@/lib/shop";
 import { getLocationHero } from "@/lib/location-photos";
 import { getCachedSiteTheme } from "@/lib/site-theme-cache";
 import { homeSharingMetadata } from "@/lib/home-sharing";
-import { publicSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return homeSharingMetadata(await getCachedSiteTheme(), publicSiteUrl());
+  return homeSharingMetadata(await getCachedSiteTheme(), "https://aviatorbrew.com");
 }
 
 async function HangarBarFeature() {
