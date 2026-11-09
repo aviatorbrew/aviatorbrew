@@ -36,3 +36,6 @@
 .feast-beer-options .feast-extra-quantity{width:100%;display:grid;grid-template-columns:auto minmax(4rem,6rem) auto;gap:8px;align-items:center;font-size:.8rem}
 .feast-beer-options .feast-extra-quantity small{justify-self:end;font-weight:700}
 @media(max-width:700px){.feast-beer-addons{padding:14px}.feast-beer-options{grid-template-columns:minmax(0,1fr)}}
+
+/* Manager-only internal cost reports. */
+.food-cost-updates,.feast-food-cost{border:2px solid #b7c5cb;padding:12px;margin:14px 0;font:13px/1.45 Arial,sans-serif;max-width:100%;min-width:0}.food-cost-updates h3{font:700 19px Arial,sans-serif;color:inherit;margin:0 0 10px}.food-cost-updates p,.feast-food-cost p{margin:7px 0}.food-cost-updates summary,.feast-food-cost summary{cursor:pointer;font-weight:700;padding:8px 0}.food-cost-updates table,.feast-food-cost table{width:100%;border-collapse:collapse}.food-cost-updates th,.food-cost-updates td,.feast-food-cost th,.feast-food-cost td{padding:7px;border:1px solid #9aaab3;text-align:left;vertical-align:top;overflow-wrap:anywhere}.food-cost-updates table,.feast-food-cost table{min-width:700px}.food-cost-updates .event-cost-table-scroll,.feast-food-cost .event-cost-table-scroll{overflow-x:auto;max-width:100%}

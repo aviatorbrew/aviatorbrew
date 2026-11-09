@@ -15,6 +15,7 @@ await page.context().route('**/api/manager/**',async route=>{
  const r=route.request(),u=new URL(r.url()),path=u.pathname;let b={};if(r.method()!=='GET')writes.push({path,body:r.postDataJSON()});
  if(path==='/api/manager/session')b={authenticated:true};
  else if(path==='/api/manager/private-events'){if(r.method()==='PATCH'){assert.deepEqual(Object.keys(r.postDataJSON()),['foodCosts']);costs=costModel.parseEventFoodCosts(r.postDataJSON().foodCosts);}b={catering:catalog,production,foodCosts:costs,bookingFeeCents:35000,policyText:'Fixture only',policyVersion:'fixture-1'};}
+ else if(path==='/api/manager/food-costs')b={costs,status:{enabled:true,source:'Fixture public benchmarks',schedule:'Mondays at 8 a.m. Eastern',lastUpdatedAt:stamp}};
  else if(path==='/api/manager/event-plans')b={plans:[current],catering:catalog,production,foodCosts:costs,defaultRoomFeeCents:35000};
  else if(path==='/api/manager/inquiries')b={inquiries:[],total:0,unreviewedCount:0};
  else if(path.endsWith('/calendar-match'))b={matches:[],linked:null};

@@ -1,0 +1,723 @@
+{
+  "version": 1,
+  "date": "2026-11-09",
+  "scope": "Internal estimates only. No customer prices, portions, orders, issued proposals, payments or policies change. No verified US Foods account costs are claimed.",
+  "costs": {
+    "Hush Puppies": {
+      "costCents": 300,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Tater Tots": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Chips & Salsa": {
+      "costCents": 250,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Caprese Skewers": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Brewer Fries": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Sweet Potato Fries": {
+      "costCents": 275,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Chicken Fingers": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Loaded Tots": {
+      "costCents": 350,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Shrimp Cocktail": {
+      "costCents": 1100,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Brisket Crostini": {
+      "costCents": 900,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Pulled Pork Nachos": {
+      "costCents": 350,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "BBQ Meatballs": {
+      "costCents": 500,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Country Fried Chicken Cutlet": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Aviator Chicken Tenders": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Aviator Smoked Wings": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Cajun Chicken Alfredo": {
+      "costCents": 450,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Herb-Roasted Chicken": {
+      "costCents": 500,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Bourbon-Glazed Chicken": {
+      "costCents": 550,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Southern Smothered Chicken": {
+      "costCents": 550,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Grilled Flat Iron Steak with Collard Green Chimichurri": {
+      "costCents": 1500,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Aviator Beef Brisket": {
+      "costCents": 1300,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Collard Greens": {
+      "costCents": 250,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Broccoli Salad": {
+      "costCents": 350,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Tomato Cucumber Salad": {
+      "costCents": 250,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Potato Salad": {
+      "costCents": 225,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "French Fries": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Caesar Salad": {
+      "costCents": 450,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Greek Salad": {
+      "costCents": 450,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Spinach Caprese Salad": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Chicken Cobb Salad": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Aviator Chicken Tenders with Aviator Sauce": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Aviator Pulled Pork BBQ": {
+      "costCents": 300,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Manager raw pork $1.35/lb; assumed 60% cooked yield = $2.25/lb; $0.75 sauce/seasoning allowance. Verify yield.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Mac & Cheese": {
+      "costCents": 300,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Earlier manager $30/pan normalized using former 10 lb planning fill; verify recipe cost.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Bacon-Wrapped Meatloaf": {
+      "costCents": 500,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Earlier manager $50/pan normalized using former 10 lb planning fill; verify recipe cost.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Aviator Pizzeria Pizza Bar": {
+      "costCents": 650,
+      "basis": "pizza",
+      "source": "Rough estimate 2026-11-09: Whole 13-inch pizza; estimated dough, cheese, sauce and mixed toppings; gluten-free cost needs review.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Dessert display": {
+      "costCents": 200,
+      "basis": "event-guest",
+      "source": "Rough estimate 2026-11-09: Assumed basic dessert assortment per event guest; verify actual selection.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Coffee service": {
+      "costCents": 50,
+      "basis": "event-guest",
+      "source": "Rough estimate 2026-11-09: Coffee, cream and sugar allowance per event guest; excludes labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Sliced Turkey Breast": {
+      "costCents": 600,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Brown Sugar–Glazed Ham": {
+      "costCents": 500,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Holiday Prime Rib": {
+      "costCents": 2400,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Roasted Vegetable Lasagna": {
+      "costCents": 400,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Mashed Potatoes": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Cornbread Dressing": {
+      "costCents": 250,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Traditional Herb Stuffing": {
+      "costCents": 250,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Sweet Potato Casserole": {
+      "costCents": 300,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Green Bean Casserole": {
+      "costCents": 250,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Black-Eyed Peas": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Southern Green Beans": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Honey-Glazed Carrots": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Roasted Brussels Sprouts": {
+      "costCents": 350,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Corn Pudding": {
+      "costCents": 250,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Squash Casserole": {
+      "costCents": 250,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Garlic-Roasted Potatoes": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "BBQ Baked Beans": {
+      "costCents": 200,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Southern Pimento Cheese & Crackers": {
+      "costCents": 900,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Spinach & Artichoke Dip": {
+      "costCents": 800,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Holiday Cheese & Cracker Platter": {
+      "costCents": 1000,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Holiday Harvest Salad": {
+      "costCents": 500,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Garden Salad": {
+      "costCents": 350,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Apple cobbler": {
+      "costCents": 300,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Banana pudding": {
+      "costCents": 300,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Cranberry Sauce": {
+      "costCents": 300,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Honey Butter": {
+      "costCents": 500,
+      "basis": "lb",
+      "source": "Rough estimate 2026-11-09: Recipe planning allowance; supplier invoice and finished yield unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Classic Deviled Eggs / egg halves": {
+      "costCents": 25,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Sausage & Cheddar Balls / pieces": {
+      "costCents": 30,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Cranberry BBQ Meatballs / meatballs": {
+      "costCents": 30,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Brisket Crostini / pieces": {
+      "costCents": 125,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Shrimp Cocktail / shrimp": {
+      "costCents": 50,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Caprese Skewers / skewers": {
+      "costCents": 65,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Dinner rolls with butter": {
+      "costCents": 35,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Cornbread with butter": {
+      "costCents": 45,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Biscuits with honey butter": {
+      "costCents": 50,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Slider buns": {
+      "costCents": 20,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Pumpkin Pie": {
+      "costCents": 700,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Pecan Pie": {
+      "costCents": 900,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Sweet Potato Pie": {
+      "costCents": 700,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Chocolate brownies": {
+      "costCents": 60,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Bottled water": {
+      "costCents": 25,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Disposable place settings": {
+      "costCents": 40,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Serving utensil sets": {
+      "costCents": 100,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Disposable chafing setups": {
+      "costCents": 1000,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Whole turkey, 10–13 lb before cooking": {
+      "costCents": 3000,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Whole turkey, 14–16 lb before cooking": {
+      "costCents": 4000,
+      "basis": "each",
+      "source": "Rough estimate 2026-11-09: Estimated cost per specified production piece / whole unit; size and invoice unverified.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Turkey Gravy": {
+      "costCents": 8,
+      "basis": "fl-oz",
+      "source": "Rough estimate 2026-11-09: Estimated cost per fluid ounce; includes ingredients only, not container or labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Brown Gravy": {
+      "costCents": 8,
+      "basis": "fl-oz",
+      "source": "Rough estimate 2026-11-09: Estimated cost per fluid ounce; includes ingredients only, not container or labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Aviator BBQ Sauce": {
+      "costCents": 5,
+      "basis": "fl-oz",
+      "source": "Rough estimate 2026-11-09: Estimated cost per fluid ounce; includes ingredients only, not container or labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Au Jus": {
+      "costCents": 8,
+      "basis": "fl-oz",
+      "source": "Rough estimate 2026-11-09: Estimated cost per fluid ounce; includes ingredients only, not container or labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Horseradish Cream": {
+      "costCents": 20,
+      "basis": "fl-oz",
+      "source": "Rough estimate 2026-11-09: Estimated cost per fluid ounce; includes ingredients only, not container or labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Sweet Tea": {
+      "costCents": 2,
+      "basis": "fl-oz",
+      "source": "Rough estimate 2026-11-09: Estimated cost per fluid ounce; includes ingredients only, not container or labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Unsweet Tea": {
+      "costCents": 2,
+      "basis": "fl-oz",
+      "source": "Rough estimate 2026-11-09: Estimated cost per fluid ounce; includes ingredients only, not container or labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Lemonade": {
+      "costCents": 3,
+      "basis": "fl-oz",
+      "source": "Rough estimate 2026-11-09: Estimated cost per fluid ounce; includes ingredients only, not container or labor.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Feast accompaniments: turkey-family": {
+      "costCents": 65,
+      "basis": "event-guest",
+      "source": "Rough estimate 2026-11-09: Budget per package serving for included sauces/condiments omitted from production weights; a cost allowance, not a kitchen quantity.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Feast accompaniments: turkey-gathering": {
+      "costCents": 65,
+      "basis": "event-guest",
+      "source": "Rough estimate 2026-11-09: Budget per package serving for included sauces/condiments omitted from production weights; a cost allowance, not a kitchen quantity.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Feast accompaniments: southern": {
+      "costCents": 50,
+      "basis": "event-guest",
+      "source": "Rough estimate 2026-11-09: Budget per package serving for included sauces/condiments omitted from production weights; a cost allowance, not a kitchen quantity.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Feast accompaniments: pitmaster": {
+      "costCents": 35,
+      "basis": "event-guest",
+      "source": "Rough estimate 2026-11-09: Budget per package serving for included sauces/condiments omitted from production weights; a cost allowance, not a kitchen quantity.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Feast accompaniments: prime-rib": {
+      "costCents": 65,
+      "basis": "event-guest",
+      "source": "Rough estimate 2026-11-09: Budget per package serving for included sauces/condiments omitted from production weights; a cost allowance, not a kitchen quantity.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    },
+    "Feast standard packaging": {
+      "costCents": 75,
+      "basis": "event-guest",
+      "source": "Rough estimate 2026-11-09: Budget per purchased serving capacity for ordinary food packaging; explicit purchased supplies are additional.",
+      "estimate": true,
+      "updatedAt": "2026-11-09T15:00:00.000Z"
+    }
+  },
+  "references": [
+    {
+      "name": "US Foods public breaded chicken benchmark",
+      "url": "https://www.chefstore.com/p/tyson-red-label-breaded-crispy-cooked-chicken-tenderloin-38321_9778408/",
+      "note": "Public store pricing; not Aviator account price."
+    },
+    {
+      "name": "US Foods public spinach benchmark",
+      "url": "https://www.chefstore.com/p/baby-spinach-clamshell_1090531/"
+    },
+    {
+      "name": "US Foods public mozzarella benchmark",
+      "url": "https://www.chefstore.com/p/gardenia-part-skim-mozzarella-cheese-shredded_5461390/"
+    },
+    {
+      "name": "US Foods public tots benchmark",
+      "url": "https://www.chefstore.com/p/ore-ida-tater-tots-veritots-potato-bites-bulk_6076020/"
+    },
+    {
+      "name": "US Foods brisket benchmark",
+      "url": "https://www.chefstore.com/p/ibp-boneless-beef-brisket_2968010/"
+    },
+    {
+      "name": "US Foods frozen mac and cheese benchmark",
+      "url": "https://www.chefstore.com/p/mollys-kitchen-macaroni-cheese-tray-frozen_4326302/"
+    },
+    {
+      "name": "US Foods 2026 ingredient advertisement",
+      "url": "https://www.chefstore.com/downloads/hotsheets/110082%20CS%20BWA%201-26-26%20WEST%20G_Rev.pdf",
+      "note": "Historical Jan 26–Feb 8, 2026 promotion; context only, not used for automatic current pricing."
+    },
+    {
+      "name": "Purchased pizza dough benchmark",
+      "url": "https://www.webstaurantstore.com/deiorios-frozen-pizza-dough-ball-16-oz-case/876DEL401.html",
+      "note": "Public $84.49/30 benchmark; homemade dough may cost less."
+    }
+  ]
+}

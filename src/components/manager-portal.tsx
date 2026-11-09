@@ -19,6 +19,7 @@ import { ShopManager } from "@/components/shop-manager";
 import { CateringManager } from "@/components/catering-manager";
 import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
 import { TourGuestEmail } from "@/components/tour-guest-email";
+import {FoodCostUpdates} from '@/components/food-cost-updates';
 import { EventCateringSettings } from "@/components/event-catering-settings";
 import { EventPlanningManager } from "@/components/event-planning-manager";
 import { FeastManager } from "@/components/feast-manager";
@@ -658,6 +659,7 @@ function PrivateEventsManager() {
   }
 
   return <>
+    <FoodCostUpdates/>
     <EventPlanningManager />
     <details className="event-website-settings"><summary>Event Settings</summary>
     <EventReports />

@@ -45,7 +45,9 @@
     "test:site-skins": "node scripts/test-site-skins.mjs",
     "test:site-skins-ui": "node scripts/test-site-skins-ui.mjs",
     "test:shop-tickets": "node scripts/test-shop-tickets.mjs",
-    "test:shop-tickets-ui": "node scripts/test-shop-tickets-ui.mjs"
+    "test:shop-tickets-ui": "node scripts/test-shop-tickets-ui.mjs",
+    "test:food-cost-updates": "node scripts/test-food-cost-updates.mjs",
+    "test:food-cost-updates-ui": "node scripts/test-food-cost-updates-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",
