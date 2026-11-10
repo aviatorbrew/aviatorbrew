@@ -1,4 +1,10 @@
 export const siteSkins = [
+  { id: "veterans-day", name: "Veterans Day", description: "Bald eagle, American flag, amber beer and patriotic navy, red and gold." },
+  { id: "christmas", name: "Christmas", description: "Evergreen, cranberry, warm lights and brewery cheer." },
+  { id: "thanksgiving", name: "Thanksgiving", description: "Copper, autumn harvest and a welcoming brewery table." },
+  { id: "new-years", name: "New Year’s", description: "Midnight navy, fireworks and aviation-inspired gold." },
+  { id: "valentines-day", name: "Valentine’s Day", description: "Ruby, roses, candlelight and a romantic brewery evening." },
+  { id: "st-patricks-day", name: "St. Patrick’s Day", description: "Emerald, shamrocks, stout and antique gold." },
   { id: "classic", name: "Standard Aviator", description: "Original aviation design. Seasonal promotion off." },
   { id: "dead-show", name: "Grateful Dead Night", description: "Vintage concert poster, red, blue and warm gold." },
   { id: "holiday", name: "Holiday Gathering", description: "Evergreen, cranberry and candlelit gold." },
@@ -9,7 +15,10 @@ export type SiteSkin = (typeof siteSkins)[number]["id"];
 export type SiteTheme = {
   skin: SiteSkin;
   expiresAt: string;
-  promotion: { eyebrow: string; title: string; description: string; date: string; startTime: string; endTime: string; openingNote: string; venue: string; href: string; linkLabel: string; imageUrl: string; imageAlt: string };
+  communityEnabled?: boolean;
+  automaticSeasonal?: boolean;
+  manualOverrideUntil?: string;
+  promotion: { kind?: 'event'|'seasonal'; eyebrow: string; title: string; description: string; date: string; startTime: string; endTime: string; openingNote: string; venue: string; href: string; linkLabel: string; imageUrl: string; imageAlt: string };
   updatedAt: string;
 };
 
@@ -47,18 +56,22 @@ export function parseSiteTheme(input: unknown, current = defaultSiteTheme): Site
   const next: SiteTheme = structuredClone(current);
   if (typeof body.updatedAt === "string" && (!body.updatedAt || Number.isFinite(Date.parse(body.updatedAt)))) next.updatedAt = body.updatedAt;
   if (body.skin !== undefined) next.skin = body.skin;
+  if(body.communityEnabled!==undefined){if(typeof body.communityEnabled!=='boolean')throw new Error('Choose whether artwork likes and comments are enabled.');next.communityEnabled=body.communityEnabled;}
+  if(body.automaticSeasonal!==undefined){if(typeof body.automaticSeasonal!=='boolean')throw new Error('Choose whether automatic seasonal rotation is enabled.');next.automaticSeasonal=body.automaticSeasonal;}
+  if(body.manualOverrideUntil!==undefined){if(typeof body.manualOverrideUntil!=='string'||body.manualOverrideUntil&&!Number.isFinite(Date.parse(body.manualOverrideUntil)))throw new Error('Check the manual override end time.');next.manualOverrideUntil=body.manualOverrideUntil;}
   if (body.expiresAt !== undefined) {
     if (typeof body.expiresAt !== "string" || (body.expiresAt && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(body.expiresAt) || !Number.isFinite(Date.parse(body.expiresAt))))) throw new Error("Use a valid automatic turn-off time, or leave it blank.");
     next.expiresAt = body.expiresAt;
   }
   if (body.promotion !== undefined) {
     if (!body.promotion || typeof body.promotion !== "object" || Array.isArray(body.promotion)) throw new Error("Check the promotion details.");
-    const limits: Record<keyof SiteTheme["promotion"], number> = { eyebrow: 100, title: 120, description: 600, date: 10, startTime: 5, endTime: 5, openingNote: 160, venue: 120, href: 500, linkLabel: 60, imageUrl: 500, imageAlt: 200 };
+    if(body.promotion.kind!==undefined){if(!['event','seasonal'].includes(body.promotion.kind))throw new Error('Choose event or seasonal presentation.');next.promotion.kind=body.promotion.kind;}
+    const limits: Record<Exclude<keyof SiteTheme["promotion"],'kind'>, number> = { eyebrow: 100, title: 120, description: 600, date: 10, startTime: 5, endTime: 5, openingNote: 160, venue: 120, href: 500, linkLabel: 60, imageUrl: 500, imageAlt: 200 };
     for (const [key, max] of Object.entries(limits)) {
-      const value = body.promotion[key as keyof SiteTheme["promotion"]];
+      const value = body.promotion[key as Exclude<keyof SiteTheme["promotion"],"kind">];
       if (value === undefined) continue;
       if (typeof value !== "string" || value.length > max || /[<>\u0000-\u001f]/.test(value)) throw new Error("Use plain text within the promotion field limits.");
-      next.promotion[key as keyof SiteTheme["promotion"]] = value.trim();
+      next.promotion[key as Exclude<keyof SiteTheme["promotion"],"kind">] = value.trim();
     }
   }
   const p = next.promotion;

@@ -6,7 +6,7 @@ export function homeSharingMetadata(theme: SiteTheme, siteUrl: string, now = Dat
   const p = theme.promotion;
   const title = promotion ? `${p.title} | ${themeDateLabel(theme)} | Aviator Brewing Company` : "Aviator Brewing Company | Fuquay-Varina, NC";
   const description = promotion
-    ? `${themeDateLabel(theme)} · ${themeTimeLabel(p.startTime)}–${themeTimeLabel(p.endTime)} · ${p.venue}. ${p.openingNote} ${p.description}`
+    ? `${themeDateLabel(theme)}${p.kind==='seasonal'?'':' · '+themeTimeLabel(p.startTime)+'–'+themeTimeLabel(p.endTime)} · ${p.venue}. ${p.openingNote} ${p.description}`
     : "Craft beer, scratch-made food, live music, events, breakfast, cocktails, and aviation-inspired experiences in Fuquay-Varina, North Carolina.";
   const image = new URL(promotion ? p.imageUrl : "/api/branding/logo", siteUrl);
   if (promotion && theme.updatedAt) image.searchParams.set("v", theme.updatedAt);

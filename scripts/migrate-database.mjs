@@ -15,6 +15,29 @@ const schemaStatements = [
     updated_at timestamptz NOT NULL DEFAULT now()
   )`,
 
+  `CREATE TABLE IF NOT EXISTS website.skin_image_likes (
+    campaign_key text NOT NULL, visitor_hash text NOT NULL, skin text NOT NULL, image_url text NOT NULL,
+    liked boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY(campaign_key,visitor_hash)
+  )`,
+  `CREATE TABLE IF NOT EXISTS website.skin_image_comments (
+    id text PRIMARY KEY, campaign_key text NOT NULL, skin text NOT NULL, image_url text NOT NULL, image_title text NOT NULL,
+    visitor_hash text NOT NULL, ip_hash text NOT NULL, request_id text NOT NULL, name text NOT NULL DEFAULT '', email text NOT NULL DEFAULT '',
+    body text NOT NULL CHECK(length(body) BETWEEN 3 AND 1500), status text NOT NULL CHECK(status IN ('pending','approved','removed')),
+    reasons jsonb NOT NULL DEFAULT '[]'::jsonb, policy_version text NOT NULL, version integer NOT NULL DEFAULT 1,
+    created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(), UNIQUE(visitor_hash,request_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS skin_comments_review_idx ON website.skin_image_comments(status,created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS skin_comments_public_idx ON website.skin_image_comments(campaign_key,status,created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS website.skin_comment_actions (
+    id bigserial PRIMARY KEY, comment_id text NOT NULL REFERENCES website.skin_image_comments(id), actor text NOT NULL,
+    action text NOT NULL, reason text NOT NULL DEFAULT '', created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS website.skin_social_rate_events (
+    id bigserial PRIMARY KEY, visitor_hash text NOT NULL, ip_hash text NOT NULL, kind text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS skin_social_rate_idx ON website.skin_social_rate_events(created_at,ip_hash)`,
+
   `CREATE TABLE IF NOT EXISTS website.feast_orders (
     id text PRIMARY KEY, number text NOT NULL UNIQUE, version integer NOT NULL DEFAULT 1,
     input jsonb NOT NULL, quote jsonb NOT NULL, state text NOT NULL DEFAULT 'Under review',
