@@ -54,6 +54,16 @@
       "source": "/home/skynet/.codex/generated_images/01a13518-7353-7ee1-a0d9-e78c25b188a3/exec-82b93f21-f91b-4f35-be44-8ea4178a2a4a.png",
       "asset": "public/images/skins/veterans-day-v2.webp",
       "original": "public/images/skins/originals/veterans-day-v2.png"
+    },
+    {
+      "id": "veterans-day",
+      "version": 3,
+      "tool": "Built-in image_gen.imagegen",
+      "mode": "edit",
+      "prompt": "Use case: precise-object-edit. Edit target: the attached ORIGINAL Aviator Veterans Day poster. Restore and preserve this exact original richly detailed, cinematic illustrated style, warm sunset lighting, navy/crimson/gold palette, composition, textures and typography. Make ONLY TWO changes in the lower scenic background: (1) Completely remove the large hangar building, all architecture, its AVIATOR sign, windows, lamps, brewing tanks and related structures. Naturally replace the former building area with a quiet open airfield, distant low tree line and the same warm sunset sky/haze. There must be NO hangar or other building anywhere. (2) Keep the original vintage silver propeller aircraft, but make it substantially smaller, about one-third its current visible size, parked much farther away on the airfield in the lower left background with soft atmospheric depth. It should read as a distant background plane, not a foreground focal point. Preserve the ORIGINAL eagle above, flag upper right, realistic golden beer glass lower right on the rustic tabletop, all decorative laurels, ribbon, stars, and every text block exactly as shown. Exact text must remain 'AVIATOR BREWING COMPANY', 'VETERANS DAY', and 'HONORING ALL WHO SERVED'. Keep their original positions, ornate dimensional lettering, sizing, legibility and spelling. Do not change this into a flat ink, linocut, screen-print, cream-paper or minimalist design. Do not simplify or redesign the eagle, lettering, flag, beer or any upper-half elements. Preserve the original landscape 16:9 framing. Do not introduce additional planes, buildings, text, dates, offers, people, logos, signatures or watermarks. Output one finished edited original poster.",
+      "source": "/home/skynet/.codex/generated_images/01a13518-7353-7ee1-a0d9-e78c25b188a3/exec-5f7bfc78-fb27-4022-a8e5-ac1e70f6da4b.png",
+      "asset": "public/images/skins/veterans-day-v3.webp",
+      "original": "public/images/skins/originals/veterans-day-v3.png"
     }
   ]
 }

@@ -64,7 +64,7 @@ try{
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.screenshot({path:'/tmp/aviator-seasonal-home-'+width+'.png',fullPage:true});
  }
- await checkSharing('/images/skins/veterans-day-v2.webp');
+ await checkSharing('/images/skins/veterans-day-v3.webp');
  await page.getByRole('button',{name:/Like this artwork/}).click();
  await page.getByRole('button',{name:/Liked · 1/}).waitFor();
  await page.reload();await page.getByRole('button',{name:/Liked · 1/}).waitFor();
