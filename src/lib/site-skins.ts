@@ -1,5 +1,5 @@
 export const siteSkins = [
-  { id: "veterans-day", name: "Veterans Day", description: "Bald eagle, American flag, amber beer and patriotic navy, red and gold." },
+  { id: "veterans-day", name: "Veterans Day", description: "Hand-inked eagle, American flag, craft beer and a background propeller plane." },
   { id: "christmas", name: "Christmas", description: "Evergreen, cranberry, warm lights and brewery cheer." },
   { id: "thanksgiving", name: "Thanksgiving", description: "Copper, autumn harvest and a welcoming brewery table." },
   { id: "new-years", name: "New Year’s", description: "Midnight navy, fireworks and aviation-inspired gold." },

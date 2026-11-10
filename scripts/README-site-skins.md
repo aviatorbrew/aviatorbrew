@@ -23,7 +23,7 @@ Server settings are cached for up to 30 seconds and invalidated on manager save.
 
 ## Artwork and design research
 
-The six landscape originals were generated with the built-in image generation tool as separate requests. Exact prompts and asset paths are in `scripts/seasonal-skin-artwork-prompts.json`. Original PNG files are in `public/images/skins/originals/`; versioned, optimized WebP files in `public/images/skins/` are used on the website. Display uses contain sizing so titles and illustrations are not cropped. Each design combines Aviator hangar/brewery cues with a separate palette and seasonal motifs; none advertises invented dates, hours, discounts or offers.
+The six landscape originals were generated with the built-in image generation tool as separate requests. Exact prompts and asset paths are in `scripts/seasonal-skin-artwork-prompts.json`. Original PNG files are in `public/images/skins/originals/`; versioned, optimized WebP files in `public/images/skins/` are used on the website. Display uses contain sizing so titles and illustrations are not cropped. Each design combines Aviator aviation/brewery cues with a separate palette and seasonal motifs; none advertises invented dates, hours, discounts or offers. Veterans Day v2 replaces the cinematic scene with a restrained hand-inked screen-print aesthetic: eagle, flag, beer and a small background plane, with no hangar. The original v1 remains archived, including its reaction/comment history. The exact built-in edit prompt is also saved in `scripts/veterans-day-v2-artwork-prompt.txt`.
 
 Research informing the designs:
 
