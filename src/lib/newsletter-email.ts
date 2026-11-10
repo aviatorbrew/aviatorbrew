@@ -215,7 +215,7 @@ export function buildNewsletterMessage(draft: NewsletterDraft, content: Newslett
 
   const events = draft.sections.events ? content.events.slice(0, 2).map((event) => visualCard({
     title: event.title,
-    meta: `${formatDate(event.date)} · ${formatTime(event.startTime)} · ${event.location}`,
+    meta: `${formatDate(event.date)}${event.dateOnly ? "" : " · " + formatTime(event.startTime)} · ${event.location}`,
     copy: event.description,
     url: event.ticketUrl || "/events",
     action: event.ticketUrl ? "Details + tickets" : "More events",
@@ -251,7 +251,7 @@ export function buildNewsletterMessage(draft: NewsletterDraft, content: Newslett
   lines.push(...featureLines("This week's picks", draft.sections.releases ? (content.releases || []).slice(0, 2) : []));
   if (selectedBeers.length) lines.push("", "BEER SPOTLIGHT", ...selectedBeers.map((beer) => `${beer.name} - ${beer.style}${beer.abv ? ` - ${beer.abv}` : ""}`), `More beer: ${siteUrl()}/beer`);
   if (music.length) lines.push("", "LIVE MUSIC: NEXT 2 WEEKS", ...twoWeekMusic.map((show) => `${show.band?.name || show.title} - ${formatDate(show.performanceDate || show.startsAt)}, ${formatTime(show.startsAt)} at ${show.venueName}`), `${siteUrl()}/events/live-music`);
-  if (events.length) lines.push("", "EVENTS", ...content.events.slice(0, 2).map((event) => `${event.title} - ${formatDate(event.date)}, ${formatTime(event.startTime)} at ${event.location}`), `${siteUrl()}/events`);
+  if (events.length) lines.push("", "EVENTS", ...content.events.slice(0, 2).map((event) => `${event.title} - ${formatDate(event.date)}${event.dateOnly ? "" : ", " + formatTime(event.startTime)} at ${event.location}`), `${siteUrl()}/events`);
   lines.push(...featureLines("4-packs & 6-packs to go", draft.sections.packages ? (content.packagedBeer || []).slice(0, 3) : []));
   if (hangarMenu.length && content.hangarMenu) lines.push("", "HANGAR BAR FOOD MENU", absoluteUrl(content.hangarMenu.url));
   lines.push("", "Aviator Brewing Company", siteUrl());

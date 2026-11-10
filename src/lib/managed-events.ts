@@ -18,6 +18,7 @@ export type ManagedEventType = "special" | "live_music";
 export type ManagedEvent = {
   id: string;
   eventType?: ManagedEventType;
+  dateOnly?: boolean;
   title: string;
   date: string;
   endDate?: string;
@@ -59,8 +60,10 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   const linkLabel = clean(input.linkLabel, 60);
   const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + "T12:00:00Z")) && new Date(value + "T12:00:00Z").toISOString().slice(0, 10) === value;
   if (rangeEndDate && (!validDate(rangeEndDate) || !validDate(date) || rangeEndDate < date)) throw new Error("The event end date must be a valid date on or after its start date.");
-  const startTime = clean(input.startTime, 5);
-  const endTime = clean(input.endTime, 5);
+  const dateOnly = input.dateOnly === true;
+  if (dateOnly && eventType === "live_music") throw new Error("Live music requires a start time. Turn off date-only display.");
+  const startTime = dateOnly ? "00:00" : clean(input.startTime, 5);
+  const endTime = dateOnly ? "" : clean(input.endTime, 5);
   const location = clean(input.location, 120);
   const description = clean(input.description, 1200);
   const ticketUrl = clean(input.ticketUrl, 500);
@@ -82,7 +85,7 @@ function validate(input: Partial<ManagedEventInput>): ManagedEventInput {
   if (endDate && endDate.length !== 10) throw new Error("Use a valid recurrence end date.");
   if (frequency === "monthly-weekday" && (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 || ![1, 2, 3, 4, 5, -1].includes(ordinal))) throw new Error("Choose a weekday and occurrence for monthly recurrence.");
   const recurrence = frequency === "none" ? undefined : { frequency, interval, ...(frequency === "monthly-weekday" ? { weekday, ordinal } : {}), ...(endDate ? { endDate } : {}) };
-  return { eventType, title, date, endDate: rangeEndDate || undefined, linkLabel: linkLabel || undefined, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), ...(galleryImages.length ? { galleryImages } : {}), published: input.published === true, recurrence };
+  return { eventType, ...(input.dateOnly !== undefined ? { dateOnly } : {}), title, date, endDate: rangeEndDate || undefined, linkLabel: linkLabel || undefined, startTime, endTime, location, description, ticketUrl, ...(imageUrl ? { imageUrl } : {}), ...(galleryImages.length ? { galleryImages } : {}), published: input.published === true, recurrence };
 }
 
 async function readFileEvents(): Promise<ManagedEvent[]> {
@@ -129,6 +132,7 @@ async function readDatabaseEvents(eventType = "special"): Promise<ManagedEvent[]
       return normalizeEventImages({
         id: clean(details.id || row.slug, 120),
         eventType: row.event_type === "live_music" ? "live_music" : "special",
+        ...(details.dateOnly !== undefined ? { dateOnly: details.dateOnly === true } : {}),
         title: clean(row.title || details.title, 120),
         date: clean(details.date || (startsAt && !Number.isNaN(startsAt.getTime()) ? startsAt.toISOString().slice(0, 10) : ""), 10),
         endDate: clean(details.endDate, 10) || undefined,

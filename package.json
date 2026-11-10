@@ -48,7 +48,8 @@
     "test:shop-tickets-ui": "node scripts/test-shop-tickets-ui.mjs",
     "test:food-cost-updates": "node scripts/test-food-cost-updates.mjs",
     "test:food-cost-updates-ui": "node scripts/test-food-cost-updates-ui.mjs",
-    "test:skin-social": "node scripts/test-skin-social.mjs"
+    "test:skin-social": "node scripts/test-skin-social.mjs",
+    "test:veterans-special-ui": "node scripts/test-veterans-special-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

@@ -65,6 +65,12 @@ try {
   assert.equal(rows[0].ends_at,'2027-01-02T17:00:00-05:00','Database end timestamp follows the final date');
   assert.equal((await read())[0].endDate,'2027-01-02','Database reads preserve the range');
   assert.equal((await read())[0].linkLabel,'Build your feast');
+  rows.length=0;
+  const special = await events.createManagedEvent({...base,dateOnly:true,startTime:'',endTime:''});
+  assert.equal(special.startTime,'00:00','Date-only special stores a sortable date without advertising a time');
+  assert.equal(rows[0].details.dateOnly,true,'Date-only display is in the existing event JSON, not a separate table');
+  assert.equal((await events.getManagedEvents())[0].dateOnly,true,'Database read retains date-only display');
+  await assert.rejects(events.createManagedEvent({...base,eventType:'live_music',dateOnly:true}),/start time/);
   console.log('PASS managed events: newest-first announcement/manager order, stable edits, chronological music, ongoing ranges, boundaries, validation, publication, editable CTA, unchanged recurrence/categories and database timestamp/JSON round trip.');
 } finally {
   if(originalFile === undefined) delete process.env.MANAGED_EVENTS_DATA_FILE;

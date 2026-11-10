@@ -27,6 +27,7 @@ async function eventInputFromRequest(request: NextRequest) {
     const form = await request.formData();
     input = Object.fromEntries(form.entries()) as Record<string, unknown>;
     input.published = form.get("published") === "true" || form.get("published") === "on";
+    input.dateOnly = form.get("dateOnly") === "true" || form.get("dateOnly") === "on";
     const removeGalleryImages = form.getAll("removeGalleryImages").map(String).filter(Boolean);
     if (removeGalleryImages.length) input.removeGalleryImages = removeGalleryImages;
     const uploads = [...form.getAll("image"), ...form.getAll("images")].filter((item): item is File => item instanceof File && item.size > 0);
