@@ -57,6 +57,12 @@ for(const width of [1440,390]){
  assert.equal(await page.getByLabel('Item / menu selection',{exact:true}).evaluate(e=>e===document.activeElement),true);
  assert.deepEqual(mutations,[],'Incomplete order cannot save');
  await page.getByRole('button',{name:'Remove order row 1',exact:true}).click();
+ const picker=page.getByRole('region',{name:'À la carte menu builder'});
+ await picker.getByLabel('À la carte menu item',{exact:true}).selectOption('appetizers:Hush Puppies');
+ assert.equal(await picker.getByRole('button',{name:'+ Add menu item',exact:true}).isDisabled(),true,'Price must be agreed before adding');
+ await picker.getByLabel('À la carte billing unit',{exact:true}).selectOption('tray');await picker.getByLabel('À la carte quantity',{exact:true}).fill('2');await picker.getByLabel('Agreed unit price ($)',{exact:true}).fill('25');await picker.getByLabel('À la carte preparation notes',{exact:true}).fill('Sauce on the side');await picker.getByRole('button',{name:'+ Add menu item',exact:true}).click();
+ await picker.getByLabel('Search menu items',{exact:true}).fill('steak');await picker.getByLabel('À la carte menu item',{exact:true}).selectOption({label:'Grilled Flat Iron Steak with Collard Green Chimichurri'});await picker.getByLabel('À la carte billing unit',{exact:true}).selectOption('guest');await picker.getByLabel('À la carte quantity',{exact:true}).fill('10');await picker.getByLabel('Agreed unit price ($)',{exact:true}).fill('17.76');await picker.getByRole('button',{name:'+ Add menu item',exact:true}).click();
+
  await tab('Proposal & Payments').click();await page.getByRole('button',{name:'Create proposal draft',exact:true}).waitFor();
  await page.getByRole('button',{name:'Edit missing event details',exact:true}).click();await eventName.waitFor();assert.equal(await tab('Details').getAttribute('aria-selected'),'true');
  await tab('Details').focus();await page.keyboard.press('End');assert.equal(await tab('Activity').getAttribute('aria-selected'),'true');await page.getByRole('heading',{name:'Guest email history',exact:true}).waitFor();
@@ -65,7 +71,7 @@ for(const width of [1440,390]){
  await nav().getByRole('button',{name:/Inquiries/}).click();await page.locator('.event-inquiry-archive').waitFor();
  await nav().getByRole('button',{name:/Current event/}).click();assert.equal(await eventName.inputValue(),'Edited fixture rehearsal','Navigation preserves unsaved work');
  await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.event-workspace-header')?.textContent?.includes('Saved revision 2'));
- assert.equal(saved.details.title,'Edited fixture rehearsal');
+ assert.equal(saved.details.title,'Edited fixture rehearsal');assert.equal(saved.details.flightPlan.cateringMode,'alacarte');assert.equal(saved.details.flightPlan.packageId,'');assert.equal(saved.details.items.length,2);assert.equal(saved.details.items[1].unitPriceCents,1776);assert.equal(saved.details.items[1].quantity,10);assert.match(saved.details.items[0].notes,/Sauce on the side/);
  await menus.getByRole('button',{name:'Review website inquiry',exact:true}).click();const inquiryRow=page.locator('[data-inquiry-id="'+inquiry.id+'"]');await inquiryRow.waitFor();await page.waitForFunction(id=>document.activeElement?.getAttribute('data-inquiry-id')===id,inquiry.id);assert.ok((await inquiryRow.innerText()).includes('Caprese Skewers'));
  assert.deepEqual(mutations,[{method:'PUT',path:'/api/manager/event-plans/'+source.id}]);
  await nav().getByRole('button',{name:/Current event/}).click();

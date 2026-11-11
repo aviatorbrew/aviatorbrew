@@ -71,3 +71,7 @@ Related regressions: `npm run test:event-plans`, `npm run test:calendar-sync`, a
 ## Manager workspace sections
 
 The Current event workspace has four keyboard-accessible tabs: **Details** (contact, schedule, event type, billing, bar, setup and notes), **Menu & Pricing** (food, extras, custom charges, taxes and internal cost estimate), **Proposal & Payments** (current proposal, acceptance, manual payments and current documents), and **Activity** (event timeline, previous proposals/documents, delivery history and calendar changes). Save and print controls stay above the tabs; total and balance remain in the event header. Event progress and the next step remain visible across sections. Switching sections keeps unsaved edits and proposal review state. Saving with an invalid field opens its section and focuses that field. Proposal shortcuts for missing details do the same. Historical versions and technical payment references retain compact disclosure controls.
+
+## À la carte event menus
+
+Use **Menu & Pricing → À la carte menu** to select any current event-catalog appetizer, entrée, side, salad or pizza, plus dessert and coffee. Search or filter categories, set quantities and agreed prices, and add preparation notes. Premium and manager-only items are included. No buffet package is required; with a buffet package, these become additional itemized charges. Quantities and prices stay fixed until staff edits them.

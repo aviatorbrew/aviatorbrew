@@ -218,3 +218,20 @@ console.log('PASS optional manager salad: omitted/blank included salads, blank a
  assert.throws(()=>mergeInquiryMenuDetails({...current,status:'Draft'},incoming,catalog),/confirmed/);assert.throws(()=>mergeInquiryMenuDetails(current,{...incoming,flightPlan:emptyFlightPlan()},catalog),/buffet/);
  console.log('PASS inquiry menu merge: exact normalized last-name suggestions, menu/guest/food-time replacement, stable repeated import, confirmed booking/contact/payment/discount/custom-charge preservation and invalid-input guards.');
 }
+
+// Full à la carte orders use stable itemized charges with no buffet base or minimum.
+{
+ const {eventMenuChoices,eventMenuOrderItem}=await import(moduleUrl(await readFile(new URL('../src/lib/event-menu-order.ts',import.meta.url),'utf8')));
+ const catalog=structuredClone((await import(planUrl)).defaultCateringCatalog),choices=eventMenuChoices(catalog);
+ for(const key of ['appetizers','premiumAppetizers','entrees','premiumEntrees','sides','salads','pizzas'])for(const name of catalog.menu[key])assert.ok(choices.some(c=>c.id===key+':'+name),'Menu picker includes '+name);
+ assert.ok(choices.find(c=>c.name==='Chicken Fingers').managerOnly);
+ const make=(choiceId,unit,quantity,unitPriceCents)=>eventMenuOrderItem({id:choiceId,choiceId,unit,quantity,unitPriceCents,notes:'Sauce on the side'},catalog);
+ const rows=[make('appetizers:Hush Puppies','tray',2,2500),make('premiumEntrees:'+catalog.menu.premiumEntrees[0],'guest',10,1776),make('sides:Mac & Cheese','portion',10,400),make('salads:Caesar Salad','guest',10,300),make('pizzas:Caprese','pizza',2,2000),make('dessert','piece',10,600),make('coffee','guest',10,300)];
+ const plan=parseEventPlan({...emptyEventPlan(),title:'À la carte dinner',date:'2026-11-19',guestCount:10,flightPlan:{...emptyFlightPlan(),cateringMode:'alacarte'},items:rows},catalog);
+ assert.deepEqual(eventOrderItems(plan,catalog),rows);assert.equal(eventTotals(plan,catalog).subtotal,42760);assert.equal(rows.at(-1).category,'Drinks');assert.match(rows[1].notes,/Sauce on the side/);
+ const changed={...plan,guestCount:20};assert.deepEqual(eventOrderItems(changed,catalog),rows,'Guest changes do not reprice/rescale fixed orders');
+ assert.throws(()=>make('pizzas:Missing','pizza',1,100),/available/);
+ catalog.disabledItems.push('Hush Puppies');assert.throws(()=>make('appetizers:Hush Puppies','tray',1,100),/available/);
+ assert.throws(()=>make('sides:Mac & Cheese','portion',0,100),/quantity/);assert.throws(()=>make('sides:Mac & Cheese','portion',1,NaN),/price/);
+ console.log('PASS full à la carte: every food category, premium/manager-only choices, explicit prices and quantities, no buffet base/minimum, drinks category, notes, unchanged saved rows and unavailable/invalid guards.');
+}

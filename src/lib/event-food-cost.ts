@@ -16,7 +16,7 @@ export function eventFoodCostEstimate(d:EventPlanDetails,c:CateringCatalog,p:Eve
  const foods=production.groups.flatMap(g=>g.rows).map(r=>({name:r.name,ounces:r.ounces+(r.name==='Aviator Pizzeria Pizza Bar'?production.pizzaRoundingOz:0),guests:d.guestCount,each:r.name==='Aviator Pizzeria Pizza Bar'&&d.flightPlan?.pizzas.length?production.pizzaCountTotal:null}));
  if(d.flightPlan?.dessert)foods.push({name:'Dessert display',ounces:0,guests:d.guestCount,each:d.guestCount});
  if(d.flightPlan?.coffee)foods.push({name:'Coffee service',ounces:0,guests:d.guestCount,each:d.guestCount});
- for(const i of production.custom){const match=i.name.match(/^Appetizer: (.+) \/ (guest|tray|piece)$/);foods.push({name:match?.[1]||i.name,ounces:match?.[2]==='tray'?i.quantity*(p.trayFinishedLb[match[1]]||p.estimatedFullPanLb||10)*16:0,guests:match?.[2]==='guest'?i.quantity:0,each:match?.[2]==='piece'?i.quantity:null});}
+ for(const i of production.custom){const match=i.name.match(/^(?:Appetizer|Entree|Side|Salad|Pizza|Dessert): (.+) \/ (guest|tray|piece|portion|pizza)$/);foods.push({name:match?.[1]||i.name,ounces:match?.[2]==='tray'?i.quantity*(p.trayFinishedLb[match[1]]||p.estimatedFullPanLb||10)*16:0,guests:match?.[2]==='guest'?i.quantity:0,each:match&&['piece','portion','pizza'].includes(match[2])?i.quantity:null});}
  for(const f of foods){const cost=costs[f.name];let quantity:number|null=null,note='Cost not entered; excluded from known-cost subtotal.';
    if(cost){
      if(cost.basis==='lb'&&f.ounces)quantity=f.ounces/16;
