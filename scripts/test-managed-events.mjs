@@ -16,6 +16,13 @@ try {
     .replace('"@/lib/eastern-time"', JSON.stringify(eastern));
   const events = await import(compile(source));
   const base = {title:'Holiday ordering',date:'2026-11-01',startTime:'11:00',endTime:'17:00',location:'Aviator Hangar Bar',description:'Choose a pickup date online.',ticketUrl:'https://aviatorbrew.com/feast',published:true};
+  const cancelled = await events.createManagedEvent({...base,title:'Veterans Day: MRE Inspired Meals!',date:'2026-11-11',ticketUrl:'https://aviatorbrew.com/events/veterans-day'});
+  const tribute = await events.createManagedEvent({...base,title:'Veterans Day tribute',date:'2026-11-11',ticketUrl:'https://aviatorbrew.com/events'});
+  const veteransDayListings = await events.getPublishedEvents({fromDate:'2026-11-11',throughDate:'2026-11-11'});
+  assert.ok(!veteransDayListings.some(event=>event.id===cancelled.id),'Cancelled meals stay hidden even when the stored record is published');
+  assert.ok(veteransDayListings.some(event=>event.id===tribute.id),'Unrelated Veterans Day events stay visible');
+  assert.ok((await events.getManagedEvents()).some(event=>event.id===cancelled.id),'Manager history is retained');
+  await events.deleteManagedEvent(cancelled.id);await events.deleteManagedEvent(tribute.id);
   const season = await events.createManagedEvent({...base,endDate:'2027-01-02',linkLabel:'Build your feast'});
   const read = options => events.getPublishedEvents({fromDate:'2026-12-01',throughDate:'2026-12-31',...options});
   assert.equal((await read()).length,1,'An ongoing range remains visible after its start date');

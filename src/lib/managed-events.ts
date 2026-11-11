@@ -263,12 +263,19 @@ function expandEvent(event: ManagedEvent, through: string) {
 }
 
 export async function getManagedEvents(options: { eventType?: string; order?: "date" | "newest" } = {}) { return sorted((await readAll(options.eventType || "special")).map(normalizeEventImages), options.order || "newest"); }
+// This announced meal special was cancelled before service. Retain the manager
+// record for reference, but never advertise it from persisted event content.
+function cancelledMealSpecial(event: ManagedEvent) {
+  if (event.date !== "2026-11-11") return false;
+  try { if (new URL(event.ticketUrl).pathname.replace(/\/$/, "") === "/events/veterans-day") return true; } catch {}
+  return /veterans? day.*mre.*meals/i.test(event.title);
+}
 export async function getPublishedEvents(options: { monthsAhead?: number; eventType?: string; fromDate?: string; throughDate?: string; order?: "date" | "newest" } = {}) {
   const today = easternDate();
   const fromDate = options.fromDate || today;
   const through = options.throughDate || addMonths(today, typeof options.monthsAhead === "number" ? options.monthsAhead : 12);
   return sorted((await getManagedEvents({ eventType: options.eventType || "special" }))
-    .filter((event) => event.published)
+    .filter((event) => event.published && !cancelledMealSpecial(event))
     .flatMap((event) => expandEvent(event, through))
     .filter((event) => (event.endDate || event.date) >= fromDate && event.date <= through), options.order || (options.eventType === "live_music" ? "date" : "newest"));
 }
