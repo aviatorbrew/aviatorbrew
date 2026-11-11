@@ -202,3 +202,17 @@
 .manager-private-events .event-pan-reference{padding:.5rem;border:1px solid #8ca6b6;margin:.5rem 0}
 .manager-private-events .event-pan-reference a{color:#efb45f}
 @media(max-width:650px){.manager-private-events .event-measured-pan-grid,.manager-private-events .event-food-cost-settings-grid{grid-template-columns:1fr}}
+
+/* Stage one: one workspace for manual events and website inquiries. */
+.event-planning [hidden] { display: none !important; }
+.event-workflow-nav, .event-view-switch, .event-workspace-toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:16px 0; }
+.event-workflow-nav { border-bottom:1px solid #53616a; padding-bottom:14px; }
+.event-workflow-nav button, .event-view-switch button { padding:10px 18px; border:1px solid #79838a; border-radius:6px; }
+.event-workflow-nav button[aria-current="page"], .event-view-switch button[aria-pressed="true"] { background:#e7b25c; color:#142633; border-color:#e7b25c; font-weight:700; }
+.event-workspace-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:20px 0; }
+.event-workspace-header h3 { margin:4px 0; font-size:1.5rem; }
+.event-workspace-header p { margin:6px 0; }
+.event-workspace-toolbar { position:sticky; top:0; z-index:5; background:#122b3c; border:1px solid #657581; padding:12px; border-radius:8px; }
+.event-editor-section-flat > h3, .event-editor-section-flat > p { padding:0 18px; }
+.event-workflow-panel { min-width:0; }
+@media(max-width:600px) { .event-workspace-toolbar { position:static; } .event-workflow-nav button { flex:1 1 auto; } }

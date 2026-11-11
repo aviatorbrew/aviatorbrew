@@ -1,6 +1,6 @@
 # Website inquiry menu merge
 
-Website Inquiry is always visible and its loaded inquiries show their menu, event fields and notes expanded. Last 5, search, Show All, review status, deletion and Catering To Go's separate controls retain their existing behavior.
+The Inquiries view is available from the private event workflow navigation. Its loaded inquiries show their menu, event fields and notes expanded. Starting, reopening, or merging an inquiry leads to the shared Current event workspace. Navigation preserves unsaved event edits. Last 5, search, Show All, review status, deletion and Catering To Go's separate controls retain their existing behavior.
 
 Each website inquiry has **Merge into confirmed event**. The dialog loads active confirmed events, suggests exact normalized last-name matches (including names in imported calendar titles), and allows searching and choosing another event. A suggestion never performs a merge. Staff review the existing and replacement menus and check confirmation before submitting. Changing the selected event or search resets confirmation.
 

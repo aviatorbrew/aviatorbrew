@@ -13,7 +13,8 @@ export function revealEventEditorField(field:HTMLElement|null){
   field.scrollIntoView({behavior:"smooth",block:"center"});
 }
 
-export function EventEditorSection({title,summary,children,className=""}:{title:string;summary?:ReactNode;children:ReactNode;className?:string}){
+export function EventEditorSection({title,summary,children,className="",flat=false}:{flat?:boolean;title:string;summary?:ReactNode;children:ReactNode;className?:string}){
+  if(flat)return <section className={"event-editor-section event-editor-section-flat "+className}><h3>{title}</h3>{summary?<p>{summary}</p>:null}<div className="event-section-body">{children}</div></section>;
   return <details className={"event-editor-section "+className}>
     <summary><span className="event-section-arrow" aria-hidden="true"/><strong className="event-section-name">{title}</strong>{summary?<span className="event-section-summary">{summary}</span>:null}</summary>
     <div className="event-section-body">{children}</div>

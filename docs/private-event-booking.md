@@ -4,7 +4,7 @@ The public entry point is `/private-events#build-menu`. Customer package choices
 
 ## Existing manager workflow
 
-Use **Manager → Private Events**. Open **Website Inquiry** for incoming requests. Pending inquiry plans have yellow outlines in the calendar, event list and editor; confirmed/completed events and manually entered events use white outlines. The original inquiry record stays yellow in the archive after its event is confirmed.
+Use **Manager → Private Events**. Use **Inquiries** for incoming website requests and **Events** for the upcoming list or calendar. **Start event plan**, **Open event plan**, and a completed menu merge lead to the same **Current event** workspace. Event details are always expanded, with Save changes and Print summary at the top. Switching between Events, Inquiries, and Current event preserves unsaved edits; closing or replacing the event still asks before discarding them. Pending inquiry plans have yellow outlines in the calendar, event list and editor; confirmed/completed events and manually entered events use white outlines. The original inquiry record stays yellow in the archive after its event is confirmed.
 
 The workflow is inquiry → staff planning/review → approved proposal → customer acceptance → required verified deposit → confirmed event. Merely saving a calendar draft does not confirm a date. For a manual booking, record the amount actually received under **Deposit / payments received ($)** and choose **Approve Event — No Email**. This uses the existing authorized manual-confirmation workflow, checks for overlapping bookings, retains the payment credit, and sends no customer email. No proposal or Stripe charge is required for that staff action. Each Website Inquiry has a **Delete Inquiry** button; deletion removes the original inquiry only, retaining the saved event plan, proposals and payments.
 
@@ -12,7 +12,7 @@ Manager-sent customer updates, proposal sends/resends and confirmation retries r
 
 Use the existing controls as follows:
 
-1. Open **Website inquiries — start an event plan** and choose **Plan event**. The saved package, food selections, dates, contact details and special requests populate the existing editor. A linked inquiry reopens its existing event instead of making a duplicate.
+1. Open **Inquiries** and choose **Start event plan**. The saved package, food selections, dates, contact details and special requests populate the existing editor. A linked inquiry reopens its existing event instead of making a duplicate.
 2. Review the menu, guest count, charges and requested date. Save the event. Its main status remains one of the existing Draft / Tentative / Confirmed / Completed / Cancelled values. The additional inquiry/proposal/payment label describes its booking progress.
 3. In **Customer proposals & deposit payments**, choose an expiration and create a proposal draft. Preview, download or print its PDF. Creating and printing a draft do not send email.
 4. Check the calendar and venue capacity, then use **Approve & send proposal**. The server checks overlapping tentative/confirmed events, including the established one-hour setup and 30-minute removal windows. Approval holds the existing event as Tentative. The customer receives a secure link and optional attached PDF; the link can be resent. Resending replaces the previous access link.
