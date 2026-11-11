@@ -67,3 +67,7 @@ The script refuses nonlocal databases and database names outside `aviator_event_
 Manager email-route regression: `node scripts/test-manager-email-approval.mjs` exercises blocked and approved paths with stub mail, data and authentication services; it makes no external requests or database writes.
 
 Related regressions: `npm run test:event-plans`, `npm run test:calendar-sync`, and `npm run test:tours`. Browser verification uses the same disposable local database, including real inquiry-to-event import, optional menu PDF, proposal review/acceptance, receipts, manager authorization and mobile layouts. Payment return parameters are tested independently of verified payment state.
+
+## Manager workspace sections
+
+The Current event workspace has four keyboard-accessible tabs: **Details** (contact, schedule, event type, billing, bar, setup and notes), **Menu & Pricing** (food, extras, custom charges, taxes and internal cost estimate), **Proposal & Payments** (current proposal, acceptance, manual payments and current documents), and **Activity** (event timeline, previous proposals/documents, delivery history and calendar changes). Save and print controls stay above the tabs; total and balance remain in the event header. Event progress and the next step remain visible across sections. Switching sections keeps unsaved edits and proposal review state. Saving with an invalid field opens its section and focuses that field. Proposal shortcuts for missing details do the same. Historical versions and technical payment references retain compact disclosure controls.

@@ -49,6 +49,19 @@ for(const width of [1440,390]){
  assert.equal(await editor().locator('details.event-menu-section').count(),0,'Primary details are always expanded');
  const menus=editor().getByRole('region',{name:'Website menu submissions',exact:true});await menus.getByText('Menu Fixture Guest: wedding rehearsal dinner',{exact:true}).waitFor();await menus.getByText('View submitted menu',{exact:true}).click();await menus.getByText('50 × Dessert display at $6.00 = $300.00',{exact:false}).waitFor();assert.ok(queries.some(q=>new URLSearchParams(q).get('eventDate')==='2026-11-19'));
  await eventName.fill('Edited fixture rehearsal');await page.getByLabel('Contact name',{exact:true}).fill('Fixture host');
+ const tab=name=>page.getByRole('tab',{name,exact:true});
+ await tab('Menu & Pricing').click();await page.getByRole('combobox',{name:/Food & beverage plan/}).waitFor();assert.equal(await eventName.isVisible(),false);
+ await page.getByRole('button',{name:'+ Add order item',exact:true}).click();
+ await tab('Details').click();await page.getByRole('button',{name:'Save changes',exact:true}).click();
+ assert.equal(await tab('Menu & Pricing').getAttribute('aria-selected'),'true','Invalid hidden field opens its tab');
+ assert.equal(await page.getByLabel('Item / menu selection',{exact:true}).evaluate(e=>e===document.activeElement),true);
+ assert.deepEqual(mutations,[],'Incomplete order cannot save');
+ await page.getByRole('button',{name:'Remove order row 1',exact:true}).click();
+ await tab('Proposal & Payments').click();await page.getByRole('button',{name:'Create proposal draft',exact:true}).waitFor();
+ await page.getByRole('button',{name:'Edit missing event details',exact:true}).click();await eventName.waitFor();assert.equal(await tab('Details').getAttribute('aria-selected'),'true');
+ await tab('Details').focus();await page.keyboard.press('End');assert.equal(await tab('Activity').getAttribute('aria-selected'),'true');await page.getByRole('heading',{name:'Guest email history',exact:true}).waitFor();
+ await page.keyboard.press('Home');assert.equal(await tab('Details').getAttribute('aria-selected'),'true');assert.equal(await eventName.inputValue(),'Edited fixture rehearsal');
+
  await nav().getByRole('button',{name:/Inquiries/}).click();await page.locator('.event-inquiry-archive').waitFor();
  await nav().getByRole('button',{name:/Current event/}).click();assert.equal(await eventName.inputValue(),'Edited fixture rehearsal','Navigation preserves unsaved work');
  await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.event-workspace-header')?.textContent?.includes('Saved revision 2'));

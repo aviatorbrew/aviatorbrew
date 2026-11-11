@@ -216,3 +216,14 @@
 .event-editor-section-flat > h3, .event-editor-section-flat > p { padding:0 18px; }
 .event-workflow-panel { min-width:0; }
 @media(max-width:600px) { .event-workspace-toolbar { position:static; } .event-workflow-nav button { flex:1 1 auto; } }
+
+/* Workspace sections stay mounted to preserve unsaved fields and proposal review state. */
+.event-workspace-tabs { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0; border-bottom:1px solid #657581; padding-bottom:10px; }
+.event-workspace-tabs button { padding:12px 18px; border:1px solid #79838a; border-radius:6px; }
+.event-workspace-tabs button[aria-selected="true"] { background:#e7b25c; color:#142633; border-color:#e7b25c; font-weight:700; }
+.event-workspace-tabs button:focus-visible { outline:3px solid #e7b25c; outline-offset:3px; }
+.event-workspace-progress { border:1px solid #657581; border-radius:8px; padding:14px; margin-bottom:20px; }
+.event-workspace-progress p { margin:6px 0; }
+.event-workspace-progress .event-flow-steps { margin:12px 0; }
+.event-editor-section-flat { margin:18px 0; }
+@media(max-width:600px) { .event-workspace-tabs button { flex:1 1 42%; padding:12px 8px; } }

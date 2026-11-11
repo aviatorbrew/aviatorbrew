@@ -4,6 +4,7 @@ import type {ReactNode} from "react";
 
 export function revealEventEditorField(field:HTMLElement|null){
   if(!field)return;
+  window.dispatchEvent(new CustomEvent("event-workspace-reveal",{detail:field}));
   let parent=field.parentElement;
   while(parent){
     if(parent instanceof HTMLDetailsElement)parent.open=true;
