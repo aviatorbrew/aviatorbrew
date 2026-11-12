@@ -2,6 +2,8 @@
 
 In the event's **Customer proposals & deposit payments** box, **Resend Deposit Link** is beside **Resend proposal link**. Staff must save the event, use the current sent/approved proposal, approve the customer email and confirm the recipient/amount in the send dialog.
 
+In the deposit send dialog, choose **Send a staff copy instead of emailing the customer** and enter an `@aviatorbrew.com` address to send the same working deposit email to a staff member. The confirmation shows the selected recipient. This preserves the customer contact, quote and original links. Staff copies retain the same expiry, payment rules, approval and delivery tracking.
+
 The reminder shows the outstanding quoted deposit in its subject, a large amount panel and an explicit payment button. Its secure link opens `/event-proposal?view=deposit` at the existing acceptance/payment section. Customers still agree to the exact policy/proposal version and explicitly start Stripe Checkout. Opening a link never creates a charge. The original proposal link and previous reminder links remain usable until the proposal expires or is withdrawn.
 
 The amount comes from the proposal's immutable deposit requirement minus the greater of recorded manual credit and the verified Stripe ledger. Paid deposits, stale terms, expired/closed/unsent proposals, conflicting dates, invalid capacity, missing policies and missing staff approval block reminders. Existing Stripe Checkout, webhook verification, idempotency, availability and payment-credit rules remain in force.

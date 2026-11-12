@@ -202,11 +202,13 @@ export async function sendProposal(planId:string,id:string,input:{availabilityAp
   await confirmAcceptedEvent(planId,id);
   return {sent:true,proposalId:id};
 }
-export async function sendDepositLink(planId:string,id:string,input:{emailApproved?:boolean;reviewContext?:string;requestId?:string}){
+export async function sendDepositLink(planId:string,id:string,input:{emailApproved?:boolean;reviewContext?:string;requestId?:string;recipientEmail?:string}){
   if(input.emailApproved!==true)throw new ProposalError("Review and approve this customer email before sending.",403);
   if(typeof input.reviewContext!=='string'||typeof input.requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(input.requestId))throw new ProposalError("Refresh the event and confirm the deposit email before sending.",409);
   if(!isMailConfigured()&&process.env.MAIL_MODE!=="record")throw new ProposalError("Email delivery is not configured.",503);
   if(!process.env.STRIPE_SECRET_KEY||!process.env.STRIPE_WEBHOOK_SECRET)throw new ProposalError("Stripe Checkout and verified webhooks must both be configured before sending payment links.",503);
+  const staffRecipient=input.recipientEmail===undefined?'':typeof input.recipientEmail==='string'?input.recipientEmail.trim().toLowerCase():null;
+  if(staffRecipient===null||input.recipientEmail!==undefined&&(!staffRecipient||staffRecipient.length>254||!/^[a-z0-9][a-z0-9._+-]*@aviatorbrew\.com$/.test(staffRecipient)))throw new ProposalError('Use an Aviator staff email address for a deposit copy.');
   const token=randomBytes(32).toString('hex');
   const result=await transaction(async client=>{
     const p=(await client.query('SELECT * FROM website.private_event_proposals WHERE id=$1 AND plan_id=$2 FOR UPDATE',[id,planId])).rows[0];
@@ -216,7 +218,7 @@ export async function sendDepositLink(planId:string,id:string,input:{emailApprov
     if(!p.sent_at||!p.approved_at)throw new ProposalError('Approve and send the proposal before resending a deposit link.',409);
     if(['superseded','declined','cancelled','changes_requested'].includes(p.state)||new Date(p.expires_at).getTime()<=Date.now())throw new ProposalError('Use a current, unexpired proposal before sending a deposit link.',409);
     if(materialHash(plan.data)!==p.material_hash)throw new ProposalError('The event terms changed. Create and send a revised proposal first.',409);
-    const snapshot=p.snapshot as ProposalSnapshot;
+    const snapshot=p.snapshot as ProposalSnapshot,recipient=staffRecipient||snapshot.details.contactEmail;
     if(!snapshot.policyText.trim()||!snapshot.policyVersion.trim())throw new ProposalError('Create a proposal with the approved event policies.',409);
     if((snapshot.details.flightPlan?.packageId&&snapshot.details.guestCount<snapshot.catalog.minimumGuests)||snapshot.details.guestCount>snapshot.catalog.maximumGuests)throw new ProposalError('The guest count is outside the configured venue capacity.');
     if(!['Tentative','Confirmed'].includes(plan.status))throw new ProposalError('This event cannot receive a deposit link.',409);
@@ -225,19 +227,19 @@ export async function sendDepositLink(planId:string,id:string,input:{emailApprov
     if(!due)throw new ProposalError('The required deposit is already paid. No deposit reminder was sent.',409);
     await availability(client,planId,snapshot.details);
     const existing=(await client.query('SELECT * FROM website.private_event_deposit_links WHERE id=$1',[input.requestId])).rows[0];
-    if(existing){if(existing.proposal_id!==id)throw new ProposalError('This send reference belongs to a different proposal.',409);if(existing.status==='sent')return {alreadySent:true,proposal:proposalRow(p),due};throw new ProposalError('This email attempt is already pending or needs delivery verification. Refresh before sending again.',409);}
+    if(existing){if(existing.proposal_id!==id||existing.recipient!==recipient)throw new ProposalError('This send reference belongs to a different proposal.',409);if(existing.status==='sent')return {alreadySent:true,proposal:proposalRow(p),due,recipient};throw new ProposalError('This email attempt is already pending or needs delivery verification. Refresh before sending again.',409);}
     await closeUnpaidEventCheckouts(client,planId,id);
-    await client.query("INSERT INTO website.private_event_deposit_links(id,proposal_id,token_hash,expires_at,recipient) VALUES($1,$2,$3,$4,$5)",[input.requestId,id,tokenHash(token),p.expires_at,snapshot.details.contactEmail]);
-    return {alreadySent:false,proposal:proposalRow(p),due};
+    await client.query("INSERT INTO website.private_event_deposit_links(id,proposal_id,token_hash,expires_at,recipient) VALUES($1,$2,$3,$4,$5)",[input.requestId,id,tokenHash(token),p.expires_at,recipient]);
+    return {alreadySent:false,proposal:proposalRow(p),due,recipient};
   });
-  if(result.alreadySent)return {sent:true,alreadySent:true,proposalId:id};
+  if(result.alreadySent)return {sent:true,alreadySent:true,proposalId:id,recipient:result.recipient};
   const link=publicSiteUrl()+'/event-proposal?view=deposit#token='+token;
   let sent=false;
-  try{sent=await sendMail({to:result.proposal.snapshot.details.contactEmail,fromName:'Aviator Events',replyTo:'events@aviatorbrew.com',...depositReminderEmail(result.proposal,link,result.due)});}
+  try{sent=await sendMail({to:result.recipient,fromName:'Aviator Events',replyTo:'events@aviatorbrew.com',...depositReminderEmail(result.proposal,link,result.due)});}
   catch{await withDatabase(c=>c.query("UPDATE website.private_event_deposit_links SET status='unknown' WHERE id=$1",[input.requestId]));throw new ProposalError('Deposit email delivery could not be verified. Refresh its status before sending again.',503);}
   await withDatabase(c=>c.query("UPDATE website.private_event_deposit_links SET status=$2,sent_at=CASE WHEN $2='sent' THEN now() ELSE NULL END WHERE id=$1",[input.requestId,sent?'sent':'failed']));
   if(!sent)throw new ProposalError('The deposit email was not delivered. Review its status before sending again.',503);
-  return {sent:true,proposalId:id};
+  return {sent:true,proposalId:id,recipient:result.recipient};
 }
 async function accessRow(client:PoolClient,token:string,lock=false){
   const p=(await client.query("SELECT p.* FROM website.private_event_proposals p WHERE p.token_hash=$1 OR (p.state NOT IN ('superseded','declined','cancelled') AND EXISTS(SELECT 1 FROM website.private_event_deposit_links l WHERE l.proposal_id=p.id AND l.token_hash=$1 AND l.expires_at>now()))"+(lock?" FOR UPDATE":""),[tokenHash(token)])).rows[0];
