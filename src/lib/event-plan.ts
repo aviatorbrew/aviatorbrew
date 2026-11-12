@@ -16,7 +16,8 @@ export function eventStatusDisplay(status: typeof eventStatuses[number]) {
 }
 
 export const itemCategories = ["Food", "Drinks", "Room", "Other"] as const;
-export type EventOrderItem = { id: string; category: typeof itemCategories[number]; name: string; quantity: number; unitPriceCents: number; taxable: boolean; notes: string };
+export type EventItemKitchen = { ouncesPerUnit?:number;fluidOzPerUnit?:number;piecesPerUnit?:number;pizzasPerUnit?:number;piecesPerTray?:number;piecesPerHalfTray?:number };
+export type EventOrderItem = { kitchen?:EventItemKitchen; id: string; category: typeof itemCategories[number]; name: string; quantity: number; unitPriceCents: number; taxable: boolean; notes: string };
 export const readyRoomPackages = [
   { id: "social", name: "The Brewery Social", priceCents: 3200, appetizers: 2, entrees: 2, sides: 2, salads: 0 },
   { id: "feast", name: "The Aviator Feast", priceCents: 3800, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
@@ -69,7 +70,9 @@ export function changeEventPackage(plan: FlightPlan, packageId: string, catalog 
   const entrees = readyRoomEntrees;
   return { ...plan, packageId, appetizers: plan.appetizers.filter(Boolean).slice(0, pkg?.appetizers || 0), entrees: plan.entrees.filter(v => entrees.includes(v)).slice(0, pkg?.entrees || 0), sides: plan.sides.filter(Boolean).slice(0, pkg?.sides || 0), salads: plan.salads.filter(Boolean).slice(0, pkg?.salads || 0) };
 }
+export type EventKitchenPlan = { proteinShares?:Record<string,number>;proteinPortionLb?:Record<string,number>;sideReservePercent?:number };
 export type EventPlanDetails = {
+  kitchenPlan?: EventKitchenPlan;
   title: string; contactName: string; contactEmail: string; phone: string; guestEmails: string[];
   date: string; startTime: string; endTime: string; location: string; guestCount: number;
   status: typeof eventStatuses[number]; setupTime: string; foodTime: string; lastCall: string;
@@ -241,12 +244,22 @@ export function parseEventPlan(value: unknown, catalog = defaultCateringCatalog,
     if (!row || typeof row !== "object") throw new Error("Check the order rows.");
     const r = row as Record<string, unknown>;
     if (typeof r.id !== "string" || !r.id || r.id.length > 100 || typeof r.name !== "string" || !r.name.trim() || r.name.length > 200 || !itemCategories.includes(r.category as EventOrderItem["category"]) || typeof r.quantity !== "number" || !Number.isInteger(r.quantity) || r.quantity < 1 || r.quantity > 10000 || typeof r.unitPriceCents !== "number" || !Number.isInteger(r.unitPriceCents) || r.unitPriceCents < 0 || r.unitPriceCents > 10000000 || typeof r.taxable !== "boolean" || typeof r.notes !== "string" || r.notes.length > 1000) throw new Error("Each order row needs an item, a whole-number quantity, and a valid price.");
-    return { id: r.id, name: r.name.trim(), category: r.category as EventOrderItem["category"], quantity: r.quantity, unitPriceCents: r.unitPriceCents, taxable: r.taxable, notes: r.notes.trim() };
+    let kitchen:EventItemKitchen|undefined;
+    if(r.kitchen!==undefined){if(!r.kitchen||typeof r.kitchen!=='object'||Array.isArray(r.kitchen))throw new Error('Check item kitchen quantities.');kitchen={};for(const key of ['ouncesPerUnit','fluidOzPerUnit','piecesPerUnit','pizzasPerUnit','piecesPerTray','piecesPerHalfTray'] as const){const value=(r.kitchen as Record<string,unknown>)[key];if(value!==undefined){if(typeof value!=='number'||!Number.isFinite(value)||value<=0||value>100000)throw new Error('Check item kitchen quantities.');kitchen[key]=value;}}}
+    return { ...(kitchen?{kitchen}:{}), id: r.id, name: r.name.trim(), category: r.category as EventOrderItem["category"], quantity: r.quantity, unitPriceCents: r.unitPriceCents, taxable: r.taxable, notes: r.notes.trim() };
   });
   if (new Set(items.map((r) => r.id)).size !== items.length) throw new Error("Order rows must have distinct IDs.");
   const guestCount = integer("guestCount", 10000);
   const optionalInteger = (key: string, max: number) => input[key] == null ? 0 : integer(key, max);
   const details:EventPlanDetails = { title: text("title", 200, true), contactName: text("contactName", 200), contactEmail, phone: text("phone", 100), guestEmails, date, startTime, endTime, location: text("location", 300, true), guestCount, status: input.status as EventPlanDetails["status"], setupTime: time("setupTime"), foodTime: time("foodTime"), lastCall: time("lastCall"), items, taxRateBps: integer("taxRateBps", 10000), pfbTaxRateBps: optionalInteger("pfbTaxRateBps", 10000), reservationDepositCents: optionalInteger("reservationDepositCents", 100000000), paidCents: integer("paidCents", 1000000000), flightPlan: parseFlightPlan(input.flightPlan, guestCount, catalog,managerAdjustments), barDetails: text("barDetails", 5000), notes: text("notes", 5000), internalNotes: text("internalNotes", 5000) };
+  if(input.kitchenPlan!==undefined){
+    if(!managerAdjustments)throw new Error("Only a manager can change kitchen production allowances.");
+    if(!input.kitchenPlan||typeof input.kitchenPlan!=='object'||Array.isArray(input.kitchenPlan))throw new Error('Check kitchen planning overrides.');
+    const raw=input.kitchenPlan as EventKitchenPlan,kitchen:EventKitchenPlan={};
+    for(const key of ['proteinShares','proteinPortionLb'] as const){const values=raw[key];if(values!==undefined){if(!values||typeof values!=='object'||Array.isArray(values)||Object.keys(values).length>100)throw new Error('Check protein planning overrides.');kitchen[key]={};for(const [name,v] of Object.entries(values)){if(!name.trim()||name.length>200||/[<>\r\n]/.test(name)||!Number.isFinite(v)||v<=0||v>(key==='proteinShares'?100:5))throw new Error('Use positive protein shares and portions up to 5 lb.');kitchen[key]![name]=v;}}}
+    if(raw.sideReservePercent!==undefined){if(!Number.isFinite(raw.sideReservePercent)||raw.sideReservePercent<0||raw.sideReservePercent>50)throw new Error('Use a side and salad reserve from 0 to 50%.');kitchen.sideReservePercent=raw.sideReservePercent;}
+    details.kitchenPlan=kitchen;
+  }
   if(input.managerDiscount!==undefined){
     const raw=input.managerDiscount;
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Check the one-time event discount.');

@@ -41,6 +41,7 @@ export type ProposalSnapshot = { details: EventPlanDetails; items: EventOrderIte
 export function proposalSnapshot(details: EventPlanDetails, catalog: CateringCatalog, depositCents: number, policyText: string, policyVersion: string): ProposalSnapshot {
   const items = eventOrderItems(details,catalog);
   const safe = {...structuredClone(details),internalNotes:"",guestEmails:[]};
+  delete safe.kitchenPlan;
   return {details:safe,items:structuredClone(items),selections:[...flightPlanSelections(details,catalog),...([
     ["Event type",details.flightPlan?.eventType||""],["Company / organization",details.flightPlan?.organization||""],
     ["Setup access",details.setupTime?timeLabel(details.setupTime):""],["Food service",details.foodTime?timeLabel(details.foodTime):""],["Last call",details.lastCall?timeLabel(details.lastCall):""],

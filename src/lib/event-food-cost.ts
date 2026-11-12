@@ -13,14 +13,17 @@ export function parseEventFoodCosts(raw:unknown):EventFoodCostSettings{
 }
 export function eventFoodCostEstimate(d:EventPlanDetails,c:CateringCatalog,p:EventProductionSettings,costs:EventFoodCostSettings){
  const production=eventProductionPlan(d,c,p),rows:{name:string;amountCents:number|null;quantity:number|null;basis?:FoodCostBasis;source?:string;updatedAt?:string;note:string}[]=[];
- const foods=production.groups.flatMap(g=>g.rows).map(r=>({name:r.name,ounces:r.ounces+(r.name==='Aviator Pizzeria Pizza Bar'?production.pizzaRoundingOz:0),guests:d.guestCount,each:r.name==='Aviator Pizzeria Pizza Bar'&&d.flightPlan?.pizzas.length?production.pizzaCountTotal:null}));
- if(d.flightPlan?.dessert)foods.push({name:'Dessert display',ounces:0,guests:d.guestCount,each:d.guestCount});
- if(d.flightPlan?.coffee)foods.push({name:'Coffee service',ounces:0,guests:d.guestCount,each:d.guestCount});
- for(const i of production.custom){const match=i.name.match(/^(?:Appetizer|Entree|Side|Salad|Pizza|Dessert): (.+) \/ (guest|tray|piece|portion|pizza)$/);foods.push({name:match?.[1]||i.name,ounces:match?.[2]==='tray'?i.quantity*(p.trayFinishedLb[match[1]]||p.estimatedFullPanLb||10)*16:0,guests:match?.[2]==='guest'?i.quantity:0,each:match&&['piece','portion','pizza'].includes(match[2])?i.quantity:null});}
- for(const f of foods){const cost=costs[f.name];let quantity:number|null=null,note='Cost not entered; excluded from known-cost subtotal.';
+ const foods=production.groups.flatMap(g=>g.rows).map(r=>({name:r.name,ounces:r.ounces+(r.name==='Aviator Pizzeria Pizza Bar'?production.pizzaRoundingOz:0),fluidOz:0,guests:d.guestCount,each:r.name==='Aviator Smoked Wings'?r.count??null:r.name==='Aviator Pizzeria Pizza Bar'&&d.flightPlan?.pizzas.length?production.pizzaCountTotal:null}));
+ if(d.flightPlan?.dessert)foods.push({name:'Dessert display',ounces:0,fluidOz:0,guests:d.guestCount,each:d.guestCount});
+ if(d.flightPlan?.coffee)foods.push({name:'Coffee service',ounces:0,fluidOz:0,guests:d.guestCount,each:d.guestCount});
+ for(const i of production.custom){const match=i.name.match(/^(?:Appetizer|Entree|Side|Salad|Pizza|Dessert): (.+) \/ (guest|tray|piece|portion|pizza)$/),k=i.kitchen;foods.push({name:match?.[1]||i.name,ounces:k?.ouncesPerUnit?k.ouncesPerUnit*i.quantity:match?.[2]==='tray'&&match?.[1]!=='Aviator Smoked Wings'?i.quantity*(p.trayFinishedLb[match[1]]||p.estimatedFullPanLb||10)*16:0,fluidOz:(k?.fluidOzPerUnit||0)*i.quantity,guests:['guest','portion'].includes(match?.[2]||'')?i.quantity:0,each:k?.pizzasPerUnit?Math.ceil(k.pizzasPerUnit*i.quantity-1e-8):k?.piecesPerUnit?k.piecesPerUnit*i.quantity:match&&['piece','portion','pizza'].includes(match[2])?i.quantity:null});}
+
+ for(const f of foods){const cost=costs[f.name]||(c.menu.pizzas.includes(f.name)?costs['Aviator Pizzeria Pizza Bar']:undefined);let quantity:number|null=null,note='Cost not entered; excluded from known-cost subtotal.';
    if(cost){
+     if(cost.basis==='fl-oz'&&f.fluidOz)quantity=f.fluidOz;
      if(cost.basis==='lb'&&f.ounces)quantity=f.ounces/16;
-     if(cost.basis==='full-pan'&&f.ounces){const measured=p.trayFinishedLb[f.name];const fill=measured||(c.menu.salads.includes(f.name)?p.estimatedSaladPanLb||5:p.estimatedFullPanLb||10);quantity=f.ounces/16/fill;if(!measured)note=`Prorated using an estimated ${fill} lb full-pan fill weight.`;}
+     if(cost.basis==='full-pan'&&f.name==='Aviator Smoked Wings'&&f.each!==null)quantity=f.each/(p.wingsPerFullTray||200);
+     if(cost.basis==='full-pan'&&f.name!=='Aviator Smoked Wings'&&f.ounces){const measured=p.trayFinishedLb[f.name];const fill=measured||(c.menu.salads.includes(f.name)?p.estimatedSaladPanLb||5:p.estimatedFullPanLb||10);quantity=f.ounces/16/fill;if(!measured)note=`Prorated using an estimated ${fill} lb full-pan fill weight.`;}
      if(cost.basis==='half-pan'&&f.ounces){const measured=p.halfTrayFinishedLb?.[f.name];quantity=f.ounces/16/(measured||p.estimatedHalfPanLb||5);if(!measured)note=`Prorated using an estimated ${p.estimatedHalfPanLb||5} lb half-pan fill weight.`;}
      if(cost.basis==='event-guest'&&f.guests)quantity=f.guests;
      if((cost.basis==='pizza'||cost.basis==='each')&&f.each!==null)quantity=f.each;

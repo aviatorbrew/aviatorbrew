@@ -1,4 +1,4 @@
-import type {CateringCatalog, EventOrderItem} from '@/lib/event-plan';
+import type {CateringCatalog, EventOrderItem, EventItemKitchen} from '@/lib/event-plan';
 
 export const menuBillingUnits = {guest:'Guest serving',portion:'Individual portion',tray:'Full tray',piece:'Piece',pizza:'Whole pizza'} as const;
 export type MenuBillingUnit = keyof typeof menuBillingUnits;
@@ -20,7 +20,7 @@ export function eventMenuChoices(catalog:CateringCatalog):EventMenuChoice[] {
 }
 
 // Ordinary order rows preserve agreed prices and quantities in existing quotes and kitchen sheets.
-export function eventMenuOrderItem(input:{id:string;choiceId:string;unit:MenuBillingUnit;quantity:number;unitPriceCents:number;notes?:string},catalog:CateringCatalog):EventOrderItem {
+export function eventMenuOrderItem(input:{id:string;choiceId:string;unit:MenuBillingUnit;quantity:number;unitPriceCents:number;notes?:string;kitchen?:EventItemKitchen},catalog:CateringCatalog):EventOrderItem {
   const choice=eventMenuChoices(catalog).find(item=>item.id===input.choiceId);
   if(!choice||choice.unavailable)throw new Error('Choose an available menu item.');
   if(!Object.hasOwn(menuBillingUnits,input.unit))throw new Error('Choose a billing unit.');
@@ -28,5 +28,5 @@ export function eventMenuOrderItem(input:{id:string;choiceId:string;unit:MenuBil
   if(!Number.isInteger(input.unitPriceCents)||input.unitPriceCents<0||input.unitPriceCents>10000000)throw new Error('Enter a valid agreed unit price.');
   const notes=`Quantity is ${menuBillingUnits[input.unit].toLowerCase()}${input.unit==='guest'?'s':''}. ${input.notes?.trim()||'Confirm portions and preparation with the kitchen.'}`;
   if(notes.length>1000)throw new Error('Keep preparation notes under 900 characters.');
-  return {id:input.id,category:choice.category,name:`${choice.prefix}: ${choice.name} / ${input.unit}`,quantity:input.quantity,unitPriceCents:input.unitPriceCents,taxable:true,notes};
+  return {...(input.kitchen?{kitchen:input.kitchen}:{}),id:input.id,category:choice.category,name:`${choice.prefix}: ${choice.name} / ${input.unit}`,quantity:input.quantity,unitPriceCents:input.unitPriceCents,taxable:true,notes};
 }

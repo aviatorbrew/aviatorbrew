@@ -25,7 +25,7 @@ await page.route('**/api/manager/**',async route=>{
   const found=u.searchParams.get('id')===inquiry.id||u.searchParams.get('eventDate')===p.eventDate?[{...inquiry,...(saved.sourceInquiryId===inquiry.id?{planId:saved.id}:{})}]:[];
   b={inquiries:found,total:found.length,unreviewedCount:1};
  }
- else if(path==='/api/manager/event-plans'){if(r.method()==='POST'){const data=r.postDataJSON();assert.equal(data.sourceInquiryId,inquiry.id);saved={...saved,sourceInquiryId:inquiry.id,details:data.details};b={plan:saved};}else b={plans:[saved,other],catering:catalog,defaultRoomFeeCents:35000};}
+ else if(path==='/api/manager/event-plans'){if(r.method()==='POST'){const data=r.postDataJSON();assert.equal(data.sourceInquiryId,inquiry.id);saved={...saved,sourceInquiryId:inquiry.id,details:data.details};b={plan:saved};}else b={plans:[saved,other],foodCosts:{'Hush Puppies':{basis:'lb',costCents:1000}},catering:catalog,defaultRoomFeeCents:35000};}
  else if(path.endsWith('/calendar-match'))b={matches:[],linked:null};
  else if(path.endsWith('/proposals')){assert.equal(r.method(),'GET');b={proposals:[],deposits:[],attempts:[],deliveries:[],changeRequests:[],depositLinks:[],review:{context:'fixture-review',proposalId:null,emailApproved:false}};}
  else if(path==='/api/manager/event-plans/'+source.id){
@@ -59,9 +59,12 @@ for(const width of [1440,390]){
  await page.getByRole('button',{name:'Remove order row 1',exact:true}).click();
  const picker=page.getByRole('region',{name:'À la carte menu builder'});
  await picker.getByLabel('À la carte menu item',{exact:true}).selectOption('appetizers:Hush Puppies');
- assert.equal(await picker.getByRole('button',{name:'+ Add menu item',exact:true}).isDisabled(),true,'Price must be agreed before adding');
+ assert.equal(await picker.getByLabel('Agreed unit price ($)',{exact:true}).inputValue(),'6.7');
+ await picker.getByLabel('À la carte portion ounces',{exact:true}).fill('6');assert.equal(await picker.getByLabel('Agreed unit price ($)',{exact:true}).inputValue(),'13.4');
+ await picker.getByLabel('Agreed unit price ($)',{exact:true}).fill('10');await picker.getByText('Manual price override',{exact:true}).waitFor();
+ await picker.getByRole('button',{name:'Use 28% price',exact:true}).click();assert.equal(await picker.getByLabel('Agreed unit price ($)',{exact:true}).inputValue(),'13.4');
  await picker.getByLabel('À la carte billing unit',{exact:true}).selectOption('tray');await picker.getByLabel('À la carte quantity',{exact:true}).fill('2');await picker.getByLabel('Agreed unit price ($)',{exact:true}).fill('25');await picker.getByLabel('À la carte preparation notes',{exact:true}).fill('Sauce on the side');await picker.getByRole('button',{name:'+ Add menu item',exact:true}).click();
- await picker.getByLabel('Search menu items',{exact:true}).fill('steak');await picker.getByLabel('À la carte menu item',{exact:true}).selectOption({label:'Grilled Flat Iron Steak with Collard Green Chimichurri'});await picker.getByLabel('À la carte billing unit',{exact:true}).selectOption('guest');await picker.getByLabel('À la carte quantity',{exact:true}).fill('10');await picker.getByLabel('Agreed unit price ($)',{exact:true}).fill('17.76');await picker.getByRole('button',{name:'+ Add menu item',exact:true}).click();
+ await picker.getByLabel('Search menu items',{exact:true}).fill('steak');await picker.getByLabel('À la carte menu item',{exact:true}).selectOption({label:'Grilled Flat Iron Steak with Collard Green Chimichurri'});await picker.getByLabel('À la carte billing unit',{exact:true}).selectOption('guest');await picker.getByLabel('À la carte quantity',{exact:true}).fill('10');assert.equal(await picker.getByRole('button',{name:'+ Add menu item',exact:true}).isDisabled(),true,'Missing cost requires a manual price');await picker.getByLabel('Agreed unit price ($)',{exact:true}).fill('17.76');await picker.getByRole('button',{name:'+ Add menu item',exact:true}).click();
 
  await tab('Proposal & Payments').click();await page.getByRole('button',{name:'Create proposal draft',exact:true}).waitFor();
  await page.getByRole('button',{name:'Edit missing event details',exact:true}).click();await eventName.waitFor();assert.equal(await tab('Details').getAttribute('aria-selected'),'true');
@@ -71,7 +74,7 @@ for(const width of [1440,390]){
  await nav().getByRole('button',{name:/Inquiries/}).click();await page.locator('.event-inquiry-archive').waitFor();
  await nav().getByRole('button',{name:/Current event/}).click();assert.equal(await eventName.inputValue(),'Edited fixture rehearsal','Navigation preserves unsaved work');
  await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.event-workspace-header')?.textContent?.includes('Saved revision 2'));
- assert.equal(saved.details.title,'Edited fixture rehearsal');assert.equal(saved.details.flightPlan.cateringMode,'alacarte');assert.equal(saved.details.flightPlan.packageId,'');assert.equal(saved.details.items.length,2);assert.equal(saved.details.items[1].unitPriceCents,1776);assert.equal(saved.details.items[1].quantity,10);assert.match(saved.details.items[0].notes,/Sauce on the side/);
+ assert.equal(saved.details.title,'Edited fixture rehearsal');assert.equal(saved.details.flightPlan.cateringMode,'alacarte');assert.equal(saved.details.flightPlan.packageId,'');assert.equal(saved.details.items.length,2);assert.equal(saved.details.items[0].kitchen.ouncesPerUnit,160);assert.equal(saved.details.items[1].kitchen.ouncesPerUnit,8);assert.equal(saved.details.items[1].unitPriceCents,1776);assert.equal(saved.details.items[1].quantity,10);assert.match(saved.details.items[0].notes,/Sauce on the side/);
  await menus.getByRole('button',{name:'Review website inquiry',exact:true}).click();const inquiryRow=page.locator('[data-inquiry-id="'+inquiry.id+'"]');await inquiryRow.waitFor();await page.waitForFunction(id=>document.activeElement?.getAttribute('data-inquiry-id')===id,inquiry.id);assert.ok((await inquiryRow.innerText()).includes('Caprese Skewers'));
  assert.deepEqual(mutations,[{method:'PUT',path:'/api/manager/event-plans/'+source.id}]);
  await nav().getByRole('button',{name:/Current event/}).click();
@@ -86,6 +89,15 @@ for(const width of [1440,390]){
  await page.getByRole('button',{name:'View original inquiry',exact:true}).click();
  await page.getByRole('button',{name:'Open event plan',exact:true}).click();await eventName.waitFor();
  assert.equal(mutations.filter(m=>m.method==='POST'&&m.path==='/api/manager/event-plans').length,1,'Linked inquiry reopens without a duplicate creation');
+ saved.details={...saved.details,guestCount:70,items:[],flightPlan:{...m.emptyFlightPlan(),packageId:'social',appetizers:['Hush Puppies','Tater Tots'],entrees:['Aviator Pulled Pork BBQ','Aviator Beef Brisket'],sides:['Mac & Cheese','Collard Greens']}};
+ await page.goto(base+'/manager/private-events');await row().getByRole('button',{name:'Edit plan',exact:true}).click();await tab('Menu & Pricing').click();
+ const kitchen=page.getByRole('region',{name:'Kitchen serving plan'});await kitchen.waitFor();assert.match(await kitchen.innerText(),/up to 77 total protein servings/);
+ await kitchen.getByLabel('Aviator Pulled Pork BBQ · share',{exact:true}).fill('2');await kitchen.getByLabel('Aviator Beef Brisket · cooked lb per serving',{exact:true}).fill('0.6');await kitchen.getByLabel('Extra sides and salads (%)',{exact:true}).fill('20');
+ assert.match(await kitchen.innerText(),/Aviator Pulled Pork BBQ · 51 servings/);assert.match(await kitchen.innerText(),/Aviator Beef Brisket · 26 servings/);
+ await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.event-workspace-header')?.textContent?.includes('Saved revision'));
+ assert.equal(saved.details.kitchenPlan.proteinShares['Aviator Pulled Pork BBQ'],2);assert.equal(saved.details.kitchenPlan.proteinPortionLb['Aviator Beef Brisket'],.6);assert.equal(saved.details.kitchenPlan.sideReservePercent,20);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+
 
 }
 assert.deepEqual(errors,[]);console.log('PASS event workspace: list/calendar switch, standalone editor, always-open details, unsaved edits survive inquiry navigation, save, original inquiry review, close/reopen, inquiry errors and desktop/mobile layout. All mutations mocked; no emails, payments or customer records changed.');
