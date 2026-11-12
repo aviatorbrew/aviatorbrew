@@ -77,6 +77,22 @@ export function customOrderProductionGuide(item:EventOrderItem,s:EventProduction
  const trays=pans?productionBatchGuide({name:match![2],selections:1,ounces:k!.ouncesPerUnit!*item.quantity,...pans}):'';
  return [weight,trays,k?.piecesPerUnit?`${productionNumber(k.piecesPerUnit*item.quantity)} pieces`: ''].filter(Boolean).join(' · ');
 }
+export function customOrderProductionAmounts(item:EventOrderItem,s:EventProductionSettings,c:CateringCatalog){
+ const match=/^(Appetizer|Entree|Side|Salad|Pizza|Dessert): (.+) \/ (guest|portion|tray|piece|pizza)$/.exec(item.name),unit=match?.[3],k=item.kitchen;
+ const orderLabel=`${productionNumber(item.quantity)} ${unit==='guest'?'guest servings':unit==='portion'?'individual portions':unit==='tray'?'full trays ordered':unit==='pizza'?'whole pizzas ordered':unit==='piece'?'pieces ordered':'ordered units'}`;
+ const wing=wingOrderPortion(item,s);
+ if(wing){const count=Math.ceil(wing.piecesPerUnit*item.quantity-1e-8);return {orderLabel,makeLabel:trayFills(count,wing.capacity,wing.halfCapacity,false,'wings'),foodLabel:`${count} wings total${unit==='guest'||unit==='portion'?` · ${productionNumber(wing.piecesPerUnit)} per serving`:''}`};}
+ const pizzas=pizzaOrderCount(item,s);
+ if(pizzas!==null)return {orderLabel,makeLabel:`${pizzas} whole ${s.pizzaDiameterInches||14}-inch pizzas`,foodLabel:`${pizzas*(s.pizzaSlicesPerPie||8)} slices total${unit==='guest'||unit==='portion'?` · ${s.pizzaSlicesPerGuest||3} slices per guest serving`:''}`};
+ const category=match?{Appetizer:'Appetizers',Entree:'Entrees',Side:'Sides',Salad:'Salads'}[match[1]]:null;
+ if(category&&match){
+   const pan=productionPanFor(match[2],category,c,s),servingOz=match[1]==='Appetizer'?s.aLaCarteAppetizerOz??3:match[1]==='Entree'?(s.proteinPortionLb?.[match[2]]?s.proteinPortionLb[match[2]]*16:s.aLaCarteEntreeOz??8):match[1]==='Side'?s.aLaCarteSideOz??8:s.aLaCarteSaladOz??2;
+   const oz=k?.ouncesPerUnit??(unit==='tray'?pan.fullPanLb*16:unit==='guest'||unit==='portion'?servingOz:undefined);
+   if(oz&&Number.isFinite(oz)){const total=oz*item.quantity;return {orderLabel,makeLabel:trayFills(total/16,pan.fullPanLb,pan.halfPanLb,pan.panSize==='half'),foodLabel:`${productionWeight(total)} total`};}
+ }
+ if(k?.piecesPerUnit||unit==='piece')return {orderLabel,makeLabel:`${productionNumber((k?.piecesPerUnit||1)*item.quantity)} pieces`,foodLabel:'Use the recorded preparation notes for portion details.'};
+ return {orderLabel,makeLabel:unit==='tray'?`${item.quantity} full trays`:`${item.quantity} ordered units — see preparation notes`,foodLabel:customOrderProductionGuide(item,s,c)||'Portion yield is not specified in this order.'};
+}
 export function productionBatchGuide(row:ProductionRow){
  if(row.name==='Aviator Smoked Wings'&&row.count!==undefined)return wingTrayGuide(row.count,row.piecesPerTray||200,row.piecesPerHalfTray||75);
  if(row.name==='Aviator Smoked Wings')return row.ounces&&row.piecesPerLb?wingTrayGuide(Math.ceil(row.ounces/16*row.piecesPerLb-1e-8),row.piecesPerTray||200):`Approx. ${row.piecesPerTray||200} wing pieces per full tray. Cooked pieces per pound is needed to convert the weight target to a piece/tray count.`;

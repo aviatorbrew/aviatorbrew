@@ -34,3 +34,7 @@ The linked ULINE [full-size S-22409](https://www.uline.com/Product/Detail/S-2240
 Wing guest/portion orders use 5 pieces per serving and 200 per full tray, including older orders without saved kitchen metadata. Explicit saved piece overrides still apply. Known wing counts do not require a pounds conversion for production; per-pound costing remains incomplete until a measured weight is available. Custom food orders are listed once, and known protein servings reduce the remaining buffet protein budget. These facts are printed as guidance rather than chef-blocking warnings.
 
 The changed standards also apply when printing older guest orders that saved the previous four-wing or two-slice defaults. Other saved portion overrides and explicit whole-pizza/piece/tray quantities remain in effect; agreed selling prices are preserved.
+
+## Kitchen quantity columns
+
+The top of the sheet shows **Guests: N**. À la carte rows separate **Guest servings / order**, **Quantity to make**, and **Total food / preparation**. For example, 30 guest servings of a pizza style at 3 slices each print as 12 whole 14-inch pizzas and 96 slices, rather than an unlabeled 30. Wing rows show tray fills and total pieces; weighed foods show full/half/partial trays and total food weight. Explicit whole-pizza, piece and tray orders retain their stated units. These are production conversions; agreed billing quantities and selling prices are unchanged.
