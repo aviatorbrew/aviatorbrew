@@ -11,7 +11,7 @@ const audit={inquiries:[{id:'160',name:'Menu Fixture Guest',created_at:stamp,pay
 const submitted=audit.inquiries[0],p=submitted.payload;
 const inquiry={id:String(submitted.id),kind:'event',createdAt:submitted.created_at,name:'Menu Fixture Guest',email:'menu-fixture@example.invalid',phone:'',guestCount:p.guestCount,eventDate:p.eventDate,eventTime:p.eventTime,eventType:p.eventType,location:p.location||'',estimatedSubtotal:p.estimatedSubtotal||'',estimatedTax:'',estimatedTotal:'',cateringMenu:'',menuScanSource:'',orderSummary:p.orderSummary,message:p.message,payload:{...p,name:'Menu Fixture Guest',email:'menu-fixture@example.invalid'},reviewed:false,bookingStage:'Inquiry Received'};
 const source=structuredClone(actual.plan),other={...structuredClone(source),id:'99999999-9999-4999-8999-999999999999',details:{...structuredClone(source.details),title:'Other fixture event',date:'2026-11-20'}};
-let saved,mutations=[],queries=[],submissionError=false;
+let saved,mutations=[],queries=[],submissionError=false,mergeMatches=[];
 await page.clock.setFixedTime(new Date('2026-11-03T15:00:00Z'));
 await page.route('**/api/manager/**',async route=>{
  const r=route.request(),u=new URL(r.url()),path=u.pathname;let b={};
@@ -26,7 +26,7 @@ await page.route('**/api/manager/**',async route=>{
   b={inquiries:found,total:found.length,unreviewedCount:1};
  }
  else if(path==='/api/manager/event-plans'){if(r.method()==='POST'){const data=r.postDataJSON();assert.equal(data.sourceInquiryId,inquiry.id);saved={...saved,sourceInquiryId:inquiry.id,details:data.details};b={plan:saved};}else b={plans:[saved,other],foodCosts:{'Hush Puppies':{basis:'lb',costCents:1000}},catering:catalog,defaultRoomFeeCents:35000};}
- else if(path.endsWith('/calendar-match'))b={matches:[],linked:null};
+ else if(path.endsWith('/calendar-match')){if(r.method()==='POST'){const input=r.postDataJSON();assert.equal(input.sameEvent,true);assert.equal(input.matchId,other.id);saved={...saved,version:saved.version+1};mergeMatches=[];b={plan:saved,archivedId:other.id,googleScheduleDiffers:false};}else b={matches:mergeMatches,linked:null};}
  else if(path.endsWith('/proposals')){assert.equal(r.method(),'GET');b={proposals:[],deposits:[],attempts:[],deliveries:[],changeRequests:[],depositLinks:[],review:{context:'fixture-review',proposalId:null,emailApproved:false}};}
  else if(path==='/api/manager/event-plans/'+source.id){
   if(r.method()==='PUT'){const data=r.postDataJSON();saved={...saved,version:saved.version+1,details:data.details};b={plan:saved};}
@@ -38,7 +38,7 @@ await page.route('**/api/manager/**',async route=>{
 });
 const row=()=>page.locator('[data-event-id="'+source.id+'"]'),editor=()=>page.locator('.event-plan-editor'),nav=()=>page.getByRole('navigation',{name:'Private event workflow'});
 for(const width of [1440,390]){
- saved=structuredClone(source);mutations=[];queries=[];submissionError=false;
+ saved=structuredClone(source);mergeMatches=[];mutations=[];queries=[];submissionError=false;
  await page.setViewportSize({width,height:1000});await page.goto(base+'/manager/private-events');await row().waitFor();
  assert.equal(await page.locator('.event-calendar').isVisible(),false);
  await page.getByRole('button',{name:'Calendar',exact:true}).click();await page.locator('.event-calendar').waitFor();
@@ -96,6 +96,11 @@ for(const width of [1440,390]){
  assert.match(await kitchen.innerText(),/Aviator Pulled Pork BBQ · 51 servings/);assert.match(await kitchen.innerText(),/Aviator Beef Brisket · 26 servings/);
  await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.event-workspace-header')?.textContent?.includes('Saved revision'));
  assert.equal(saved.details.kitchenPlan.proteinShares['Aviator Pulled Pork BBQ'],2);assert.equal(saved.details.kitchenPlan.proteinPortionLb['Aviator Beef Brisket'],.6);assert.equal(saved.details.kitchenPlan.sideReservePercent,20);
+ await tab('Details').click();mergeMatches=[{id:other.id,version:1,fingerprint:'fixture-fingerprint',title:'Duplicate fixture event',date:saved.details.date,startTime:'17:00',endTime:'21:00',sourceKind:'Website event',reason:'Same-day event',guestCount:70,hasMenu:true}];
+ await page.getByRole('button',{name:'Find same-day duplicates',exact:true}).click();await page.getByRole('button',{name:'Merge duplicate event',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Is this the same event?'});await dialog.waitFor();assert.match(await dialog.innerText(),/Contains a saved menu/);
+ const beforeMerge=mutations.length;await dialog.getByRole('button',{name:'No — keep separate'}).click();assert.equal(mutations.length,beforeMerge);
+ await page.getByRole('button',{name:'Merge duplicate event',exact:true}).click();await page.getByRole('button',{name:'Merge duplicate — keep this event',exact:true}).click();await dialog.waitFor({state:'hidden'});assert.equal(mutations.at(-1).path,'/api/manager/event-plans/'+source.id+'/calendar-match');
+
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
 
 

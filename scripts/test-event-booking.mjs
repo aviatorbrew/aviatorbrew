@@ -386,6 +386,17 @@ try{
    await connection.query('INSERT INTO website.private_event_plans(id,title,event_date,status,data,calendar_sync) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb)',[id,title,date,'Confirmed',JSON.stringify(data),JSON.stringify({calendarId:calendarSync.calendarId,eventId:source.id,status:'active',source,checkedAt:new Date().toISOString()})]);
    return {id,source};
  };
+ const confirmedKeep=await plans.saveEventPlan({...valid(future(1500)),title:'Confirmed merge keeper',status:'Confirmed',paidCents:35000});
+ const confirmedQuote=await proposals.createProposal(confirmedKeep.id,{version:confirmedKeep.version,expiresAt:expiration()});
+ const importedDuplicate=await calendarFixture(future(1500),'Confirmed merge Google duplicate','17:00');
+ const foundDuplicate=(await calendarMatches.getCalendarEventMatches(confirmedKeep.id)).matches.find(m=>m.id===importedDuplicate.id);assert.ok(foundDuplicate,'Confirmed events expose the merge control');
+ const mergedConfirmed=await calendarMatches.linkCalendarEvent(confirmedKeep.id,{sameEvent:true,version:confirmedKeep.version,matchId:foundDuplicate.id,matchVersion:foundDuplicate.version,fingerprint:foundDuplicate.fingerprint});
+ assert.deepEqual(mergedConfirmed.plan.details,confirmedKeep.details);assert.equal(mergedConfirmed.plan.details.status,'Confirmed');assert.deepEqual((await proposals.getManagerProposal(confirmedKeep.id,confirmedQuote.id)).snapshot,confirmedQuote.snapshot);
+ const manualDuplicate=await plans.saveEventPlan({...valid(future(1500)),title:'Manual same-day duplicate',status:'Draft',internalNotes:'Retain archived notes'});
+ const manualMatch=(await calendarMatches.getCalendarEventMatches(confirmedKeep.id)).matches.find(m=>m.id===manualDuplicate.id);assert.ok(manualMatch,'Linked events can merge manual same-day duplicates');
+ const mergedManual=await calendarMatches.linkCalendarEvent(confirmedKeep.id,{sameEvent:true,version:mergedConfirmed.plan.version,matchId:manualMatch.id,matchVersion:manualMatch.version,fingerprint:manualMatch.fingerprint});
+ assert.deepEqual(mergedManual.plan.details,confirmedKeep.details);assert.equal(mergedManual.plan.calendarSync.eventId,mergedConfirmed.plan.calendarSync.eventId);assert.ok(mergedManual.plan.calendarSync.mergedEventIds.includes(manualDuplicate.id));assert.equal((await plans.getEventReport(manualDuplicate.id)).details.internalNotes,'Retain archived notes');
+ console.log('PASS confirmed and manual duplicate merges preserve kept details, payments, proposals, Google identity and archived source notes.');
  const managerCookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');
  const matchRequest=(id,body,authenticated=true)=>new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/calendar-match',{method:body?'POST':'GET',headers:{...(authenticated?{cookie:managerCookie}:{}),'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
  const linkFixturePlan=await plans.saveEventPlan({...valid(future(320)),title:'Amedisys Hospice Christmas Party',notes:'Authoritative website event notes',barDetails:'Website bar instructions',paidCents:15000}),googleFixture=await calendarFixture(future(321));
