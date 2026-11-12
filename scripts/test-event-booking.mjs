@@ -712,6 +712,30 @@ try{
  await settings.setPrivateEventSettings({foodCosts:previous.foodCosts,production:previous.production});
  console.log('PASS pan fills and internal food costs: separate half/full measured weights, packing rules, private authenticated settings/list responses, no-store, invalid cost rejection, incomplete-cost safeguards, no cost leakage into kitchen/proposals, preserved menu/prices/quotes/payments and no external mail or Stripe.');
  }
+ { // An optional personal message belongs to this outgoing proposal email only.
+  const plan=await plans.saveEventPlan({...valid(future(1800)),status:'Tentative'}),draft=await proposals.createProposal(plan.id,{version:plan.version,expiresAt:expiration()});
+  const review=await proposals.saveProposalReview(plan.id,{...(await proposals.listProposals(plan.id)).review,emailApproved:true});
+  const context={params:Promise.resolve({id:plan.id,proposalId:draft.id})},cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');
+  const request=(body,auth=true)=>new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+plan.id+'/proposals/'+draft.id,{method:'POST',headers:auth?{cookie}:{},body:JSON.stringify({emailApproved:true,reviewContext:review.context,...body})});
+  const before=(await connection.query('SELECT token_hash,sent_at,approved_at,snapshot FROM website.private_event_proposals WHERE id=$1',[draft.id])).rows[0],mailBefore=globalThis.eventTestMail.length,stripeBefore=stripeCalls;
+  assert.equal((await proposalRoute.POST(request({emailNote:'Customer note'},false),context)).status,401);
+  assert.equal((await proposalRoute.POST(request({emailApproved:false,emailNote:'Customer note'}),context)).status,403);
+  for(const emailNote of [null,17,{text:'Invalid'},'x'.repeat(2001)])assert.equal((await proposalRoute.POST(request({emailNote}),context)).status,400);
+  assert.equal(globalThis.eventTestMail.length,mailBefore);
+  assert.deepEqual((await connection.query('SELECT token_hash,sent_at,approved_at,snapshot FROM website.private_event_proposals WHERE id=$1',[draft.id])).rows[0],before,'Invalid notes cannot approve a proposal or rotate its access token');
+  const emailNote='  Hi Fixture,\r\nThanks for choosing Aviator & friends.\r\n<img src=x onerror="alert(1)">\r\nSee you soon!  ',normalized=emailNote.replace(/\r\n/g,'\n').trim();
+  const sent=await proposalRoute.POST(request({emailNote}),context);assert.equal(sent.status,200);
+  const message=globalThis.eventTestMail.at(-1);assert.equal(message.to,plan.details.contactEmail);assert.equal(message.cc,'events@aviatorbrew.com');assert.ok(message.text.includes(normalized));
+  assert.ok(message.html.includes('Hi Fixture,<br>Thanks for choosing Aviator &amp; friends.<br>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;<br>See you soon!'));assert.ok(!message.html.includes('<img src=x'));
+  assert.ok(message.html.indexOf('Hi Fixture,')<message.html.indexOf('<a href='),'The personal note appears above the proposal link');
+  assert.equal(message.attachments.length,1);assert.equal(message.attachments[0].filename,draft.number+'.pdf');
+  assert.deepEqual((await proposals.getManagerProposal(plan.id,draft.id)).snapshot,before.snapshot);assert.deepEqual((await plans.getEventPlan(plan.id)).details,plan.details,'Email notes do not change event or kitchen details');
+  const token=message.text.match(/#token=([a-f0-9]{64})/)[1];assert.equal((await proposals.customerProposal(token)).proposal.id,draft.id);
+  assert.equal((await proposalRoute.POST(request({emailNote:' \r\n '}),context)).status,200);assert.ok(!globalThis.eventTestMail.at(-1).text.includes('Hi Fixture,'),'A blank resend does not reuse the previous email note');
+  assert.equal((await proposalRoute.POST(request({emailNote:'x'.repeat(2000)}),context)).status,200);assert.ok(globalThis.eventTestMail.at(-1).text.includes('x'.repeat(2000)));
+  assert.equal(stripeCalls,stripeBefore,'A note never creates a payment');assert.equal(globalThis.eventTestMail.length,mailBefore+3);
+  console.log('PASS proposal email notes: authenticated approved sends, 2,000-character limit before mutation, escaped HTML, preserved lines, plain text, customer/team copies, working proposal link, optional blank resend and unchanged quote/event details.');
+ }
  const browserFixture=await approved(valid(future(95)));
  await writeFile('/tmp/aviator-event-proposal-browser-fixture.json',JSON.stringify({token:browserFixture.token,planId:browserFixture.plan.id,proposalId:browserFixture.p.id,paidToken:token,paidPlanId:sourcePlan.id}),{mode:0o600});
 }finally{globalThis.fetch=actualFetch;await connection.end();process.exitCode||=0;setTimeout(()=>process.exit(process.exitCode),50).unref();}

@@ -51,7 +51,8 @@
     "test:skin-social": "node scripts/test-skin-social.mjs",
     "test:event-staff-copy-ui": "node scripts/test-event-staff-copy-ui.mjs",
     "test:event-manual-payments-ui": "node scripts/test-event-manual-payments-ui.mjs",
-    "test:event-shared-pizza-ui": "node scripts/test-event-shared-pizza-ui.mjs"
+    "test:event-shared-pizza-ui": "node scripts/test-event-shared-pizza-ui.mjs",
+    "test:event-proposal-note-ui": "node scripts/test-event-proposal-note-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",
