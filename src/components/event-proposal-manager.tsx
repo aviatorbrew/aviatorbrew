@@ -176,6 +176,7 @@ export function EventProposalManager({plan,dirty,onRefresh,eventActions,printAct
       {reminder?<p className="event-payment-reminder">{reminder.status==='sent'&&reminder.sent_at?<>Deposit link emailed {eventTimestamp(reminder.sent_at)} to {reminder.recipient}.</>:reminder.status==='sending'?'Deposit email sending — delivery not confirmed.':reminder.status==='unknown'?'Deposit email delivery unverified. Check before resending.':'Deposit email was not delivered.'}</p>:null}
      </>:<p>Loading payments…</p>}
      {paymentEntry?<EventManualPaymentFields recordedPaidCents={paymentEntry.paidCents} verifiedPaidCents={stripeTotal} disabled={paymentEntry.disabled||busy||!loaded} dirty={dirty} onChange={paymentEntry.onChange}/>:null}
+     <div className="event-row-actions event-receipt-actions">{dirty||busy||!loaded||paymentEntry?.disabled||latest?.termsCurrent===false?<button type="button" disabled title={latest?.termsCurrent===false?'Create an updated proposal before printing the receipt.':'Save event changes before printing the receipt.'}>Preview &amp; Print Receipt</button>:<a href={`/api/manager/event-plans/${encodeURIComponent(plan.id)}/receipt`} target="_blank" rel="noreferrer">Preview &amp; Print Receipt</a>}</div>
      {deposits.length?<a href={base+'/'+(deposits.find(d=>d.proposal_id===latest?.id)?.proposal_id||deposits[0].proposal_id)+'?receipt=1'} target="_blank" rel="noreferrer">Deposit receipt PDF</a>:null}
     </section>
    </div>

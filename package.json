@@ -53,7 +53,9 @@
     "test:event-manual-payments-ui": "node scripts/test-event-manual-payments-ui.mjs",
     "test:event-shared-pizza-ui": "node scripts/test-event-shared-pizza-ui.mjs",
     "test:event-proposal-note-ui": "node scripts/test-event-proposal-note-ui.mjs",
-    "test:event-proposal-overview-ui": "node scripts/test-event-proposal-overview-ui.mjs"
+    "test:event-proposal-overview-ui": "node scripts/test-event-proposal-overview-ui.mjs",
+    "test:event-receipt": "node scripts/test-event-receipt.mjs",
+    "test:event-receipt-ui": "node scripts/test-event-receipt.mjs && node scripts/test-event-receipt-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

@@ -736,6 +736,24 @@ try{
   assert.equal(stripeCalls,stripeBefore,'A note never creates a payment');assert.equal(globalThis.eventTestMail.length,mailBefore+3);
   console.log('PASS proposal email notes: authenticated approved sends, 2,000-character limit before mutation, escaped HTML, preserved lines, plain text, customer/team copies, working proposal link, optional blank resend and unchanged quote/event details.');
  }
+ { // Bar/POS receipts print the issued quote and a consistent live payment credit.
+  const receiptRoute=require(await compile(path.join(root,'src/app/api/manager/event-plans/[id]/receipt/route.ts')));
+  const fixture=await approved({...valid(future(1810)),paidCents:10000}),saved=await plans.getEventPlan(fixture.plan.id),cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');
+  const request=(id,auth=true,paper='letter')=>receiptRoute.GET(new NextRequest('https://aviatorbrew.com/api/manager/event-plans/'+id+'/receipt?paper='+paper,{headers:auth?{cookie}:{}}),{params:Promise.resolve({id})});
+  const beforeProposal=await proposals.getManagerProposal(saved.id,fixture.p.id),beforeMail=globalThis.eventTestMail.length,beforeStripe=stripeCalls;
+  assert.equal((await request(saved.id,false)).status,401);assert.equal((await request('missing-receipt-event')).status,404);
+  const manual=await request(saved.id);assert.equal(manual.status,200);assert.ok(manual.headers.get('cache-control').includes('private, no-store'));assert.ok(manual.headers.get('content-security-policy').includes("frame-ancestors 'none'"));
+  const manualHtml=await manual.text();for(const text of ['Private Event Receipt','PARTIALLY PAID','Manual payments received','$100.00',fixture.p.number,'Print Receipt / Save PDF','POS check #'])assert.ok(manualHtml.includes(text),text);assert.ok(!manualHtml.includes('DO NOT EXPOSE PAYMENT ADMIN NOTES'));
+  await connection.query("INSERT INTO website.private_event_deposits(session_id,payment_intent,proposal_id,plan_id,amount_cents,currency,stripe_event_id,paid_at) VALUES($1,$2,$3,$4,$5,'usd','evt_receipt_fixture',now())",['cs_receipt_fixture','pi_receipt_fixture',fixture.p.id,saved.id,25000]);
+  await connection.query("UPDATE website.private_event_plans SET data=jsonb_set(data,'{paidCents}','40000'::jsonb) WHERE id=$1",[saved.id]);
+  const mixed=await request(saved.id),mixedHtml=await mixed.text();for(const text of ['Manual payments received','$150.00','Verified Stripe payments','$250.00','Total payments received','$400.00',model.money(fixture.p.snapshot.totals.total-40000)])assert.ok(mixedHtml.includes(text),text);
+  const planAfter=await plans.getEventPlan(saved.id);await request(saved.id,true,'ticket');assert.deepEqual(await plans.getEventPlan(saved.id),planAfter);assert.deepEqual(await proposals.getManagerProposal(saved.id,fixture.p.id),beforeProposal);assert.equal(globalThis.eventTestMail.length,beforeMail);assert.equal(stripeCalls,beforeStripe);
+  const currentSettings=await settings.getPrivateEventSettings(),changedCatalog=structuredClone(currentSettings.catering);changedCatalog.packages.find(p=>p.id==='feast').priceCents+=1000;await settings.setPrivateEventSettings({catering:changedCatalog});
+  assert.ok((await (await request(saved.id)).text()).includes(model.money(fixture.p.snapshot.totals.total)),'Catalog changes cannot silently reprice an issued quote');await settings.setPrivateEventSettings({catering:currentSettings.catering});
+  await plans.saveEventPlan({...planAfter.details,guestCount:51},planAfter.id,planAfter.version);assert.equal((await request(saved.id)).status,409,'Changed event terms require a matching proposal before printing');
+  const noQuote=await plans.saveEventPlan({...valid(future(1811)),flightPlan:{...model.emptyFlightPlan(),cateringMode:'meeting'},items:[{id:'room',name:'Meeting room',category:'Room',quantity:1,unitPriceCents:10000,taxable:true,notes:''}],paidCents:5000});const direct=await request(noQuote.id);assert.equal(direct.status,200);assert.ok((await direct.text()).includes('Saved event order; no proposal issued.'));
+  console.log('PASS authenticated bar/POS receipt route: manual-only and mixed Stripe credit, current quote totals despite catalog changes, no-quote saved orders, stale-terms guard, private no-store output and no event/quote/payment/mail/Stripe mutations.');
+ }
  const browserFixture=await approved(valid(future(95)));
  await writeFile('/tmp/aviator-event-proposal-browser-fixture.json',JSON.stringify({token:browserFixture.token,planId:browserFixture.plan.id,proposalId:browserFixture.p.id,paidToken:token,paidPlanId:sourcePlan.id}),{mode:0o600});
 }finally{globalThis.fetch=actualFetch;await connection.end();process.exitCode||=0;setTimeout(()=>process.exit(process.exitCode),50).unref();}
