@@ -41,30 +41,31 @@ export function SitePresentation({ initial, children }: { initial: SiteTheme; ch
   const skin = allowed ? activeSiteSkin(scheduled, now) : "classic";
   const effective = { ...scheduled, skin };
   return <ThemeContext.Provider value={effective}><div className="site-presentation" data-site-skin={skin}>
-    {skin !== "classic" && <div className="skin-ribbon"><Link href={effective.promotion.href}><span aria-hidden="true">✦</span><strong>{effective.promotion.title}</strong><span>{themeDateLabel(effective)}{effective.promotion.kind!=='seasonal'&&<> · {themeTimeLabel(effective.promotion.startTime)}–{themeTimeLabel(effective.promotion.endTime)}</>}</span><span className="skin-ribbon-opening">{effective.promotion.openingNote}</span><ArrowUpRight /></Link></div>}
+    {skin !== "classic" && <div className="skin-ribbon"><Link href={effective.promotion.href}><span aria-hidden="true">✦</span><strong>{skin==="thanksgiving"?"Happy Thanksgiving":effective.promotion.title}</strong>{skin!=="thanksgiving"&&<><span>{themeDateLabel(effective)}{effective.promotion.kind!=='seasonal'&&<> · {themeTimeLabel(effective.promotion.startTime)}–{themeTimeLabel(effective.promotion.endTime)}</>}</span><span className="skin-ribbon-opening">{effective.promotion.openingNote}</span></>}<ArrowUpRight /></Link></div>}
     {children}
   </div></ThemeContext.Provider>;
 }
 
-export function ThemedHomeHero({ children }: { children: ReactNode }) {
-  const theme = useContext(ThemeContext), p = theme.promotion;
+export function ThemedHomeHero({ children,thanksgivingParty }: { children: ReactNode;thanksgivingParty?:ReactNode }) {
+  const theme = useContext(ThemeContext), p = theme.promotion,thanksgiving=theme.skin==="thanksgiving";
   if (theme.skin === "classic") return children;
   return <section className={"skin-show-hero"+(p.kind==='seasonal'?' skin-seasonal-hero':'')} aria-labelledby="skin-show-title">
     <div className="skin-orbit skin-orbit-one" aria-hidden="true" /><div className="skin-orbit skin-orbit-two" aria-hidden="true" />
     <div className="content-wrap skin-show-layout">
       <div className="skin-show-copy">
-        <p className="skin-show-kicker"><span aria-hidden="true">✦</span> {p.eyebrow}</p>
-        <p className="skin-show-presenter">AVIATOR BREWING COMPANY PRESENTS</p>
-        <h1 id="skin-show-title">{p.title}</h1>
-        <div className="skin-show-date"><span>{themeDateLabel(theme)}</span>{p.kind!=='seasonal'&&<strong>{themeTimeLabel(p.startTime)} – {themeTimeLabel(p.endTime)}</strong>}</div>
-        {p.openingNote && <p className="skin-show-opening">{p.openingNote}</p>}
-        <p className="skin-show-description">{p.description}</p>
+        <p className="skin-show-kicker"><span aria-hidden="true">✦</span> {thanksgiving?"From the Aviator family":p.eyebrow}</p>
+        {!thanksgiving&&<p className="skin-show-presenter">AVIATOR BREWING COMPANY PRESENTS</p>}
+        <h1 id="skin-show-title">{thanksgiving?"Happy Thanksgiving":p.title}</h1>
+        {!thanksgiving&&<div className="skin-show-date"><span>{themeDateLabel(theme)}</span>{p.kind!=='seasonal'&&<strong>{themeTimeLabel(p.startTime)} – {themeTimeLabel(p.endTime)}</strong>}</div>}
+        {!thanksgiving&&p.openingNote && <p className="skin-show-opening">{p.openingNote}</p>}
+        <p className="skin-show-description">{thanksgiving?"Wishing our friends, families, and community a wonderful Thanksgiving.":p.description}</p>
+        {thanksgiving?thanksgivingParty:<>
         <p className="skin-show-venue"><MapPin /> {p.venue} <span>Fuquay-Varina, NC</span></p>
         <div className="skin-show-actions"><Link className="button" href={p.href}>{p.linkLabel} <ArrowUpRight /></Link><Link className="button button-outline" href="/locations#hangar-bar">Food + drinks at the Hangar Bar <ArrowUpRight /></Link></div>
-        <p className="skin-show-address">688 Brewing Drive · Bring your crew. Make a day of it.</p>
+        <p className="skin-show-address">688 Brewing Drive · Bring your crew. Make a day of it.</p></>}
       </div>
       {p.imageUrl && <figure className="skin-show-poster"><div className="skin-poster-frame"><Image src={p.imageUrl} alt={p.imageAlt} fill priority unoptimized sizes="(max-width: 760px) 85vw, 420px" /></div><figcaption>{p.kind==='seasonal'?'CRAFT BEER · COMMUNITY · AVIATOR':'LIVE MUSIC · FRESH BEER · GOOD COMPANY'}</figcaption>{theme.communityEnabled&&<SkinImageCommunity skin={theme.skin} imageUrl={p.imageUrl}/>}</figure>}
     </div>
-    <div className="skin-show-bottom" aria-hidden="true"><span>{p.kind==='seasonal'?'BRING YOUR CREW':'COME EARLY'}</span><i>✦</i><span>{p.kind==='seasonal'?'RAISE A GLASS':'STAY FOR THE MUSIC'}</span><i>✦</i><span>AVIATOR BREWING CO.</span></div>
+    <div className="skin-show-bottom" aria-hidden="true"><span>{thanksgiving?'FRIENDS & FAMILY':p.kind==='seasonal'?'BRING YOUR CREW':'COME EARLY'}</span><i>✦</i><span>{thanksgiving?'THANKFUL FOR OUR COMMUNITY':p.kind==='seasonal'?'RAISE A GLASS':'STAY FOR THE MUSIC'}</span><i>✦</i><span>AVIATOR BREWING CO.</span></div>
   </section>;
 }

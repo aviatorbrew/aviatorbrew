@@ -3,9 +3,9 @@ import { activeSiteSkin, themeDateLabel, themeTimeLabel, type SiteTheme } from "
 
 export function homeSharingMetadata(theme: SiteTheme, siteUrl: string, now = Date.now()): Metadata {
   const promotion = activeSiteSkin(theme, now) !== "classic" && Boolean(theme.promotion.imageUrl);
-  const p = theme.promotion;
-  const title = promotion ? `${p.title} | ${themeDateLabel(theme)} | Aviator Brewing Company` : "Aviator Brewing Company | Fuquay-Varina, NC";
-  const description = promotion
+  const p = theme.promotion,thanksgiving=theme.skin==="thanksgiving";
+  const title = promotion&&thanksgiving?"Happy Thanksgiving | Aviator Brewing Company":promotion ? `${p.title} | ${themeDateLabel(theme)} | Aviator Brewing Company` : "Aviator Brewing Company | Fuquay-Varina, NC";
+  const description = promotion&&thanksgiving?"Wishing our friends, families, and community a wonderful Thanksgiving. Party with us the Wednesday before Thanksgiving—see Aviator Live for the lineup.":promotion
     ? `${themeDateLabel(theme)}${p.kind==='seasonal'?'':' · '+themeTimeLabel(p.startTime)+'–'+themeTimeLabel(p.endTime)} · ${p.venue}. ${p.openingNote} ${p.description}`
     : "Craft beer, scratch-made food, live music, events, breakfast, cocktails, and aviation-inspired experiences in Fuquay-Varina, North Carolina.";
   const image = new URL(promotion ? p.imageUrl : "/api/branding/logo", siteUrl);

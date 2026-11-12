@@ -37,3 +37,10 @@ try{
  const result=await route.PATCH(request({skin:'dead-show'}));assert.equal(result.status,200);assert.equal(result.headers.get('cache-control'),'private, no-store');assert.equal((await result.json()).activeSkin,'dead-show');assert.deepEqual(invalidations,['site-theme','/']);assert.deepEqual([...new Set(writes)],['site_theme']);
  console.log('PASS site skins: all presets, Eastern show date/time, exact expiry boundary and standard fallback, protected manager/order routes, bounded plain text and safe URLs, preserved promotion on off/switch, file and existing settings-table persistence, expired activation guard, manager authorization, no unauthorized writes, no-store and cache invalidation; active/off/expired/missing-artwork social previews, full-size poster dimensions, absolute image URLs, versioning and alternate skins. No customer records, emails or payments touched.');
 }finally{Date.now=oldNow;if(originalFile===undefined)delete process.env.SITE_THEME_DATA_FILE;else process.env.SITE_THEME_DATA_FILE=originalFile;await rm(scratch,{recursive:true,force:true});}
+
+const thanksgiving=presets.seasonalSiteTheme('thanksgiving',new Date('2026-11-12T17:00:00Z'));
+assert.equal(thanksgiving.promotion.title,'Happy Thanksgiving');
+const thanksgivingMeta=sharing.homeSharingMetadata(thanksgiving,'https://aviatorbrew.com',Date.parse('2026-11-12T17:00:00Z'));
+assert.equal(thanksgivingMeta.openGraph.title,'Happy Thanksgiving | Aviator Brewing Company');
+assert.ok(!thanksgivingMeta.openGraph.description.includes('November 26'));
+console.log('PASS Thanksgiving greeting has no holiday event date in sharing metadata.');
