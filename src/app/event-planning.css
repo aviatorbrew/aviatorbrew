@@ -107,6 +107,46 @@
 .proposal-email-note #proposal-email-note-help{margin:0;color:#bcd0dc;font-size:.8rem}
 .proposal-email-note-preview{padding:.75rem;border:1px solid #56778d;background:#071827}
 .proposal-email-note-preview p{white-space:pre-wrap;overflow-wrap:anywhere}
+.proposal-send-dialog .proposal-email-approval{display:flex;align-items:flex-start;gap:.6rem;margin:1rem 0}
+.proposal-send-dialog .event-check input[type=checkbox]{width:1.1rem;height:1.1rem;flex:0 0 auto;margin-top:.1rem}
+.proposal-send-dialog button:disabled{opacity:.55;cursor:default}
+.proposal-send-dialog>a{color:#efb45f;overflow-wrap:anywhere}
+.manager-private-events .event-proposal-overview{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1rem;align-items:start}
+.manager-private-events .event-proposal-card{min-width:0;padding:1rem;border:1px solid #68869a;background:#102a3b;font:.85rem/1.5 Arial,sans-serif;overflow-wrap:anywhere}
+.manager-private-events .event-proposal-card>header{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+.manager-private-events .event-proposal-card h4{margin:0;font-size:1rem;color:#fff}
+.manager-private-events .event-proposal-card p{margin:.6rem 0}
+.manager-private-events .event-proposal-reference{color:#bcd1de;font-size:.75rem}
+.manager-private-events .event-proposal-next{padding:.6rem .75rem;border-left:3px solid #efb45f;background:#143448}
+.manager-private-events .event-proposal-facts{display:grid;gap:.65rem;margin:1rem 0}
+.manager-private-events .event-proposal-facts>div{display:grid;grid-template-columns:6rem minmax(0,1fr);gap:.6rem}
+.manager-private-events .event-proposal-facts dt,.manager-private-events .event-payment-totals dt{color:#bcd1de;font-size:.75rem}
+.manager-private-events .event-proposal-facts dd{margin:0}
+.manager-private-events .event-proposal-blockers{margin:.6rem 0;padding-left:1.2rem;color:#ffd69b}
+.manager-private-events .event-proposal-main-actions{margin-top:.8rem}
+.manager-private-events .event-proposal-main-actions button:first-child{background:#efb45f;color:#102536;border-color:#efb45f;font-weight:700}
+.manager-private-events .event-proposal-document-links{padding-top:.8rem;margin-top:.8rem;border-top:1px solid #416075}
+.manager-private-events .event-payment-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;margin:1rem 0 .5rem}
+.manager-private-events .event-payment-totals dd{margin:.25rem 0 0;font-size:1.25rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.manager-private-events .event-payment-totals>div:last-child dd{color:#efb45f}
+.manager-private-events .event-payment-breakdown,.manager-private-events .event-payment-reminder{color:#bcd1de;font-size:.75rem}
+.manager-private-events .event-deposit-summary{padding:.6rem 0;border-top:1px solid #416075;border-bottom:1px solid #416075}
+.manager-private-events .event-manual-payment-entry{min-width:0;margin:1rem 0 .5rem;padding:.75rem;border:1px solid #54778d}
+.manager-private-events .event-manual-payment-entry>div{display:flex;align-items:end;gap:.6rem;flex-wrap:wrap}
+.manager-private-events .event-manual-payment-entry label{flex:1;min-width:9rem;display:grid;gap:.3rem;font-size:.75rem}
+.manager-private-events .event-manual-payment-entry input{width:100%;min-width:0}
+.manager-private-events .event-manual-payment-entry p{font-size:.75rem;color:#bcd1de}
+.manager-private-events .event-proposal-create{display:grid;gap:.6rem;margin-top:.8rem;padding-top:.8rem;border-top:1px solid #416075}
+.manager-private-events .event-proposal-create h5{margin:0;font-size:.9rem}
+.manager-private-events .event-proposal-create label{display:grid;gap:.3rem;font-size:.8rem}
+.manager-private-events .event-proposal-create input{min-width:0;width:100%;padding:.5rem;background:#071827;color:#fff;border:1px solid #7891a2;color-scheme:dark;font:inherit}
+.manager-private-events .event-proposal-create button{justify-self:start}
+.manager-private-events .event-proposal-feedback{padding:.5rem .65rem;background:#143448;border-left:3px solid #70dc98}
+.manager-private-events .event-proposal-feedback[role=alert]{border-color:#ffaaaa;color:#ffd5cf}
+.manager-private-events .event-proposal-footer{margin-top:.8rem}
+.manager-private-events .event-other-actions{margin:.7rem 0}
+@media(max-width:1000px){.manager-private-events .event-proposal-overview{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){.manager-private-events .event-proposal-card{padding:.75rem}.manager-private-events .event-payment-totals{gap:.35rem}.manager-private-events .event-payment-totals dd{font-size:1.05rem}.manager-private-events .event-proposal-facts>div{grid-template-columns:1fr;gap:.15rem}}
 @media(max-width:480px){.proposal-send-dialog{padding:1rem}.proposal-send-dialog dl{grid-template-columns:1fr;gap:.1rem}.proposal-send-dialog dd{margin-bottom:.45rem}.proposal-send-dialog-actions button{width:100%}}
 
 .manager-private-events .event-proposal-activity{padding:.4rem .6rem;border:1px solid #688fa6;margin:.4rem 0;font-size:.8rem;line-height:1.45;overflow-wrap:anywhere}

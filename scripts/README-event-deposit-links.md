@@ -1,6 +1,8 @@
 # Private-event deposit reminders
 
-In the event's **Customer proposals & deposit payments** box, **Resend Deposit Link** is beside **Resend proposal link**. Staff must save the event, use the current sent/approved proposal, approve the customer email and confirm the recipient/amount in the send dialog.
+The **Proposal & payments** tab has separate **Customer proposal** and **Payments** cards. **Resend Deposit Link** is in Payments while a deposit remains due. A paid deposit shows **Deposit paid** instead. Staff review the recipient, amount and email approval together in the send dialog. **Resend proposal link** and **Record customer acceptance** are in Customer proposal. The optional proposal email note remains in its send dialog.
+
+The current link expiration is shown once in Customer proposal. **Revise proposal** opens a separate **New proposal expires** field for a new draft; changing that field does not alter an issued proposal. Failed email retries also require approval in their confirmation dialog. Event cancellation, deletion and other administrative controls are under **Activity → Other event actions**.
 
 In the deposit send dialog, choose **Send a staff copy instead of emailing the customer** and enter an `@aviatorbrew.com` address to send the same working deposit email to a staff member. The confirmation shows the selected recipient. This preserves the customer contact, quote and original links. Staff copies retain the same expiry, payment rules, approval and delivery tracking.
 
@@ -22,4 +24,4 @@ The protected `confirm-accepted` proposal action applies the same checks to exis
 
 ## Recording manual payments
 
-Under **Customer proposals & deposit payments**, enter the cumulative **Total manual payments received ($)** and choose **Save payment credit**. This field excludes verified Stripe payments, which are shown separately and included automatically in total credit. Saving a payment updates the current customer proposal, deposit amount still due, remaining event balance, manager/customer proposal PDF downloads and future emailed proposal attachments. Both manual and Stripe credits appear when present. The issued menu, prices and acceptance evidence remain unchanged; a payment update does not create a new proposal or send an email. Previously downloaded or emailed files remain historical copies.
+In the **Payments** card, enter the cumulative **Total manual payments received ($)** and choose **Save payment credit**. This field excludes verified Stripe payments, which are shown separately and included automatically in total credit. Saving a payment updates the current customer proposal, deposit amount still due, remaining event balance, manager/customer proposal PDF downloads and future emailed proposal attachments. Both manual and Stripe credits appear when present. The issued menu, prices and acceptance evidence remain unchanged; a payment update does not create a new proposal or send an email. Previously downloaded or emailed files remain historical copies.
