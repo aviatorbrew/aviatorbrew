@@ -20,13 +20,18 @@ export function eventMenuChoices(catalog:CateringCatalog):EventMenuChoice[] {
 }
 
 // Ordinary order rows preserve agreed prices and quantities in existing quotes and kitchen sheets.
-export function eventMenuOrderItem(input:{id:string;choiceId:string;unit:MenuBillingUnit;quantity:number;unitPriceCents:number;notes?:string;kitchen?:EventItemKitchen},catalog:CateringCatalog):EventOrderItem {
+export function eventMenuOrderItem(input:{id:string;choiceId:string;unit:MenuBillingUnit;quantity:number;unitPriceCents:number;notes?:string;pizzaStyles?:string[];kitchen?:EventItemKitchen},catalog:CateringCatalog):EventOrderItem {
   const choice=eventMenuChoices(catalog).find(item=>item.id===input.choiceId);
   if(!choice||choice.unavailable)throw new Error('Choose an available menu item.');
   if(!Object.hasOwn(menuBillingUnits,input.unit))throw new Error('Choose a billing unit.');
   if(!Number.isInteger(input.quantity)||input.quantity<1||input.quantity>10000)throw new Error('Enter a quantity from 1 to 10,000.');
   if(!Number.isInteger(input.unitPriceCents)||input.unitPriceCents<0||input.unitPriceCents>10000000)throw new Error('Enter a valid agreed unit price.');
-  const notes=`Quantity is ${menuBillingUnits[input.unit].toLowerCase()}${input.unit==='guest'?'s':''}. ${input.notes?.trim()||'Confirm portions and preparation with the kitchen.'}`;
-  if(notes.length>1000)throw new Error('Keep preparation notes under 900 characters.');
-  return {...(input.kitchen?{kitchen:input.kitchen}:{}),id:input.id,category:choice.category,name:`${choice.prefix}: ${choice.name} / ${input.unit}`,quantity:input.quantity,unitPriceCents:input.unitPriceCents,taxable:true,notes};
+  const pizza=choice.prefix==='Pizza'||choice.name==='Aviator Pizzeria Pizza Bar';
+  const styles=pizza?(input.pizzaStyles??(choice.prefix==='Pizza'?[choice.name]:[])):undefined;
+  if(styles&&(!styles.length||styles.length>3||new Set(styles).size!==styles.length||styles.some(n=>!catalog.menu.pizzas.includes(n)||catalog.disabledItems.includes(n))))throw new Error('Choose one to three available pizza styles.');
+  if(pizza&&!['guest','portion','pizza'].includes(input.unit))throw new Error('Price Pizza Bar by guest serving, portion or whole pizza.');
+  if(styles&&input.kitchen?.pizzasPerUnit&&Math.ceil(input.kitchen.pizzasPerUnit*input.quantity-1e-8)<styles.length)throw new Error('Choose fewer styles or increase the whole-pizza quantity.');
+  const notes=`${styles?`Pizza styles: ${styles.join(', ')}. One serving allowance shared across all styles. `:''}Quantity is ${menuBillingUnits[input.unit].toLowerCase()}${input.unit==='guest'?'s':''}. ${input.notes?.trim()||'Confirm portions and preparation with the kitchen.'}`;
+  if(notes.length>1000)throw new Error('Shorten the preparation notes so the full order note stays under 1,000 characters.');
+  return {...(styles?{pizzaStyles:styles}:{}),...(input.kitchen?{kitchen:input.kitchen}:{}),id:input.id,category:choice.category,name:styles?`Pizza: Aviator Pizzeria Pizza Bar / ${input.unit}`:`${choice.prefix}: ${choice.name} / ${input.unit}`,quantity:input.quantity,unitPriceCents:input.unitPriceCents,taxable:true,notes};
 }

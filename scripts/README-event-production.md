@@ -38,3 +38,7 @@ The changed standards also apply when printing older guest orders that saved the
 ## Kitchen quantity columns
 
 The top of the sheet shows **Guests: N**. À la carte rows separate **Guest servings / order**, **Quantity to make**, and **Total food / preparation**. For example, 30 guest servings of a pizza style at 3 slices each print as 12 whole 14-inch pizzas and 96 slices, rather than an unlabeled 30. Wing rows show tray fills and total pieces; weighed foods show full/half/partial trays and total food weight. Explicit whole-pizza, piece and tray orders retain their stated units. These are production conversions; agreed billing quantities and selling prices are unchanged.
+
+## Shared Pizza Bar varieties
+
+Every Pizza Bar guest-serving order has one guest count and one total slice allowance shared across up to three styles. Round the total number of whole pizzas once, then distribute those pizzas evenly among the selected styles. Thirty guests at three slices total each produce twelve whole 14-inch pizzas; three styles receive four pies each. Older separate style rows with the same guest count/serving allowance are grouped on the kitchen sheet and in production-cost estimates. Their historical billing rows are preserved until staff explicitly updates the pizza selection. Explicit whole-pizza orders and different serving groups stay separate.

@@ -227,7 +227,7 @@ if (proposed !== "" && !/^[1-9]$/.test(proposed)) {
             # Clarify the mirrored Pizza Bar fields so an extra is not charged twice.
             box(27.5, 490, 307, 24, (122 / 255, 56 / 255, 40 / 255))
             text(35, 506, 'Mark Pizza Bar on page 2; repeat here only to identify included vs. extra.', 6.8, PAPER)
-            text(35, 495, 'The same Pizza Bar selection is counted once across both pages.', 6.8, PAPER)
+            text(35, 495, 'One serving allowance shared across up to 3 styles; counted once.', 6.8, PAPER)
             box(360, 495, 108, 17, (122 / 255, 56 / 255, 40 / 255))
             text(364.5, 500.5, 'Extra +$5 / guest', 8.6, bold=True)
             box(237, 175.2, 233.4, 17, (20 / 255, 54 / 255, 78 / 255))

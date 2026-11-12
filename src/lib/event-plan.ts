@@ -17,7 +17,7 @@ export function eventStatusDisplay(status: typeof eventStatuses[number]) {
 
 export const itemCategories = ["Food", "Drinks", "Room", "Other"] as const;
 export type EventItemKitchen = { ouncesPerUnit?:number;fluidOzPerUnit?:number;piecesPerUnit?:number;pizzasPerUnit?:number;piecesPerTray?:number;piecesPerHalfTray?:number };
-export type EventOrderItem = { kitchen?:EventItemKitchen; id: string; category: typeof itemCategories[number]; name: string; quantity: number; unitPriceCents: number; taxable: boolean; notes: string };
+export type EventOrderItem = { pizzaStyles?:string[]; kitchen?:EventItemKitchen; id: string; category: typeof itemCategories[number]; name: string; quantity: number; unitPriceCents: number; taxable: boolean; notes: string };
 export const readyRoomPackages = [
   { id: "social", name: "The Brewery Social", priceCents: 3200, appetizers: 2, entrees: 2, sides: 2, salads: 0 },
   { id: "feast", name: "The Aviator Feast", priceCents: 3800, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
@@ -246,7 +246,9 @@ export function parseEventPlan(value: unknown, catalog = defaultCateringCatalog,
     if (typeof r.id !== "string" || !r.id || r.id.length > 100 || typeof r.name !== "string" || !r.name.trim() || r.name.length > 200 || !itemCategories.includes(r.category as EventOrderItem["category"]) || typeof r.quantity !== "number" || !Number.isInteger(r.quantity) || r.quantity < 1 || r.quantity > 10000 || typeof r.unitPriceCents !== "number" || !Number.isInteger(r.unitPriceCents) || r.unitPriceCents < 0 || r.unitPriceCents > 10000000 || typeof r.taxable !== "boolean" || typeof r.notes !== "string" || r.notes.length > 1000) throw new Error("Each order row needs an item, a whole-number quantity, and a valid price.");
     let kitchen:EventItemKitchen|undefined;
     if(r.kitchen!==undefined){if(!r.kitchen||typeof r.kitchen!=='object'||Array.isArray(r.kitchen))throw new Error('Check item kitchen quantities.');kitchen={};for(const key of ['ouncesPerUnit','fluidOzPerUnit','piecesPerUnit','pizzasPerUnit','piecesPerTray','piecesPerHalfTray'] as const){const value=(r.kitchen as Record<string,unknown>)[key];if(value!==undefined){if(typeof value!=='number'||!Number.isFinite(value)||value<=0||value>100000)throw new Error('Check item kitchen quantities.');kitchen[key]=value;}}}
-    return { ...(kitchen?{kitchen}:{}), id: r.id, name: r.name.trim(), category: r.category as EventOrderItem["category"], quantity: r.quantity, unitPriceCents: r.unitPriceCents, taxable: r.taxable, notes: r.notes.trim() };
+    let pizzaStyles:string[]|undefined;
+    if(r.pizzaStyles!==undefined){if(r.category!=='Food'||typeof r.name!=='string'||! /^(?:Pizza: .+|Entree: Aviator Pizzeria Pizza Bar) \/ (guest|portion|pizza)$/.test(r.name))throw new Error('Pizza styles belong to a Pizza Bar order.');if(!Array.isArray(r.pizzaStyles)||r.pizzaStyles.length<1||r.pizzaStyles.length>3||r.pizzaStyles.some(n=>typeof n!=='string'||!n.trim()||n.length>200||/[<>\r\n]/.test(n)))throw new Error('Choose one to three pizza styles.');pizzaStyles=r.pizzaStyles.map(n=>n.trim());if(new Set(pizzaStyles).size!==pizzaStyles.length)throw new Error('Choose different pizza styles.');}
+    return { ...(pizzaStyles?{pizzaStyles}:{}), ...(kitchen?{kitchen}:{}), id: r.id, name: r.name.trim(), category: r.category as EventOrderItem["category"], quantity: r.quantity, unitPriceCents: r.unitPriceCents, taxable: r.taxable, notes: r.notes.trim() };
   });
   if (new Set(items.map((r) => r.id)).size !== items.length) throw new Error("Order rows must have distinct IDs.");
   const guestCount = integer("guestCount", 10000);

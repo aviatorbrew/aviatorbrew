@@ -1,3 +1,5 @@
+import {pizzaOrderCount,sharedPizzaOrders,splitPizzaStyles,pizzaOrderStyles} from '@/lib/event-pizza';
+export {pizzaOrderCount} from '@/lib/event-pizza';
 import {emptyFlightPlan,type CateringCatalog,type EventPlanDetails,type EventOrderItem} from '@/lib/event-plan';
 
 export const eventPanProfiles={full:{model:'S-22409',label:'full-size pan',dimensions:'21 × 13 × 3 in',capacityFlOz:343,url:'https://www.uline.com/Product/Detail/S-22409/Take-Out-Containers/Aluminum-Steam-Table-Pans-Full-Size'},half:{model:'S-22408',label:'half-size pan',dimensions:'13 × 10 × 3 in',capacityFlOz:128,url:'https://www.uline.com/Product/Detail/S-22408/Take-Out-Containers/Aluminum-Steam-Table-Pans-1-2-Size'}} as const;
@@ -60,12 +62,6 @@ export function wingOrderPortion(item:Pick<EventOrderItem,'name'|'kitchen'>,s:Ev
  const ouncesPerUnit=k?.ouncesPerUnit?(previousGuestStandard?k.ouncesPerUnit*5/4:k.ouncesPerUnit):s.cookedWingsPerLb?piecesPerUnit/s.cookedWingsPerLb*16:undefined;
  return {unit,capacity,halfCapacity,piecesPerUnit,ouncesPerUnit};
 }
-export function pizzaOrderCount(item:EventOrderItem,s:EventProductionSettings){
- const match=/^(?:Pizza: .+|Entree: Aviator Pizzeria Pizza Bar) \/ (guest|portion|pizza)$/.exec(item.name);
- const previousGuestStandard=match&&match[1]!=='pizza'&&item.kitchen?.pizzasPerUnit===.25&&(s.pizzaSlicesPerGuest||3)===3;
- const perUnit=previousGuestStandard?(s.pizzaSlicesPerGuest||3)/(s.pizzaSlicesPerPie||8):item.kitchen?.pizzasPerUnit??(match?(match[1]==='pizza'?1:(s.pizzaSlicesPerGuest||3)/(s.pizzaSlicesPerPie||8)):null);
- return perUnit===null?null:Math.ceil(perUnit*item.quantity-1e-8);
-}
 export function customOrderProductionGuide(item:EventOrderItem,s:EventProductionSettings,c?:CateringCatalog){
  const wing=wingOrderPortion(item,s),k=item.kitchen;
  const weight=k?.ouncesPerUnit?productionWeight(k.ouncesPerUnit*item.quantity):'';
@@ -77,13 +73,13 @@ export function customOrderProductionGuide(item:EventOrderItem,s:EventProduction
  const trays=pans?productionBatchGuide({name:match![2],selections:1,ounces:k!.ouncesPerUnit!*item.quantity,...pans}):'';
  return [weight,trays,k?.piecesPerUnit?`${productionNumber(k.piecesPerUnit*item.quantity)} pieces`: ''].filter(Boolean).join(' · ');
 }
-export function customOrderProductionAmounts(item:EventOrderItem,s:EventProductionSettings,c:CateringCatalog){
+export function customOrderProductionAmounts(item:EventOrderItem,s:EventProductionSettings,c:CateringCatalog):{orderLabel:string;makeLabel:string;foodLabel:string;styleBreakdown?:Array<{name:string;count:number}>}{
  const match=/^(Appetizer|Entree|Side|Salad|Pizza|Dessert): (.+) \/ (guest|portion|tray|piece|pizza)$/.exec(item.name),unit=match?.[3],k=item.kitchen;
  const orderLabel=`${productionNumber(item.quantity)} ${unit==='guest'?'guest servings':unit==='portion'?'individual portions':unit==='tray'?'full trays ordered':unit==='pizza'?'whole pizzas ordered':unit==='piece'?'pieces ordered':'ordered units'}`;
  const wing=wingOrderPortion(item,s);
  if(wing){const count=Math.ceil(wing.piecesPerUnit*item.quantity-1e-8);return {orderLabel,makeLabel:trayFills(count,wing.capacity,wing.halfCapacity,false,'wings'),foodLabel:`${count} wings total${unit==='guest'||unit==='portion'?` · ${productionNumber(wing.piecesPerUnit)} per serving`:''}`};}
  const pizzas=pizzaOrderCount(item,s);
- if(pizzas!==null)return {orderLabel,makeLabel:`${pizzas} whole ${s.pizzaDiameterInches||14}-inch pizzas`,foodLabel:`${pizzas*(s.pizzaSlicesPerPie||8)} slices total${unit==='guest'||unit==='portion'?` · ${s.pizzaSlicesPerGuest||3} slices per guest serving`:''}`};
+ if(pizzas!==null)return {orderLabel,styleBreakdown:splitPizzaStyles(pizzas,pizzaOrderStyles(item)),makeLabel:`${pizzas} whole ${s.pizzaDiameterInches||14}-inch pizzas`,foodLabel:`${pizzas*(s.pizzaSlicesPerPie||8)} slices total${unit==='guest'||unit==='portion'?` · ${s.pizzaSlicesPerGuest||3} slices per guest serving`:''}`};
  const category=match?{Appetizer:'Appetizers',Entree:'Entrees',Side:'Sides',Salad:'Salads'}[match[1]]:null;
  if(category&&match){
    const pan=productionPanFor(match[2],category,c,s),servingOz=match[1]==='Appetizer'?s.aLaCarteAppetizerOz??3:match[1]==='Entree'?(s.proteinPortionLb?.[match[2]]?s.proteinPortionLb[match[2]]*16:s.aLaCarteEntreeOz??8):match[1]==='Side'?s.aLaCarteSideOz??8:s.aLaCarteSaladOz??2;
@@ -199,7 +195,8 @@ export function eventProductionPlan(d:EventPlanDetails,c:CateringCatalog,s:Event
 
  if(protein.overLimit)warnings.push(`PROTEIN LIMIT EXCEEDED: explicit orders contain ${productionNumber(protein.explicitServings)} servings; maximum ${protein.limit}. Review ordered quantities before production.`);
  if(protein.unverified.length)warnings.push(`Protein servings cannot be verified for: ${protein.unverified.join(', ')}. Enter portions before approving the total.`);
- const custom=d.items.filter(i=>i.category==='Food');
+ const custom=sharedPizzaOrders(d.items.filter(i=>i.category==='Food'),s,f.pizzas);
+ for(const item of custom){const styles=pizzaOrderStyles(item);if(styles.length>(pizzaOrderCount(item,s)??Infinity))warnings.push('The shared pizza allowance produces fewer whole pizzas than selected styles. Review the varieties and quantity.');if(styles.length>3)warnings.push('More than three pizza styles are listed for one serving group. Review the style choices before production.');if(/^Pizza:/.test(item.name)&&!styles.length)warnings.push('Choose one to three pizza styles for the shared Pizza Bar order.');}
 
  if(buffet&&!groups.some(g=>g.name==='Entrees')&&!protein.rows.length)warnings.push('No entree selections are saved. This buffet plan is incomplete.');
  if(!guests)warnings.push('Guest count is missing. Set the guaranteed guest count before planning food.');
