@@ -227,3 +227,43 @@
 .event-workspace-progress .event-flow-steps { margin:12px 0; }
 .event-editor-section-flat { margin:18px 0; }
 @media(max-width:600px) { .event-workspace-tabs button { flex:1 1 42%; padding:12px 8px; } }
+
+/* Compact details layout: give long content room without stretching short fields. */
+.manager-private-events .event-workspace-header { padding:8px 0; gap:8px; }
+.manager-private-events .event-workspace-header p { margin:3px 0; }
+.manager-private-events .event-workspace-toolbar { padding:8px; margin:8px 0; gap:6px; }
+.manager-private-events .event-workspace-tabs { margin:10px 0; padding-bottom:6px; gap:6px; }
+.manager-private-events .event-workspace-progress { padding:8px 10px; margin-bottom:10px; }
+.manager-private-events .event-workspace-progress .event-flow-steps { margin:6px 0; }
+.manager-private-events #event-plan-details { padding:0; }
+.manager-private-events [data-event-panel="details"] .event-fields { gap:6px 10px; align-items:start; }
+.manager-private-events [data-event-panel="details"] .event-fields label { font-size:.8rem; line-height:1.3; gap:3px; }
+.manager-private-events [data-event-panel="details"] input:not([type="checkbox"]),
+.manager-private-events [data-event-panel="details"] select { height:2.35rem; font-size:.9rem; padding:.4rem .5rem; }
+.manager-private-events [data-event-panel="details"] textarea { font-size:.9rem; line-height:1.4; padding:.4rem .5rem; min-height:3.5rem; }
+.manager-private-events [data-event-panel="details"] .event-details-textarea[rows="1"] { min-height:2.35rem; }
+.manager-private-events [data-event-panel="details"] .event-details-contact-grid { grid-template-columns:repeat(12,minmax(0,1fr)); }
+.manager-private-events .event-details-contact-grid > label { grid-column:span 3; }
+.manager-private-events .event-details-contact-grid > .event-details-name,
+.manager-private-events .event-details-contact-grid > .event-details-location { grid-column:span 6; }
+.manager-private-events .event-details-contact-grid > .event-details-contact { grid-column:span 4; }
+.manager-private-events .event-details-contact-grid > .event-details-email { grid-column:span 5; }
+.manager-private-events [data-event-panel="details"] .event-details-identity-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.manager-private-events .event-plan-editor .event-details-service-wrapper { padding:0; margin:0; border:0; }
+.manager-private-events [data-event-panel="details"] .event-details-notes-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.manager-private-events .event-details-notes-grid > label:last-child { grid-column:1/-1; }
+@media(max-width:1000px){
+ .manager-private-events [data-event-panel="details"] .event-details-contact-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
+ .manager-private-events .event-details-contact-grid > .event-details-contact { grid-column:span 3; }
+ .manager-private-events .event-details-contact-grid > .event-details-email { grid-column:1/-1; }
+}
+@media(max-width:700px){
+ .manager-private-events [data-event-panel="details"] .event-fields { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 8px; }
+ .manager-private-events [data-event-panel="details"] .event-fields > label { grid-column:1/-1; }
+ .manager-private-events [data-event-panel="details"] .event-details-contact-grid > label { grid-column:span 1; }
+ .manager-private-events [data-event-panel="details"] .event-details-contact-grid > :is(.event-details-name,.event-details-location,.event-details-contact,.event-details-email) { grid-column:1/-1; }
+ .manager-private-events [data-event-panel="details"] input:not([type="checkbox"]),
+ .manager-private-events [data-event-panel="details"] select { height:2.75rem; font-size:1rem; }
+ .manager-private-events [data-event-panel="details"] textarea { font-size:1rem; }
+ .manager-private-events [data-event-panel="details"] .event-details-textarea[rows="1"] { min-height:2.75rem; }
+}
