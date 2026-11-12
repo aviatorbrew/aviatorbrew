@@ -1,5 +1,5 @@
 import {eventOrderItems,eventTotals,type CateringCatalog,type EventPlanDetails} from '@/lib/event-plan';
-import {eventProductionPlan,type EventProductionSettings} from '@/lib/event-production';
+import {eventProductionPlan,wingOrderPortion,pizzaOrderCount,type EventProductionSettings} from '@/lib/event-production';
 export type FoodCostBasis='lb'|'full-pan'|'half-pan'|'pizza'|'event-guest'|'each'|'fl-oz';
 export type EventFoodCostSettings=Record<string,{costCents:number;basis:FoodCostBasis;source?:string;updatedAt?:string;estimate?:boolean}>;
 // Costs are supplied by authenticated manager settings; unknown foods stay unpriced.
@@ -16,7 +16,7 @@ export function eventFoodCostEstimate(d:EventPlanDetails,c:CateringCatalog,p:Eve
  const foods=production.groups.flatMap(g=>g.rows).map(r=>({name:r.name,ounces:r.ounces+(r.name==='Aviator Pizzeria Pizza Bar'?production.pizzaRoundingOz:0),fluidOz:0,guests:d.guestCount,each:r.name==='Aviator Smoked Wings'?r.count??null:r.name==='Aviator Pizzeria Pizza Bar'&&d.flightPlan?.pizzas.length?production.pizzaCountTotal:null}));
  if(d.flightPlan?.dessert)foods.push({name:'Dessert display',ounces:0,fluidOz:0,guests:d.guestCount,each:d.guestCount});
  if(d.flightPlan?.coffee)foods.push({name:'Coffee service',ounces:0,fluidOz:0,guests:d.guestCount,each:d.guestCount});
- for(const i of production.custom){const match=i.name.match(/^(?:Appetizer|Entree|Side|Salad|Pizza|Dessert): (.+) \/ (guest|tray|piece|portion|pizza)$/),k=i.kitchen;foods.push({name:match?.[1]||i.name,ounces:k?.ouncesPerUnit?k.ouncesPerUnit*i.quantity:match?.[2]==='tray'&&match?.[1]!=='Aviator Smoked Wings'?i.quantity*(p.trayFinishedLb[match[1]]||p.estimatedFullPanLb||10)*16:0,fluidOz:(k?.fluidOzPerUnit||0)*i.quantity,guests:['guest','portion'].includes(match?.[2]||'')?i.quantity:0,each:k?.pizzasPerUnit?Math.ceil(k.pizzasPerUnit*i.quantity-1e-8):k?.piecesPerUnit?k.piecesPerUnit*i.quantity:match&&['piece','portion','pizza'].includes(match[2])?i.quantity:null});}
+ for(const i of production.custom){const match=i.name.match(/^(?:Appetizer|Entree|Side|Salad|Pizza|Dessert): (.+) \/ (guest|tray|piece|portion|pizza)$/),k=i.kitchen,wing=wingOrderPortion(i,p),pizzas=pizzaOrderCount(i,p);foods.push({name:match?.[1]||i.name,ounces:wing?.ouncesPerUnit?wing.ouncesPerUnit*i.quantity:k?.ouncesPerUnit?k.ouncesPerUnit*i.quantity:match?.[2]==='tray'&&match?.[1]!=='Aviator Smoked Wings'?i.quantity*(p.trayFinishedLb[match[1]]||p.estimatedFullPanLb||10)*16:0,fluidOz:(k?.fluidOzPerUnit||0)*i.quantity,guests:['guest','portion'].includes(match?.[2]||'')?i.quantity:0,each:wing?Math.ceil(wing.piecesPerUnit*i.quantity-1e-8):pizzas!==null?pizzas:k?.piecesPerUnit?k.piecesPerUnit*i.quantity:match&&['piece','portion','pizza'].includes(match[2])?i.quantity:null});}
 
  for(const f of foods){const cost=costs[f.name]||(c.menu.pizzas.includes(f.name)?costs['Aviator Pizzeria Pizza Bar']:undefined);let quantity:number|null=null,note='Cost not entered; excluded from known-cost subtotal.';
    if(cost){
@@ -24,7 +24,8 @@ export function eventFoodCostEstimate(d:EventPlanDetails,c:CateringCatalog,p:Eve
      if(cost.basis==='lb'&&f.ounces)quantity=f.ounces/16;
      if(cost.basis==='full-pan'&&f.name==='Aviator Smoked Wings'&&f.each!==null)quantity=f.each/(p.wingsPerFullTray||200);
      if(cost.basis==='full-pan'&&f.name!=='Aviator Smoked Wings'&&f.ounces){const measured=p.trayFinishedLb[f.name];const fill=measured||(c.menu.salads.includes(f.name)?p.estimatedSaladPanLb||5:p.estimatedFullPanLb||10);quantity=f.ounces/16/fill;if(!measured)note=`Prorated using an estimated ${fill} lb full-pan fill weight.`;}
-     if(cost.basis==='half-pan'&&f.ounces){const measured=p.halfTrayFinishedLb?.[f.name];quantity=f.ounces/16/(measured||p.estimatedHalfPanLb||5);if(!measured)note=`Prorated using an estimated ${p.estimatedHalfPanLb||5} lb half-pan fill weight.`;}
+     if(cost.basis==='half-pan'&&f.name==='Aviator Smoked Wings'&&f.each!==null){quantity=f.each/(p.wingsPerHalfTray||75);note='Prorated using the estimated wing pieces per half tray.';}
+     if(cost.basis==='half-pan'&&f.name!=='Aviator Smoked Wings'&&f.ounces){const measured=p.halfTrayFinishedLb?.[f.name];quantity=f.ounces/16/(measured||p.estimatedHalfPanLb||5);if(!measured)note=`Prorated using an estimated ${p.estimatedHalfPanLb||5} lb half-pan fill weight.`;}
      if(cost.basis==='event-guest'&&f.guests)quantity=f.guests;
      if((cost.basis==='pizza'||cost.basis==='each')&&f.each!==null)quantity=f.each;
      if(quantity===null)note='Cost entered, but its production quantity is unverified. Excluded from known-cost subtotal.';

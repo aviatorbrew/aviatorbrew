@@ -4,7 +4,7 @@ export const eventPanProfiles={full:{model:'S-22409',label:'full-size pan',dimen
 export type ProductionPanSize='full'|'half'|'chef-choice'|'pizza';
 export type EventProductionSettings={sideReservePercent?:number;proteinPortionLb?:Record<string,number>;aLaCarteAppetizerOz?:number;aLaCarteEntreeOz?:number;aLaCarteSideOz?:number;aLaCarteSaladOz?:number;buffetWingsPerGuest?:number;wingsPerFullTray?:number;wingsPerHalfTray?:number;cookedWingsPerLb?:number|null;pizzaDiameterInches?:number;pizzaSlicesPerPie?:number;pizzaSlicesPerGuest?:number;estimatedFullPanLb?:number;estimatedHalfPanLb?:number;estimatedSaladPanLb?:number;halfTrayFinishedLb?:Record<string,number>;itemPanSize?:Record<string,'full'|'half'>;entreeOz:number;appetizerOz:number;sideOz:number;sideWithSaladOz:number;saladOz:number;reservePercent:number;planningBatchLb:number;regularPizzaOz:number|null;glutenFreePizzaOz:number|null;trayFinishedLb:Record<string,number>};
 // Suggested combined buffet allowances, not measured recipe yields or pricing rules.
-export const defaultEventProductionSettings:EventProductionSettings={sideReservePercent:15,proteinPortionLb:{'Aviator Pulled Pork BBQ':.65,'Aviator Beef Brisket':.5},aLaCarteAppetizerOz:3,aLaCarteEntreeOz:8,aLaCarteSideOz:8,aLaCarteSaladOz:2,buffetWingsPerGuest:4,wingsPerFullTray:200,wingsPerHalfTray:75,cookedWingsPerLb:null,entreeOz:8,appetizerOz:3,sideOz:8,sideWithSaladOz:6,saladOz:2,reservePercent:5,planningBatchLb:5,regularPizzaOz:null,glutenFreePizzaOz:null,trayFinishedLb:{},halfTrayFinishedLb:{},itemPanSize:{},estimatedFullPanLb:10,estimatedHalfPanLb:5,estimatedSaladPanLb:5,pizzaDiameterInches:13,pizzaSlicesPerPie:8,pizzaSlicesPerGuest:2};
+export const defaultEventProductionSettings:EventProductionSettings={sideReservePercent:15,proteinPortionLb:{'Aviator Pulled Pork BBQ':.65,'Aviator Beef Brisket':.5},aLaCarteAppetizerOz:3,aLaCarteEntreeOz:8,aLaCarteSideOz:8,aLaCarteSaladOz:2,buffetWingsPerGuest:5,wingsPerFullTray:200,wingsPerHalfTray:75,cookedWingsPerLb:null,entreeOz:8,appetizerOz:3,sideOz:8,sideWithSaladOz:6,saladOz:2,reservePercent:5,planningBatchLb:5,regularPizzaOz:null,glutenFreePizzaOz:null,trayFinishedLb:{},halfTrayFinishedLb:{},itemPanSize:{},estimatedFullPanLb:10,estimatedHalfPanLb:5,estimatedSaladPanLb:5,pizzaDiameterInches:14,pizzaSlicesPerPie:8,pizzaSlicesPerGuest:3};
 export function parseEventProductionSettings(raw:unknown):EventProductionSettings{
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Provide kitchen production settings.');
  const s={...structuredClone(defaultEventProductionSettings),...raw} as EventProductionSettings;
@@ -51,11 +51,27 @@ export function trayFills(total:number,fullCapacity:number,halfCapacity:number,p
  return parts.join(' + ');
 }
 export function wingTrayGuide(pieces:number,capacity:number,halfCapacity=75){return `Approx. ${productionNumber(pieces)} wing pieces · ${trayFills(pieces,capacity,halfCapacity,false,'pieces')}. Full tray: approx. ${capacity} wings. Half tray: estimated ${halfCapacity} wings; verify fit. Keep the planned piece count.`;}
+export function wingOrderPortion(item:Pick<EventOrderItem,'name'|'kitchen'>,s:EventProductionSettings){
+ const match=/^(?:Entree|Appetizer): Aviator Smoked Wings \/ (guest|portion|tray|piece)$/.exec(item.name);
+ if(!match)return null;
+ const k=item.kitchen,unit=match[1],capacity=k?.piecesPerTray||s.wingsPerFullTray||200,halfCapacity=k?.piecesPerHalfTray||s.wingsPerHalfTray||75;
+ const previousGuestStandard=(unit==='guest'||unit==='portion')&&k?.piecesPerUnit===4&&(s.buffetWingsPerGuest||5)===5;
+ const piecesPerUnit=previousGuestStandard?5:k?.piecesPerUnit??(unit==='piece'?1:unit==='tray'?capacity:s.buffetWingsPerGuest||5);
+ const ouncesPerUnit=k?.ouncesPerUnit?(previousGuestStandard?k.ouncesPerUnit*5/4:k.ouncesPerUnit):s.cookedWingsPerLb?piecesPerUnit/s.cookedWingsPerLb*16:undefined;
+ return {unit,capacity,halfCapacity,piecesPerUnit,ouncesPerUnit};
+}
+export function pizzaOrderCount(item:EventOrderItem,s:EventProductionSettings){
+ const match=/^(?:Pizza: .+|Entree: Aviator Pizzeria Pizza Bar) \/ (guest|portion|pizza)$/.exec(item.name);
+ const previousGuestStandard=match&&match[1]!=='pizza'&&item.kitchen?.pizzasPerUnit===.25&&(s.pizzaSlicesPerGuest||3)===3;
+ const perUnit=previousGuestStandard?(s.pizzaSlicesPerGuest||3)/(s.pizzaSlicesPerPie||8):item.kitchen?.pizzasPerUnit??(match?(match[1]==='pizza'?1:(s.pizzaSlicesPerGuest||3)/(s.pizzaSlicesPerPie||8)):null);
+ return perUnit===null?null:Math.ceil(perUnit*item.quantity-1e-8);
+}
 export function customOrderProductionGuide(item:EventOrderItem,s:EventProductionSettings,c?:CateringCatalog){
- const wing=/^(?:Entree|Appetizer): Aviator Smoked Wings \/ (guest|portion|tray|piece)$/.exec(item.name),k=item.kitchen;
+ const wing=wingOrderPortion(item,s),k=item.kitchen;
  const weight=k?.ouncesPerUnit?productionWeight(k.ouncesPerUnit*item.quantity):'';
- if(wing){const capacity=k?.piecesPerTray||s.wingsPerFullTray||200,perUnit=k?.piecesPerUnit||(wing[1]==='piece'?1:wing[1]==='tray'?capacity:k?.ouncesPerUnit&&s.cookedWingsPerLb?k.ouncesPerUnit/16*s.cookedWingsPerLb:0);return [weight,perUnit?wingTrayGuide(Math.ceil(perUnit*item.quantity-1e-8),capacity,k?.piecesPerHalfTray||s.wingsPerHalfTray||75):`Approx. ${capacity} wing pieces per full tray. Piece count needs cooked pieces per pound or a piece-based order; do not infer trays from guest count alone.`].filter(Boolean).join(' · ');}
- if(k?.pizzasPerUnit)return `${Math.ceil(k.pizzasPerUnit*item.quantity-1e-8)} whole pizza(s) for this order. Confirm style and size.`;
+ if(wing){const pieces=Math.ceil(wing.piecesPerUnit*item.quantity-1e-8),serving=wing.unit==='guest'||wing.unit==='portion'?`${item.quantity} servings × ${productionNumber(wing.piecesPerUnit)} wings per serving`:'';return [serving,wing.ouncesPerUnit?productionWeight(wing.ouncesPerUnit*item.quantity):'',wingTrayGuide(pieces,wing.capacity,wing.halfCapacity)].filter(Boolean).join(' · ');}
+ const pizzas=pizzaOrderCount(item,s);
+ if(pizzas!==null)return `${pizzas} ${s.pizzaDiameterInches||14}-inch pizza(s) · ${pizzas*(s.pizzaSlicesPerPie||8)} slices total.`;
  const match=/^(Appetizer|Entree|Side|Salad): (.+) \/ (guest|portion|tray|piece)$/.exec(item.name);
  const pans=match&&c&&k?.ouncesPerUnit?productionPanFor(match[2],{Appetizer:'Appetizers',Entree:'Entrees',Side:'Sides',Salad:'Salads'}[match[1]]||'',c,s):null;
  const trays=pans?productionBatchGuide({name:match![2],selections:1,ounces:k!.ouncesPerUnit!*item.quantity,...pans}):'';
@@ -91,8 +107,8 @@ export function eventProteinBudget(d:EventPlanDetails,c:CateringCatalog,s:EventP
    const match=/^(?:Entree|Appetizer): (.+) \/ (guest|portion|tray|piece)$/.exec(item.name);if(!match||!proteinNames.has(match[1]))continue;
    const name=match[1],unit=match[2],k=item.kitchen,portionLb=d.kitchenPlan?.proteinPortionLb?.[name]??s.proteinPortionLb?.[name]??s.entreeOz/16;
    if(name==='Aviator Smoked Wings'){
-     const pieces=k?.piecesPerUnit??(unit==='piece'?1:unit==='tray'?s.wingsPerFullTray||200:k?.ouncesPerUnit&&s.cookedWingsPerLb?k.ouncesPerUnit/16*s.cookedWingsPerLb:null);
-     if(pieces!==null)explicitServings+=pieces*item.quantity/(s.buffetWingsPerGuest||4);else unverified.push(item.name);
+     const wing=wingOrderPortion(item,s)!;
+     explicitServings+=Math.ceil(wing.piecesPerUnit*item.quantity-1e-8)/(s.buffetWingsPerGuest||5);
    }else if(k?.ouncesPerUnit)explicitServings+=k.ouncesPerUnit*item.quantity/16/portionLb;
    else if(unit==='guest'||unit==='portion')explicitServings+=item.quantity;
    else if(unit==='tray')explicitServings+=item.quantity*(s.trayFinishedLb[name]||s.estimatedFullPanLb||10)/portionLb;
@@ -107,7 +123,7 @@ export function eventProteinBudget(d:EventPlanDetails,c:CateringCatalog,s:EventP
 }
 export function eventProductionPlan(d:EventPlanDetails,c:CateringCatalog,s:EventProductionSettings=defaultEventProductionSettings){
  let pizzaRoundingOz=0,pizzaCountTotal:number|null=null,pizzaServingGuests=0;
- const pizzaDiameterInches=s.pizzaDiameterInches||13,pizzaSlicesPerPie=s.pizzaSlicesPerPie||8,pizzaSlicesPerGuest=s.pizzaSlicesPerGuest||2;
+ const pizzaDiameterInches=s.pizzaDiameterInches||14,pizzaSlicesPerPie=s.pizzaSlicesPerPie||8,pizzaSlicesPerGuest=s.pizzaSlicesPerGuest||3;
  const f={...emptyFlightPlan(),...d.flightPlan},warnings:string[]=[],groups:ProductionGroup[]=[],pizzaName='Aviator Pizzeria Pizza Bar';
  const buffet=Boolean(f.packageId),guests=d.guestCount,reserve=1+s.reservePercent/100;
  const protein=eventProteinBudget(d,c,s),proteinNames=new Set(protein.rows.map(r=>r.name)),sideReservePercent=d.kitchenPlan?.sideReservePercent??s.sideReservePercent??15;
@@ -127,13 +143,13 @@ export function eventProductionPlan(d:EventPlanDetails,c:CateringCatalog,s:Event
  const hasWings=proteinNames.has('Aviator Smoked Wings');
  if(protein.rows.length){
    const rows=protein.rows.map(pr=>{
-     const wings=pr.name==='Aviator Smoked Wings',count=pr.servings*(s.buffetWingsPerGuest||4),ounces=wings?(s.cookedWingsPerLb?count/s.cookedWingsPerLb*16:0):pr.servings*pr.portionLb*16;
+     const wings=pr.name==='Aviator Smoked Wings',count=pr.servings*(s.buffetWingsPerGuest||5),ounces=wings?(s.cookedWingsPerLb?count/s.cookedWingsPerLb*16:0):pr.servings*pr.portionLb*16;
      const r=row(pr.name,1,ounces,'Entrees');r.proteinServings=pr.servings;r.portionLb=pr.portionLb;
-     r.detail=`${pr.servings} protein servings × ${wings?`${s.buffetWingsPerGuest||4} wings`:`${productionNumber(pr.portionLb)} lb`} per serving. Includes its share of the single 10% protein reserve; do not add another reserve.`;
+     r.detail=`${pr.servings} protein servings × ${wings?`${s.buffetWingsPerGuest||5} wings`:`${productionNumber(pr.portionLb)} lb`} per serving. Includes its share of the single 10% protein reserve; do not add another reserve.`;
      if(wings){r.count=count;r.countLabel='wing pieces';}return r;
    });
    groups.push({name:'Proteins',perGuestOz:0,totalOz:rows.reduce((n,r)=>n+r.ounces,0),rows});
-   if(hasWings&&!s.cookedWingsPerLb)warnings.push('Wings are planned by piece count. Their weight and per-pound food cost are unverified until cooked pieces per pound is entered; the weight subtotal excludes wings.');
+
  }
  if([...f.appetizers,...f.extraAppetizers].some(n=>/Brisket Crostini|Pulled Pork Nachos/.test(n)))warnings.push('Mixed protein appetizers include an unknown amount of meat. Confirm their recipe protein yield before treating the protein cap as complete.');
  const pizza=groups.flatMap(g=>g.rows).find(r=>r.name===pizzaName),pizzaRows:ProductionRow[]=[];
@@ -164,11 +180,11 @@ export function eventProductionPlan(d:EventPlanDetails,c:CateringCatalog,s:Event
    if(s.regularPizzaOz&&!unresolvedGf){const rounded=regularCount*s.regularPizzaOz+(s.glutenFreePizzaOz?f.glutenFreeCount*s.glutenFreePizzaOz:0);pizzaRoundingOz=Math.max(0,rounded-pizza.ounces);if(rounded>pizza.ounces+.01)warnings.push(`Whole-pizza planning adds ${productionWeight(rounded-pizza.ounces)} above the pizza allocation. Do not add another reserve or round other foods up to full trays.`);}
 
  }
- if(protein.explicitServings)warnings.push(`${productionNumber(protein.explicitServings)} protein servings are already in explicit orders. Buffet proteins use only the remaining allowance; do not add these twice.`);
+
  if(protein.overLimit)warnings.push(`PROTEIN LIMIT EXCEEDED: explicit orders contain ${productionNumber(protein.explicitServings)} servings; maximum ${protein.limit}. Review ordered quantities before production.`);
  if(protein.unverified.length)warnings.push(`Protein servings cannot be verified for: ${protein.unverified.join(', ')}. Enter portions before approving the total.`);
  const custom=d.items.filter(i=>i.category==='Food');
- if(custom.length)warnings.push('Custom food orders below are explicit quantities. Their finished weights are not included in the buffet allowance; chef must reconcile them with the buffet before adding production.');
+
  if(buffet&&!groups.some(g=>g.name==='Entrees')&&!protein.rows.length)warnings.push('No entree selections are saved. This buffet plan is incomplete.');
  if(!guests)warnings.push('Guest count is missing. Set the guaranteed guest count before planning food.');
  return {guests,groups,pizza,pizzaRows,warnings,custom,totalOz:groups.reduce((n,g)=>n+g.totalOz,0),reservePercent:s.reservePercent,pizzaRoundingOz,pizzaCountTotal,pizzaServingGuests,pizzaDiameterInches,pizzaSlicesPerPie,pizzaSlicesPerGuest,buffet,hasWings,protein,sideReservePercent};

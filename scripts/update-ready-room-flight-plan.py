@@ -221,6 +221,9 @@ if (proposed !== "" && !/^[1-9]$/.test(proposed)) {
             text(26.4, 214.5, 'Additional premium entree: $7 / person total. Additional regular entree: $5 / person.', 7.1)
             box(26.4, 86.4, 444, 12.6, (0.91, 0.94, 0.95))
         if page_index == 2:
+            # Keep the pizza size and serving allowance aligned with the kitchen standard.
+            box(340, 455.5, 130.4, 19, (20 / 255, 54 / 255, 78 / 255))
+            text(346, 463, '14-INCH / 3 SLICES PER GUEST', 6.8, GOLD, True)
             # Clarify the mirrored Pizza Bar fields so an extra is not charged twice.
             box(27.5, 490, 307, 24, (122 / 255, 56 / 255, 40 / 255))
             text(35, 506, 'Mark Pizza Bar on page 2; repeat here only to identify included vs. extra.', 6.8, PAPER)
