@@ -18,6 +18,12 @@ export const managerSections = [
     description: "Manage Aviator Supply catalogs, products, variants, prices, and inventory.",
   },
   {
+    id: "shop-sales",
+    href: "/manager/shop-sales",
+    label: "Shop Sales",
+    description: "Monthly shop sales, items sold, payment totals and tax filing worksheets.",
+  },
+  {
     id: "beer-release-alert",
     href: "/manager/beer-release-alert",
     label: "New Release Alerts",
@@ -140,7 +146,7 @@ export type ManagerSection = (typeof managerSections)[number]["id"];
 
 export const managerSectionGroups = [
   { id: "dashboard", label: "Dashboard", sections: ["overview"] },
-  { id: "products", label: "Products & Sales", sections: ["beers", "beverages", "beer-release-alert", "kegs", "shop"] },
+  { id: "products", label: "Products & Sales", sections: ["beers", "beverages", "beer-release-alert", "kegs", "shop", "shop-sales"] },
   { id: "media", label: "Photos, Menus & Locations", sections: ["media", "brewery-photos", "private-event-photos", "amphitheater-photos", "locations"] },
   { id: "hospitality", label: "Events & Hospitality", sections: ["events", "private-events", "feast", "catering", "tours"] },
   { id: "marketing", label: "Marketing", sections: ["site-skins", "skin-comments", "newsletter", "coupons"] },

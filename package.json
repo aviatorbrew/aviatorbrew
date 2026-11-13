@@ -55,7 +55,9 @@
     "test:event-proposal-note-ui": "node scripts/test-event-proposal-note-ui.mjs",
     "test:event-proposal-overview-ui": "node scripts/test-event-proposal-overview-ui.mjs",
     "test:event-receipt": "node scripts/test-event-receipt.mjs",
-    "test:event-receipt-ui": "node scripts/test-event-receipt.mjs && node scripts/test-event-receipt-ui.mjs"
+    "test:event-receipt-ui": "node scripts/test-event-receipt.mjs && node scripts/test-event-receipt-ui.mjs",
+    "test:shop-sales": "node scripts/test-shop-sales.mjs",
+    "test:shop-sales-ui": "node scripts/test-shop-sales-ui.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.0",

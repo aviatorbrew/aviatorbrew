@@ -177,3 +177,33 @@ body:has(.manager-portal) > .beer-image-lightbox h2 { font-size: 1.25rem; line-h
 
 .manager-portal label.manager-email-approval{display:flex;align-items:flex-start;gap:.45rem;font-size:.8rem;line-height:1.4}
 .manager-portal label.manager-email-approval input[type=checkbox]{width:1.05rem;height:1.05rem;flex:none;margin:.1rem 0 0}
+.shop-sales-manager{min-width:0}
+.shop-sales-manager h2,.shop-sales-manager h3{margin:.8rem 0 .4rem}
+.manager-portal .shop-sales-manager .shop-sales-filters{display:flex;gap:.75rem;align-items:end;flex-wrap:wrap;margin-bottom:1rem}
+.shop-sales-filters label{display:grid;gap:.35rem;font-size:.85rem}
+.shop-sales-filters input{min-height:44px;min-width:12rem;padding:.5rem;background:#071827;color:#fff;border:1px solid #7891a2;color-scheme:dark;font:inherit}
+.shop-sales-heading{display:flex;justify-content:space-between;align-items:start;gap:1rem;flex-wrap:wrap}
+.shop-sales-heading p{margin:.3rem 0}
+.shop-sales-heading small,.shop-sales-caption{color:#bed1de;font-size:.8rem}
+.shop-sales-exports,.shop-sales-pagination{display:flex;gap:.5rem;flex-wrap:wrap}
+.shop-sales-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin:1rem 0}
+.shop-sales-totals>div{min-width:0;padding:.9rem;border:1px solid #54778d;background:#102d40}
+.shop-sales-totals dt{font-size:.8rem;color:#bed1de}
+.shop-sales-totals dd{margin:.3rem 0;font-size:1.45rem;font-weight:700;color:#efb45f;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.shop-sales-totals small{font-size:.75rem}
+.shop-sales-basis{padding:.7rem 1rem;margin:1rem 0;background:#102d40;border-left:3px solid #7891a2;font-size:.8rem;line-height:1.5}
+.shop-sales-basis.needs-review{border-color:#efb45f}
+.shop-sales-basis ul{padding-left:1.2rem;margin:.4rem 0}
+.shop-sales-basis li{margin:.3rem 0}
+.shop-sales-table-wrap{max-width:100%;overflow-x:auto;margin:.6rem 0 1.3rem}
+.shop-sales-table-wrap table{width:100%;min-width:680px;border-collapse:collapse;font-size:.8rem;line-height:1.4}
+.shop-sales-table-wrap table[aria-label="Paid order ledger"]{min-width:900px}
+.shop-sales-table-wrap th:first-child{min-width:180px}
+.shop-sales-table-wrap th,.shop-sales-table-wrap td{padding:.6rem .5rem;border-bottom:1px solid #54778d;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.shop-sales-table-wrap thead,.shop-sales-table-wrap tfoot{background:#102d40}
+.shop-sales-table-wrap th{font-weight:700}
+.shop-sales-table-wrap th small{display:block;font-weight:400;color:#bed1de}
+.shop-sales-table-wrap .number{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.shop-sales-table-wrap tfoot{font-weight:700}
+@media(max-width:900px){.shop-sales-totals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.shop-sales-totals{gap:.5rem}.shop-sales-totals>div{padding:.65rem}.shop-sales-totals dd{font-size:1.15rem}.shop-sales-exports .button{font-size:.75rem}.shop-sales-heading{gap:.6rem}.shop-sales-basis{padding:.5rem .7rem}}

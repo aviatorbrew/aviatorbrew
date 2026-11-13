@@ -17,6 +17,7 @@ import { WebsitePhotosLibrary } from "@/components/website-photos-library";
 import { BeerImageViewer } from "@/components/beer-image-viewer";
 import { BeyondBeerImageViewer } from "@/components/beyond-beer-image-viewer";
 import { ShopManager } from "@/components/shop-manager";
+import { ShopSalesManager } from "@/components/shop-sales-manager";
 import { CateringManager } from "@/components/catering-manager";
 import { managerEditHref, returnFromManagerEdit } from "@/lib/manager-edit";
 import { TourGuestEmail } from "@/components/tour-guest-email";
@@ -806,6 +807,7 @@ function ManagerSectionContent({ section, editId, editType, returnTo }: { sectio
     case "coupons": return <div id="coupons"><CouponManager accessKey="manager-session" /></div>;
     case "beers": return <BeerManager editId={editId} returnTo={returnTo} />;
     case "shop": return <ShopManager editId={editId} editType={editType} returnTo={returnTo} />;
+    case "shop-sales": return <ShopSalesManager />;
     case "beer-release-alert": return <BeerReleaseAlertManager editId={editId} returnTo={returnTo} />;
     case "brewery-photos": return <BreweryPhotosManager />;
     case "private-event-photos": return <PrivateEventPhotosManager />;
