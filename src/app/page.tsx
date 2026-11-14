@@ -77,12 +77,34 @@ function TicketProductHomeCard({ product }: { product: ShopProduct }) {
   return <article className="event-card managed-event-card ticket-product-home-card"><div className="event-date"><span>{date}</span><strong>{time}</strong></div><div className="event-content"><p className="card-kicker">{product.ticketLocationName} · {ticketStatus.open?"Tickets on sale":ticketStatus.kind==="closed"?"Online sales closed":ticketStatus.kind==="sold-out"?"Sold out":"Ticket availability"}</p><h3>{product.name}</h3><p className="managed-event-copy ticket-product-description">{product.description}</p><Link href={"/shop-new#product-" + product.slug} data-analytics="home_ticket_product_event">Details + tickets <ArrowUpRight /></Link></div></article>;
 }
 
+function NewYearsTicketSpotlight({ products }: { products: ShopProduct[] }) {
+  const product = products.find(item => /new[\s-]*year[’']?s?\s*eve|\bnye\b/i.test(item.name));
+  if (!product) return null;
+  const status = ticketSalesStatus(product);
+  const when = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", dateStyle: "long", timeStyle: "short" }).format(new Date(product.ticketEventStartsAt));
+  const href = "/shop-new#product-" + product.slug;
+  return <section className="home-nye-tickets" aria-labelledby="home-nye-tickets-title">
+    <div className="content-wrap home-nye-tickets-layout">
+      <div className="home-nye-tickets-copy">
+        <p className="eyebrow">Party into the new year</p>
+        <h2 id="home-nye-tickets-title">New Year’s Eve <em>Tickets.</em></h2>
+        <p>Ring in the new year with live music at Aviator.</p>
+        <p><strong>{when} Eastern</strong><br />{product.ticketLocationName}</p>
+        <p className="home-nye-tickets-status">{status.message}</p>
+        <Link className="button" href={href} data-analytics="home_nye_tickets">{status.open ? "Get New Year’s Eve Tickets" : "View ticket details"} <ArrowUpRight /></Link>
+      </div>
+      {product.imageUrl ? <Link className="home-nye-tickets-image" href={href} aria-label="View New Year’s Eve event and tickets" data-analytics="home_nye_ticket_art"><Image src={product.imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 760px) 100vw, 50vw" /></Link> : null}
+    </div>
+  </section>;
+}
+
 export default async function Home() { const [weekendEvents, locations, beers, couponOffers, couponStatus, beerReleaseAlert, ticketEvents] = await Promise.all([getPublishedEvents({ monthsAhead: 2 }), getAllLocations(), getAllBeers(), getCouponOffers(), couponAvailability(), getPublishedBeerReleaseAlerts(), getPublishedShopTicketEvents()]); const schema = { "@context": "https://schema.org", "@type": ["Brewery", "Restaurant", "LocalBusiness"], name: "Aviator Brewing Company", address: { "@type": "PostalAddress", streetAddress: "688 Brewing Drive", addressLocality: "Fuquay-Varina", addressRegion: "NC", postalCode: "27526", addressCountry: "US" }, telephone: "+1-919-567-2337", servesCuisine: ["American", "Pizza", "Barbecue"], url: "https://aviatorbrew.com" }; return <>
   <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
   <ThemedHomeHero thanksgivingParty={<ThanksgivingEveParty/>}><section className="hero hero-runway"><div className="hero-media"><Image src="/images/hero-runway-wwii-restored.png" alt="Aviator field runway leading to a glowing brewery hangar at dusk" fill priority unoptimized sizes="100vw" /></div><div className="hero-p51" aria-hidden="true"><Image src="/images/p51-strafing-hero-restored.png" alt="" fill priority unoptimized sizes="100vw" /></div><span className="flight-path" aria-hidden="true" /><span className="runway-number" aria-hidden="true">08<span>26</span></span><div className="hero-content"><HomeLogoViewer /><p className="eyebrow">Aviator Field · Fuquay-Varina, North Carolina · Est. 2008</p><h1>Your next <em>adventure</em> is brewing.</h1><p className="hero-copy">Start at the <strong>Aviator Hangar Bar</strong>: fresh Aviator beer, scratch-made food, cocktails, and a great night at the brewery.</p><div className="hero-actions"><Link className="button" href="/locations#hangar-bar" data-analytics="hero_hangar_menu">Hangar Bar menu <ArrowUpRight /></Link><a className="button button-outline" href="https://www.waitlist.me/w/aviatorhangarbar" target="_blank" rel="noreferrer" data-analytics="hero_hangar_waitlist">Join waitlist <ArrowUpRight /></a><a className="button button-outline" href={orderFoodUrl} data-analytics="hero_order_food">Order food <ArrowUpRight /></a></div><div className="flight-data" aria-label="Aviator field information"><span>FIELD <b>FVNC</b></span><span>RUNWAY <b>08 / 26</b></span><span>OPEN <b>7 DAYS</b></span></div></div></section>
   </ThemedHomeHero>
   <HangarBarFeature />
   <div className="arrival-strip" aria-label="Aviator field updates"><div className="arrival-track"><span>Now boarding: great beer</span><i>✦</i><span>Live music on the field</span><i>✦</i><span>BEER IS MY FRIEND</span><i>✦</i><span>Private events cleared for takeoff</span><i>✦</i><span>Now boarding: great beer</span><i>✦</i><span>Live music on the field</span><i>✦</i><span>BEER IS MY FRIEND</span><i>✦</i><span>Private events cleared for takeoff</span></div></div>
+  <NewYearsTicketSpotlight products={ticketEvents} />
   <BeerReleaseAlertBand alerts={beerReleaseAlert} />
   {couponOffers.length ? <CouponSpotlight offers={couponOffers} allowed={couponStatus.allowed} reason={couponStatus.reason} /> : null}
   <section id="updates" className="home-newsletter-signup"><div className="content-wrap"><div className="newsletter"><div><p className="eyebrow">Join the Flight Crew</p><h2>Beer releases, music, and events. Straight to your inbox.</h2><p>Get new beers, weekend plans, restaurant news, concerts, and offers from across Aviator. We will email you a quick confirmation link to make sure the address is yours.</p></div><InquiryForm kind="newsletter" /></div></div></section>

@@ -1,3 +1,15 @@
+.home-nye-tickets { padding: clamp(1.5rem, 4vw, 3rem) 0; background: #071827; color: #f2f8fb; }
+.home-nye-tickets-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: center; gap: clamp(1.5rem, 4vw, 3rem); }
+.home-nye-tickets-copy { min-width: 0; }
+.home-nye-tickets-copy .eyebrow, .home-nye-tickets-status { color: #efb45f; }
+.home-nye-tickets-copy h2 { max-width: 15ch; margin: .6rem 0 1rem; color: #f4f8fa; font-size: clamp(2rem, 4vw, 3.6rem); line-height: 1.05; }
+.home-nye-tickets-copy h2 em { color: #efb45f; }
+.home-nye-tickets-copy p { line-height: 1.5; }
+.home-nye-tickets-copy .button { margin-top: .5rem; }
+.home-nye-tickets-image { display: block; position: relative; width: 100%; aspect-ratio: 16 / 9; border: 1px solid #b8904e; background: #061221; }
+.home-nye-tickets-image img { object-fit: contain; }
+@media (max-width: 760px) { .home-nye-tickets-layout { grid-template-columns: minmax(0, 1fr); } }
+
 .hero-runway {
   min-height: min(740px, calc(100svh - 5.6rem));
   align-items: start;
