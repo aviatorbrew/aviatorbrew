@@ -8,8 +8,9 @@ export async function GET(request:NextRequest){
  if(!isManager(request))return NextResponse.json({error:'Unauthorized'},{status:401,headers});
  try{
   const params=request.nextUrl.searchParams,month=shopSalesMonth(params.get('month')??currentShopSalesMonth()),format=params.get('format')||'json';
-  if(!['json','print','summary-csv','items-csv','orders-csv','tax-csv'].includes(format))return NextResponse.json({error:'Choose a valid report format.'},{status:400,headers});
+  if(!['json','xlsx','print','summary-csv','items-csv','orders-csv','tax-csv'].includes(format))return NextResponse.json({error:'Choose a valid report format.'},{status:400,headers});
   const report=await getShopSalesReport(month);
+  if(format==='xlsx'){const {shopSalesExcel}=await import("@/lib/shop-sales-excel");return new Response(new Uint8Array(await shopSalesExcel(report)),{headers:{...headers,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="aviator-shop-sales-${month}.xlsx"`}});}
   if(format==='print')return new Response(shopSalesPrintHtml(report),{headers:{...headers,'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'"}});
   if(format.endsWith('-csv')){const kind=format.slice(0,-4) as 'summary'|'items'|'orders'|'tax';return new Response(shopSalesCsv(report,kind),{headers:{...headers,'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="aviator-shop-${kind}-${month}.csv"`}});}
   return NextResponse.json(report,{headers});
