@@ -38,8 +38,8 @@ export function ticketSalesStatus(stock: TicketStock, now = Date.now()) {
   const cutoff = ticketCutoff(stock);
   if (cutoff !== null && cutoff <= now) return { kind: "closed", open: false, message: stock.ticketDoorPriceCents ? `Online ticket sales are closed. You must buy a ticket at the door: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(stock.ticketDoorPriceCents / 100)}, subject to remaining capacity.` : "Online ticket sales are closed." };
   if (!remaining) return { kind: "held", open: false, message: "All remaining tickets are currently in checkout. Check back shortly." };
-  const ratio = (sold + Math.max(0,stock.ticketReservedCount)) / capacity;
-  return { kind: ratio >= .9 ? "almost-sold-out" : ratio >= .75 ? "going-fast" : "available", open: true, message: `${ratio >= .9 ? "Almost sold out! " : ratio >= .75 ? "Going fast! " : ""}${remaining} ${remaining === 1 ? "ticket" : "tickets"} available.` };
+  const almost=remaining<75&&sold>0,goingFast=sold>0;
+  return {kind:almost?'almost-sold-out':goingFast?'going-fast':'available',open:true,message:almost?'Almost sold out!':goingFast?'Going fast!':'Tickets available now.'};
 }
 export function ticketDateTime(value: string) {
   return value ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", dateStyle: "full", timeStyle: "short" }).format(new Date(value)) + " Eastern" : "Date to be announced";
