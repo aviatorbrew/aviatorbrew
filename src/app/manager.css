@@ -181,7 +181,7 @@ body:has(.manager-portal) > .beer-image-lightbox h2 { font-size: 1.25rem; line-h
 .shop-sales-manager h2,.shop-sales-manager h3{margin:.8rem 0 .4rem}
 .manager-portal .shop-sales-manager .shop-sales-filters{display:flex;gap:.75rem;align-items:end;flex-wrap:wrap;margin-bottom:1rem}
 .shop-sales-filters label{display:grid;gap:.35rem;font-size:.85rem}
-.shop-sales-filters input{min-height:44px;min-width:12rem;padding:.5rem;background:#071827;color:#fff;border:1px solid #7891a2;color-scheme:dark;font:inherit}
+.shop-sales-filters input,.shop-sales-filters select{min-height:44px;min-width:12rem;padding:.5rem;background:#071827;color:#fff;border:1px solid #7891a2;color-scheme:dark;font:inherit}
 .shop-sales-heading{display:flex;justify-content:space-between;align-items:start;gap:1rem;flex-wrap:wrap}
 .shop-sales-heading p{margin:.3rem 0}
 .shop-sales-heading small,.shop-sales-caption{color:#bed1de;font-size:.8rem}

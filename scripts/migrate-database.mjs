@@ -430,6 +430,13 @@ const schemaStatements = [
     updated_at timestamptz NOT NULL DEFAULT now(),
     paid_at timestamptz
   )`,
+  `CREATE TABLE IF NOT EXISTS website.shop_tax_records (
+    id bigserial PRIMARY KEY, order_id bigint NOT NULL REFERENCES website.shop_orders(id) ON DELETE RESTRICT,
+    input_hash text NOT NULL, calculation_hash text NOT NULL, rule_version text NOT NULL, basis text NOT NULL,
+    data jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(order_id,input_hash,calculation_hash,rule_version,basis)
+  )`,
+  `CREATE INDEX IF NOT EXISTS website_shop_tax_records_order_idx ON website.shop_tax_records(order_id,id DESC)`,
   `CREATE TABLE IF NOT EXISTS website.shop_order_items (
     id bigserial PRIMARY KEY,
     order_id bigint NOT NULL REFERENCES website.shop_orders(id) ON DELETE CASCADE,

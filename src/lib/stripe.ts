@@ -151,6 +151,8 @@ export async function createDynamicCheckoutSession(input: DynamicCheckoutInput) 
 
 
 type ShopCartCheckoutInput = {
+  taxCents?: number;
+  preparedFoodTaxCents?: number;
   idempotencyKey?: string;
   expiresAt?: number;
   cardOnly?: boolean;
@@ -192,7 +194,12 @@ export async function createShopCartCheckoutSession(input: ShopCartCheckoutInput
     form.set("payment_intent_data[shipping][address][postal_code]", input.shipping.address.zip);
     form.set("payment_intent_data[shipping][address][country]", input.shipping.address.country);
   }
-  input.items.forEach((item, index) => {
+  if(!Number.isSafeInteger(input.taxCents||0)||(input.taxCents||0)<0)throw new Error("Invalid checkout tax.");
+  const preparedTax=input.preparedFoodTaxCents||0,salesTax=(input.taxCents||0)-preparedTax;
+  if(!Number.isSafeInteger(preparedTax)||preparedTax<0||salesTax<0)throw new Error("Invalid prepared food tax.");
+  const lineItems=[...input.items,...(salesTax?[{name:"NC sales tax",description:"Applicable state, county and transit sales tax",unitAmount:salesTax,quantity:1}]:[]),...(preparedTax?[{name:"Wake prepared food & beverage tax",description:"1% county prepared food and beverage tax",unitAmount:preparedTax,quantity:1}]:[])];
+  if(lineItems.length>100)throw new Error("Too many items for checkout.");
+  lineItems.forEach((item, index) => {
     form.set(`line_items[${index}][price_data][currency]`, "usd");
     form.set(`line_items[${index}][price_data][product_data][name]`, item.name.slice(0, 120));
     form.set(`line_items[${index}][price_data][product_data][description]`, item.description.slice(0, 900));

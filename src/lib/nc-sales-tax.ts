@@ -1,6 +1,3 @@
-import type { PreparedShopCart } from "@/lib/shop";
-import type { ShopShippingAddress } from "@/lib/shop-shipping";
-
 export type NcCountyTaxRate = { county: string; rateBasisPoints: number; rateLabel: string; includesTransit?: boolean };
 
 export const ncCountyTaxRates: NcCountyTaxRate[] = [
@@ -28,16 +25,4 @@ export function getNcCountyTaxRate(county: string) {
 
 export function publicNcCountyTaxRates() {
   return ncCountyTaxRates.map(({ county, rateBasisPoints, rateLabel, includesTransit }) => ({ county, rateBasisPoints, rateLabel, includesTransit }));
-}
-
-export function calculateShopSalesTax(cart: PreparedShopCart, shippingCents: number, address: Pick<ShopShippingAddress, "state" | "county" | "country">) {
-  const state = String(address.state || "").trim().toUpperCase();
-  const country = String(address.country || "US").trim().toUpperCase();
-  if (country !== "US" || state !== "NC") return { taxCents: 0, taxCounty: "", taxRateBasisPoints: 0, taxRateLabel: "0%", taxableCents: 0 };
-  const county = String(address.county || "").trim();
-  const rate = getNcCountyTaxRate(county);
-  if (!rate) throw new Error("Choose a valid North Carolina county for sales tax.");
-  const taxableCents = cart.subtotalCents + Math.max(0, Math.floor(shippingCents));
-  const taxCents = Math.round(taxableCents * rate.rateBasisPoints / 10000);
-  return { taxCents, taxCounty: rate.county, taxRateBasisPoints: rate.rateBasisPoints, taxRateLabel: rate.rateLabel, taxableCents };
 }

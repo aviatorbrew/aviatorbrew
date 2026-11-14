@@ -1,0 +1,57 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {readFile,writeFile,mkdtemp} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {createHash,createHmac} from 'node:crypto';
+import ts from 'typescript';
+import pg from 'pg';
+import {spawnSync} from 'node:child_process';
+const root=path.resolve(import.meta.dirname,'..'),require=createRequire(root+'/package.json'),database=process.env.SHOP_TAX_TEST_DATABASE_URL;
+if(!database||!['127.0.0.1','localhost'].includes(new URL(database).hostname)||!new URL(database).pathname.startsWith('/aviator_shop_test_'))throw Error('Use a fresh disposable local aviator_shop_test_* database.');
+const db=new pg.Client({connectionString:database});await db.connect();assert.equal(Number((await db.query("SELECT count(*) FROM pg_tables WHERE schemaname='website'")).rows[0].count),0);
+Object.assign(process.env,{DATABASE_URL:database,POSTGRES_SSL:'false',MANAGER_PORTAL_KEY:'tax_fixture_only',SHOP_CHECKOUT_SIGNING_SECRET:'tax_quote_fixture_only'});
+const migration=spawnSync(process.execPath,['scripts/migrate-database.mjs'],{cwd:root,env:process.env,encoding:'utf8'});assert.equal(migration.status,0,migration.stderr);
+const temp=await mkdtemp(path.join(tmpdir(),'aviator-tax-modules-')),modules=new Map();
+async function compile(file){if(modules.has(file))return modules.get(file);const out=path.join(temp,createHash('sha256').update(file).digest('hex')+'.cjs');modules.set(file,out);let code=ts.transpileModule(await readFile(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;for(const match of [...code.matchAll(/require\("(@\/[^"\n]+)"\)/g)])code=code.replaceAll(match[0],'require('+JSON.stringify(await compile(path.join(root,'src',match[1].slice(2)+'.ts')))+')');code=code.replace(/require\("([^"]+)"\)/g,(all,name)=>name.startsWith('/')||name.startsWith('node:')?all:'require('+JSON.stringify(require.resolve(name))+')');await writeFile(out,code);return out;}
+const tax=require(await compile(root+'/src/lib/shop-tax.ts')),rates=require(await compile(root+'/src/lib/nc-sales-tax.ts')),county=require(await compile(root+'/src/lib/shop-tax-county.ts')),quotes=require(await compile(root+'/src/lib/shop-tax-quote.ts')),records=require(await compile(root+'/src/lib/shop-tax-records.ts')),sales=require(await compile(root+'/src/lib/shop-sales.ts')),docs=require(await compile(root+'/src/lib/shop-sales-documents.ts')),route=require(await compile(root+'/src/app/api/manager/shop-sales/tax-records/route.ts')),{NextRequest}=require('next/server');
+const originalFetch=globalThis.fetch;let lookups=0;
+globalThis.fetch=async url=>{url=new URL(url);assert.equal(url.hostname,'geocoding.geo.census.gov','No Stripe, email or other network changes allowed');assert.ok(!url.search.includes('PRIVATE-NAME')&&!url.search.includes('PRIVATE-EMAIL'));lookups++;const city=url.searchParams.get('city'),name=city==='Pinnacle'?'Stokes':'Wake';return Response.json({result:{addressMatches:city==='Ambiguous'?[{},{}]:city==='Missing'?[]:[{addressComponents:{state:'NC'},geographies:{Counties:[{STATE:'37',BASENAME:name,NAME:name+' County'}]}}]}});};
+const item=(category='general',price=10000,extra={})=>({name:'Fixture',quantity:1,unitPriceCents:price,isBonus:false,requiresShipping:true,taxCategory:category,...extra});
+try{
+ assert.equal(rates.ncCountyTaxRates.length,100);assert.equal(new Set(rates.ncCountyTaxRates.map(r=>r.county)).size,100);
+ for(const r of rates.ncCountyTaxRates){const q=tax.calculateShopTax([item()],0,{country:'US',state:'NC',county:r.county});assert.equal(q.taxCents,r.rateBasisPoints);assert.equal(q.groups[0].stateTaxCents+q.groups[0].countyTaxCents+q.groups[0].transitTaxCents,q.taxCents);}
+ assert.equal(tax.calculateShopTax([item()],500,{country:'US',state:'NC',county:'Wake'}).taxCents,761);
+ assert.equal(tax.calculateShopTax([item()],0,{country:'US',state:'NC',county:'Stokes'}).taxCents,675);
+ assert.equal(tax.calculateShopTax([item()],0,{country:'US',state:'NC',county:'Mecklenburg'}).taxCents,825);
+ const gift=tax.calculateShopTax([item('gift_card')],550,{country:'US',state:'NC'});assert.equal(gift.taxCents,0);assert.equal(gift.exemptCents,10550);
+ const mixed=tax.calculateShopTax([item(),item('gift_card')],1000,{country:'US',state:'NC',county:'Wake'});assert.equal(mixed.taxableCents,10500);assert.equal(mixed.taxCents,761);assert.equal(mixed.exemptCents,10500);
+ const ticket=tax.calculateShopTax([item('admission',2000,{requiresShipping:false})],0,{country:'US',state:'VA',county:'Outside'});assert.equal(ticket.groups[0].county,'Wake');assert.equal(ticket.taxCents,145);assert.equal(ticket.pfbTaxCents,0);
+ const prepared=tax.calculateShopTax([item('prepared_food')],0,{country:'US',state:'NC',county:'Wake'});assert.equal(prepared.salesTaxCents,725);assert.equal(prepared.pfbTaxCents,100);assert.equal(prepared.taxCents,825);
+ assert.equal(tax.calculateShopTax([item('qualifying_food')],0,{country:'US',state:'NC',county:'Wake'}).taxCents,200);
+ const review=tax.calculateShopTax([item()],0,{country:'US',state:'NC'});assert.equal(review.taxCents,null);assert.equal(review.status,'review');assert.equal(review.exemptCents,0);assert.equal(review.unresolvedCents,10000);
+ assert.equal(tax.calculateShopTax([item()],0,{country:'US',state:'NC',county:'Wake'},new Date('2026-06-30T12:00:00Z')).status,'review');
+ assert.equal(tax.calculateShopTax([item()],0,{country:'US',state:'VA'}).taxCents,0);
+ const bonus=tax.calculateShopTax([item(),item('general',0,{isBonus:true})],0,{country:'US',state:'NC',county:'Wake'});assert.equal(bonus.taxCents,725);assert.equal(bonus.useTaxReview,true);
+ const address={name:'PRIVATE-NAME',street1:'1 Fixture Street',city:'Pinnacle',state:'NC',zip:'27043',country:'US'};
+ assert.equal((await county.resolveShopNcCounty(address)).county,'Stokes');const n=lookups;await county.resolveShopNcCounty(address);assert.equal(lookups,n,'Cache repeated lookup');
+ assert.equal(await county.resolveShopNcCounty({...address,city:'Ambiguous'}),null);assert.equal(await county.resolveShopNcCounty({...address,city:'Missing'}),null);
+ const cart={items:[{variantId:1,productId:1,productName:'Fixture',quantity:1,unitPriceCents:10000,isBonus:false,requiresShipping:true,taxCategory:'general'}],subtotalCents:10000,requiresShipping:true};cart.merchandiseItems=cart.items;
+ const proof=await quotes.createShopTaxQuote(cart,500,address);assert.equal(proof.quote.taxCents,709);assert.equal(quotes.verifyShopTaxQuote(proof.token,cart,500,address).taxCents,709);assert.throws(()=>quotes.verifyShopTaxQuote(proof.token+'x',cart,500,address));assert.throws(()=>quotes.verifyShopTaxQuote(proof.token,cart,0,address));assert.throws(()=>quotes.verifyShopTaxQuote(proof.token,cart,500,{...address,city:'Other'}));assert.throws(()=>quotes.verifyShopTaxQuote(proof.token,{...cart,items:[{...cart.items[0],taxCategory:'gift_card'}]},500,address));
+ const category=(await db.query("INSERT INTO website.shop_categories(slug,name) VALUES('tax-fixture','Beverages') RETURNING id")).rows[0].id;
+ const product=(await db.query("INSERT INTO website.shop_products(slug,name,category_id) VALUES('tax-fixture','Root beer', $1) RETURNING id",[category])).rows[0].id;
+ async function order(name,price,shipping,destination,extra={}){const id=(await db.query("INSERT INTO website.shop_orders(stripe_session_id,status,subtotal_cents,shipping_cents,amount_total_cents,paid_at,shipping_address,is_test_order) VALUES($1,'paid',$2,$3,$4,'2026-11-10T12:00:00Z',$5::jsonb,$6) RETURNING id",[extra.session||'cs_live_fixture_'+Math.random(),price,shipping,extra.total??price+shipping,JSON.stringify(destination),extra.test||false])).rows[0].id;await db.query("INSERT INTO website.shop_order_items(order_id,product_id,product_name,variant_label,quantity,unit_price_cents) VALUES($1,$2,$3,'Default',1,$4)",[id,product,name,price]);return id;}
+ const paid=await order('Root beer',2600,1325,address);const exempt=await order('Gift Card',5000,550,address);await order('Root beer',1000,200,{country:'US',state:'VA'});const unknown=await order('Root beer',1000,0,{...address,city:'Ambiguous'});await order('Root beer',1000,0,address,{session:'cs_test_excluded'});await order('Root beer',1000,0,address,{test:true});
+ const before=(await db.query('SELECT jsonb_agg(to_jsonb(o) ORDER BY id) AS rows FROM website.shop_orders o')).rows[0];
+ const cookie='aviator_manager='+createHmac('sha256',process.env.MANAGER_PORTAL_KEY).update('aviator-manager-session-v1').digest('hex');
+ const create=(body,auth=true)=>route.POST(new NextRequest('https://aviatorbrew.com/api/manager/shop-sales/tax-records',{method:'POST',headers:{'content-type':'application/json',...(auth?{cookie}:{})},body:JSON.stringify(body)}));
+ assert.equal((await create({allSales:true},false)).status,401);assert.equal((await create({})).status,400);
+ const response=await create({allSales:true});assert.equal(response.status,200);const result=await response.json();assert.equal(result.checked,4);assert.equal(result.created,4);assert.equal(result.review,1);assert.equal(result.assessedTaxCents,265);assert.equal(result.collectedTaxCents,0);
+ const saved=(await db.query('SELECT data FROM website.shop_tax_records WHERE order_id=$1',[paid])).rows[0].data;assert.equal(saved.quote.groups[0].county,'Stokes');assert.equal(saved.quote.taxCents,265);assert.equal(saved.collectedTaxCents,0);assert.equal(saved.uncollectedTaxCents,265);
+ const repeated=await records.createHistoricalShopTaxRecords();assert.equal(repeated.created,0);assert.equal(Number((await db.query('SELECT count(*) FROM website.shop_tax_records')).rows[0].count),4,'Idempotent assessment');
+ assert.equal((await create({orderId:Number(unknown),county:'Wake'})).status,200);assert.equal(Number((await db.query('SELECT count(*) FROM website.shop_tax_records WHERE order_id=$1',[unknown])).rows[0].count),2,'Correction appends audit record');
+ const report=await sales.getShopSalesReport('2026-11');assert.equal(report.totals.taxCents,0);assert.equal(report.totals.assessedTaxCents,338);assert.equal(report.totals.uncollectedTaxCents,338);assert.equal(report.totals.missingAssessmentOrders,0);assert.equal(report.taxRecords.length,4);assert.ok(docs.shopSalesCsv(report,'tax').includes('Stokes'));assert.ok(docs.shopSalesCsv(report,'orders').includes('"2.65"'));
+ assert.deepEqual((await db.query('SELECT jsonb_agg(to_jsonb(o) ORDER BY id) AS rows FROM website.shop_orders o')).rows[0],before,'Backfill never changes original receipts, paid amounts or customers');
+ const liveRow={id:paid,paid_at:new Date('2026-11-10T12:00:00Z'),metadata:{shopTaxQuote:proof.quote},shipping_address:address,subtotal_cents:10000,shipping_cents:500,amount_total_cents:11209};await records.saveCollectedShopTax(db,liveRow);await records.saveCollectedShopTax(db,liveRow);assert.equal(Number((await db.query("SELECT count(*) FROM website.shop_tax_records WHERE basis='checkout'")).rows[0].count),1);await assert.rejects(records.saveCollectedShopTax(db,{...liveRow,amount_total_cents:1}),/match/);
+ console.log('PASS NC tax: 100 county rates, address/city lookup, cross-county ambiguity, gift-card deferral, allocated shipping, Wake admissions, groceries, prepared food, bonus use-tax review, signed/stale/tampered quotes, authenticated immutable historical records, corrections, idempotence and monthly tax exports. No payments, customer edits or emails.');
+}finally{globalThis.fetch=originalFetch;await db.end();}

@@ -1,5 +1,7 @@
 "use client";
 
+import type {ShopTaxQuote} from "@/lib/shop-tax";
+import {ncCountyTaxRates} from "@/lib/nc-sales-tax";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ticketGuestLists, ticketGuest, type TicketGuest, type TicketGuestLists } from "@/lib/shop-tickets";
@@ -28,7 +30,7 @@ type PreparedCart = {
 };
 
 type ShippingRate = { id: string; carrier: string; service: string; amountCents: number; deliveryDays: number | null; token: string; isEstimate?: boolean };
-type Address = { name: string; street1: string; street2: string; city: string; state: string; zip: string; country: string; phone: string };
+type Address = { county: string; name: string; street1: string; street2: string; city: string; state: string; zip: string; country: string; phone: string };
 
 function money(cents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100); }
 
@@ -41,8 +43,9 @@ export function ShopCartCheckout({ checkoutStatus, sessionId }: { checkoutStatus
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [selectedToken, setSelectedToken] = useState("");
   const [email, setEmail] = useState("");
-  const [address, setAddress] = useState<Address>({ name: "", street1: "", street2: "", city: "", state: "NC", zip: "", country: "US", phone: "" });
+  const [address, setAddress] = useState<Address>({ county: "", name: "", street1: "", street2: "", city: "", state: "NC", zip: "", country: "US", phone: "" });
   const [state, setState] = useState<"idle" | "loading" | "shipping" | "checkout" | "error">("idle");
+  const [taxQuote,setTaxQuote]=useState<ShopTaxQuote|null>(null),[taxToken,setTaxToken]=useState(""),[taxBusy,setTaxBusy]=useState(false),[taxError,setTaxError]=useState(""),[taxRevision,setTaxRevision]=useState(0);
   const [message, setMessage] = useState("");
   const [unavailableVariantIds, setUnavailableVariantIds] = useState<number[]>([]);
   const requestItems = useMemo(() => items.map((item) => ({ variantId: item.variantId, quantity: item.quantity })), [items]);
@@ -76,8 +79,19 @@ export function ShopCartCheckout({ checkoutStatus, sessionId }: { checkoutStatus
     return () => controller.abort();
   }, [hydrated, requestKey, checkoutStatus]);
 
+  useEffect(()=>{
+    setTaxQuote(null);setTaxToken("");setTaxError("");setTaxBusy(false);
+    if(!cart||checkoutStatus==="success"||(cart.requiresShipping&&!selectedToken))return;
+    const controller=new AbortController();setTaxBusy(true);
+    fetch("/api/shop/tax-quote",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({items:requestItems,address:{...address,name:cart.merchandiseItems.some(i=>i.productType==="ticket")?firstName+" "+lastName:address.name},shippingToken:selectedToken}),signal:controller.signal})
+      .then(async r=>{const b=await r.json();if(!r.ok)throw Error(b.error||"Could not calculate tax.");if(!controller.signal.aborted){setTaxQuote(b.quote);setTaxToken(b.token);}})
+      .catch(e=>{if(!controller.signal.aborted)setTaxError(e.message);})
+      .finally(()=>{if(!controller.signal.aborted)setTaxBusy(false);});
+    return()=>controller.abort();
+  },[cart,requestKey,selectedToken,address,firstName,lastName,checkoutStatus,taxRevision]);
+
   function addressField(field: keyof Address, value: string) {
-    setAddress((current) => ({ ...current, [field]: value }));
+    setAddress((current) => ({ ...current, [field]: value, ...(["street1","city","state","zip"].includes(field)?{county:""}:{}) }));
     setRates([]); setSelectedToken("");
   }
 
@@ -101,13 +115,14 @@ export function ShopCartCheckout({ checkoutStatus, sessionId }: { checkoutStatus
     let ticketNames:TicketGuestLists={};
     try{if(ticketGroups.length)ticketGuest({firstName,lastName});ticketNames=ticketGuestLists(Object.fromEntries(ticketGroups.map(g=>[g.productId,namesFor(g)])),(cart?.merchandiseItems||[]).map(i=>({...i,productType:i.productType||"merchandise"})));}catch(e){setMessage(e instanceof Error?e.message:"Check every guest name.");setState("error");return;}
     if (cart?.requiresShipping && !selectedToken) { setState("error"); setMessage("Calculate and choose a shipping rate first."); return; }
+    if(!taxToken){setMessage("Wait for tax to be calculated before checkout.");return;}
     checkoutBusy.current=true;setState("checkout"); setMessage("");
     try {
-      const response = await fetch("/api/shop/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: requestItems, email, name: address.name, firstName,lastName,ticketGuests:ticketNames,phone: address.phone,address:{...address,name:ticketGroups.length?firstName+" "+lastName:address.name},shippingToken: selectedToken }) });
+      const response = await fetch("/api/shop/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: requestItems, email, name: address.name, firstName,lastName,ticketGuests:ticketNames,phone: address.phone,address:{...address,name:ticketGroups.length?firstName+" "+lastName:address.name},shippingToken: selectedToken,taxToken }) });
       const body = await response.json() as { url?: string; error?: string };
       if (!response.ok || !body.url) throw new Error(body.error || "Checkout could not be opened.");
       window.location.assign(body.url);
-    } catch (error) { checkoutBusy.current=false;setState("error"); setMessage(error instanceof Error ? error.message : "Checkout could not be opened."); }
+    } catch (error) { setTaxRevision(v=>v+1);checkoutBusy.current=false;setState("error"); setMessage(error instanceof Error ? error.message : "Checkout could not be opened."); }
   }
 
   function emptyCart() {
@@ -122,7 +137,7 @@ export function ShopCartCheckout({ checkoutStatus, sessionId }: { checkoutStatus
   if (!items.length) return <section className="section shop-cart-page"><div className="content-wrap shop-cart-empty"><p className="eyebrow">Cart 00</p><h1>Your cargo hold is empty.</h1><p>Choose something from the Aviator catalog and it will stay here until checkout.</p><Link className="button" href="/shop-new">Browse the catalog</Link></div></section>;
 
   const shipping = rates.find((rate) => rate.token === selectedToken);
-  const total = (cart?.subtotalCents || 0) + (shipping?.amountCents || 0);
+  const total = taxQuote?.totalCents;
   const threshold = cart?.settings.bonusThresholdCents || 2000;
   const bonusRemaining = Math.max(0, threshold + 1 - (cart?.subtotalCents || 0));
   const freeShippingRemaining = Math.max(0, 7500 - (cart?.subtotalCents || 0));
@@ -151,8 +166,10 @@ export function ShopCartCheckout({ checkoutStatus, sessionId }: { checkoutStatus
       {ticketGroups.map(group=><fieldset className="shop-ticket-guests" key={group.productId}><legend>{group.productName} · {group.quantity} ticket holders</legend><p>Enter one first and last name per ticket. Include yourself if attending; you can change the first guest if you are buying for someone else. These names appear on the check-in list.</p>{namesFor(group).map((guest,index)=><div className="shop-ticket-name-row" key={index}><label>Ticket {index+1} first name<input required maxLength={60} value={guest.firstName} onChange={e=>guestField(group,index,"firstName",e.target.value)} autoComplete="off"/></label><label>Ticket {index+1} last name<input required maxLength={60} value={guest.lastName} onChange={e=>guestField(group,index,"lastName",e.target.value)} autoComplete="off"/></label></div>)}</fieldset>)}
       {cart?.requiresShipping ? <button className="button button-outline" disabled={state === "shipping"}>{state === "shipping" ? "Calling USPS..." : "Calculate USPS shipping"}</button> : null}
       {rates.length ? <fieldset className="shop-shipping-rates"><legend>Choose shipping</legend>{rates.map((rate) => <label key={rate.token}><input type="radio" name="shippingRate" checked={selectedToken === rate.token} onChange={() => setSelectedToken(rate.token)} /><span><strong>{rate.carrier} {rate.service}</strong><small>{rate.deliveryDays ? rate.deliveryDays + " estimated business days" : "Delivery estimate at checkout"}{rate.isEstimate ? " · Based on ZIP code and package weight" : ""}</small></span><b>{money(rate.amountCents)}</b></label>)}</fieldset> : null}
-      <dl className="shop-order-totals"><div><dt>Merchandise</dt><dd>{money(cart?.subtotalCents || 0)}</dd></div><div><dt>Shipping</dt><dd>{cart?.requiresShipping ? shipping ? money(shipping.amountCents) : "Calculate above" : "Not required"}</dd></div><div><dt>Total</dt><dd>{cart?.requiresShipping && !shipping ? "--" : money(total)}</dd></div></dl>
-      <button className="button shop-checkout-button" type="button" onClick={checkout} disabled={(cart?.requiresShipping && !selectedToken) || state === "checkout"}>{state === "checkout" ? "Opening secure checkout..." : "Checkout"}</button>
+      {taxBusy?<p role="status">Calculating sales tax…</p>:null}
+      {taxError?<div role="alert"><p>{taxError}</p>{address.state.toUpperCase()==="NC"&&cart?.requiresShipping?<label>Delivery county<select value={address.county} onChange={e=>addressField("county",e.target.value)}><option value="">Choose county</option>{ncCountyTaxRates.map(r=><option key={r.county} value={r.county}>{r.county}</option>)}</select><small>Choose the county for your delivery address, then calculate shipping again.</small></label>:null}<button type="button" className="button button-outline" onClick={()=>setTaxRevision(v=>v+1)}>Refresh totals</button></div>:null}
+      <dl className="shop-order-totals"><div><dt>Merchandise</dt><dd>{money(cart?.subtotalCents || 0)}</dd></div><div><dt>Shipping</dt><dd>{cart?.requiresShipping ? shipping ? money(shipping.amountCents) : "Calculate above" : "Not required"}</dd></div><div><dt>Sales tax{taxQuote?.groups.some(g=>g.state==="NC"&&g.rateBasisPoints>0)?<small> · {Array.from(new Set(taxQuote.groups.filter(g=>g.state==="NC"&&g.rateBasisPoints>0).map(g=>g.county+" County"))).join(", ")}</small>:null}</dt><dd>{taxQuote?money(taxQuote.salesTaxCents):"Calculate above"}</dd></div>{taxQuote?.pfbTaxCents?<div><dt>Prepared food &amp; beverage tax</dt><dd>{money(taxQuote.pfbTaxCents)}</dd></div>:null}<div><dt>Total</dt><dd>{total===undefined?"--":money(total)}</dd></div></dl>
+      <button className="button shop-checkout-button" type="button" onClick={checkout} disabled={!taxToken||taxBusy||(cart?.requiresShipping && !selectedToken) || state === "checkout"}>{state === "checkout" ? "Opening secure checkout..." : "Checkout"}</button>
       <p className="shop-secure-note">{cart?.requiresShipping ? "ZIP-based rates are estimates until live USPS rates are connected. Prices and inventory are checked again before payment. Stripe securely handles card details." : "Ticket availability is checked again before payment. Stripe securely handles card details."}</p>
     </form>}</div>
   </div></section>;

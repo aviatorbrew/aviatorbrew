@@ -1,3 +1,5 @@
+import { shopTaxCategory, type ShopTaxCategory, type ShopTaxQuote } from "@/lib/shop-tax";
+import { saveCollectedShopTax } from "@/lib/shop-tax-records";
 import { easternLocalTimestamp } from "@/lib/eastern-time";
 import { ticketCutoff, ticketGuestLists, ticketSalesStatus, type TicketGuest, type TicketGuestLists } from "@/lib/shop-tickets";
 import { shopTicketReceipt } from "@/lib/shop-ticket-receipt";
@@ -103,6 +105,8 @@ export type ShopOrder = {
   status: string;
   subtotalCents: number;
   shippingCents: number;
+  taxCents?: number;
+  pfbTaxCents?: number;
   amountTotalCents: number;
   shippingProvider: string;
   shippingService: string;
@@ -205,6 +209,7 @@ export type ShopCartItem = {
   ticketEventStartsAt: string;
   ticketSalesEndAt?: string;
   guestNames?: TicketGuest[];
+  taxCategory?: ShopTaxCategory;
 };
 
 export type PreparedShopCart = {
@@ -427,6 +432,8 @@ export async function getShopCatalog(options: { manager?: boolean; orderStart?: 
         status: String(row.status || ""),
         subtotalCents: Number(row.subtotal_cents || 0),
         shippingCents: Number(row.shipping_cents || 0),
+        taxCents: row.metadata?.shopTaxQuote?Number(row.metadata.shopTaxQuote.taxCents):undefined,
+        pfbTaxCents: Number(row.metadata?.shopTaxQuote?.pfbTaxCents || 0),
         amountTotalCents: Number(row.amount_total_cents || 0),
         shippingProvider: String(row.shipping_provider || ""),
         shippingService: String(row.shipping_service || ""),
@@ -731,7 +738,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
   const requests = normalizeCartRequests(rawItems);
   return withDatabase(async (client) => {
     const ids = requests.map((item) => item.variantId);
-    const result = await client.query("SELECT v.*,p.name AS product_name,p.slug AS product_slug,p.image_url,p.additional_image_urls,p.published AS product_published,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at,p.ticket_sales_end_at,p.ticket_capacity,p.ticket_max_per_order,p.ticket_door_price_cents,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS ticket_sold_count,COALESCE((SELECT SUM(oi.quantity) FROM website.shop_order_items oi JOIN website.shop_orders oo ON oo.id=oi.order_id WHERE oi.product_id=p.id AND oi.is_bonus=false AND oo.status='pending' AND (oo.checkout_expires_at>now() OR (oo.stripe_session_id LIKE 'cs_%' AND (oo.metadata->>'containsTickets'='true' OR oo.metadata->>'ticketOnly'='true')))),0)::int AS ticket_product_reserved_count,COALESCE(r.reserved_count,0)::int AS reserved_count FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id LEFT JOIN (SELECT i.variant_id,SUM(i.quantity)::int AS reserved_count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true'))) AND i.is_bonus=false GROUP BY i.variant_id) r ON r.variant_id=v.id WHERE v.id=ANY($1::bigint[])", [ids]);
+    const result = await client.query("SELECT c.name AS tax_category_name,v.*,p.name AS product_name,p.slug AS product_slug,p.image_url,p.additional_image_urls,p.published AS product_published,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at,p.ticket_sales_end_at,p.ticket_capacity,p.ticket_max_per_order,p.ticket_door_price_cents,COALESCE((SELECT SUM(tp.party_size) FROM website.shop_ticket_purchases tp WHERE tp.product_id=p.id),0)::int AS ticket_sold_count,COALESCE((SELECT SUM(oi.quantity) FROM website.shop_order_items oi JOIN website.shop_orders oo ON oo.id=oi.order_id WHERE oi.product_id=p.id AND oi.is_bonus=false AND oo.status='pending' AND (oo.checkout_expires_at>now() OR (oo.stripe_session_id LIKE 'cs_%' AND (oo.metadata->>'containsTickets'='true' OR oo.metadata->>'ticketOnly'='true')))),0)::int AS ticket_product_reserved_count,COALESCE(r.reserved_count,0)::int AS reserved_count FROM website.shop_product_variants v JOIN website.shop_products p ON p.id=v.product_id LEFT JOIN website.shop_categories c ON c.id=p.category_id LEFT JOIN (SELECT i.variant_id,SUM(i.quantity)::int AS reserved_count FROM website.shop_order_items i JOIN website.shop_orders o ON o.id=i.order_id WHERE o.status='pending' AND (o.checkout_expires_at>now() OR (o.stripe_session_id LIKE 'cs_%' AND (o.metadata->>'containsTickets'='true' OR o.metadata->>'ticketOnly'='true'))) AND i.is_bonus=false GROUP BY i.variant_id) r ON r.variant_id=v.id WHERE v.id=ANY($1::bigint[])", [ids]);
     const rows = new Map(result.rows.map((row) => [Number(row.id), row]));
     const ticketProductQuantities = new Map<number, number>();
     const merchandiseItems = requests.map((request) => {
@@ -764,6 +771,7 @@ export async function prepareShopCart(rawItems: ShopCartRequestItem[]): Promise<
         requiresShipping: productType === "ticket" ? false : variant.requiresShipping,
         isBonus: false,
         productType,
+        taxCategory: shopTaxCategory(String(row.tax_category_name || ""),productType,String(row.product_name || "")),
         ticketLocationSlug: String(row.ticket_location_slug || ""),
         ticketEventStartsAt: normalizedDate(row.ticket_event_starts_at,"Ticket event date"),
         ticketSalesEndAt: normalizedDate(row.ticket_sales_end_at,"Ticket sales end"),
@@ -825,6 +833,7 @@ export async function recordShopCheckout(input: {
   customerFirstName?: string;
   customerLastName?: string;
   ticketGuests?: TicketGuestLists;
+  taxQuote?: ShopTaxQuote;
 }) {
   return withDatabase(async (client) => {
     await client.query("BEGIN");
@@ -857,9 +866,11 @@ export async function recordShopCheckout(input: {
         }
         if (quantity > available) throw new Error(available ? "Only " + available + " tickets remain for " + String(product.name || "this event") + "." : String(product.name || "This event") + " is sold out.");
       }
-      const total = input.cart.subtotalCents + input.shippingCents;
+      const tax=input.taxQuote;
+      if(tax&&(tax.status!=="complete"||tax.taxCents===null||tax.subtotalCents!==input.cart.subtotalCents||tax.shippingCents!==input.shippingCents||tax.totalCents!==tax.subtotalCents+tax.shippingCents+tax.taxCents))throw new Error("Tax does not match this checkout.");
+      const total = input.cart.subtotalCents + input.shippingCents + (tax?.taxCents || 0);
       const checkoutExpiresAt = input.checkoutExpiresAt || new Date(Date.now() + 30 * 60_000).toISOString();
-      const order = await client.query("INSERT INTO website.shop_orders (stripe_session_id,customer_email,customer_name,customer_phone,status,amount_total_cents,subtotal_cents,shipping_cents,shipping_address,shipping_provider,shipping_service,shipping_rate_id,checkout_expires_at,metadata) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13::jsonb) RETURNING id", [input.stripeSessionId, input.customerEmail || null, input.customerName || null, input.customerPhone || null, total, input.cart.subtotalCents, input.shippingCents, JSON.stringify(input.shippingAddress || {}), input.shippingProvider || null, input.shippingService || null, input.shippingRateId || null, checkoutExpiresAt, JSON.stringify({ source: "shop-new", bonusApplied: Boolean(input.cart.bonusItem), ticketOnly: input.cart.ticketOnly, containsTickets:ticketQuantities.size>0, purchaser:ticketQuantities.size?{firstName:input.customerFirstName,lastName:input.customerLastName}:undefined,ticketCutoffAt:cutoffs.length?new Date(Math.min(...cutoffs)).toISOString():undefined })]);
+      const order = await client.query("INSERT INTO website.shop_orders (stripe_session_id,customer_email,customer_name,customer_phone,status,amount_total_cents,subtotal_cents,shipping_cents,shipping_address,shipping_provider,shipping_service,shipping_rate_id,checkout_expires_at,metadata) VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13::jsonb) RETURNING id", [input.stripeSessionId, input.customerEmail || null, input.customerName || null, input.customerPhone || null, total, input.cart.subtotalCents, input.shippingCents, JSON.stringify(input.shippingAddress || {}), input.shippingProvider || null, input.shippingService || null, input.shippingRateId || null, checkoutExpiresAt, JSON.stringify({ source: "shop-new", taxCents:tax?.taxCents, shopTaxQuote:tax, bonusApplied: Boolean(input.cart.bonusItem), ticketOnly: input.cart.ticketOnly, containsTickets:ticketQuantities.size>0, purchaser:ticketQuantities.size?{firstName:input.customerFirstName,lastName:input.customerLastName}:undefined,ticketCutoffAt:cutoffs.length?new Date(Math.min(...cutoffs)).toISOString():undefined })]);
       const orderId = Number(order.rows[0].id);
       const offsets=new Map<number,number>();
       for (const item of input.cart.items) {
@@ -884,6 +895,8 @@ type ShopOrderNotificationJob = {
   customerName: string;
   customerPhone: string;
   containsTickets?: boolean;
+  taxCents?: number;
+  pfbTaxCents?: number;
   adminDelivered?: boolean;
   customerDelivered?: boolean;
   stripeSessionId: string;
@@ -926,7 +939,7 @@ async function sendShopCustomerOrderAcknowledgement(job: Exclude<ShopOrderNotifi
   if (!validShopEmail(job.customerEmail)) return true;
   if(job.containsTickets&&!job.isTestOrder){
     const purchases=await withDatabase(async c=>(await c.query("SELECT product_name,event_starts_at,location_slug,party_size,guest_names FROM website.shop_ticket_purchases WHERE order_id=$1 ORDER BY id",[job.orderId])).rows,{skipSchema:true});
-    const locations=await getAllLocations(),receipt=shopTicketReceipt({orderId:job.orderId,name:job.customerName,totalCents:job.totalCents,purchases:purchases.map(p=>({name:String(p.product_name),date:p.event_starts_at?new Date(p.event_starts_at).toISOString():"",venue:locations.find(l=>l.slug===p.location_slug)?.name||String(p.location_slug||"Aviator"),quantity:Number(p.party_size),guestNames:Array.isArray(p.guest_names)?p.guest_names:[]}))});
+    const locations=await getAllLocations(),receipt=shopTicketReceipt({orderId:job.orderId,name:job.customerName,totalCents:job.totalCents,taxCents:job.taxCents,pfbTaxCents:job.pfbTaxCents,purchases:purchases.map(p=>({name:String(p.product_name),date:p.event_starts_at?new Date(p.event_starts_at).toISOString():"",venue:locations.find(l=>l.slug===p.location_slug)?.name||String(p.location_slug||"Aviator"),quantity:Number(p.party_size),guestNames:Array.isArray(p.guest_names)?p.guest_names:[]}))});
     if(!await sendMail({to:job.customerEmail,cc:"events@aviatorbrew.com",replyTo:"events@aviatorbrew.com",...receipt}))return false;
     await withDatabase(async c=>c.query("UPDATE website.shop_orders SET customer_acknowledgement_sent_at=COALESCE(customer_acknowledgement_sent_at,now()),updated_at=now() WHERE id=$1",[job.orderId]),{skipSchema:true});return true;
   }
@@ -943,11 +956,13 @@ async function sendShopCustomerOrderAcknowledgement(job: Exclude<ShopOrderNotifi
     "",
     "Merchandise: " + shopOrderMoney(job.subtotalCents),
     "Shipping: " + shopOrderMoney(job.shippingCents),
+    "Sales tax: " + shopOrderMoney((job.taxCents || 0)-(job.pfbTaxCents || 0)),
+    ...(job.pfbTaxCents?["Wake prepared food & beverage tax: "+shopOrderMoney(job.pfbTaxCents)]:[]),
     "Order total: " + shopOrderMoney(job.totalCents),
     "",
     job.isTestOrder ? "This is a manager test order. No payment was collected." : "We will send another email when your order ships.",
   ].join("\n");
-  const html = "<!doctype html><html><body style=\"margin:0;background:#eef2f3;padding:28px 14px;font-family:Arial,sans-serif;color:#10243a\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:640px;background:#fff;border:1px solid #d5dfe3\"><tr><td style=\"padding:28px 32px;background:#102b3e;color:#fff\"><div style=\"color:#efb45f;font-size:12px;font-weight:800;text-transform:uppercase\">Aviator Supply</div><h1 style=\"margin:10px 0 0;font-size:28px\">" + (job.isTestOrder ? "Test order received" : "Order received") + "</h1></td></tr><tr><td style=\"padding:28px 32px\"><p style=\"font-size:16px;line-height:1.6\">Thanks" + (job.customerName ? ", " + job.customerName : "") + ". We received order #" + job.orderId + " and the Aviator team has it in the fulfillment queue.</p><ul style=\"line-height:1.8\">" + shopOrderHtmlList(job.items) + "</ul><p><strong>Merchandise:</strong> " + shopOrderMoney(job.subtotalCents) + "<br><strong>Shipping:</strong> " + shopOrderMoney(job.shippingCents) + "<br><strong>Total:</strong> " + shopOrderMoney(job.totalCents) + "</p><p style=\"color:#637783\">" + (job.isTestOrder ? "This is a manager test order. No payment was collected." : "We will send another email when your order ships.") + "</p></td></tr></table></td></tr></table></body></html>";
+  const html = "<!doctype html><html><body style=\"margin:0;background:#eef2f3;padding:28px 14px;font-family:Arial,sans-serif;color:#10243a\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:640px;background:#fff;border:1px solid #d5dfe3\"><tr><td style=\"padding:28px 32px;background:#102b3e;color:#fff\"><div style=\"color:#efb45f;font-size:12px;font-weight:800;text-transform:uppercase\">Aviator Supply</div><h1 style=\"margin:10px 0 0;font-size:28px\">" + (job.isTestOrder ? "Test order received" : "Order received") + "</h1></td></tr><tr><td style=\"padding:28px 32px\"><p style=\"font-size:16px;line-height:1.6\">Thanks" + (job.customerName ? ", " + job.customerName : "") + ". We received order #" + job.orderId + " and the Aviator team has it in the fulfillment queue.</p><ul style=\"line-height:1.8\">" + shopOrderHtmlList(job.items) + "</ul><p><strong>Merchandise:</strong> " + shopOrderMoney(job.subtotalCents) + "<br><strong>Shipping:</strong> " + shopOrderMoney(job.shippingCents) + "<br><strong>Sales tax:</strong> " + shopOrderMoney((job.taxCents || 0)-(job.pfbTaxCents || 0)) + (job.pfbTaxCents?"<br><strong>Wake prepared food &amp; beverage tax:</strong> "+shopOrderMoney(job.pfbTaxCents):"") + "<br><strong>Total:</strong> " + shopOrderMoney(job.totalCents) + "</p><p style=\"color:#637783\">" + (job.isTestOrder ? "This is a manager test order. No payment was collected." : "We will send another email when your order ships.") + "</p></td></tr></table></td></tr></table></body></html>";
   const sent = await sendMail({ to: job.customerEmail, subject: (job.isTestOrder ? "TEST - " : "") + "Aviator Supply order #" + job.orderId + " received", text, html });
   if (!sent) return false;
   await withDatabase(async (client) => client.query("UPDATE website.shop_orders SET customer_acknowledgement_sent_at=COALESCE(customer_acknowledgement_sent_at,now()),updated_at=now() WHERE id=$1", [job.orderId]), { skipSchema: true });
@@ -972,6 +987,8 @@ async function shopOrderEmailJobById(orderId: number): Promise<Exclude<ShopOrder
       stripeSessionId: String(row.stripe_session_id || ""),
       subtotalCents: Number(row.subtotal_cents || 0),
       shippingCents: Number(row.shipping_cents || 0),
+        taxCents: Number(row.metadata?.shopTaxQuote?.taxCents || 0),
+        pfbTaxCents: Number(row.metadata?.shopTaxQuote?.pfbTaxCents || 0),
       totalCents: Number(row.amount_total_cents || 0),
       shippingService: String(row.shipping_service || ""),
       shippingAddress,
@@ -1009,6 +1026,8 @@ async function sendShopOrderBackendNotification(job: Exclude<ShopOrderNotificati
     "",
     "Merchandise: " + shopOrderMoney(job.subtotalCents),
     "Shipping: " + shopOrderMoney(job.shippingCents),
+    "Sales tax: " + shopOrderMoney((job.taxCents || 0)-(job.pfbTaxCents || 0)),
+    ...(job.pfbTaxCents?["Wake prepared food & beverage tax: "+shopOrderMoney(job.pfbTaxCents)]:[]),
     "Order total: " + shopOrderMoney(job.totalCents),
     job.isTestOrder ? "" : "",
     job.isTestOrder ? "MANAGER TEST ORDER - no payment was collected and inventory was not reduced." : "",
@@ -1043,6 +1062,7 @@ export async function markShopOrderPaid(sessionId: string, payment?:{id?:string;
         return null;
       }
       if(payment&&(payment.id!==sessionId||payment.payment_status!=="paid"||payment.amount_total!==Number(row.amount_total_cents)||payment.currency?.toLowerCase()!=="usd"))throw new Error("Payment details do not match the saved order.");
+      if(row.is_test_order!==true&&!String(row.stripe_session_id).startsWith("cs_test_"))await saveCollectedShopTax(client,row);
       const orderId = Number(row.id);
       if (newlyPaid.rows[0]?.id) {
         const inventoryItems = await client.query("SELECT i.id AS order_item_id,i.product_id,i.variant_id,i.product_name,i.variant_label,i.quantity,i.guest_names,i.ticket_details,p.product_type,p.ticket_location_slug,p.ticket_event_starts_at FROM website.shop_order_items i LEFT JOIN website.shop_products p ON p.id=i.product_id WHERE i.order_id=$1 AND i.is_bonus=false", [orderId]);
@@ -1075,6 +1095,8 @@ export async function markShopOrderPaid(sessionId: string, payment?:{id?:string;
         stripeSessionId: String(row.stripe_session_id || ""),
         subtotalCents: Number(row.subtotal_cents || 0),
         shippingCents: Number(row.shipping_cents || 0),
+        taxCents: Number(row.metadata?.shopTaxQuote?.taxCents || 0),
+        pfbTaxCents: Number(row.metadata?.shopTaxQuote?.pfbTaxCents || 0),
         totalCents: Number(row.amount_total_cents || 0),
         shippingService: String(row.shipping_service || ""),
         shippingAddress,
@@ -1116,6 +1138,8 @@ export async function markShopOrderPaid(sessionId: string, payment?:{id?:string;
     "",
     "Merchandise: " + shopOrderMoney(job.subtotalCents),
     "Shipping: " + shopOrderMoney(job.shippingCents),
+    "Sales tax: " + shopOrderMoney((job.taxCents || 0)-(job.pfbTaxCents || 0)),
+    ...(job.pfbTaxCents?["Wake prepared food & beverage tax: "+shopOrderMoney(job.pfbTaxCents)]:[]),
     "Order total: " + shopOrderMoney(job.totalCents),
   ].join("\n");
 
@@ -1205,7 +1229,11 @@ export async function updateShopOrder(input: { id: number; customerName?: string
 export async function deleteShopOrder(id: number) {
   const orderId = Math.floor(Number(id || 0));
   if (!orderId) throw new Error("Choose a valid order.");
-  await withDatabase(async (client) => client.query("DELETE FROM website.shop_orders WHERE id=$1", [orderId]), { skipSchema: true });
+  await withDatabase(async (client) => {
+    const records=await client.query("SELECT id FROM website.shop_tax_records WHERE order_id=$1 LIMIT 1",[orderId]);
+    if(records.rowCount)throw new Error("This order has tax records and must be retained. Update its status instead.");
+    await client.query("DELETE FROM website.shop_orders WHERE id=$1",[orderId]);
+  }, { skipSchema: true });
   return getShopCatalog({ manager: true });
 }
 

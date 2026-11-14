@@ -16,6 +16,8 @@
     "render:predeploy": "npm run render:migrate",
     "render:build": "npm run build",
     "shop:import-shopify": "node scripts/import-shopify-products.mjs",
+    "test:shop-tax-ui": "node scripts/test-shop-tax-ui.mjs",
+    "test:shop-tax": "node scripts/test-shop-tax.mjs",
     "test:shop": "node scripts/test-shop.mjs",
     "render:data:export": "node scripts/export-render-data.mjs",
     "render:data:import": "node scripts/import-render-data.mjs",
