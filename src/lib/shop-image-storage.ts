@@ -58,6 +58,11 @@ export function shopProductImageIsDeleted(filename: string) {
 
 export function shopProductImageExists(value: string) {
   const filename = shopProductImageFilename(value);
+  try {
+    const pathname=new URL(value,"https://aviatorbrew.com").pathname;
+    if(pathname==="/images/tickets/"+filename)return [path.join(process.cwd(),"public","images","tickets"),path.join(process.cwd(),".next","standalone","public","images","tickets")].some(directory=>existsSync(path.join(directory,filename)));
+  }catch{}
+
   return Boolean(filename && !shopProductImageIsDeleted(filename) && shopProductImageDirectories().some((directory) => existsSync(path.join(directory, filename))));
 }
 
