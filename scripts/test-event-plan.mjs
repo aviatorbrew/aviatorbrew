@@ -18,7 +18,7 @@ const legacy={...input};delete legacy.flightPlan;delete legacy.pfbTaxRateBps;del
 assert.equal(eventTotals(parseEventPlan(legacy)).balance,96525,'Existing manual orders keep their prices and tax');
 assert.equal(emptyEventPlan(35000).items.length,0,'Reservation deposit must not be a room charge');
 assert.equal(emptyEventPlan(35000).paidCents,0,'Do not claim an unreceived deposit was paid');
-for(const pkg of readyRoomPackages){
+for(const pkg of readyRoomPackages.filter(p=>!p.pricingMode)){
   const flightPlan={...emptyFlightPlan(),packageId:pkg.id,appetizers:readyRoomMenu.appetizers.slice(0,pkg.appetizers),entrees:(pkg.id==='dinner'?readyRoomMenu.premiumEntrees:readyRoomMenu.entrees).slice(0,2),sides:readyRoomMenu.sides.slice(0,2),salads:readyRoomMenu.salads.slice(0,pkg.salads)};
   if(flightPlan.entrees.includes('Aviator Pizzeria Pizza Bar'))flightPlan.pizzas=['Hot Honey','Just the Cheese'];
   const details=parseEventPlan({...emptyEventPlan(),title:'Package test',date:'2026-11-14',guestCount:30,flightPlan,paidCents:35000});
@@ -52,7 +52,7 @@ for(const pkg of readyRoomPackages){
   assert.equal(eventTotals(withExtras).subtotal,base+30*(300+300+500+600+300)+20000);
 }
 // Manager per-event appetizer and entree prices preserve defaults, duplicates and premium rules.
-for (const pkg of readyRoomPackages) {
+for (const pkg of readyRoomPackages.filter(p=>!p.pricingMode)) {
  const f={...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Hush Puppies'),entrees:['Aviator Pulled Pork BBQ','Aviator Chicken Tenders'],sides:['Mac & Cheese','Potato Salad'],salads:pkg.salads?['Caesar Salad']:[],extraAppetizers:['Hush Puppies','Shrimp Cocktail'],extraEntrees:['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ','Aviator Beef Brisket'],extraAppetizerPriceCents:225,extraEntreePriceCents:450,extraPremiumEntreePriceCents:650};
  const p=parseEventPlan({...emptyEventPlan(),title:'Manager extra prices',date:'2027-04-10',guestCount:50,flightPlan:f});
  assert.equal(eventTotals(p).subtotal,pkg.priceCents*50+50*(225*2+300+450*2+650));
@@ -69,7 +69,7 @@ for (const pkg of readyRoomPackages) {
  assert.equal(eventTotals(pizza).subtotal,eventTotals(p).subtotal+50*450,'Additional Pizza Bar uses the recorded regular entree price');
 }
 // Premium replacement versus additional pricing, including Dinner's included premium allowance.
-for (const pkg of readyRoomPackages) {
+for (const pkg of readyRoomPackages.filter(p=>!p.pricingMode)) {
   const premiumFlight={...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Hush Puppies'),entrees:['Aviator Beef Brisket','Aviator Pulled Pork BBQ'],sides:['Mac & Cheese','Potato Salad'],salads:pkg.salads?['Caesar Salad']:[]};
   const p=parseEventPlan({...emptyEventPlan(),title:'Premium pricing',date:'2026-11-14',guestCount:55,flightPlan:premiumFlight});
   const base=pkg.priceCents*55, upgrade=pkg.id==='dinner'?0:55*200;
@@ -83,7 +83,7 @@ for (const pkg of readyRoomPackages) {
 assert.ok(!readyRoomMenu.premiumEntrees.includes('Aviator Pulled Pork BBQ'));
 assert.ok(!readyRoomMenu.premiumEntrees.includes('Country Fried Chicken Cutlet'));
 assert.equal(new Set([...readyRoomMenu.entrees,...readyRoomMenu.premiumEntrees]).size,readyRoomMenu.entrees.length+readyRoomMenu.premiumEntrees.length,'Regular and premium lists must not duplicate foods');
-for(const pkg of readyRoomPackages){
+for(const pkg of readyRoomPackages.filter(p=>!p.pricingMode)){
  const f={...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Brewer Fries'),entrees:['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ'],sides:['Mac & Cheese','Potato Salad'],salads:pkg.salads?['Caesar Salad']:[]};
  const base={...emptyEventPlan(),title:'Revised appetizer menu',date:'2026-11-14',guestCount:55,flightPlan:f};
  const regular=parseEventPlan(base);assert.equal(eventTotals(regular).subtotal,pkg.priceCents*55);
@@ -139,7 +139,7 @@ catalog.disabledItems.push('Hush Puppies');assert.throws(()=>appetizers.appetize
 const appHtml=summaryModule.eventSummaryHtml({id:'appetizer-fixture',version:1,updatedAt:new Date().toISOString(),details:appetizerEvent},true);for(const text of ['Appetizers &amp; drinks','Appetizer: Hush Puppies / guest','Appetizer: Shrimp Cocktail / guest','Appetizer: Chicken Fingers / tray','$208.00'])assert.ok(appHtml.includes(text),text);
 console.log('Passed appetizer events: menu and manager-only choices, premium/default/override pricing, guest/tray/piece quantities, no buffet base, fixed custom prices, tax, disabled choices, validation and itemized printing.');
 
-for(const pkg of readyRoomPackages){
+for(const pkg of readyRoomPackages.filter(p=>!p.pricingMode)){
  const f={...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Hush Puppies'),entrees:['Aviator Pulled Pork BBQ','Aviator Pulled Pork BBQ'],sides:['Mac & Cheese','Potato Salad'],salads:pkg.salads?['Caesar Salad']:[]};
  const base={...emptyEventPlan(),title:'Manager salad substitution',date:'2026-11-14',guestCount:30,flightPlan:f};
  for(const salad of readyRoomMenu.salads){const substitute=parseEventPlan({...base,flightPlan:{...f,sides:[salad,salad]}});assert.equal(eventTotals(substitute).subtotal,pkg.priceCents*30);assert.equal(substitute.flightPlan.salads.length,pkg.salads);assert.equal(eventOrderItems(substitute).length,1);assert.ok(flightPlanSelections(substitute).find(([label])=>label==='Sides')[1].includes(salad));assert.throws(()=>parseEventPlan({...base,flightPlan:{...f,sides:[salad,'Mac & Cheese']}},undefined,false));}
@@ -151,7 +151,7 @@ for(const discount of [null,[],{amountCents:-1,reason:'Bad'},{amountCents:1.5,re
 const discountedHtml=summaryModule.eventSummaryHtml({...plan,details:{...pizzaPlan,managerDiscount:{amountCents:10000,reason:'VIP & <review>'}}},true);assert.ok(discountedHtml.includes('One-time event discount'));assert.ok(discountedHtml.includes('VIP &amp; &lt;review&gt;'));assert.ok(discountedHtml.includes('-$100.00'));assert.ok(discountedHtml.includes('Subtotal after discount'));
 console.log('Passed manager-only salad substitutions, unchanged package allowances, extra salad prices, one-time discount, mixed taxable allocation, zero/full/excess validation, payment credits and escaped printable discount lines.');
 
-for(const pkg of readyRoomPackages){
+for(const pkg of readyRoomPackages.filter(p=>!p.pricingMode)){
  const base={...emptyEventPlan(),title:'Optional manager salad',date:'2026-11-14',guestCount:30,flightPlan:{...emptyFlightPlan(),packageId:pkg.id,appetizers:Array(pkg.appetizers).fill('Hush Puppies'),entrees:['Aviator Pulled Pork BBQ','Bacon-Wrapped Meatloaf'],sides:['Mac & Cheese','Mac & Cheese'],salads:[],extraSalads:[''],extraSaladPriceCents:null}};
  const parsed=parseEventPlan(base);assert.deepEqual(parsed.flightPlan.salads,[]);assert.deepEqual(parsed.flightPlan.extraSalads,[]);assert.equal(eventTotals(parsed).subtotal,pkg.priceCents*30);assert.equal(eventTotals(base).subtotal,pkg.priceCents*30,'Blank extra salad has no preview charge');assert.equal(eventOrderItems(parsed).length,1);
  const selected=parseEventPlan({...base,flightPlan:{...base.flightPlan,salads:pkg.salads?['Caesar Salad']:[],extraSalads:['Spinach Caprese Salad',''],extraSaladPriceCents:300}});assert.equal(eventTotals(selected).subtotal,pkg.priceCents*30+30*300);assert.deepEqual(selected.flightPlan.extraSalads,['Spinach Caprese Salad']);

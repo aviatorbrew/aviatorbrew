@@ -25,10 +25,10 @@ export function CateringPackageCards({ packages, minimumGuests, selectedId, disa
       const tone = pkg.id === "feast" ? "green" : pkg.id === "dinner" ? "rust" : "navy";
       return <label className={`catering-package-card package-tone-${tone}${selected ? " is-selected" : ""}`} key={pkg.id} htmlFor={id}>
         <input className="package-card-radio" type="radio" name={group} id={id} checked={selected} disabled={disabled} value={pkg.id} onChange={() => onSelect(pkg.id)} aria-labelledby={`${id}-name ${id}-price`} aria-describedby={`${id}-choices ${id}-footer`} />
-        <span className="package-card-top"><span className="package-card-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><span className="package-card-top-note">{pkg.id === "feast" ? "Great for Celebrations" : "Ready Room buffet"}</span></span>
-        <span className="package-card-description">{pkg.premiumEntreesIncluded ? "Premium entrée choices for a memorable gathering." : "A shared buffet. Good company. Your kind of gathering."}</span>
+        <span className="package-card-top"><span className="package-card-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><span className="package-card-top-note">{pkg.id === "feast" ? "Great for Celebrations" : pkg.pricingMode==='appetizer-selection'?"Reception & mixer":"Ready Room buffet"}</span></span>
+        <span className="package-card-description">{pkg.pricingMode==='appetizer-selection'?"Three appetizers. A hosted tab. Room to mingle.":pkg.premiumEntreesIncluded ? "Premium entrée choices for a memorable gathering." : "A shared buffet. Good company. Your kind of gathering."}</span>
         <span className="package-card-name" role="heading" aria-level={3} id={`${id}-name`}><span>{words.join(" ")}</span>{" "}<span>{last}</span></span>
-        <span className="package-card-price" id={`${id}-price`}><strong>{packagePrice(pkg.priceCents)}</strong><span>/ guest</span></span>
+        <span className="package-card-price" id={`${id}-price`}><strong>{pkg.pricingMode==='appetizer-selection'?"Choose 3":packagePrice(pkg.priceCents)}</strong><span>{pkg.pricingMode==='appetizer-selection'?"Food priced from your selections":"/ guest"}</span></span>
         <span className="package-card-divider" aria-hidden="true" />
         <span className="package-card-choices" role="list" id={`${id}-choices`}>{packageChoices(pkg).map(choice => <span role="listitem" key={choice}><span aria-hidden="true">✦</span>Choose {choice}</span>)}</span>
         <span className="package-card-footer" id={`${id}-footer`}><span>Tea, soft drinks &amp; water included</span><span>{minimumGuests} guest minimum · Buffet service &amp; dedicated bartender</span></span>
@@ -38,6 +38,6 @@ export function CateringPackageCards({ packages, minimumGuests, selectedId, disa
   </div>;
 }
 
-export function CateringPackageSummary({ pkg, onChange }: { pkg: CateringPackage; onChange: () => void }) {
-  return <section className="catering-package-summary" aria-label="Your selected package"><p>Your package</p><h3>{pkg.name}</h3><p className="package-summary-price">{packagePrice(pkg.priceCents)} <span>/ guest</span></p><ul>{packageChoices(pkg).map(choice => <li key={choice}>{choice}</li>)}</ul><button type="button" onClick={onChange}>Change package</button></section>;
+export function CateringPackageSummary({ pkg, onChange,selectionPriceCents }: { selectionPriceCents?:number|null;pkg: CateringPackage; onChange: () => void }) {
+  return <section className="catering-package-summary" aria-label="Your selected package"><p>Your package</p><h3>{pkg.name}</h3><p className="package-summary-price">{pkg.pricingMode==='appetizer-selection'?(selectionPriceCents==null?"Select 3 appetizers for food pricing":packagePrice(selectionPriceCents)):packagePrice(pkg.priceCents)} <span>{pkg.pricingMode==='appetizer-selection'&&selectionPriceCents==null?"":"/ guest"}</span></p><ul>{packageChoices(pkg).map(choice => <li key={choice}>{choice}</li>)}</ul><button type="button" onClick={onChange}>Change package</button></section>;
 }

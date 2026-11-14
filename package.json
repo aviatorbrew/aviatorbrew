@@ -39,6 +39,7 @@
     "test:feast-details": "node scripts/test-feast-details.mjs",
     "test:feast": "node scripts/test-feast.mjs",
     "test:event-editor-ui": "node scripts/test-event-editor-ui.mjs",
+    "test:event-social-followup-ui": "node scripts/test-event-social-followup-ui.mjs",
     "test:inquiry-merge-ui": "node scripts/test-inquiry-merge-ui.mjs",
     "test:event-production": "node scripts/test-event-production.mjs",
     "test:event-production-ui": "node scripts/test-event-production.mjs && node scripts/test-event-production-ui.mjs",

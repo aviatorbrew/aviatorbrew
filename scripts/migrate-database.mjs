@@ -537,6 +537,14 @@ const schemaStatements = [
     approved_at timestamptz, approved_by text, sent_at timestamptz, accepted_at timestamptz, accepted_name text,
     acceptance jsonb, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(plan_id,version)
   )`,
+  `ALTER TABLE website.private_event_plans ADD COLUMN IF NOT EXISTS proposal_hold_released_at timestamptz`,
+  `ALTER TABLE website.private_event_plans ADD COLUMN IF NOT EXISTS proposal_hold_release_reason text`,
+  `CREATE TABLE IF NOT EXISTS website.private_event_proposal_reminders (
+    proposal_id text PRIMARY KEY REFERENCES website.private_event_proposals(id), token_hash text NOT NULL UNIQUE,
+    status text NOT NULL DEFAULT 'sending', original_expires_at timestamptz NOT NULL, release_at timestamptz NOT NULL,
+    sent_at timestamptz, released_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS private_event_proposal_reminders_due_idx ON website.private_event_proposal_reminders(status,release_at)`,
   `CREATE TABLE IF NOT EXISTS website.private_event_deposit_links (
     id text PRIMARY KEY, proposal_id text NOT NULL REFERENCES website.private_event_proposals(id),
     token_hash text NOT NULL UNIQUE, expires_at timestamptz NOT NULL, recipient text NOT NULL,

@@ -1,3 +1,5 @@
+export const appetizerSocialPackageId='appetizers-social';
+export type AppetizerSellingPrice={unitPriceCents:number|null;kitchen:EventItemKitchen};
 export const eventStatuses = ["Draft", "Tentative", "Confirmed", "Completed", "Cancelled"] as const;
 export function eventDisplayName(details:{title:string;contactName:string}) {
   const name=details.contactName.trim(),title=details.title.trim();
@@ -22,6 +24,7 @@ export const readyRoomPackages = [
   { id: "social", name: "The Brewery Social", priceCents: 3200, appetizers: 2, entrees: 2, sides: 2, salads: 0 },
   { id: "feast", name: "The Aviator Feast", priceCents: 3800, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
   { id: "dinner", name: "The Ready Room Dinner", priceCents: 4400, appetizers: 3, entrees: 2, sides: 2, salads: 1 },
+  { id: appetizerSocialPackageId, name: "Appetizers & Socializing", priceCents: 0, appetizers: 3, entrees: 0, sides: 0, salads: 0,pricingMode:"appetizer-selection" },
 ] as const;
 export const readyRoomExtraPrices = { appetizer: 300, entree: 500, side: 300, salad: 300, premiumAppetizer: 300, premiumEntree: 700, premiumEntreeUpgrade: 200, dessert: 600, coffee: 300, hour: 10000 } as const;
 export const readyRoomMenu = {
@@ -34,8 +37,9 @@ export const readyRoomMenu = {
   pizzas: ["Just the Cheese", "Ultimate Pepperoni", "The Aviator", "Veggie", "MadBeach", "Hot Honey", "Buffalo", "Caprese", "Crash & Burn", "Meat-a-Palooza", "MadBeach Heat", "BBQ Chicken"],
   av: ["Big-screen setup", "House sound system", "Microphone"],
 };
-export type CateringPackage = { id: string; name: string; priceCents: number; appetizers: number; entrees: number; sides: number; salads: number; enabled: boolean; premiumEntreesIncluded: boolean };
+export type CateringPackage = { pricingMode?:"appetizer-selection";id: string; name: string; priceCents: number; appetizers: number; entrees: number; sides: number; salads: number; enabled: boolean; premiumEntreesIncluded: boolean };
 export type CateringCatalog = {
+  appetizerPricing?:Record<string,AppetizerSellingPrice>;
   packages: CateringPackage[]; menu: Record<keyof typeof readyRoomMenu, string[]>;
   extraPrices: Record<keyof typeof readyRoomExtraPrices, number>; disabledItems: string[]; managerOnlyItems?: string[];
   entreeDescriptions?: Record<string,string>;
@@ -53,6 +57,7 @@ export const readyRoomEntrees = [...readyRoomMenu.entrees, ...readyRoomMenu.prem
 export const eventCateringModes = {alacarte:"À la carte menu — no buffet package",meeting:"No food — meeting only",drinks:"Meeting & drinks — no food",appetizers:"Appetizers & drinks — no buffet package",custom:"Custom / off-menu food & drinks"} as const;
 export type FlightPlan = {
   cateringMode?: keyof typeof eventCateringModes;
+  hostedBarSelection?:"beer-wine"|"full"|"custom";appetizerPriceOverrideCents?:number|null;
   packageId: string; appetizers: string[]; entrees: string[]; sides: string[]; salads: string[]; pizzas: string[];
   extraAppetizerPriceCents?: number | null; extraEntreePriceCents?: number | null; extraPremiumEntreePriceCents?: number | null;
   extraAppetizers: string[]; extraEntrees: string[]; extraSides: string[]; extraSalads: string[]; extraSidePriceCents: number | null; extraSaladPriceCents: number | null; extraHours: number; dessert: boolean; coffee: boolean; pizzaExtra: boolean;
@@ -62,7 +67,7 @@ export type FlightPlan = {
   decorContact: string; decorPhone: string; decorCompany: string; decorNotes: string; av: string[];
 };
 export function emptyFlightPlan(): FlightPlan {
-  return { packageId: "", appetizers: [], entrees: [], sides: [], salads: [], pizzas: [], extraAppetizers: [], extraEntrees: [], extraSides: [], extraSalads: [], extraSidePriceCents: readyRoomExtraPrices.side, extraSaladPriceCents: readyRoomExtraPrices.salad, extraHours: 0, dessert: false, coffee: false, pizzaExtra: false, glutenFreeCount: 0, pizzaTime: "", pizzaNotes: "", wingSauce: "", dietaryNeeds: "", foodNotes: "", eventType: "", organization: "", billingName: "", billingAddress: "", appetizerTime: "", outsideSeating: "", barMode: "", barCapCents: 0, ticketCount: 0, barContact: "", decorContact: "", decorPhone: "", decorCompany: "", decorNotes: "", av: [] };
+  return { packageId: "", appetizers: [], entrees: [], sides: [], salads: [], pizzas: [], extraAppetizers: [], extraEntrees: [], extraSides: [], extraSalads: [], extraSidePriceCents: readyRoomExtraPrices.side, extraSaladPriceCents: readyRoomExtraPrices.salad, extraHours: 0, dessert: false, coffee: false, pizzaExtra: false, glutenFreeCount: 0, pizzaTime: "", pizzaNotes: "", wingSauce: "", dietaryNeeds: "", foodNotes: "", eventType: "", organization: "", billingName: "", billingAddress: "", appetizerTime: "", outsideSeating: "", barMode: "Hosted tab", barCapCents: 0, ticketCount: 0, barContact: "", decorContact: "", decorPhone: "", decorCompany: "", decorNotes: "", av: [] };
 }
 export function changeEventPackage(plan: FlightPlan, packageId: string, catalog = defaultCateringCatalog): FlightPlan {
   const readyRoomPackages = catalog.packages, readyRoomEntrees = [...catalog.menu.entrees, ...catalog.menu.premiumEntrees];
@@ -81,7 +86,7 @@ export type EventPlanDetails = {
   flightPlan?: FlightPlan | null; pfbTaxRateBps?: number; reservationDepositCents?: number;
 };
 export type EventCalendarSync = { status: "active" | "changed" | "removed" | "cancelled"; checkedAt: string; calendarId?:string; eventId?:string; linkedFromPlanId?:string; linkedToPlanId?:string; linkedAt?:string; source?: { title: string; date: string; startTime: string; endTime: string; description: string; url: string } };
-export type EventPlan = { bookingStage?: string; calendarSync?: EventCalendarSync | null; id: string; version: number; createdAt: string; updatedAt: string; sourceInquiryId: string | null; details: EventPlanDetails };
+export type EventPlan = { holdReleasedAt?:string|null;holdReleaseReason?:string|null;bookingStage?: string; calendarSync?: EventCalendarSync | null; id: string; version: number; createdAt: string; updatedAt: string; sourceInquiryId: string | null; details: EventPlanDetails };
 export type EventReport = EventPlan & {deletedAt:string|null};
 export function money(cents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100); }
 export function eventOrderItems(plan: EventPlanDetails, catalog = defaultCateringCatalog): EventOrderItem[] {
@@ -90,12 +95,13 @@ export function eventOrderItems(plan: EventPlanDetails, catalog = defaultCaterin
   if (!f || !pkg) return plan.items;
   const rows: EventOrderItem[] = [];
   const add = (id: string, name: string, quantity: number, price: number, category: EventOrderItem["category"] = "Food") => { if (quantity) rows.push({ id: `package-${id}`, name, quantity, unitPriceCents: price, taxable: true, category, notes: "" }); };
-  add("base", pkg.name + " / guest", plan.guestCount, pkg.priceCents);
-  for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, f.extraAppetizerPriceCents ?? readyRoomExtraPrices.appetizer);
+  const social=pkg.pricingMode==="appetizer-selection";
+  if(social)rows.push(...socialAppetizerQuote(plan,catalog).rows);else add("base", pkg.name + " / guest", plan.guestCount, pkg.priceCents);
+  if(!social)for (const [i, name] of f.extraAppetizers.entries()) add(`app-${i}`, `Additional appetizer: ${name}`, plan.guestCount, f.extraAppetizerPriceCents ?? readyRoomExtraPrices.appetizer);
   for (const [i, name] of f.extraEntrees.entries()) add(`entree-${i}`, `Additional ${readyRoomMenu.premiumEntrees.includes(name) ? "premium " : ""}entree: ${name}`, plan.guestCount, readyRoomMenu.premiumEntrees.includes(name) ? f.extraPremiumEntreePriceCents ?? readyRoomExtraPrices.premiumEntree : f.extraEntreePriceCents ?? readyRoomExtraPrices.entree);
   for (const [i, name] of (f.extraSides || []).entries()) add(`side-${i}`, `Additional side: ${name}`, plan.guestCount, f.extraSidePriceCents ?? 0);
   for (const [i, name] of (f.extraSalads || []).entries()) if(name) add(`salad-${i}`, `Additional salad: ${name}`, plan.guestCount, f.extraSaladPriceCents ?? 0);
-  for (const [i, name] of [...f.appetizers, ...f.extraAppetizers].entries()) if (readyRoomMenu.premiumAppetizers.includes(name)) add(`premium-app-${i}`, `Premium appetizer upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumAppetizer);
+  if(!social)for (const [i, name] of [...f.appetizers, ...f.extraAppetizers].entries()) if (readyRoomMenu.premiumAppetizers.includes(name)) add(`premium-app-${i}`, `Premium appetizer upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumAppetizer);
   if (!pkg.premiumEntreesIncluded) for (const [i, name] of f.entrees.entries()) if (readyRoomMenu.premiumEntrees.includes(name)) add(`premium-entree-${i}`, `Premium entree upgrade: ${name}`, plan.guestCount, readyRoomExtraPrices.premiumEntreeUpgrade);
   if (f.pizzaExtra) add("pizza", "Additional Pizza Bar entree", plan.guestCount, f.extraEntreePriceCents ?? readyRoomExtraPrices.entree);
   if (f.dessert) add("dessert", "Dessert display", plan.guestCount, readyRoomExtraPrices.dessert);
@@ -113,7 +119,7 @@ export function flightPlanSelections(plan: EventPlanDetails, catalog = defaultCa
   const pkg = readyRoomPackages.find(p => p.id === f.packageId);
   return [
     ["Service plan", !pkg && f.cateringMode ? eventCateringModes[f.cateringMode] : ""],
-    ["Package", pkg ? `${pkg.name} · ${money(pkg.priceCents)} / guest` : ""],
+    ["Package", pkg ? pkg.pricingMode==='appetizer-selection'?`${pkg.name} · ${socialAppetizerQuote(plan,catalog).perGuestCents==null?'price confirmed by selections':money(socialAppetizerQuote(plan,catalog).perGuestCents!)+' / guest'}`:`${pkg.name} · ${money(pkg.priceCents)} / guest` : ""],
     ["Appetizers", foodSelections(f.appetizers)], ["Entrees", foodSelections(f.entrees)], ["Sides", foodSelections(f.sides.map(name=>catalog.menu.salads.includes(name)&&!catalog.menu.sides.includes(name)?name+" (salad substituted for side)":name))], ["Salad", foodSelections(f.salads)||(pkg?.salads?"No salad requested":"")],
     ["Extra appetizers", foodSelections(f.extraAppetizers)], ["Extra entrees", foodSelections(f.extraEntrees)],
     ["Entrée descriptions", [...new Set([...f.entrees,...f.extraEntrees,...(f.pizzaExtra?["Aviator Pizzeria Pizza Bar"]:[])])].map(name=>cateringEntreeDescription(catalog,name)?name+": "+cateringEntreeDescription(catalog,name):"").filter(Boolean).join("\n")], ["Extra sides", foodSelections(f.extraSides || [])], ["Extra salads", foodSelections(f.extraSalads || [])],
@@ -196,7 +202,10 @@ function parseFlightPlan(value: unknown, guestCount: number, catalog: CateringCa
     if (selected && price === null) throw new Error(`Enter the additional ${label} price per guest.`);
     f[key] = price as number | null;
   }
+  if(input.hostedBarSelection!==undefined){if(!['beer-wine','full','custom'].includes(String(input.hostedBarSelection)))throw new Error('Choose a hosted bar option.');f.hostedBarSelection=input.hostedBarSelection as FlightPlan['hostedBarSelection'];}
+  if(managerAdjustments&&input.appetizerPriceOverrideCents!=null){if(!Number.isInteger(input.appetizerPriceOverrideCents)||Number(input.appetizerPriceOverrideCents)<0||Number(input.appetizerPriceOverrideCents)>10000000)throw new Error('Check the appetizer package price override.');f.appetizerPriceOverrideCents=Number(input.appetizerPriceOverrideCents);}
   if (pkg) {
+    if(pkg.pricingMode==='appetizer-selection'){if(new Set(f.appetizers).size!==3)throw new Error('Choose three different appetizers.');if(f.extraEntrees.length||f.extraSides.length||f.extraSalads.length||f.pizzaExtra)throw new Error('Add other food through the à la carte menu for this reception.');}
     if (guestCount < catalog.minimumGuests) throw new Error(`Ready Room packages require at least ${catalog.minimumGuests} guests.`);
     for (const key of ["appetizers", "entrees", "sides", "salads"] as const) {
       if(managerAdjustments&&key==="salads"){if(f.salads.length>pkg.salads)throw new Error(`${pkg.name}: choose up to ${pkg.salads} included salads; use Additional salad for extras.`);}
@@ -283,4 +292,16 @@ export function eventDiscountLines(details:EventPlanDetails,totals:ReturnType<ty
 
 export function cateringEntreeDescription(catalog:CateringCatalog,name:string){
  const description=catalog.entreeDescriptions?.[name];return typeof description==='string'?description:'';
+}
+
+export function socialAppetizerQuote(details:EventPlanDetails,catalog:CateringCatalog){
+ const f=details.flightPlan,selected=f?.appetizers.filter(Boolean)||[],extras=f?.extraAppetizers.filter(Boolean)||[];
+ const missing=[...selected,...extras].filter(name=>catalog.appetizerPricing?.[name]?.unitPriceCents==null),override=f?.appetizerPriceOverrideCents;
+ const validSelection=selected.length===3&&new Set(selected).size===3;
+ const baseComplete=validSelection&&(override!=null||selected.every(name=>catalog.appetizerPricing?.[name]?.unitPriceCents!=null));
+ const complete=baseComplete&&extras.every(name=>catalog.appetizerPricing?.[name]?.unitPriceCents!=null);
+ const basePrices=selected.map(name=>catalog.appetizerPricing?.[name]?.unitPriceCents||0);
+ if(override!=null&&selected.length){const weights=basePrices.map(n=>n||1),total=weights.reduce((a,b)=>a+b,0),shares=weights.map(n=>Math.floor(override*n/total));let left=override-shares.reduce((a,b)=>a+b,0);for(let i=0;left>0;i++,left--)shares[i%shares.length]++;basePrices.splice(0,basePrices.length,...shares);}
+ const rows:EventOrderItem[]=[...selected,...extras].map((name,index)=>({id:'package-social-app-'+index,category:'Food',name:'Appetizer: '+name+' / guest',quantity:details.guestCount,unitPriceCents:index<selected.length?basePrices[index]:catalog.appetizerPricing?.[name]?.unitPriceCents||0,taxable:true,notes:'Appetizers & Socializing · guest servings. Hosted bar tab billed separately.',kitchen:{...catalog.appetizerPricing?.[name]?.kitchen}}));
+ return {complete,baseComplete,missing,rows,perGuestCents:baseComplete?basePrices.reduce((a,b)=>a+b,0):null};
 }

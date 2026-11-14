@@ -17,8 +17,8 @@ export function eventWindow(p: Pick<EventPlanDetails,"date"|"startTime"|"endTime
 }
 export function eventWindowsOverlap(a: Parameters<typeof eventWindow>[0], b: Parameters<typeof eventWindow>[0]) { const x=eventWindow(a),y=eventWindow(b); return x.start < y.end && y.start < x.end; }
 // A linked draft retains the reservation hold while staff completes the website event.
-export const activeEventBookingSql="(status IN ('Tentative','Confirmed') OR (status='Draft' AND calendar_sync->>'linkedFromPlanId' IS NOT NULL))";
-export function hasEventBookingHold(status:string,sync?:{linkedFromPlanId?:string}){return ['Tentative','Confirmed'].includes(status)||status==='Draft'&&Boolean(sync?.linkedFromPlanId);}
+export const activeEventBookingSql="(status='Confirmed' OR (proposal_hold_released_at IS NULL AND (status='Tentative' OR (status='Draft' AND calendar_sync->>'linkedFromPlanId' IS NOT NULL))))";
+export function hasEventBookingHold(status:string,sync?:{linkedFromPlanId?:string},releasedAt?:unknown){return status==='Confirmed'||!releasedAt&&(status==='Tentative'||status==='Draft'&&Boolean(sync?.linkedFromPlanId));}
 export function eventRecordConflicts(details:Pick<EventPlanDetails,"date"|"startTime"|"endTime">,record:{data:EventPlanDetails;calendar_sync?:{status?:string;linkedFromPlanId?:string;source?:{date:string;startTime:string;endTime:string}}}){
  return eventWindowsOverlap(details,record.data)||Boolean(!record.calendar_sync?.linkedFromPlanId&&record.calendar_sync?.status==="changed"&&record.calendar_sync.source&&eventWindowsOverlap(details,record.calendar_sync.source));
 }
@@ -29,7 +29,7 @@ export function validateCateringRequest(value: unknown, catalog: CateringCatalog
   if (!Number.isInteger(p.guestCount) || p.guestCount < catalog.minimumGuests || p.guestCount > catalog.maximumGuests) throw new Error(`Choose ${catalog.minimumGuests}–${catalog.maximumGuests} guests. Contact events@aviatorbrew.com for other arrangements.`);
   if (!p.startTime || !p.endTime) throw new Error("Choose your event start and end time.");
   // Per-event appetizer/entree overrides are staff-only; public inquiries use catalog prices.
-  const details = parseEventPlan({...emptyEventPlan(depositCents), title: p.title || `Private event — ${p.contactName || "Guest"}`, contactName:p.contactName,contactEmail:p.contactEmail,phone:p.phone,date:p.date,startTime:p.startTime,foodTime:p.foodTime||"",endTime:p.endTime,location:catalog.venue,guestCount:p.guestCount,notes:p.notes || "",taxRateBps:catalog.salesTaxBps,pfbTaxRateBps:catalog.pfbTaxBps,flightPlan:{...f,cateringMode:undefined,extraAppetizerPriceCents:undefined,extraEntreePriceCents:undefined,extraPremiumEntreePriceCents:undefined,extraSidePriceCents:catalog.extraPrices.side,extraSaladPriceCents:catalog.extraPrices.salad}}, availableCatalog(catalog),false);
+  const details = parseEventPlan({...emptyEventPlan(depositCents), title: p.title || `Private event — ${p.contactName || "Guest"}`, contactName:p.contactName,contactEmail:p.contactEmail,phone:p.phone,date:p.date,startTime:p.startTime,foodTime:p.foodTime||"",endTime:p.endTime,location:catalog.venue,guestCount:p.guestCount,notes:p.notes || "",barDetails:p.barDetails||"",taxRateBps:catalog.salesTaxBps,pfbTaxRateBps:catalog.pfbTaxBps,flightPlan:{...f,barMode:"Hosted tab",hostedBarSelection:f.hostedBarSelection||"full",ticketCount:0,appetizerPriceOverrideCents:undefined,cateringMode:undefined,extraAppetizerPriceCents:undefined,extraEntreePriceCents:undefined,extraPremiumEntreePriceCents:undefined,extraSidePriceCents:catalog.extraPrices.side,extraSaladPriceCents:catalog.extraPrices.salad}}, availableCatalog(catalog),false);
   if (!details.contactName || !details.contactEmail || !details.phone) throw new Error("Enter your name, email and phone.");
   if (!eventIsFuture(details,now)) throw new Error("Choose a current or future event date.");
   if ([...details.flightPlan!.appetizers,...details.flightPlan!.extraAppetizers].some(n=>!availableCatalog(catalog).menu.appetizers.includes(n)&&!availableCatalog(catalog).menu.premiumAppetizers.includes(n))) throw new Error("Choose available appetizers.");
@@ -44,17 +44,18 @@ export function proposalSnapshot(details: EventPlanDetails, catalog: CateringCat
   delete safe.kitchenPlan;
   return {details:safe,items:structuredClone(items),selections:[...flightPlanSelections(details,catalog),...([
     ["Event type",details.flightPlan?.eventType||""],["Company / organization",details.flightPlan?.organization||""],
-    ["Setup access",details.setupTime?timeLabel(details.setupTime):""],["Food service",details.foodTime?timeLabel(details.foodTime):""],["Last call",details.lastCall?timeLabel(details.lastCall):""],
-    ["Bar service notes",details.barDetails],["Bar setup",details.flightPlan?.barMode||""],["Bar planning cap (not an additional charge)",details.flightPlan?.barCapCents?money(details.flightPlan.barCapCents):""],
-    ["Drink tickets",details.flightPlan?.ticketCount?String(details.flightPlan.ticketCount):""],["Appetizers served",details.flightPlan?.appetizerTime?timeLabel(details.flightPlan.appetizerTime):""],
+    ["Setup access",details.setupTime?timeLabel(details.setupTime):""],["Entrees out",details.foodTime?timeLabel(details.foodTime):""],["Last call",details.lastCall?timeLabel(details.lastCall):""],
+    ["Bar service notes",details.barDetails],["Bar setup",details.flightPlan?.barMode||""],["Hosted bar selection",details.flightPlan?.barMode==='Hosted tab'?(details.flightPlan.hostedBarSelection==='beer-wine'?'Beer & wine':details.flightPlan.hostedBarSelection==='custom'?'Custom hosted tab':'Full bar — beer, wine & cocktails'):''],["Bar planning cap (not an additional charge)",details.flightPlan?.barCapCents?money(details.flightPlan.barCapCents):""],
+    ["Drink tickets",details.flightPlan?.ticketCount?String(details.flightPlan.ticketCount):""],["Appetizers out",details.flightPlan?.appetizerTime?timeLabel(details.flightPlan.appetizerTime):""],
     ["Decorating / setup notes",details.flightPlan?.decorNotes||""],["Included AV",details.flightPlan?.av.join(", ")||""],
   ] as [string,string][]).filter(([,value])=>Boolean(value))],totals:eventTotals({...safe,flightPlan:null,items}),depositCents,policyText,policyVersion,catalog:structuredClone(catalog),exclusions:"Gratuity and final bar consumption are excluded unless itemized. Other unpriced services require a revised proposal. The deposit is a credit toward the event total."};
 }
 export function cateringSummary(details: EventPlanDetails, catalog: CateringCatalog = defaultCateringCatalog) { return [buffetExplanation,...flightPlanSelections(details,catalog).map(([k,v])=>`${k}: ${v}`),...eventOrderItems(details,catalog).map(i=>`${i.quantity} × ${i.name} at ${money(i.unitPriceCents)} = ${money(i.quantity*i.unitPriceCents)}`),`Estimated subtotal: ${money(eventTotals(details,catalog).subtotal)}`].join("\n"); }
 
-export function eventBookingStage(status:string,proposal?:{state:string;expires_at:string;accepted_at?:string|null;sent_at?:string|null;attempt_status?:string|null}|null) {
+export function eventBookingStage(status:string,proposal?:{state:string;expires_at:string;accepted_at?:string|null;sent_at?:string|null;attempt_status?:string|null}|null,releasedAt?:unknown) {
  if(status==="Cancelled")return "Canceled";
  if(status==="Completed")return "Completed";
+ if(releasedAt&&proposal?.state!=='declined')return 'Date Released';
  if(proposal){
  if(proposal.state==='changes_requested')return 'Changes Requested';
   if(proposal.state==="declined")return "Declined";

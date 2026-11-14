@@ -313,3 +313,5 @@
  .manager-private-events [data-event-panel="details"] textarea { font-size:1rem; }
  .manager-private-events [data-event-panel="details"] .event-details-textarea[rows="1"] { min-height:2.75rem; }
 }
+
+.proposal-decline-action{margin:8px 0 24px}.proposal-decline-link{font-size:.8rem;text-decoration:underline;border:0;background:none;padding:4px 0;color:inherit;cursor:pointer}.proposal-decline-confirm{margin-top:12px;padding:16px;border:1px solid #7891a2}.proposal-decline-confirm button{margin:4px 10px 4px 0}

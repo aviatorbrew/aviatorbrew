@@ -125,7 +125,7 @@
 .manager-portal .event-proposal-manager .event-fields > label { display:grid; gap:.25rem; }
 /* Live catalog packages, presented as full-card radio choices. */
 .online-catering .private-event-packages>.content-wrap>h2{max-width:23ch;font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-size:clamp(2.3rem,4.2vw,3.6rem);font-weight:700;line-height:1.02;text-transform:uppercase;letter-spacing:-.035em}
-.catering-package-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem;align-items:stretch;margin:1.8rem 0}
+.catering-package-cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:1.25rem;align-items:stretch;margin:1.8rem 0}
 .online-catering .catering-package-card{--package-base:#0b2237;--package-glow:#1b4b69;position:relative;isolation:isolate;display:flex;flex-direction:column;gap:0;min-width:0;min-height:38rem;margin:0;padding:1.65rem;border:2px solid #526572;background:linear-gradient(145deg,var(--package-glow),var(--package-base) 62%);color:#fff9ee;cursor:pointer;overflow:hidden;box-shadow:0 9px 20px #0003;transition:transform 180ms ease,border-color 180ms ease,box-shadow 180ms ease}
 .online-catering .package-tone-green{--package-base:#142b22;--package-glow:#304d37;border-color:#617364}
 .online-catering .package-tone-rust{--package-base:#35231e;--package-glow:#62402e;border-color:#80604c}

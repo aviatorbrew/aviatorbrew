@@ -64,7 +64,7 @@ try{
   assert.ok(copy.html.includes('cid:aviator-logo'));
   for(const heading of ['Event details','Contact information','Your buffet menu','Estimated pricing','What happens next'])assert.ok(copy.html.includes(heading));
   assert.ok(copy.html.includes('<ul')&&copy.html.includes('<ol'));
-  assert.ok(copy.html.includes('Food out time')&&copy.text.includes('Food out time: 6:00 PM'));
+  assert.ok(copy.html.includes('Entrees out')&&copy.text.includes('Entrees out: 6:00 PM'));
   assert.ok(copy.html.includes('$1,900.00')&&copy.html.includes('$2,056.75'));
   assert.ok(copy.text.includes('not confirmed')&&copy.text.includes('pay your deposit online'));
   assert.ok(!copy.html.includes('DO NOT EXPOSE PAYMENT ADMIN NOTES'));
@@ -753,6 +753,91 @@ try{
   await plans.saveEventPlan({...planAfter.details,guestCount:51},planAfter.id,planAfter.version);assert.equal((await request(saved.id)).status,409,'Changed event terms require a matching proposal before printing');
   const noQuote=await plans.saveEventPlan({...valid(future(1811)),flightPlan:{...model.emptyFlightPlan(),cateringMode:'meeting'},items:[{id:'room',name:'Meeting room',category:'Room',quantity:1,unitPriceCents:10000,taxable:true,notes:''}],paidCents:5000});const direct=await request(noQuote.id);assert.equal(direct.status,200);assert.ok((await direct.text()).includes('Saved event order; no proposal issued.'));
   console.log('PASS authenticated bar/POS receipt route: manual-only and mixed Stripe credit, current quote totals despite catalog changes, no-quote saved orders, stale-terms guard, private no-store output and no event/quote/payment/mail/Stripe mutations.');
+ }
+ {
+ // Follow-up emails run against the real booking ledger with recorded mail only.
+ const reminders=require(await compile(path.join(root,'src/lib/event-proposal-reminders.ts')));
+ const followupNow=new Date(),day=86400000;
+ let followupDay=1900;
+ async function agedProposal(){const f=await approved(valid(future(followupDay++)));await connection.query('UPDATE website.private_event_proposals SET sent_at=$2 WHERE id=$1',[f.p.id,new Date(followupNow.getTime()-2*day)]);f.plan=await plans.getEventPlan(f.plan.id);return f;}
+ async function reminderFor(f){return (await connection.query('SELECT * FROM website.private_event_proposal_reminders WHERE proposal_id=$1',[f.p.id])).rows[0];}
+ const releasing=await agedProposal(),beforeFollowupMail=globalThis.eventTestMail.length;
+ const concurrent=await Promise.all([reminders.processEventProposalReminders(followupNow),reminders.processEventProposalReminders(followupNow)]);
+ assert.equal(concurrent.reduce((n,r)=>n+r.sent,0),1,'Concurrent worker ticks send one reminder');
+ const followupMail=globalThis.eventTestMail[beforeFollowupMail],releaseReminder=await reminderFor(releasing);
+ assert.equal(followupMail.cc,'events@aviatorbrew.com');assert.ok(followupMail.text.includes('24 hours'));assert.ok(followupMail.html.includes('Decline'));
+ assert.equal(new Date(releaseReminder.release_at).getTime(),followupNow.getTime()+day);
+ const reminderToken=followupMail.text.match(/#token=([a-f0-9]{64})/)[1];
+ assert.equal((await proposals.customerProposal(reminderToken)).proposal.id,releasing.p.id);
+ assert.equal((await proposals.customerProposal(releasing.token)).canDecline,true,'Original proposal link stays usable');
+ await connection.query("UPDATE website.private_event_plans SET calendar_sync=jsonb_build_object('linkedFromPlanId','calendar-fixture','status','synced') WHERE id=$1",[releasing.plan.id]);
+ const retained=await plans.getEventPlan(releasing.plan.id);
+ assert.equal((await reminders.processEventProposalReminders(new Date(followupNow.getTime()+day-1))).released,0);
+ assert.equal((await reminders.processEventProposalReminders(new Date(followupNow.getTime()+day))).released,1);
+ const releasedPlan=await plans.getEventPlan(releasing.plan.id);
+ assert.equal(releasedPlan.details.status,'Draft');assert.equal(releasedPlan.bookingStage,'Date Released');assert.ok(releasedPlan.holdReleasedAt);
+ assert.deepEqual(releasedPlan.details.flightPlan,retained.details.flightPlan);assert.deepEqual(releasedPlan.calendarSync,retained.calendarSync);
+ await assert.rejects(()=>proposals.customerProposal(releasing.token),/invalid or expired/);
+ await assert.rejects(()=>proposals.customerProposal(reminderToken),/invalid or expired/);
+ const replacement=await plans.saveEventPlan({...valid(releasedPlan.details.date),status:'Tentative'});
+ await assert.rejects(()=>plans.saveEventPlan({...releasedPlan.details,status:'Tentative'},releasedPlan.id,releasedPlan.version),/overlaps/);
+ assert.ok(replacement.id);
+ // A customer response, recorded payment or explicit staff hold stops release.
+ for(const action of ['accept','manual-accept','change','payment','keep','edit','verified-payment']){
+  const f=await agedProposal(),originalExpiry=(await proposals.getManagerProposal(f.plan.id,f.p.id)).expires_at;
+  assert.equal((await reminders.processEventProposalReminders(followupNow)).sent,1,action);
+  if(action==='accept')await proposals.acceptAndCheckout(f.token,acceptance(f.p));
+  if(action==='manual-accept')await proposals.manuallyAcceptProposal(f.plan.id,f.p.id,{version:f.p.version,planVersion:f.plan.version,name:'Fixture Customer',confirmed:true});
+  if(action==='change')await proposals.requestProposalChange(f.token,{requestId:randomUUID(),proposalVersion:f.p.version,name:'Fixture Customer',message:'Please adjust the start time.'});
+  if(action==='payment')await plans.saveEventPlan({...f.plan.details,paidCents:10000},f.plan.id,f.plan.version);
+  if(action==='keep')await proposals.keepProposalHold(f.plan.id,f.p.id,f.p.version);
+  if(action==='edit')await plans.saveEventPlan({...f.plan.details,guestCount:51},f.plan.id,f.plan.version);
+  if(action==='verified-payment')await connection.query("INSERT INTO website.private_event_deposits(session_id,payment_intent,proposal_id,plan_id,amount_cents,currency,stripe_event_id,paid_at) VALUES($1,$2,$3,$4,10000,'usd',$5,now())",['cs_followup_'+f.p.id,'pi_followup_'+f.p.id,f.p.id,f.plan.id,'evt_followup_'+f.p.id]);
+  await reminders.processEventProposalReminders(new Date(followupNow.getTime()+day+1));
+  assert.equal((await reminderFor(f)).status,'stopped',action);
+  assert.equal((await proposals.getManagerProposal(f.plan.id,f.p.id)).expires_at,originalExpiry,action+' restores the original deadline');
+  assert.ok(!(await plans.getEventPlan(f.plan.id)).holdReleasedAt,action+' keeps the date');
+  if(['accept','manual-accept','payment','verified-payment'].includes(action))await assert.rejects(()=>proposals.declineProposal(f.token),/accepted|payment|cancel/);
+ }
+ const declining=await agedProposal();await reminders.processEventProposalReminders(followupNow);
+ assert.deepEqual(await proposals.declineProposal(declining.token),{declined:true,notified:true});
+ assert.equal((await plans.getEventPlan(declining.plan.id)).holdReleaseReason,'declined');
+ assert.equal((await reminderFor(declining)).status,'declined');assert.equal(globalThis.eventTestMail.at(-1).cc,'events@aviatorbrew.com');
+ const unknown=await agedProposal();globalThis.eventTestFailMail=true;
+ assert.equal((await reminders.processEventProposalReminders(followupNow)).attention,1);globalThis.eventTestFailMail=false;
+ assert.equal((await reminderFor(unknown)).status,'unknown');
+ const mailAfterUnknown=globalThis.eventTestMail.filter(m=>m.text?.includes(unknown.p.number)).length;
+ await reminders.processEventProposalReminders(new Date(followupNow.getTime()+2*day));
+ assert.ok(!(await plans.getEventPlan(unknown.plan.id)).holdReleasedAt);assert.equal(globalThis.eventTestMail.filter(m=>m.text?.includes(unknown.p.number)).length,mailAfterUnknown,'Uncertain delivery is not retried automatically');
+ const recent=await approved(valid(future(followupDay++)));
+ const protectedPayment=await agedProposal();await plans.saveEventPlan({...protectedPayment.plan.details,paidCents:1},protectedPayment.plan.id,protectedPayment.plan.version);
+ const protectedAcceptance=await agedProposal();await proposals.manuallyAcceptProposal(protectedAcceptance.plan.id,protectedAcceptance.p.id,{version:protectedAcceptance.p.version,planVersion:protectedAcceptance.plan.version,name:'Fixture Customer',confirmed:true});
+ assert.equal((await reminders.processEventProposalReminders(followupNow)).sent,0);
+ for(const f of [recent,protectedPayment,protectedAcceptance])assert.equal(await reminderFor(f),undefined,'Recent, paid and accepted proposals are protected');
+ console.log('PASS 48-hour follow-up, 24-hour release, concurrent delivery claims, both links, retained calendar/menu history, conflict checks, acceptance/change/payment/staff protection, safe decline with CC, and uncertain-mail protection.');
+ // Three-appetizer reception pricing comes from private costs, never customer input.
+ const socialSettings=await settings.getPrivateEventSettings(),socialNames=['Hush Puppies','Tater Tots','Shrimp Cocktail'];
+ await settings.setPrivateEventSettings({foodCosts:{...socialSettings.foodCosts,...Object.fromEntries(socialNames.map((name,i)=>[name,{basis:'lb',costCents:(i+1)*100}]))}});
+ const priced=(await settings.getPrivateEventSettings()).catering;
+ const reception=booking.validateCateringRequest({...valid(future(followupDay++)),foodTime:'',flightPlan:{...model.emptyFlightPlan(),packageId:'appetizers-social',appetizers:socialNames,appetizerTime:'17:30',barMode:'Drink tickets',ticketCount:500,barCapCents:100000,hostedBarSelection:'beer-wine',barContact:'Fixture Host',appetizerPriceOverrideCents:1}},priced,35000);
+ assert.equal(reception.flightPlan.barMode,'Hosted tab');assert.equal(reception.flightPlan.ticketCount,0);assert.equal(reception.flightPlan.appetizerPriceOverrideCents,undefined);assert.equal(reception.flightPlan.appetizerTime,'17:30');
+ const portion=(await settings.getPrivateEventSettings()).production.aLaCarteAppetizerOz||3;
+ const expectedPrices=socialNames.map((_,i)=>Math.ceil((i+1)*100*portion/16/.28-1e-8));
+ assert.deepEqual(model.eventOrderItems(reception,priced).map(i=>i.unitPriceCents),expectedPrices);
+ assert.equal(model.eventTotals(reception,priced).subtotal,expectedPrices.reduce((a,b)=>a+b,0)*reception.guestCount,'No premium surcharge, buffet base price or bar budget charge');
+ const socialEmail=inquiryEmail.buildEventInquiryEmail(reception,priced,'social-fixture','customer');assert.ok(!socialEmail.html.includes(' · $0.00 / guest'));assert.ok(socialEmail.html.includes(model.money(expectedPrices.reduce((a,b)=>a+b,0))+' / guest'));
+ const overridden=model.parseEventPlan({...reception,flightPlan:{...reception.flightPlan,appetizerPriceOverrideCents:1200}},priced);
+ assert.equal(model.eventTotals(overridden,priced).subtotal,1200*reception.guestCount);
+ assert.throws(()=>model.parseEventPlan({...reception,flightPlan:{...reception.flightPlan,appetizers:['Hush Puppies','Hush Puppies','Tater Tots']}},priced),/different/);
+ const productionModule=require(await compile(path.join(root,'src/lib/event-production.ts'))),receptionProduction=productionModule.eventProductionPlan(reception,priced,(await settings.getPrivateEventSettings()).production);
+ assert.equal(receptionProduction.buffet,false);assert.equal(receptionProduction.custom.length,3);assert.ok(!receptionProduction.warnings.some(w=>w.includes('No entree')));assert.ok(receptionProduction.custom.every(i=>i.quantity===50&&i.kitchen.ouncesPerUnit===portion));
+ const socialPlan=await plans.saveEventPlan(reception),socialProposal=await proposals.createProposal(socialPlan.id,{version:socialPlan.version,expiresAt:expiration()});
+ await settings.setPrivateEventSettings({foodCosts:{...socialSettings.foodCosts,'Hush Puppies':{basis:'lb',costCents:5000}}});
+ assert.deepEqual((await proposals.getManagerProposal(socialPlan.id,socialProposal.id)).snapshot,socialProposal.snapshot,'Issued reception prices are frozen');
+ const unknownPrice=await plans.saveEventPlan({...reception,date:future(followupDay++)});
+ await assert.rejects(()=>proposals.createProposal(unknownPrice.id,{version:unknownPrice.version,expiresAt:expiration()}),/food costs and portions/);
+ await settings.setPrivateEventSettings({foodCosts:socialSettings.foodCosts});
+ console.log('PASS reception pricing at 28%, per-guest overrides, 3 distinct choices, authoritative prices, hosted tab without ticket/budget charges, appetizer production quantities, missing-cost guard and immutable proposals.');
  }
  const browserFixture=await approved(valid(future(95)));
  await writeFile('/tmp/aviator-event-proposal-browser-fixture.json',JSON.stringify({token:browserFixture.token,planId:browserFixture.plan.id,proposalId:browserFixture.p.id,paidToken:token,paidPlanId:sourcePlan.id}),{mode:0o600});

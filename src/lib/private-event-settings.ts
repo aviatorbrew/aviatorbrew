@@ -1,6 +1,7 @@
+import {socialAppetizerSellingPrices} from "@/lib/event-social-package";
 import {defaultEventFoodCosts,parseEventFoodCosts,type EventFoodCostSettings} from "@/lib/event-food-cost";
 import {defaultEventProductionSettings,parseEventProductionSettings,type EventProductionSettings} from "@/lib/event-production";
-import { defaultCateringCatalog, type CateringCatalog } from "@/lib/event-plan";
+import {appetizerSocialPackageId, defaultCateringCatalog, type CateringCatalog } from "@/lib/event-plan";
 import { parseCateringCatalog } from "@/lib/catering-catalog";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -9,7 +10,7 @@ import { databaseConfigured, withDatabase } from "@/lib/database";
 export const DEFAULT_PRIVATE_EVENT_BOOKING_FEE_CENTS = 35000;
 export const DEFAULT_PRIVATE_EVENT_AVIATOR_WAY_COPY = [
   "The Ready Room is built for rehearsal dinners, business meetings, birthdays, retirements, reunions, graduations, and private celebrations for up to 70 guests inside, with extra outside seating sometimes available when weather permits. Your event can include a full bar with 10 Aviator beers on tap, liquor, wine, sound, and a big-screen TV for presentations, slideshows, or game-day gatherings.",
-  "For food, choose from Ready Room packages built around shareable appetizers, salads, entrees, sides, and the Aviator Pizzeria Pizza Bar. Crowd favorites include Aviator Smoked Wings, Pulled Pork BBQ, Beef Brisket, Country Fried Chicken Cutlet, Bacon Wrapped Meatloaf, and Grilled Flat Iron Steak. Bar service can be set up as open bar, capped open bar, drink tickets, or guest-paid tabs.",
+  "For food, choose from Ready Room packages built around shareable appetizers, salads, entrees, sides, and the Aviator Pizzeria Pizza Bar. Crowd favorites include Aviator Smoked Wings, Pulled Pork BBQ, Beef Brisket, Country Fried Chicken Cutlet, Bacon Wrapped Meatloaf, and Grilled Flat Iron Steak. Choose a hosted tab for beer and wine, the full bar, or a custom selection. Set an optional host-approved budget; bar drinks are billed at actual menu prices.",
 ];
 export const DEFAULT_PRIVATE_EVENT_INQUIRY_COPY = [
   "Tell us the date, time, guest count, event style, and any food or bar plans you already know. The Aviator events team will review the request and follow up with availability, package details, and next steps.",
@@ -32,7 +33,7 @@ export function validPrivateEventBookingFeeCents(value: unknown) {
 }
 
 function cleanCopyParagraph(value: unknown) {
-  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 700);
+  return String(value || "").replace(/open bar, capped open bar, drink tickets, or guest-paid tabs/gi,"a hosted tab with your choice of beer and wine, the full bar, or a custom selection").replace(/\s+/g, " ").trim().slice(0, 700);
 }
 
 function validPrivateEventCopy(value: unknown, fallback: string[]) {
@@ -66,10 +67,14 @@ function configuredBookingFeeCents() {
 }
 
 function settingsWithDefaults(value?: Partial<PrivateEventSettings>): PrivateEventSettings {
+  const foodCosts=value?.foodCosts?parseEventFoodCosts(value.foodCosts):structuredClone(defaultEventFoodCosts),production=value?.production?parseEventProductionSettings(value.production):structuredClone(defaultEventProductionSettings);
+  const catering=value?.catering?parseCateringCatalog(value.catering):structuredClone(defaultCateringCatalog);
+  if(!catering.packages.some(p=>p.id===appetizerSocialPackageId))catering.packages.push(structuredClone(defaultCateringCatalog.packages.find(p=>p.id===appetizerSocialPackageId)!));
+  catering.appetizerPricing=socialAppetizerSellingPrices(catering,production,foodCosts);
   return {
-    foodCosts: value?.foodCosts?parseEventFoodCosts(value.foodCosts):structuredClone(defaultEventFoodCosts),
-    production: value?.production?parseEventProductionSettings(value.production):structuredClone(defaultEventProductionSettings),
-    catering: value?.catering ? parseCateringCatalog(value.catering) : structuredClone(defaultCateringCatalog),
+    foodCosts,
+    production,
+    catering,
     policyText: value?.policyText || "", policyVersion: value?.policyVersion || "",
     bookingFeeCents: value?.bookingFeeCents === undefined ? configuredBookingFeeCents() : validPrivateEventBookingFeeCents(value.bookingFeeCents),
     aviatorWayCopy: value?.aviatorWayCopy === undefined ? [...DEFAULT_PRIVATE_EVENT_AVIATOR_WAY_COPY] : validPrivateEventAviatorWayCopy(value.aviatorWayCopy),
@@ -150,6 +155,7 @@ export async function setPrivateEventSettings(input: PrivateEventSettingsInput) 
   else if (input.aviatorWayCopy !== undefined) settings.aviatorWayCopy = validPrivateEventAviatorWayCopy(input.aviatorWayCopy);
   if (input.inquiryCopyText !== undefined) settings.inquiryCopy = parsePrivateEventInquiryCopyText(input.inquiryCopyText);
   else if (input.inquiryCopy !== undefined) settings.inquiryCopy = validPrivateEventInquiryCopy(input.inquiryCopy);
+  settings.catering.appetizerPricing=socialAppetizerSellingPrices(settings.catering,settings.production,settings.foodCosts);
   if (!(await writeDatabaseSettings(settings))) await writeFileSettings(settings);
   return settings;
 }

@@ -64,7 +64,7 @@ def main():
     shrimp[NameObject('/T')] = TextStringObject('premium_app_shrimp_cocktail')
     shrimp[NameObject('/Rect')] = ArrayObject([FloatObject(n) for n in [33.6, 328.8, 43.2, 338.4]])
     fields['premium_app_shrimp_cocktail'] = shrimp_ref
-    for name in ['entree_brisket', 'entree_flat_iron', 'premium_country_chicken', 'premium_pulled_pork', 'app_chicken_tenders']:
+    for name in ['entree_brisket', 'entree_flat_iron', 'premium_country_chicken', 'premium_pulled_pork', 'app_chicken_tenders', 'bar_guest_paid', 'bar_tickets', 'drink_ticket_count']:
         if name not in fields:
             continue
         removed = fields.pop(name)
@@ -160,8 +160,9 @@ if (proposed !== "" && !/^[1-9]$/.test(proposed)) {
             box(26.4, 560, 444, 50, NAVY)
             text(26.4, 585, 'EVENT MENU PLANNING SHEET', 26, PAPER, True)
             text(26.4, 568, 'Choose your package, plan your menu, and confirm your event details.', 8.3, (0.75, 0.82, 0.85))
-            box(26.4, 48, 444, 17)
-            text(26.4, 54.5, 'For totals and input checks, open in Adobe Acrobat Reader. Click outside each field after entering a value.', 6.7)
+            box(26.4, 41, 444, 26)
+            text(26.4, 60, 'Appetizers & Socializing: 3 appetizer choices + hosted tab. Build online for selection-based food pricing.', 6.5, bold=True)
+            text(26.4, 48, 'For totals and input checks, open in Adobe Acrobat Reader. Click outside each field after entering a value.', 6.7)
         if page_index == 1:
             box(26.4, 563, 444, 17, NAVY)
             text(26.4, 568, 'Enter one digit (1-9) for each food quantity. Leave unused items blank.', 9, (0.75, 0.82, 0.85))
@@ -221,6 +222,10 @@ if (proposed !== "" && !/^[1-9]$/.test(proposed)) {
             text(26.4, 214.5, 'Additional premium entree: $7 / person total. Additional regular entree: $5 / person.', 7.1)
             box(26.4, 86.4, 444, 12.6, (0.91, 0.94, 0.95))
         if page_index == 2:
+            box(26.4, 263, 444, 25)
+            text(196, 272, 'Hosted tab - beer & wine, full bar or a custom selection', 7.2, bold=True)
+            box(139, 209, 107, 34)
+            text(143, 222, 'Drinks billed as consumed.', 6.5)
             # Keep the pizza size and serving allowance aligned with the kitchen standard.
             box(340, 455.5, 130.4, 19, (20 / 255, 54 / 255, 78 / 255))
             text(346, 463, '14-INCH / 3 SLICES PER GUEST', 6.8, GOLD, True)

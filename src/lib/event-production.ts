@@ -1,3 +1,4 @@
+import {socialAppetizerQuote} from "@/lib/event-plan";
 import {pizzaOrderCount,sharedPizzaOrders,splitPizzaStyles,pizzaOrderStyles} from '@/lib/event-pizza';
 export {pizzaOrderCount} from '@/lib/event-pizza';
 import {emptyFlightPlan,type CateringCatalog,type EventPlanDetails,type EventOrderItem} from '@/lib/event-plan';
@@ -137,7 +138,8 @@ export function eventProductionPlan(d:EventPlanDetails,c:CateringCatalog,s:Event
  let pizzaRoundingOz=0,pizzaCountTotal:number|null=null,pizzaServingGuests=0;
  const pizzaDiameterInches=s.pizzaDiameterInches||14,pizzaSlicesPerPie=s.pizzaSlicesPerPie||8,pizzaSlicesPerGuest=s.pizzaSlicesPerGuest||3;
  const f={...emptyFlightPlan(),...d.flightPlan},warnings:string[]=[],groups:ProductionGroup[]=[],pizzaName='Aviator Pizzeria Pizza Bar';
- const buffet=Boolean(f.packageId),guests=d.guestCount,reserve=1+s.reservePercent/100;
+ const social=c.packages.find(p=>p.id===f.packageId)?.pricingMode==='appetizer-selection';
+ const buffet=Boolean(f.packageId)&&!social,guests=d.guestCount,reserve=1+s.reservePercent/100;
  const protein=eventProteinBudget(d,c,s),proteinNames=new Set(protein.rows.map(r=>r.name)),sideReservePercent=d.kitchenPlan?.sideReservePercent??s.sideReservePercent??15;
  const row=(name:string,selections:number,ounces:number,category=''):ProductionRow=>({name,selections,ounces,...productionPanFor(name,category,c,s),...(name==='Aviator Smoked Wings'?{piecesPerTray:s.wingsPerFullTray||200,piecesPerHalfTray:s.wingsPerHalfTray||75,piecesPerLb:s.cookedWingsPerLb}: {})});
  function group(name:string,selections:string[],perGuestOz:number,reservePercent=s.reservePercent){
@@ -195,7 +197,7 @@ export function eventProductionPlan(d:EventPlanDetails,c:CateringCatalog,s:Event
 
  if(protein.overLimit)warnings.push(`PROTEIN LIMIT EXCEEDED: explicit orders contain ${productionNumber(protein.explicitServings)} servings; maximum ${protein.limit}. Review ordered quantities before production.`);
  if(protein.unverified.length)warnings.push(`Protein servings cannot be verified for: ${protein.unverified.join(', ')}. Enter portions before approving the total.`);
- const custom=sharedPizzaOrders(d.items.filter(i=>i.category==='Food'),s,f.pizzas);
+ const custom=sharedPizzaOrders([...(social?socialAppetizerQuote(d,c).rows:[]),...d.items].filter(i=>i.category==='Food'),s,f.pizzas);
  for(const item of custom){const styles=pizzaOrderStyles(item);if(styles.length>(pizzaOrderCount(item,s)??Infinity))warnings.push('The shared pizza allowance produces fewer whole pizzas than selected styles. Review the varieties and quantity.');if(styles.length>3)warnings.push('More than three pizza styles are listed for one serving group. Review the style choices before production.');if(/^Pizza:/.test(item.name)&&!styles.length)warnings.push('Choose one to three pizza styles for the shared Pizza Bar order.');}
 
  if(buffet&&!groups.some(g=>g.name==='Entrees')&&!protein.rows.length)warnings.push('No entree selections are saved. This buffet plan is incomplete.');

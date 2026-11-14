@@ -8,7 +8,9 @@ export function parseCateringCatalog(value: unknown): CateringCatalog {
   if (!integer(c.minimumGuests, 10000) || c.minimumGuests < 1 || !integer(c.maximumGuests, 10000) || c.maximumGuests < c.minimumGuests || !text(c.venue) || !integer(c.salesTaxBps, 10000) || !integer(c.pfbTaxBps, 10000)) throw new Error("Check venue capacity and tax settings.");
   if (!Array.isArray(c.packages) || c.packages.length < 1 || c.packages.length > 12 || new Set(c.packages.map(p => p.id)).size !== c.packages.length) throw new Error("Use distinct package IDs.");
   for (const p of c.packages) {
-    if (!/^[a-z0-9-]{1,40}$/.test(p.id) || !text(p.name) || !integer(p.priceCents) || p.priceCents < 100 || typeof p.enabled !== "boolean" || typeof p.premiumEntreesIncluded !== "boolean" || [p.appetizers, p.entrees, p.sides, p.salads].some(n => !integer(n, 12))) throw new Error("Check package prices and selection limits.");
+    if(p.pricingMode!==undefined&&p.pricingMode!=='appetizer-selection')throw new Error("Choose a supported package pricing method.");
+    if(p.pricingMode==='appetizer-selection'&&(p.id!=='appetizers-social'||p.appetizers!==3||p.entrees!==0||p.sides!==0||p.salads!==0||p.premiumEntreesIncluded))throw new Error("Appetizers & Socializing includes 3 appetizer selections and a hosted tab.");
+    if (!/^[a-z0-9-]{1,40}$/.test(p.id) || !text(p.name) || !integer(p.priceCents) || (p.pricingMode==='appetizer-selection'?p.priceCents!==0:p.priceCents<100) || typeof p.enabled !== "boolean" || typeof p.premiumEntreesIncluded !== "boolean" || [p.appetizers, p.entrees, p.sides, p.salads].some(n => !integer(n, 12))) throw new Error("Check package prices and selection limits.");
   }
   for (const key of Object.keys(defaultCateringCatalog.menu) as (keyof CateringCatalog["menu"])[]) {
     const choices = c.menu?.[key];
@@ -28,5 +30,5 @@ export function parseCateringCatalog(value: unknown): CateringCatalog {
 export function availableCatalog(catalog: CateringCatalog): CateringCatalog {
   const hidden=new Set([...catalog.disabledItems,...(catalog.managerOnlyItems||[])]);
   const menu=Object.fromEntries(Object.entries(catalog.menu).map(([key,values])=>[key,values.filter(name=>!hidden.has(name))])) as CateringCatalog["menu"];
-  return {...catalog, disabledItems:[], managerOnlyItems:[], packages:catalog.packages.filter(p=>p.enabled),menu,...(catalog.entreeDescriptions?{entreeDescriptions:Object.fromEntries(Object.entries(catalog.entreeDescriptions).filter(([name])=>[...menu.entrees,...menu.premiumEntrees].includes(name)))}:{})};
+  return {...catalog,...(catalog.appetizerPricing?{appetizerPricing:Object.fromEntries(Object.entries(catalog.appetizerPricing).filter(([name])=>[...menu.appetizers,...menu.premiumAppetizers].includes(name)))}:{}), disabledItems:[], managerOnlyItems:[], packages:catalog.packages.filter(p=>p.enabled),menu,...(catalog.entreeDescriptions?{entreeDescriptions:Object.fromEntries(Object.entries(catalog.entreeDescriptions).filter(([name])=>[...menu.entrees,...menu.premiumEntrees].includes(name)))}:{})};
 }
