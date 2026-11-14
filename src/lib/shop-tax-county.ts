@@ -5,10 +5,11 @@ const cache = new Map<string, {
 }>();
 export async function resolveShopNcCounty(address: Record<string, string | undefined>) {
     const supplied = getNcCountyTaxRate(address.county || '');
-    if (supplied)
-        return { county: supplied.county, method: 'Saved/customer-supplied NC county' };
-    if (address.state?.toUpperCase() !== 'NC' || !address.street1 || !address.city || !address.zip)
+    if (address.state?.toUpperCase() !== 'NC')
         return null;
+    const fallback = supplied ? { county: supplied.county, method: 'Saved/customer-supplied NC county; address lookup unavailable' } : null;
+    if (!address.street1 || !address.city || !address.zip)
+        return fallback;
     const key = JSON.stringify([address.street1, address.city, address.state, address.zip]).toUpperCase(), cached = cache.get(key);
     if (cached && cached.expires > Date.now())
         return { county: cached.county, method: 'US Census address/city county lookup' };
@@ -16,22 +17,22 @@ export async function resolveShopNcCounty(address: Record<string, string | undef
     try {
         const response = await fetch('https://geocoding.geo.census.gov/geocoder/geographies/address?' + params, { signal: AbortSignal.timeout(10000), cache: 'no-store' });
         if (!response.ok)
-            return null;
+            return fallback;
         const data = await response.json(), matches = data.result?.addressMatches;
         if (!Array.isArray(matches) || matches.length !== 1 || matches[0].addressComponents?.state !== 'NC')
-            return null;
+            return fallback;
         const counties = matches[0].geographies?.Counties;
         if (!Array.isArray(counties) || counties.length !== 1 || counties[0].STATE !== '37')
-            return null;
+            return fallback;
         const county = getNcCountyTaxRate(String(counties[0].BASENAME || counties[0].NAME || '').replace(/ County$/i, ''));
         if (!county)
-            return null;
+            return fallback;
         if (cache.size > 1000)
             cache.clear();
         cache.set(key, { county: county.county, expires: Date.now() + 86400000 });
         return { county: county.county, method: 'US Census address/city county lookup' };
     }
     catch {
-        return null;
+        return fallback;
     }
 }

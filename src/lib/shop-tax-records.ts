@@ -40,7 +40,8 @@ export async function createHistoricalShopTaxRecords(input: {
         if (input.county && String(row.shipping_address?.state).toUpperCase() !== "NC")
             throw Error("County correction is only available for NC delivery orders.");
         const signature = inputHash(row), existing = await withDatabase(async (client) => (await client.query('SELECT data FROM website.shop_tax_records WHERE order_id=$1 AND input_hash=$2 AND rule_version=$3 ORDER BY id DESC LIMIT 1', [row.id, signature, SHOP_TAX_RULE_VERSION])).rows[0]?.data as ShopTaxRecord | undefined);
-        if (existing?.status === 'complete' && !input.county) {
+        const missingCounty = existing?.quote.groups.some(g => g.state === 'NC' && !g.county);
+        if (existing?.status === 'complete' && !missingCounty && !input.county) {
             result.unchanged++;
             result.assessedTaxCents += existing.quote.taxCents || 0;
             result.collectedTaxCents += existing.collectedTaxCents || 0;
@@ -57,11 +58,14 @@ export async function createHistoricalShopTaxRecords(input: {
             const items: ShopTaxItem[] = row.items.map((i: Record<string, any>) => ({ id: i.id, name: i.name, quantity: i.quantity, unitPriceCents: i.unitPriceCents, isBonus: i.isBonus, requiresShipping: i.requiresShipping, taxCategory: shopTaxCategory(i.category, i.productType, i.name) }));
             const address = { ...row.shipping_address, ...(input.county ? { county: input.county } : {}) };
             let county = address.county || '', method = county ? 'Saved/manager-confirmed delivery county' : 'Business/venue default';
-            if (String(address.state).toUpperCase() === 'NC' && items.some(i => i.requiresShipping)) {
+            if (!input.county && String(address.state).toUpperCase() === 'NC' && items.some(i => i.requiresShipping)) {
                 const resolved = await resolveShopNcCounty(address);
                 if (resolved) {
                     county = resolved.county;
                     method = resolved.method;
+                }
+                else {
+                    method = 'NC delivery county unresolved';
                 }
             }
             const quote = calculateShopTax(items, Number(row.shipping_cents), { ...address, county, method }, new Date(row.paid_at));

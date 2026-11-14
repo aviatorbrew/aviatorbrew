@@ -31,6 +31,7 @@ export function buildShopSalesReport(month:string,source:SalesSourceOrder[],excl
    const counties=[...new Set(row.taxRecord.quote.groups.filter(g=>g.state==='NC'&&g.county).map(g=>g.county))];
    if(counties.length)order.county=counties.join(' / ');
    order.notes.push(...row.taxRecord.quote.review);
+   if(row.taxRecord.quote.groups.some(g=>g.state==='NC'&&!g.county))order.notes.push('Delivery county unresolved; confirm the county for this order. Gift-card sales tax remains deferred.');
    if(row.taxRecord.quote.useTaxReview)order.notes.push('Free promotional goods: check merchant use tax using purchase cost/tax paid');
    if(order.uncollectedTaxCents)order.notes.push('Calculated tax was not collected; reconcile before filing');
   }
